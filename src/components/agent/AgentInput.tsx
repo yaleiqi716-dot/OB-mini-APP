@@ -8,9 +8,10 @@ interface AgentInputProps {
   onSubmit: (input: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  prominent?: boolean;
 }
 
-export function AgentInput({ onSubmit, disabled, placeholder }: AgentInputProps) {
+export function AgentInput({ onSubmit, disabled, placeholder, prominent }: AgentInputProps) {
   const [value, setValue] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -28,8 +29,11 @@ export function AgentInput({ onSubmit, disabled, placeholder }: AgentInputProps)
     <div className="w-full max-w-3xl mx-auto">
       <div
         className={cn(
-          'flex items-end gap-2 rounded-2xl border border-border bg-surface-secondary p-3 transition-colors',
-          'focus-within:border-accent/40 focus-within:bg-surface-tertiary'
+          'flex items-end gap-2 rounded-2xl border bg-surface-secondary p-3 transition-all',
+          'focus-within:border-accent/50 focus-within:bg-surface-tertiary focus-within:shadow-sm',
+          prominent
+            ? 'border-border/80 shadow-sm'
+            : 'border-border'
         )}
       >
         <Input
@@ -37,7 +41,7 @@ export function AgentInput({ onSubmit, disabled, placeholder }: AgentInputProps)
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onSubmit={handleSubmit}
-          placeholder={placeholder || '描述你想完成的工作...'}
+          placeholder={placeholder || '描述你的任务，我来帮你执行'}
           disabled={disabled}
           className="flex-1 min-h-[24px] text-[15px]"
         />

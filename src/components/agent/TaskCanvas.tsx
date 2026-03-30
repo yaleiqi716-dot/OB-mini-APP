@@ -257,8 +257,8 @@ export function TaskCanvas({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="px-4 md:px-5 py-3 md:py-3.5 border-b border-border">
+      {/* Header — light, not system-like */}
+      <div className="px-4 md:px-5 py-3 md:py-3.5 border-b border-border/40">
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-base flex-shrink-0">{typeInfo?.icon || '📎'}</span>
           <div className="flex-1 min-w-0">
@@ -339,16 +339,16 @@ export function TaskCanvas({
               ) : null}
 
               {/* Phase-based thinking */}
-              {/* Thinking — background planning layer (dimmer than steps) */}
+              {/* Thinking — subtle inline flow, not a card */}
               {hasThinking ? (
-                <div className="rounded-lg bg-surface-tertiary/40 border-l-2 border-accent/20 py-2 px-3 space-y-1">
+                <div className="pl-3 border-l-2 border-accent/15 space-y-0.5">
                   {thinkingPhases.map((phase, i) =>
                     phase.completed ? (
-                      <p key={i} className="text-[11px] text-content-tertiary/50 italic leading-relaxed">
+                      <p key={i} className="text-[11px] text-content-tertiary/40 italic leading-relaxed">
                         {phase.text}
                       </p>
                     ) : (
-                      <p key={i} className="text-xs text-content-secondary/70 italic leading-relaxed">
+                      <p key={i} className="text-xs text-content-secondary/60 italic leading-relaxed">
                         <Typewriter text={phase.text} speed={20} />
                       </p>
                     )
@@ -433,15 +433,14 @@ export function TaskCanvas({
 
 function CompletedStructure({ structure }: { structure: string[] }) {
   return (
-    <div className="rounded-lg border border-border bg-surface-secondary/50 px-4 py-3">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="pl-3 border-l-2 border-green-400/20 py-1">
+      <div className="flex items-center gap-2 mb-1.5">
         <span className="text-green-400 text-xs">✓</span>
-        <span className="text-xs text-content-secondary">结构已确认</span>
-        <span className="text-[11px] text-content-tertiary">共 {structure.length} 项</span>
+        <span className="text-xs text-content-tertiary">结构已确认 · {structure.length} 项</span>
       </div>
       <div className="flex flex-wrap gap-1.5">
         {structure.map((item, i) => (
-          <span key={i} className="text-[11px] px-2 py-0.5 rounded bg-surface-tertiary text-content-tertiary border border-border">{item}</span>
+          <span key={i} className="text-[11px] px-1.5 py-0.5 rounded bg-surface-tertiary/50 text-content-tertiary">{item}</span>
         ))}
       </div>
     </div>

@@ -378,106 +378,118 @@ export default function AgentPage() {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-surface-primary">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 md:px-6 h-12 border-b border-border flex-shrink-0">
+      {/* Header — minimal, not system-like */}
+      <header className="flex items-center justify-between px-4 md:px-6 h-11 border-b border-border/50 flex-shrink-0">
         <div className="flex items-center gap-2">
-          {/* Mobile sidebar toggle */}
           {hasTasks ? (
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden p-1.5 -ml-1 rounded-lg hover:bg-surface-tertiary text-content-secondary"
+              className="md:hidden p-1.5 -ml-1 rounded-lg hover:bg-surface-tertiary text-content-tertiary"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
               </svg>
             </button>
           ) : null}
-          <div className="flex items-center gap-1.5">
-            <span className="text-accent font-bold text-base tracking-tight">ORANGE</span>
-            <span className="text-content-primary font-bold text-base tracking-tight">BENCH</span>
+          <div className="flex items-center gap-1">
+            <span className="text-accent font-semibold text-sm">ORANGE</span>
+            <span className="text-content-primary font-semibold text-sm">BENCH</span>
           </div>
         </div>
         <ThemeToggle />
       </header>
 
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Desktop sidebar */}
+        {/* Desktop sidebar — softer, like history panel */}
         {hasTasks ? (
-          <aside className="hidden md:block w-72 border-r border-border p-2.5 overflow-y-auto custom-scrollbar flex-shrink-0">
+          <aside className="hidden md:block w-64 border-r border-border/40 p-2 overflow-y-auto custom-scrollbar flex-shrink-0 bg-surface-primary">
             <TaskList tasks={taskListItems} activeTaskId={activeTaskId} onSelect={handleTaskSelect} />
           </aside>
         ) : null}
 
-        {/* Mobile sidebar overlay */}
+        {/* Mobile sidebar */}
         {sidebarOpen && hasTasks ? (
           <>
             <div className="mobile-sidebar-overlay md:hidden" onClick={() => setSidebarOpen(false)} />
-            <aside className="mobile-sidebar md:hidden p-2.5 custom-scrollbar">
+            <aside className="mobile-sidebar md:hidden p-2 custom-scrollbar">
               <TaskList tasks={taskListItems} activeTaskId={activeTaskId} onSelect={handleTaskSelect} />
             </aside>
           </>
         ) : null}
 
-        {/* Main */}
+        {/* Main area */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {activeTask ? (
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar">
-              <div className="max-w-3xl mx-auto pb-4 px-2 md:px-0">
-                <TaskCanvas
-                  taskId={activeTask.id} title={activeTask.title} type={activeTask.type}
-                  status={activeTask.status} input={activeTask.input} events={activeTask.events}
-                  currentInteraction={activeTask.currentInteraction}
-                  onInteractionSubmit={handleInteractionSubmit}
-                  onApprove={handleApprove}
-                  onReject={handleReject}
-                  onAdjustStructure={handleAdjustStructure}
-                  onAdjustProposal={handleAdjustProposal}
-                  onReviseEmail={handleReviseEmail}
-                  actionLoading={actionLoadingTaskId === activeTask.id}
-                  result={activeTask.result}
-                  loading={!!isActiveTaskLoading}
-                />
-                <div ref={canvasEndRef} />
+            <>
+              {/* Task execution area — with transition */}
+              <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar animate-flow-in" key={activeTask.id}>
+                <div className="max-w-3xl mx-auto pb-4 px-2 md:px-0">
+                  <TaskCanvas
+                    taskId={activeTask.id} title={activeTask.title} type={activeTask.type}
+                    status={activeTask.status} input={activeTask.input} events={activeTask.events}
+                    currentInteraction={activeTask.currentInteraction}
+                    onInteractionSubmit={handleInteractionSubmit}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                    onAdjustStructure={handleAdjustStructure}
+                    onAdjustProposal={handleAdjustProposal}
+                    onReviseEmail={handleReviseEmail}
+                    actionLoading={actionLoadingTaskId === activeTask.id}
+                    result={activeTask.result}
+                    loading={!!isActiveTaskLoading}
+                  />
+                  <div ref={canvasEndRef} />
+                </div>
               </div>
-            </div>
+
+              {/* Input — bottom bar */}
+              <div className="border-t border-border/40 px-3 md:px-4 py-2.5 bg-surface-primary flex-shrink-0 pb-safe">
+                <AgentInput
+                  onSubmit={(input) => handleSubmit(input)}
+                  disabled={isSubmitting}
+                  placeholder="告诉我下一个任务..."
+                />
+                {isSubmitting ? (
+                  <div className="flex items-center justify-center gap-2 mt-2 text-content-tertiary text-sm">
+                    <Spinner size="sm" /><span>正在处理...</span>
+                  </div>
+                ) : null}
+              </div>
+            </>
           ) : (
-            <div className="flex-1 flex items-center justify-center px-4">
-              <div className="text-center space-y-6 md:space-y-8 max-w-2xl">
+            /* Welcome — input centered like ChatGPT */
+            <div className="flex-1 flex flex-col items-center justify-center px-4">
+              <div className="w-full max-w-2xl space-y-8 md:space-y-10">
+                <div className="text-center space-y-2 md:space-y-3">
+                  <h1 className="text-2xl md:text-3xl font-semibold text-content-primary">
+                    你好，有什么可以帮你完成的？
+                  </h1>
+                  <p className="text-content-secondary text-sm md:text-base">
+                    描述你的任务，我来帮你执行
+                  </p>
+                </div>
+
+                {/* Input in center */}
+                <AgentInput
+                  onSubmit={(input) => handleSubmit(input)}
+                  disabled={isSubmitting}
+                  placeholder="描述你的任务，我来帮你执行"
+                  prominent
+                />
+
+                {isSubmitting ? (
+                  <div className="flex items-center justify-center gap-2 text-content-tertiary text-sm">
+                    <Spinner size="sm" /><span>正在处理...</span>
+                  </div>
+                ) : null}
+
+                {/* Work cards below input */}
                 {showWelcome ? (
-                  <>
-                    <div className="space-y-2 md:space-y-3">
-                      <h1 className="text-2xl md:text-3xl font-semibold text-content-primary">
-                        你好，有什么可以帮你完成的？
-                      </h1>
-                      <p className="text-content-secondary text-sm md:text-base">
-                        直接描述你的工作需求，或选择下方的快捷入口开始
-                      </p>
-                    </div>
-                    <WorkCardList onSelect={handleCardSelect} />
-                  </>
+                  <WorkCardList onSelect={handleCardSelect} />
                 ) : null}
               </div>
             </div>
           )}
-
-          {/* Input area — pinned to bottom with safe area */}
-          <div className="border-t border-border px-3 md:px-4 py-2.5 md:py-3 bg-surface-primary flex-shrink-0 pb-safe">
-            {!activeTask && !showWelcome ? (
-              <div className="max-w-3xl mx-auto mb-3">
-                <WorkCardList onSelect={handleCardSelect} />
-              </div>
-            ) : null}
-            <AgentInput
-              onSubmit={(input) => handleSubmit(input)}
-              disabled={isSubmitting}
-              placeholder={activeTask ? '输入新的工作需求...' : '描述你想完成的工作...'}
-            />
-            {isSubmitting ? (
-              <div className="flex items-center justify-center gap-2 mt-2 text-content-tertiary text-sm">
-                <Spinner size="sm" /><span>正在处理...</span>
-              </div>
-            ) : null}
-          </div>
         </main>
       </div>
     </div>

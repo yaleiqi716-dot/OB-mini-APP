@@ -106,9 +106,9 @@ function TaskRow({ task, active, onSelect }: { task: TaskItem; active: boolean; 
       className={cn(
         'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors',
         active
-          ? 'bg-accent/10 border border-accent/25'
-          : 'hover:bg-surface-tertiary border border-transparent',
-        isWaiting && !active && 'bg-amber-500/5 border-amber-500/15'
+          ? 'bg-accent/8 border border-accent/15'
+          : 'hover:bg-surface-tertiary/70 border border-transparent',
+        isWaiting && !active && 'bg-amber-500/5'
       )}
     >
       <span className="text-sm flex-shrink-0">{typeInfo?.icon || '📎'}</span>
