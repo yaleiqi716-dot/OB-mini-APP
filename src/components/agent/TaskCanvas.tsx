@@ -53,35 +53,41 @@ const TYPE_LABELS: Record<string, string> = {
 
 function humanizeThinking(text: string): string {
   const map: [RegExp, string][] = [
-    [/^正在分析.*需求.*$/, '我先看一下你的需求，我们一起理清思路...'],
-    [/^正在分析.*主题.*受众.*$/, '我先帮你梳理一下主题和受众，你可以看看方向对不对...'],
-    [/^正在分析.*场景.*收件人.*$/, '我先了解一下这封邮件的场景，我们一起把措辞想好...'],
-    [/^正在分析.*背景.*目标.*$/, '我先理解一下项目背景和目标，一起把方向定下来...'],
-    [/^正在规划.*结构.*逻辑.*$/, '我大概有个结构思路了，先给你列出来，你看看是否需要调整...'],
-    [/^正在规划.*框架.*章节.*$/, '方案的框架我已经想好了，先给你过一下，你可以随时调整...'],
-    [/^正在拆解.*逐页.*$/, '好的，我开始一页一页帮你完善内容，你可以随时看进度...'],
-    [/^正在拆解.*逐章.*$/, '好的，我逐个章节帮你写详细内容，完成后你可以逐一确认...'],
-    [/^正在组织.*结构.*措辞.*$/, '我在帮你组织邮件的结构和措辞，写好后你看一下...'],
-    [/^正在理解.*修改.*调整.*$/, '好的，我理解你的修改意图了，马上帮你调整...'],
-    [/^正在重新规划.*$/, '好的，我重新帮你想一个结构，你看看这次是否更合适...'],
+    [/^正在分析.*需求.*$/, '我先帮你梳理一下需求，接下来我会把结构先搭出来'],
+    [/^正在分析.*主题.*受众.*$/, '我先帮你理清主题和受众，然后我来搭演示文稿的框架'],
+    [/^正在分析.*场景.*收件人.*$/, '我先了解一下邮件场景，接下来我直接帮你起草'],
+    [/^正在分析.*背景.*目标.*$/, '我先理解一下项目背景，接下来我会帮你把方案框架搭出来'],
+    [/^正在规划.*结构.*逻辑.*$/, '结构我先给你搭出来，我们一起看一下，如果没问题我就继续往下生成内容'],
+    [/^正在规划.*框架.*章节.*$/, '方案框架我已经想好了，先给你过一下，确认后我马上开始写详细内容'],
+    [/^正在拆解.*逐页.*$/, '好的，我开始逐页帮你完善内容，每完成一页我会告诉你，我会持续推进'],
+    [/^正在拆解.*逐章.*$/, '好的，我开始逐章帮你撰写，每完成一个章节我会推进到下一个'],
+    [/^正在组织.*结构.*措辞.*$/, '我在帮你组织邮件内容，写好后给你过目，你可以直接确认或者让我改'],
+    [/^正在理解.*修改.*调整.*$/, '好的，我理解了你的调整方向，马上帮你重新来一版'],
+    [/^正在重新规划.*$/, '好的，我重新帮你规划一个结构，调整好后你再看看'],
   ];
   for (const [pattern, replacement] of map) {
     if (pattern.test(text)) return replacement;
   }
   if (text.startsWith('正在')) {
-    return '我' + text.replace('正在', '在帮你') + '，你可以看看进度...';
+    return '我' + text.replace('正在', '在帮你') + '，接下来我会继续推进';
   }
   return text;
 }
 
-function humanizeStep(text: string): string {
+function humanizeStep(text: string, current?: number, total?: number): string {
   if (text.includes('已生成')) {
     const subject = text.replace('已生成', '').trim();
-    return subject ? `${subject}，已经帮你整理好了，你可以先看一下` : '已经帮你整理好了';
+    const suffix = current !== undefined && total !== undefined && current < total
+      ? '，我继续推进下一项'
+      : '';
+    return subject ? `${subject}，已经帮你整理好了${suffix}` : `已经帮你整理好了${suffix}`;
   }
   if (text.includes('已完成')) {
     const subject = text.replace('已完成', '').trim();
-    return subject ? `${subject}，已经完成了` : '已经完成了';
+    const suffix = current !== undefined && total !== undefined && current < total
+      ? '，我继续往下写'
+      : '';
+    return subject ? `${subject}，已经完成了${suffix}` : `已经完成了${suffix}`;
   }
   return text;
 }
@@ -90,10 +96,13 @@ function humanizeStatusBar(status: TaskStatus, text: string | null): string | nu
   if (!text) return null;
   const progressMatch = text.match(/\((\d+)\/(\d+)\)/);
   if (progressMatch) {
-    return `正在帮你写第 ${progressMatch[1]} 项，共 ${progressMatch[2]} 项...`;
+    const cur = parseInt(progressMatch[1]);
+    const tot = parseInt(progressMatch[2]);
+    if (cur >= tot) return '最后收尾中，马上就好...';
+    return `正在帮你写第 ${cur} 项，共 ${tot} 项，我会持续推进...`;
   }
-  if (status === 'understanding') return '我在理解你的需求，马上就好...';
-  if (status === 'executing') return '我在逐步帮你完成，你可以看看进度...';
+  if (status === 'understanding') return '我在理解你的需求，接下来帮你搭框架...';
+  if (status === 'executing') return '我在逐步帮你完成，持续推进中...';
   if (text.includes('正在')) return text.replace('正在', '我在帮你');
   return text;
 }
@@ -134,12 +143,16 @@ function getCompletedSteps(events: TaskEvent[]): { key: string; text: string; cu
       const t = String(e.data.text || '');
       return t.includes('已生成') || t.includes('已完成');
     })
-    .map((e) => ({
-      key: String(e.data.step || ''),
-      text: humanizeStep(String(e.data.text || '')),
-      current: typeof e.data.current === 'number' ? (e.data.current as number) : undefined,
-      total: typeof e.data.total === 'number' ? (e.data.total as number) : undefined,
-    }));
+    .map((e) => {
+      const cur = typeof e.data.current === 'number' ? (e.data.current as number) : undefined;
+      const tot = typeof e.data.total === 'number' ? (e.data.total as number) : undefined;
+      return {
+        key: String(e.data.step || ''),
+        text: humanizeStep(String(e.data.text || ''), cur, tot),
+        current: cur,
+        total: tot,
+      };
+    });
 }
 
 // ---- Phase-based thinking ----
@@ -340,6 +353,13 @@ export function TaskCanvas({
                     )
                   )}
                 </div>
+              ) : null}
+
+              {/* Transition line before approval */}
+              {isApprovalGate ? (
+                <p className="text-xs text-content-secondary/70 italic animate-flow-in">
+                  你可以先看一下，如果需要调整我们可以一起改
+                </p>
               ) : null}
 
               {/* Approval cards */}
