@@ -280,7 +280,7 @@ export default function AgentPage() {
     } catch (error) { console.error('交互提交失败:', error); }
   }
 
-  // Unified approve handler
+  // Unified approve/reject handler
   async function handleApprove(approvalType: ApprovalType) {
     if (!activeTaskId) return;
     setActionLoadingTaskId(activeTaskId);
@@ -288,11 +288,23 @@ export default function AgentPage() {
       const res = await fetch(`/api/tasks/${activeTaskId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ approvalType }),
+        body: JSON.stringify({ approvalType, action: 'approve' }),
       });
       if (!res.ok) console.error('审批失败:', await res.text());
     } catch (error) { console.error('审批失败:', error); }
     finally { setActionLoadingTaskId(null); }
+  }
+
+  async function handleReject(approvalType: ApprovalType) {
+    if (!activeTaskId) return;
+    setTasks((prev) => prev.map((t) => t.id === activeTaskId ? { ...t, currentInteraction: null } : t));
+    try {
+      await fetch(`/api/tasks/${activeTaskId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approvalType, action: 'reject' }),
+      });
+    } catch (error) { console.error('拒绝失败:', error); }
   }
 
   async function handleAdjustStructure() {
@@ -357,6 +369,7 @@ export default function AgentPage() {
                   currentInteraction={activeTask.currentInteraction}
                   onInteractionSubmit={handleInteractionSubmit}
                   onApprove={handleApprove}
+                  onReject={handleReject}
                   onAdjustStructure={handleAdjustStructure}
                   onReviseEmail={handleReviseEmail}
                   actionLoading={actionLoadingTaskId === activeTask.id}

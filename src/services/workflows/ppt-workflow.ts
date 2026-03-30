@@ -1,5 +1,6 @@
 import { BaseWorkflow, WorkflowContext, registerWorkflow } from './base-workflow';
 import { WorkflowStep } from '@/types/workflow';
+import { ApprovalType, ApprovalAction } from '@/types/interaction';
 import { chatCompletion } from '@/lib/openrouter';
 import {
   updateTaskStatus,
@@ -43,67 +44,12 @@ const pptWorkflow: BaseWorkflow = {
       await updateTaskStatus(taskId, 'understanding');
       await emitLog(taskId, '正在理解你的需求...');
 
-      const result = await chatCompletion(
-        [
-          {
-            role: 'system',
-            content: `你是一个专业的演示文稿设计师。根据用户的描述，生成一份演示文稿的页面结构列表。
+      const structure = await generateStructure(taskId, input);
+      if (!structure) return;
 
-请以 JSON 格式返回：
-{
-  "structure": ["封面", "市场问题", "解决方案", "商业模式", "竞争优势", "融资计划", "总结"]
-}
-
-规则：
-- 6-12页为宜
-- 结构清晰、逻辑连贯
-- 每一项是页面的标题
-- 包含封面和总结页
-- 只返回 JSON`,
-          },
-          { role: 'user', content: input },
-        ],
-        { temperature: 0.5, jsonMode: true, maxTokens: 1024 }
-      );
-
-      const parsed = JSON.parse(result.content);
-      const structure: string[] = parsed.structure || [];
-
-      if (structure.length === 0) {
-        await failTask(taskId, '无法生成演示文稿结构');
-        return;
-      }
-
-      const pptCtx: PPTContext = {
-        ...defaultPPTContext,
-        currentPhase: 'structuring',
-        structure,
-      };
-      await updateTaskContext(taskId, { ppt: pptCtx });
-
-      await updateTaskStep(taskId, 'structuring');
-      await updateTaskStatus(taskId, 'structuring');
-      await emitLog(taskId, '结构已生成，等待确认...');
-
-      await emitEvent(taskId, 'structure_generated', { structure });
-
-      // Unified approval gate for structure confirmation
-      await requestInteraction(taskId, {
-        id: generateId(),
-        taskId,
-        stepId: 'approval_gate',
-        type: 'confirm',
-        question: '请确认演示文稿结构',
-        detail: structure.map((s, i) => `${i + 1}. ${s}`).join('\n'),
-        detailData: {
-          approvalType: 'use_structure',
-          title: '确认结构',
-          structure,
-        },
-      });
+      await enterStructuring(taskId, structure);
     } catch (error) {
-      const msg = error instanceof Error ? error.message : '启动失败';
-      await failTask(taskId, msg);
+      await failTask(taskId, error instanceof Error ? error.message : '启动失败');
     }
   },
 
@@ -127,15 +73,87 @@ const pptWorkflow: BaseWorkflow = {
 
         const taskContext = await getTaskContext(taskId);
         const pptCtx = (taskContext.ppt as PPTContext) || defaultPPTContext;
-        const currentStructureText = pptCtx.structure.join('、');
 
-        const result = await chatCompletion(
-          [
-            {
-              role: 'system',
-              content: `你是一个专业的演示文稿设计师。用户想要调整演示文稿的页面结构。
+        const structure = await regenerateStructure(taskId, input, pptCtx.structure, hint);
+        if (!structure) return;
 
-当前结构：${currentStructureText}
+        await enterStructuring(taskId, structure);
+      }
+    } catch (error) {
+      await failTask(taskId, error instanceof Error ? error.message : '处理交互失败');
+    }
+  },
+
+  async handleApproval(ctx: WorkflowContext, approvalType: ApprovalType, action: ApprovalAction) {
+    const { taskId, input } = ctx;
+
+    if (approvalType !== 'use_structure') return;
+
+    try {
+      if (action === 'approve') {
+        await emitEvent(taskId, 'approval_approved', { approvalType });
+        await executePPTGeneration(taskId, input);
+
+      } else if (action === 'reject') {
+        await emitEvent(taskId, 'approval_rejected', { approvalType });
+        await emitLog(taskId, '用户拒绝当前结构，重新生成...');
+
+        await updateTaskStatus(taskId, 'understanding');
+        const structure = await generateStructure(taskId, input);
+        if (!structure) return;
+
+        await enterStructuring(taskId, structure);
+      }
+    } catch (error) {
+      await failTask(taskId, error instanceof Error ? error.message : '审批处理失败');
+    }
+  },
+};
+
+async function generateStructure(taskId: string, input: string): Promise<string[] | null> {
+  const result = await chatCompletion(
+    [
+      {
+        role: 'system',
+        content: `你是一个专业的演示文稿设计师。根据用户的描述，生成一份演示文稿的页面结构列表。
+
+请以 JSON 格式返回：
+{
+  "structure": ["封面", "市场问题", "解决方案", "商业模式", "竞争优势", "融资计划", "总结"]
+}
+
+规则：
+- 6-12页为宜
+- 结构清晰、逻辑连贯
+- 包含封面和总结页
+- 只返回 JSON`,
+      },
+      { role: 'user', content: input },
+    ],
+    { temperature: 0.5, jsonMode: true, maxTokens: 1024 }
+  );
+
+  const parsed = JSON.parse(result.content);
+  const structure: string[] = parsed.structure || [];
+
+  if (structure.length === 0) {
+    await failTask(taskId, '无法生成演示文稿结构');
+    return null;
+  }
+
+  return structure;
+}
+
+async function regenerateStructure(
+  taskId: string, input: string, current: string[], hint: string
+): Promise<string[] | null> {
+  const result = await chatCompletion(
+    [
+      {
+        role: 'system',
+        content: `你是一个专业的演示文稿设计师。用户想要调整演示文稿的页面结构。
+
+当前结构：${current.join('、')}
 
 请以 JSON 格式返回：
 {
@@ -144,58 +162,45 @@ const pptWorkflow: BaseWorkflow = {
 
 规则：
 - 6-12页为宜
-- 结构清晰、逻辑连贯
 - 根据用户的调整要求修改
 - 只返回 JSON`,
-            },
-            {
-              role: 'user',
-              content: `原始需求：${input}\n\n调整要求：${hint}`,
-            },
-          ],
-          { temperature: 0.5, jsonMode: true, maxTokens: 1024 }
-        );
+      },
+      { role: 'user', content: `原始需求：${input}\n\n调整要求：${hint}` },
+    ],
+    { temperature: 0.5, jsonMode: true, maxTokens: 1024 }
+  );
 
-        const parsed = JSON.parse(result.content);
-        const structure: string[] = parsed.structure || [];
+  const parsed = JSON.parse(result.content);
+  return parsed.structure || [];
+}
 
-        const updated: PPTContext = { ...pptCtx, currentPhase: 'structuring', structure };
-        await updateTaskContext(taskId, { ppt: updated });
+async function enterStructuring(taskId: string, structure: string[]) {
+  const pptCtx: PPTContext = { currentPhase: 'structuring', structure, slides: [] };
+  await updateTaskContext(taskId, { ppt: pptCtx });
 
-        await updateTaskStep(taskId, 'structuring');
-        await updateTaskStatus(taskId, 'structuring');
-        await emitLog(taskId, '结构已重新生成，等待确认...');
+  await updateTaskStep(taskId, 'structuring');
+  await updateTaskStatus(taskId, 'structuring');
+  await emitLog(taskId, '结构已生成，等待确认...');
 
-        await emitEvent(taskId, 'structure_generated', { structure });
+  await emitEvent(taskId, 'structure_generated', { structure });
+  await emitEvent(taskId, 'approval_requested', { approvalType: 'use_structure' });
 
-        // Re-issue approval gate
-        await requestInteraction(taskId, {
-          id: generateId(),
-          taskId,
-          stepId: 'approval_gate',
-          type: 'confirm',
-          question: '请确认演示文稿结构',
-          detail: structure.map((s, i) => `${i + 1}. ${s}`).join('\n'),
-          detailData: {
-            approvalType: 'use_structure',
-            title: '确认结构',
-            structure,
-          },
-        });
-      }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : '处理交互失败';
-      await failTask(taskId, msg);
-    }
-  },
-};
+  await requestInteraction(taskId, {
+    id: generateId(),
+    taskId,
+    stepId: 'approval_gate',
+    type: 'confirm',
+    question: '请确认演示文稿结构',
+    detail: structure.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+    detailData: {
+      approvalType: 'use_structure',
+      title: '确认结构',
+      structure,
+    },
+  });
+}
 
-registerWorkflow(pptWorkflow);
-
-export { pptWorkflow };
-
-// Called by unified approve endpoint after user confirms structure
-export async function executePPTGeneration(taskId: string, input: string) {
+async function executePPTGeneration(taskId: string, input: string) {
   const taskContext = await getTaskContext(taskId);
   const pptCtx = (taskContext.ppt as PPTContext) || defaultPPTContext;
   const structure = pptCtx.structure;
@@ -206,6 +211,7 @@ export async function executePPTGeneration(taskId: string, input: string) {
   }
 
   await updateTaskStep(taskId, 'executing');
+  await updateTaskStatus(taskId, 'executing');
 
   await emitEvent(taskId, 'execution_started', {
     message: '开始生成演示文稿内容',
@@ -235,15 +241,13 @@ export async function executePPTGeneration(taskId: string, input: string) {
 请以 JSON 格式返回：
 {
   "title": "页面标题",
-  "content": ["内容要点1（一句话展开）", "内容要点2", "内容要点3"],
+  "content": ["内容要点1", "内容要点2", "内容要点3"],
   "notes": "演讲者备注（2-3句话）"
 }
 
 规则：
-- 内容要点简洁有力，适合展示
-- 每个要点一句话，不超过30字
+- 每个要点不超过30字
 - 2-4个要点
-- 备注是给演讲者看的补充说明
 - 只返回 JSON`,
         },
         {
@@ -280,12 +284,9 @@ export async function executePPTGeneration(taskId: string, input: string) {
     structure,
   };
 
-  const updatedCtx: PPTContext = {
-    ...pptCtx,
-    currentPhase: 'completed',
-    slides,
-  };
-  await updateTaskContext(taskId, { ppt: updatedCtx });
+  await updateTaskContext(taskId, {
+    ppt: { ...pptCtx, currentPhase: 'completed', slides },
+  });
 
   await completeTask(
     taskId,
@@ -295,3 +296,6 @@ export async function executePPTGeneration(taskId: string, input: string) {
 
   await emitLog(taskId, `演示文稿生成完成，共 ${slides.length} 页`);
 }
+
+registerWorkflow(pptWorkflow);
+export { pptWorkflow, executePPTGeneration };

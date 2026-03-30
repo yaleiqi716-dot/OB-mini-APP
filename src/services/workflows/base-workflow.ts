@@ -1,4 +1,5 @@
 import { TaskType } from '@/types/task';
+import { ApprovalType, ApprovalAction } from '@/types/interaction';
 import { WorkflowStep } from '@/types/workflow';
 
 export interface WorkflowContext {
@@ -13,6 +14,7 @@ export interface BaseWorkflow {
   steps: WorkflowStep[];
   start(ctx: WorkflowContext): Promise<void>;
   handleInteraction(ctx: WorkflowContext, stepId: string, value: unknown): Promise<void>;
+  handleApproval(ctx: WorkflowContext, approvalType: ApprovalType, action: ApprovalAction): Promise<void>;
 }
 
 const workflowRegistry = new Map<TaskType, BaseWorkflow>();

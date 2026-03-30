@@ -2,6 +2,8 @@ export type InteractionType = 'single_choice' | 'yes_no' | 'file_upload' | 'conf
 
 export type ApprovalType = 'send_email' | 'use_structure' | 'publish_result' | 'generic';
 
+export type ApprovalAction = 'approve' | 'reject';
+
 export interface BaseInteraction {
   id: string;
   taskId: string;
@@ -28,8 +30,12 @@ export interface FileUploadInteraction extends BaseInteraction {
 export interface ConfirmInteraction extends BaseInteraction {
   type: 'confirm';
   detail: string;
-  detailData?: Record<string, unknown> & {
+  detailData?: {
     approvalType?: ApprovalType;
+    title?: string;
+    summary?: string;
+    payload?: Record<string, unknown>;
+    [key: string]: unknown;
   };
 }
 

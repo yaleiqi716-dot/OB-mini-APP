@@ -22,6 +22,7 @@ interface TaskCanvasProps {
   currentInteraction: Interaction | null;
   onInteractionSubmit: (stepId: string, value: unknown) => void;
   onApprove: (approvalType: ApprovalType) => void;
+  onReject: (approvalType: ApprovalType) => void;
   onAdjustStructure: () => void;
   onReviseEmail: () => void;
   actionLoading: boolean;
@@ -38,7 +39,7 @@ function getApprovalType(interaction: Interaction | null): ApprovalType | null {
 
 export function TaskCanvas({
   taskId, title, type, status, events, currentInteraction,
-  onInteractionSubmit, onApprove, onAdjustStructure, onReviseEmail,
+  onInteractionSubmit, onApprove, onReject, onAdjustStructure, onReviseEmail,
   actionLoading, result,
 }: TaskCanvasProps) {
   const logs = events.filter((e) => e.type === 'log');
@@ -65,7 +66,6 @@ export function TaskCanvas({
           <LogEntry key={`log-${i}`} message={String(event.data.message || '')} />
         ))}
 
-        {/* Structure completed badge (when past structuring) */}
         {structureEvent && !isActive ? (
           <StructureCardCompleted structure={structureEvent.data.structure as string[]} />
         ) : null}
@@ -89,12 +89,13 @@ export function TaskCanvas({
           </div>
         ) : null}
 
-        {/* Unified approval gate cards */}
+        {/* Approval cards */}
         {isApprovalGate && approvalType === 'send_email' ? (
           <EmailApprovalCard
             interaction={currentInteraction as ConfirmInteraction}
             onApprove={() => onApprove('send_email')}
             onRevise={onReviseEmail}
+            onReject={() => onReject('send_email')}
             loading={actionLoading}
           />
         ) : null}
@@ -104,11 +105,11 @@ export function TaskCanvas({
             interaction={currentInteraction as ConfirmInteraction}
             onApprove={() => onApprove('use_structure')}
             onAdjust={onAdjustStructure}
+            onReject={() => onReject('use_structure')}
             loading={actionLoading}
           />
         ) : null}
 
-        {/* Generic interaction (non-approval) */}
         {isGenericInteraction ? (
           <div className="mt-4 p-4 rounded-xl border border-accent/20 bg-accent/5">
             <InteractionPanel interaction={currentInteraction!} onSubmit={onInteractionSubmit} />
@@ -128,8 +129,6 @@ export function TaskCanvas({
     </div>
   );
 }
-
-// ---- Sub-components ----
 
 function LogEntry({ message }: { message: string }) {
   return (
@@ -156,22 +155,21 @@ function StepUpdateEntry({ data }: { data: Record<string, unknown> }) {
 }
 
 function EmailApprovalCard({
-  interaction, onApprove, onRevise, loading,
+  interaction, onApprove, onRevise, onReject, loading,
 }: {
   interaction: ConfirmInteraction;
   onApprove: () => void;
   onRevise: () => void;
+  onReject: () => void;
   loading: boolean;
 }) {
-  const dd = interaction.detailData as { subject?: string; body?: string } | undefined;
-  const subject = dd?.subject || '';
-  const body = dd?.body || interaction.detail || '';
+  const dd = interaction.detailData;
+  const subject = (dd?.subject as string) || '';
+  const body = (dd?.body as string) || interaction.detail || '';
 
   return (
     <div className="rounded-xl border border-accent/30 bg-accent/5 p-5 space-y-4">
-      <div className="flex items-center gap-2">
-        <span className="text-accent text-sm font-medium">邮件预览</span>
-      </div>
+      <span className="text-accent text-sm font-medium">邮件预览</span>
       {subject ? (
         <div className="space-y-1">
           <p className="text-xs text-content-tertiary">主题</p>
@@ -191,21 +189,25 @@ function EmailApprovalCard({
         <Button onClick={onRevise} variant="secondary" size="sm" disabled={loading}>
           继续修改
         </Button>
+        <Button onClick={onReject} variant="ghost" size="sm" disabled={loading}>
+          重新生成
+        </Button>
       </div>
     </div>
   );
 }
 
 function StructureApprovalCard({
-  interaction, onApprove, onAdjust, loading,
+  interaction, onApprove, onAdjust, onReject, loading,
 }: {
   interaction: ConfirmInteraction;
   onApprove: () => void;
   onAdjust: () => void;
+  onReject: () => void;
   loading: boolean;
 }) {
-  const dd = interaction.detailData as { structure?: string[] } | undefined;
-  const structure = dd?.structure || [];
+  const dd = interaction.detailData;
+  const structure = (dd?.structure as string[]) || [];
 
   return (
     <div className="rounded-xl border border-accent/30 bg-accent/5 p-5 space-y-4">
@@ -224,6 +226,7 @@ function StructureApprovalCard({
       <div className="flex gap-3 pt-2">
         <Button onClick={onApprove} size="sm" disabled={loading}>继续生成</Button>
         <Button onClick={onAdjust} variant="secondary" size="sm" disabled={loading}>调整结构</Button>
+        <Button onClick={onReject} variant="ghost" size="sm" disabled={loading}>重新生成</Button>
       </div>
     </div>
   );
@@ -290,7 +293,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   }
 
   if (resultType === 'proposal' && data.content) {
-    const proposal = data.content as { title: string; sections: { heading: string; content: string }[]; summary: string };
+    const proposal = data.content as { title: string; sections: { heading: string; content: string }[] };
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-green-400 text-sm font-medium">

@@ -22,6 +22,9 @@ export type TaskEventType =
   | 'structure_generated'
   | 'execution_started'
   | 'task_completed'
+  | 'approval_requested'
+  | 'approval_approved'
+  | 'approval_rejected'
   | 'artifact'
   | 'error'
   | 'log';

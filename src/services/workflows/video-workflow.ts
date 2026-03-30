@@ -1,5 +1,6 @@
 import { BaseWorkflow, WorkflowContext, registerWorkflow } from './base-workflow';
 import { WorkflowStep } from '@/types/workflow';
+import { ApprovalType, ApprovalAction } from '@/types/interaction';
 import { chatCompletion } from '@/lib/openrouter';
 import {
   updateTaskStatus,
@@ -80,6 +81,8 @@ const videoWorkflow: BaseWorkflow = {
       await failTask(taskId, error instanceof Error ? error.message : '处理失败');
     }
   },
+
+  async handleApproval(_ctx: WorkflowContext, _approvalType: ApprovalType, _action: ApprovalAction) {},
 };
 
 registerWorkflow(videoWorkflow);

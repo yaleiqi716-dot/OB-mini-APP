@@ -1,11 +1,13 @@
 import { BaseWorkflow, WorkflowContext, registerWorkflow } from './base-workflow';
 import { WorkflowStep } from '@/types/workflow';
+import { ApprovalType, ApprovalAction } from '@/types/interaction';
 import { chatCompletion } from '@/lib/openrouter';
 import {
   updateTaskStatus,
   updateTaskContext,
   updateTaskStep,
   requestInteraction,
+  completeTask,
   emitEvent,
   emitLog,
   getTaskContext,
@@ -50,7 +52,6 @@ const emailWorkflow: BaseWorkflow = {
 规则：
 - 只要能猜出大概意图就返回 ready: true
 - 最多问 1 个问题
-- 问题要简短、选项要具体
 - 只返回 JSON`,
           },
           { role: 'user', content: input },
@@ -100,13 +101,50 @@ const emailWorkflow: BaseWorkflow = {
         const hint = String(value || '');
         const context = await getTaskContext(taskId);
         const emailCtx = context.email as EmailContext | undefined;
-        const currentDraft = emailCtx?.draft;
 
         await emitLog(taskId, '正在根据反馈调整邮件...');
-        await generateEmailDraft(taskId, input, emailCtx?.tone || null, hint, currentDraft);
+        await generateEmailDraft(taskId, input, emailCtx?.tone || null, hint, emailCtx?.draft);
       }
     } catch (error) {
       await failTask(taskId, error instanceof Error ? error.message : '处理失败');
+    }
+  },
+
+  async handleApproval(ctx: WorkflowContext, approvalType: ApprovalType, action: ApprovalAction) {
+    const { taskId, input } = ctx;
+
+    if (approvalType !== 'send_email') return;
+
+    try {
+      if (action === 'approve') {
+        await emitEvent(taskId, 'approval_approved', { approvalType });
+
+        const context = await getTaskContext(taskId);
+        const emailCtx = context.email as EmailContext | undefined;
+
+        if (!emailCtx?.draft) {
+          await failTask(taskId, '未找到邮件草稿');
+          return;
+        }
+
+        await completeTask(
+          taskId,
+          { type: 'email', content: emailCtx.draft },
+          '邮件已确认，可进入发送链路'
+        );
+        await emitLog(taskId, '邮件已确认发送');
+
+      } else if (action === 'reject') {
+        await emitEvent(taskId, 'approval_rejected', { approvalType });
+        await emitLog(taskId, '用户拒绝发送，重新生成邮件...');
+
+        const context = await getTaskContext(taskId);
+        const emailCtx = context.email as EmailContext | undefined;
+
+        await generateEmailDraft(taskId, input, emailCtx?.tone || null);
+      }
+    } catch (error) {
+      await failTask(taskId, error instanceof Error ? error.message : '审批处理失败');
     }
   },
 };
@@ -159,14 +197,11 @@ async function generateEmailDraft(
 
   await updateTaskContext(taskId, { email: { tone, draft } });
 
-  await emitEvent(taskId, 'step_update', {
-    step: 'draft_complete',
-    text: '邮件草稿已生成',
-  });
-
+  await emitEvent(taskId, 'step_update', { step: 'draft_complete', text: '邮件草稿已生成' });
   await emitLog(taskId, '邮件草稿已生成，等待确认发送...');
 
-  // Unified approval gate
+  await emitEvent(taskId, 'approval_requested', { approvalType: 'send_email' });
+
   await requestInteraction(taskId, {
     id: generateId(),
     taskId,
@@ -176,6 +211,7 @@ async function generateEmailDraft(
     detail: `主题：${draft.subject}\n\n${draft.body}`,
     detailData: {
       approvalType: 'send_email',
+      title: '确认发送邮件',
       subject: draft.subject,
       body: draft.body,
     },
