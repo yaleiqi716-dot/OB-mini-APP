@@ -318,6 +318,17 @@ export default function AgentPage() {
     } catch (error) { console.error('调整结构失败:', error); }
   }
 
+  async function handleAdjustProposal() {
+    if (!activeTaskId) return;
+    setTasks((prev) => prev.map((t) => t.id === activeTaskId ? { ...t, currentInteraction: null } : t));
+    try {
+      await fetch(`/api/tasks/${activeTaskId}/interact`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interactionId: '', stepId: 'request_adjust_proposal_structure', value: '' }),
+      });
+    } catch (error) { console.error('调整方案结构失败:', error); }
+  }
+
   async function handleReviseEmail() {
     if (!activeTaskId) return;
     setTasks((prev) => prev.map((t) => t.id === activeTaskId ? { ...t, currentInteraction: null } : t));
@@ -371,6 +382,7 @@ export default function AgentPage() {
                   onApprove={handleApprove}
                   onReject={handleReject}
                   onAdjustStructure={handleAdjustStructure}
+                  onAdjustProposal={handleAdjustProposal}
                   onReviseEmail={handleReviseEmail}
                   actionLoading={actionLoadingTaskId === activeTask.id}
                   result={activeTask.result}

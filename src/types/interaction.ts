@@ -1,6 +1,6 @@
 export type InteractionType = 'single_choice' | 'yes_no' | 'file_upload' | 'confirm' | 'text_input';
 
-export type ApprovalType = 'send_email' | 'use_structure' | 'publish_result' | 'generic';
+export type ApprovalType = 'send_email' | 'use_structure' | 'use_proposal_structure' | 'publish_result' | 'generic';
 
 export type ApprovalAction = 'approve' | 'reject';
 

@@ -24,6 +24,7 @@ interface TaskCanvasProps {
   onApprove: (approvalType: ApprovalType) => void;
   onReject: (approvalType: ApprovalType) => void;
   onAdjustStructure: () => void;
+  onAdjustProposal: () => void;
   onReviseEmail: () => void;
   actionLoading: boolean;
   result: Record<string, unknown> | null;
@@ -39,7 +40,7 @@ function getApprovalType(interaction: Interaction | null): ApprovalType | null {
 
 export function TaskCanvas({
   taskId, title, type, status, events, currentInteraction,
-  onInteractionSubmit, onApprove, onReject, onAdjustStructure, onReviseEmail,
+  onInteractionSubmit, onApprove, onReject, onAdjustStructure, onAdjustProposal, onReviseEmail,
   actionLoading, result,
 }: TaskCanvasProps) {
   const logs = events.filter((e) => e.type === 'log');
@@ -103,9 +104,21 @@ export function TaskCanvas({
         {isApprovalGate && approvalType === 'use_structure' ? (
           <StructureApprovalCard
             interaction={currentInteraction as ConfirmInteraction}
+            label="结构预览"
             onApprove={() => onApprove('use_structure')}
             onAdjust={onAdjustStructure}
             onReject={() => onReject('use_structure')}
+            loading={actionLoading}
+          />
+        ) : null}
+
+        {isApprovalGate && approvalType === 'use_proposal_structure' ? (
+          <StructureApprovalCard
+            interaction={currentInteraction as ConfirmInteraction}
+            label="方案结构"
+            onApprove={() => onApprove('use_proposal_structure')}
+            onAdjust={onAdjustProposal}
+            onReject={() => onReject('use_proposal_structure')}
             loading={actionLoading}
           />
         ) : null}
@@ -198,9 +211,10 @@ function EmailApprovalCard({
 }
 
 function StructureApprovalCard({
-  interaction, onApprove, onAdjust, onReject, loading,
+  interaction, label, onApprove, onAdjust, onReject, loading,
 }: {
   interaction: ConfirmInteraction;
+  label?: string;
   onApprove: () => void;
   onAdjust: () => void;
   onReject: () => void;
@@ -212,7 +226,7 @@ function StructureApprovalCard({
   return (
     <div className="rounded-xl border border-accent/30 bg-accent/5 p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <span className="text-accent text-sm font-medium">结构预览</span>
+        <span className="text-accent text-sm font-medium">{label || '结构预览'}</span>
         <span className="text-xs text-content-tertiary">共 {structure.length} 页</span>
       </div>
       <div className="space-y-2">
