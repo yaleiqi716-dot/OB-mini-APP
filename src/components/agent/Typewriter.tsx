@@ -15,15 +15,26 @@ export const Typewriter = memo(
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
-      // Same text — no action needed (handles parent re-renders)
-      if (text === prevTextRef.current && displayed === text) return;
+      const prev = prevTextRef.current;
 
-      // Text actually changed — start typing
+      // Exact same text — skip
+      if (text === prev) return;
+
+      // Clean up any running timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+
       prevTextRef.current = text;
-      let idx = 0;
-      setDisplayed('');
 
-      if (timerRef.current) clearInterval(timerRef.current);
+      // Append mode: if new text starts with old text, continue from where we left off
+      const isAppend = text.startsWith(prev) && prev.length > 0;
+      let idx = isAppend ? prev.length : 0;
+
+      if (!isAppend) {
+        setDisplayed('');
+      }
 
       timerRef.current = setInterval(() => {
         idx++;
@@ -42,7 +53,7 @@ export const Typewriter = memo(
           timerRef.current = null;
         }
       };
-    }, [text, speed]); // displayed intentionally excluded
+    }, [text, speed]);
 
     const isTyping = displayed.length < text.length;
 

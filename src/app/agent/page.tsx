@@ -70,11 +70,21 @@ function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
 
 function getTaskSummary(task: TaskState): string {
   const evts = task.events;
+  // Priority: interaction_request > step_update > log
+  // Scan from end for each type separately to avoid interleaving noise
   for (let i = evts.length - 1; i >= 0; i--) {
-    const e = evts[i];
-    if (e.type === 'interaction_request') return String(e.data.question || '');
-    if (e.type === 'log') return String(e.data.message || '');
-    if (e.type === 'step_update') return String(e.data.text || '');
+    if (evts[i].type === 'interaction_request') return String(evts[i].data.question || '');
+  }
+  for (let i = evts.length - 1; i >= 0; i--) {
+    if (evts[i].type === 'step_update') {
+      const d = evts[i].data;
+      const text = String(d.text || '');
+      if (d.current && d.total) return `${text} (${d.current}/${d.total})`;
+      return text;
+    }
+  }
+  for (let i = evts.length - 1; i >= 0; i--) {
+    if (evts[i].type === 'log') return String(evts[i].data.message || '');
   }
   return '';
 }

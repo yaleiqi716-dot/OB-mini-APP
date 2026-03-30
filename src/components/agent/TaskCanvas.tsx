@@ -149,14 +149,23 @@ export function TaskCanvas({
   const completedSteps = getCompletedSteps(events);
   const thinkingText = mode === 'thinking' ? getLatestThinking(events) : null;
 
-  // Logs: visibility depends on narrative mode
+  // Logs: filter to phase-transition messages, not noisy detail
   const allLogs = events.filter((e) => e.type === 'log');
+  const phaseLogs = allLogs.filter((e) => {
+    const msg = String(e.data.message || '');
+    // Keep phase transitions and key milestones
+    return msg.includes('正在理解') || msg.includes('正在识别') ||
+           msg.includes('结构已') || msg.includes('正在生成') ||
+           msg.includes('正在撰写') || msg.includes('已生成') ||
+           msg.includes('已完成') || msg.includes('已确认') ||
+           msg.includes('等待确认') || msg.includes('正在根据');
+  });
   const visibleLogs = (() => {
-    if (mode === 'result' || mode === 'error') return allLogs; // Full history for review
-    if (mode === 'interaction') return []; // Interaction is the focus
-    if (mode === 'executing') return allLogs.slice(-1); // 1 context line
-    if (mode === 'thinking') return thinkingText ? [] : allLogs.slice(-1); // Thinking replaces logs
-    return allLogs.slice(-2);
+    if (mode === 'result' || mode === 'error') return phaseLogs;
+    if (mode === 'interaction') return [];
+    if (mode === 'executing') return phaseLogs.slice(-1);
+    if (mode === 'thinking') return thinkingText ? [] : phaseLogs.slice(-1);
+    return phaseLogs.slice(-2);
   })();
 
   return (
@@ -259,7 +268,7 @@ export function TaskCanvas({
                     onApprove={() => onApprove('send_email')} approveLabel="确认发送" loadingLabel="发送中..."
                     onSecondary={onReviseEmail} secondaryLabel="继续修改"
                     onReject={() => onReject('send_email')}>
-                    <EmailPreview interaction={currentInteraction as ConfirmInteraction} />
+                    <EmailPreview interaction={currentInteraction as ConfirmInteraction} events={events} />
                   </ApprovalCard>
                 </div>
               ) : null}
@@ -363,12 +372,21 @@ function ApprovalCard({
   );
 }
 
-function EmailPreview({ interaction }: { interaction: ConfirmInteraction }) {
+function EmailPreview({ interaction, events }: { interaction: ConfirmInteraction; events?: TaskEvent[] }) {
   const dd = interaction.detailData;
   const subject = (dd?.subject as string) || '';
   const body = (dd?.body as string) || interaction.detail || '';
+
+  // Check if this is a revision (look for prior revise_email interaction_response)
+  const hasRevision = events?.some((e) =>
+    e.type === 'interaction_response' && (e.data.stepId === 'revise_email')
+  );
+
   return (
     <div className="space-y-3">
+      {hasRevision ? (
+        <p className="text-[11px] text-accent">已根据反馈重新生成</p>
+      ) : null}
       {subject ? (
         <div>
           <p className="text-[11px] text-content-tertiary mb-1">主题</p>
