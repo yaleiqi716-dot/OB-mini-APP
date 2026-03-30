@@ -10,6 +10,7 @@ import {
   completeTask,
   emitEvent,
   emitLog,
+  emitThinking,
   getTaskContext,
   failTask,
 } from '@/services/task-manager';
@@ -36,6 +37,7 @@ const emailWorkflow: BaseWorkflow = {
       await updateTaskStep(taskId, 'understanding');
       await updateTaskStatus(taskId, 'understanding');
       await emitLog(taskId, '正在理解邮件需求...');
+      await emitThinking(taskId, '正在分析邮件场景和收件人关系...');
 
       const analysis = await chatCompletion(
         [
@@ -103,6 +105,7 @@ const emailWorkflow: BaseWorkflow = {
         const emailCtx = context.email as EmailContext | undefined;
 
         await emitLog(taskId, '正在根据反馈调整邮件...');
+        await emitThinking(taskId, '正在理解修改意图并调整措辞...');
         await generateEmailDraft(taskId, input, emailCtx?.tone || null, hint, emailCtx?.draft);
       }
     } catch (error) {
@@ -159,6 +162,7 @@ async function generateEmailDraft(
   await updateTaskStep(taskId, 'drafting');
   await updateTaskStatus(taskId, 'executing');
   await emitLog(taskId, '正在撰写邮件...');
+  await emitThinking(taskId, '正在组织邮件结构和措辞...');
 
   let userPrompt = input;
   if (tone) userPrompt += `\n语气要求：${tone}`;

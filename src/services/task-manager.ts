@@ -177,6 +177,10 @@ export async function emitLog(taskId: string, message: string) {
   return emitEvent(taskId, 'log', { message });
 }
 
+export async function emitThinking(taskId: string, text: string) {
+  return emitEvent(taskId, 'thinking', { text });
+}
+
 export async function getTask(taskId: string) {
   return prisma.task.findUnique({
     where: { id: taskId },

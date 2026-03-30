@@ -11,6 +11,7 @@ import {
   failTask,
   emitEvent,
   emitLog,
+  emitThinking,
   getTaskContext,
 } from '@/services/task-manager';
 import { generateId } from '@/lib/utils';
@@ -43,6 +44,7 @@ const proposalWorkflow: BaseWorkflow = {
       await updateTaskStep(taskId, 'understanding');
       await updateTaskStatus(taskId, 'understanding');
       await emitLog(taskId, '正在理解方案需求...');
+      await emitThinking(taskId, '正在分析项目背景和核心目标...');
 
       const structure = await generateProposalStructure(taskId, input);
       if (!structure) return;
@@ -183,6 +185,7 @@ async function enterStructuring(taskId: string, structure: string[]) {
   await updateTaskStatus(taskId, 'structuring');
   await emitLog(taskId, '方案结构已生成，等待确认...');
 
+  await emitThinking(taskId, '正在规划方案框架和章节逻辑...');
   await emitEvent(taskId, 'structure_generated', { structure });
   await emitEvent(taskId, 'approval_requested', { approvalType: 'use_proposal_structure' });
 
@@ -222,6 +225,8 @@ async function executeProposalGeneration(taskId: string, input: string) {
   await emitLog(taskId, '正在撰写方案...');
 
   const sections: { heading: string; content: string }[] = [];
+
+  await emitThinking(taskId, '正在拆解方案，逐章节撰写...');
 
   for (let i = 0; i < structure.length; i++) {
     const heading = structure[i];

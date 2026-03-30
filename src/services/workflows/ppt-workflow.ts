@@ -10,6 +10,7 @@ import {
   completeTask,
   emitEvent,
   emitLog,
+  emitThinking,
   getTaskContext,
   failTask,
 } from '@/services/task-manager';
@@ -43,6 +44,7 @@ const pptWorkflow: BaseWorkflow = {
       await updateTaskStep(taskId, 'understanding');
       await updateTaskStatus(taskId, 'understanding');
       await emitLog(taskId, '正在理解你的需求...');
+      await emitThinking(taskId, '正在分析演示文稿的主题和目标受众...');
 
       const structure = await generateStructure(taskId, input);
       if (!structure) return;
@@ -70,6 +72,7 @@ const pptWorkflow: BaseWorkflow = {
         const hint = String(value || '');
         await updateTaskStatus(taskId, 'understanding');
         await emitLog(taskId, '正在根据反馈调整结构...');
+        await emitThinking(taskId, '正在重新规划结构...');
 
         const taskContext = await getTaskContext(taskId);
         const pptCtx = (taskContext.ppt as PPTContext) || defaultPPTContext;
@@ -182,6 +185,7 @@ async function enterStructuring(taskId: string, structure: string[]) {
   await updateTaskStatus(taskId, 'structuring');
   await emitLog(taskId, '结构已生成，等待确认...');
 
+  await emitThinking(taskId, '正在规划页面结构和逻辑顺序...');
   await emitEvent(taskId, 'structure_generated', { structure });
   await emitEvent(taskId, 'approval_requested', { approvalType: 'use_structure' });
 
@@ -221,6 +225,8 @@ async function executePPTGeneration(taskId: string, input: string) {
   await emitLog(taskId, '正在生成内容...');
 
   const slides: { index: number; title: string; content: string[]; notes: string }[] = [];
+
+  await emitThinking(taskId, '正在拆解任务，逐页生成内容...');
 
   for (let i = 0; i < structure.length; i++) {
     const pageTitle = structure[i];

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { InteractionPanel } from './InteractionPanel';
+import { Typewriter } from './Typewriter';
 import { Interaction, ConfirmInteraction, ApprovalType } from '@/types/interaction';
 import { TaskStatus } from '@/types/task';
 import { TASK_TYPES } from '@/lib/constants';
@@ -117,6 +118,19 @@ export function TaskCanvas({
     return text.includes('已生成') || text.includes('已完成');
   });
 
+  // Get latest thinking event — only show when task is actively working
+  const latestThinking = isActive
+    ? (() => {
+        for (let i = events.length - 1; i >= 0; i--) {
+          if (events[i].type === 'thinking') return String(events[i].data.text || '');
+        }
+        return null;
+      })()
+    : null;
+
+  // Thinking is "live" if it's the most recent non-status event
+  const isThinkingLive = latestThinking && isActive && (status === 'understanding' || status === 'executing' || status === 'structuring');
+
   return (
     <div className="flex flex-col h-full">
       {/* Header with live status */}
@@ -174,16 +188,25 @@ export function TaskCanvas({
             </div>
             <div className="flex-1 min-w-0 space-y-3 pt-1">
 
-              {/* Collapsed activity log — only show last 3 during execution */}
+              {/* Activity log — dimmed when thinking is active */}
               {(() => {
                 const logs = events.filter((e) => e.type === 'log');
-                const showLogs = isApprovalGate || !isActive ? logs : logs.slice(-3);
+                const showLogs = isApprovalGate || !isActive ? logs : logs.slice(-2);
                 return showLogs.map((event, i) => (
-                  <div key={`log-${i}`} className="animate-flow-in text-sm text-content-secondary leading-relaxed">
+                  <div key={`log-${i}`} className={`animate-flow-in text-sm leading-relaxed ${isThinkingLive ? 'text-content-tertiary' : 'text-content-secondary'}`}>
                     {String(event.data.message || '')}
                   </div>
                 ));
               })()}
+
+              {/* Thinking layer — typewriter effect */}
+              {isThinkingLive && latestThinking ? (
+                <div className="animate-flow-in py-1.5 px-3 rounded-lg bg-surface-tertiary/50 border-l-2 border-accent/30">
+                  <p className="text-xs text-content-secondary italic">
+                    <Typewriter text={latestThinking} speed={25} />
+                  </p>
+                </div>
+              ) : null}
 
               {/* Completed structure badge */}
               {structureEvent && (isExecuting || !isActive) ? (
