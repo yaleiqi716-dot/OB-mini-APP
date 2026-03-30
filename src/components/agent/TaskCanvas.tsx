@@ -53,51 +53,47 @@ const TYPE_LABELS: Record<string, string> = {
 
 function humanizeThinking(text: string): string {
   const map: [RegExp, string][] = [
-    [/^正在分析.*需求.*$/, '我先看一下你的需求...'],
-    [/^正在分析.*主题.*受众.*$/, '我先帮你梳理一下主题和受众...'],
-    [/^正在分析.*场景.*收件人.*$/, '我先了解一下这封邮件的场景...'],
-    [/^正在分析.*背景.*目标.*$/, '我先理解一下项目背景和目标...'],
-    [/^正在规划.*结构.*逻辑.*$/, '我大概有个结构思路了，先给你列一下框架...'],
-    [/^正在规划.*框架.*章节.*$/, '我已经想好了方案的框架，先给你看看...'],
-    [/^正在拆解.*逐页.*$/, '好的，我开始一页一页帮你完善内容...'],
-    [/^正在拆解.*逐章.*$/, '好的，我开始逐个章节帮你写详细内容...'],
-    [/^正在组织.*结构.*措辞.*$/, '我在帮你组织邮件的结构和措辞...'],
-    [/^正在理解.*修改.*调整.*$/, '好的，我理解你的修改意图了...'],
-    [/^正在重新规划.*$/, '好的，我重新帮你想一个结构...'],
+    [/^正在分析.*需求.*$/, '我先看一下你的需求，我们一起理清思路...'],
+    [/^正在分析.*主题.*受众.*$/, '我先帮你梳理一下主题和受众，你可以看看方向对不对...'],
+    [/^正在分析.*场景.*收件人.*$/, '我先了解一下这封邮件的场景，我们一起把措辞想好...'],
+    [/^正在分析.*背景.*目标.*$/, '我先理解一下项目背景和目标，一起把方向定下来...'],
+    [/^正在规划.*结构.*逻辑.*$/, '我大概有个结构思路了，先给你列出来，你看看是否需要调整...'],
+    [/^正在规划.*框架.*章节.*$/, '方案的框架我已经想好了，先给你过一下，你可以随时调整...'],
+    [/^正在拆解.*逐页.*$/, '好的，我开始一页一页帮你完善内容，你可以随时看进度...'],
+    [/^正在拆解.*逐章.*$/, '好的，我逐个章节帮你写详细内容，完成后你可以逐一确认...'],
+    [/^正在组织.*结构.*措辞.*$/, '我在帮你组织邮件的结构和措辞，写好后你看一下...'],
+    [/^正在理解.*修改.*调整.*$/, '好的，我理解你的修改意图了，马上帮你调整...'],
+    [/^正在重新规划.*$/, '好的，我重新帮你想一个结构，你看看这次是否更合适...'],
   ];
   for (const [pattern, replacement] of map) {
     if (pattern.test(text)) return replacement;
   }
-  // Fallback: prefix with "我" if not already conversational
   if (text.startsWith('正在')) {
-    return '我' + text.replace('正在', '在帮你');
+    return '我' + text.replace('正在', '在帮你') + '，你可以看看进度...';
   }
   return text;
 }
 
 function humanizeStep(text: string): string {
-  // "xxx已生成" → "xxx 我已经整理好了"
   if (text.includes('已生成')) {
     const subject = text.replace('已生成', '').trim();
-    return subject ? `${subject}，已经整理好了` : '已经整理好了';
+    return subject ? `${subject}，已经帮你整理好了，你可以先看一下` : '已经帮你整理好了';
   }
   if (text.includes('已完成')) {
     const subject = text.replace('已完成', '').trim();
     return subject ? `${subject}，已经完成了` : '已经完成了';
   }
-  // "正在生成：xxx" → keep as-is for in-progress (shown in status bar)
   return text;
 }
 
 function humanizeStatusBar(status: TaskStatus, text: string | null): string | null {
   if (!text) return null;
-  // Progress text: "正在生成：XXX (3/10)" → "帮你写第 3 项..."
   const progressMatch = text.match(/\((\d+)\/(\d+)\)/);
   if (progressMatch) {
-    return `帮你写第 ${progressMatch[1]} 项，共 ${progressMatch[2]} 项...`;
+    return `正在帮你写第 ${progressMatch[1]} 项，共 ${progressMatch[2]} 项...`;
   }
-  if (status === 'understanding') return '我在理解你的需求...';
-  if (status === 'executing') return '我在逐步帮你完成...';
+  if (status === 'understanding') return '我在理解你的需求，马上就好...';
+  if (status === 'executing') return '我在逐步帮你完成，你可以看看进度...';
   if (text.includes('正在')) return text.replace('正在', '我在帮你');
   return text;
 }
@@ -394,8 +390,8 @@ export function TaskCanvas({
                 <div className="animate-flow-in p-4 rounded-xl bg-red-500/10 border border-red-500/20">
                   <p className="text-sm text-red-400">
                     {events.find((e) => e.type === 'error')
-                      ? String(events.find((e) => e.type === 'error')!.data.message || '遇到了一些问题，请重试')
-                      : '遇到了一些问题，请重试'}
+                      ? String(events.find((e) => e.type === 'error')!.data.message || '遇到了一些问题，如果需要我可以重新试一下')
+                      : '遇到了一些问题，如果需要我可以重新试一下'}
                   </p>
                 </div>
               ) : null}
@@ -467,7 +463,7 @@ function EmailPreview({ interaction, events }: { interaction: ConfirmInteraction
   return (
     <div className="space-y-3">
       {hasRevision ? (
-        <p className="text-[11px] text-accent">已根据你的反馈重新写了一版</p>
+        <p className="text-[11px] text-accent">已根据你的反馈重新写了一版，你看看这次怎么样</p>
       ) : null}
       {subject ? (
         <div>
@@ -506,7 +502,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   if (resultType === 'ppt' && data.slides) {
     const slides = data.slides as { index: number; title: string; content: string[]; notes: string }[];
     return (
-      <ResultContainer title="演示文稿已经帮你整理好了" subtitle={`共 ${slides.length} 页`}>
+      <ResultContainer title="演示文稿已经帮你整理好了，你看一下" subtitle={`共 ${slides.length} 页`}>
         {slides.map((slide) => (
           <div key={slide.index} className="p-4 rounded-lg bg-surface-tertiary border border-border">
             <p className="text-sm font-medium text-content-primary mb-2">第 {slide.index + 1} 页：{slide.title}</p>
@@ -525,7 +521,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   if (resultType === 'email' && data.content) {
     const email = data.content as { subject: string; body: string };
     return (
-      <ResultContainer title="邮件已经帮你准备好了">
+      <ResultContainer title="邮件已经帮你准备好了，随时可以发送">
         <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
           <p className="text-sm font-medium text-content-primary mb-3">主题：{email.subject}</p>
           <p className="text-sm text-content-secondary whitespace-pre-wrap leading-relaxed">{email.body}</p>
@@ -539,7 +535,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     const proposalTitle = (data.title as string) || '策划方案';
     const summary = data.summary as string | undefined;
     return (
-      <ResultContainer title="方案已经帮你写好了" subtitle={summary}>
+      <ResultContainer title="方案已经帮你写好了，你看看内容" subtitle={summary}>
         <p className="text-sm font-medium text-content-primary px-1">{proposalTitle}</p>
         {sections?.map((s, i) => (
           <div key={i} className="p-4 rounded-lg bg-surface-tertiary border border-border">
@@ -552,7 +548,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   }
 
   return (
-    <ResultContainer title="已经帮你完成了">
+    <ResultContainer title="已经帮你完成了，你看一下结果">
       <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
         <pre className="text-xs text-content-secondary whitespace-pre-wrap font-sans">{JSON.stringify(data, null, 2)}</pre>
       </div>
