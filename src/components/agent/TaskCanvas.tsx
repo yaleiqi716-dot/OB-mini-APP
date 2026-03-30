@@ -36,7 +36,32 @@ interface TaskCanvasProps {
   credits?: number | null;
   executionStrategy?: string;
   modelName?: string;
+  onNewTask?: (prompt: string, type: string) => void;
 }
+
+// ---- Next-step suggestions by task type ----
+
+const SUGGESTIONS: Record<string, { prompt: string; type: string; label: string }[]> = {
+  email: [
+    { prompt: '帮我再写一封跟进邮件', type: 'email', label: '写跟进邮件' },
+    { prompt: '生成一个客户回复模板', type: 'email', label: '客户回复模板' },
+    { prompt: '帮我做一份项目汇报PPT', type: 'ppt', label: '做项目汇报' },
+  ],
+  ppt: [
+    { prompt: '帮我优化这个PPT的结构', type: 'ppt', label: '优化PPT结构' },
+    { prompt: '根据这个PPT生成演讲稿', type: 'proposal', label: '生成演讲稿' },
+    { prompt: '帮我写一封邮件发送这个方案', type: 'email', label: '写发送邮件' },
+  ],
+  proposal: [
+    { prompt: '帮我做一份配套的演示文稿', type: 'ppt', label: '做配套PPT' },
+    { prompt: '帮我写一封邮件发送这个方案', type: 'email', label: '写发送邮件' },
+    { prompt: '帮我写一份执行计划', type: 'proposal', label: '写执行计划' },
+  ],
+  direct: [
+    { prompt: '帮我写一封邮件', type: 'email', label: '写邮件' },
+    { prompt: '帮我做一份演示文稿', type: 'ppt', label: '做PPT' },
+  ],
+};
 
 function getApprovalType(interaction: Interaction | null): ApprovalType | null {
   if (!interaction) return null;
@@ -201,7 +226,7 @@ function getNarrativeMode(status: TaskStatus, isApproval: boolean, isGenericInte
 export function TaskCanvas({
   taskId, title, type, status, input, events, currentInteraction,
   onInteractionSubmit, onApprove, onReject, onAdjustStructure, onAdjustProposal, onReviseEmail,
-  actionLoading, result, loading, credits, executionStrategy, modelName,
+  actionLoading, result, loading, credits, executionStrategy, modelName, onNewTask,
 }: TaskCanvasProps) {
   const prevTaskIdRef = useRef(taskId);
   if (taskId !== prevTaskIdRef.current) {
@@ -475,6 +500,28 @@ export function TaskCanvas({
                       <p className="text-[11px] text-content-tertiary mt-2">本次消耗 {cost} 额度</p>
                     ) : null;
                   })()}
+
+                  {/* Next-step suggestions */}
+                  {onNewTask ? (() => {
+                    const resultType = (result?.type as string) || type;
+                    const suggestions = SUGGESTIONS[resultType] || SUGGESTIONS.direct || [];
+                    return suggestions.length > 0 ? (
+                      <div className="mt-4 space-y-2">
+                        <p className="text-xs text-content-tertiary">你还可以继续：</p>
+                        <div className="flex flex-wrap gap-2">
+                          {suggestions.map((s, i) => (
+                            <button
+                              key={i}
+                              onClick={() => onNewTask(s.prompt, s.type)}
+                              className="text-xs px-3 py-1.5 rounded-lg border border-border bg-surface-secondary hover:bg-surface-tertiary hover:border-accent/30 text-content-primary transition-all"
+                            >
+                              {s.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null;
+                  })() : null}
                 </div>
               ) : null}
 

@@ -545,6 +545,7 @@ export default function AgentPage() {
                     credits={quota?.credits ?? null}
                     executionStrategy={(activeTask.context.executionStrategy as string) || undefined}
                     modelName={(activeTask.context.model as string) || undefined}
+                    onNewTask={handleSubmit}
                   />
                   <div ref={canvasEndRef} />
                 </div>
