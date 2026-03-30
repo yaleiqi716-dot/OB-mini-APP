@@ -500,6 +500,7 @@ export default function AgentPage() {
                     actionLoading={actionLoadingTaskId === activeTask.id}
                     result={activeTask.result}
                     loading={!!isActiveTaskLoading}
+                    credits={quota?.credits ?? null}
                   />
                   <div ref={canvasEndRef} />
                 </div>

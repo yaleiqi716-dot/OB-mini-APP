@@ -33,6 +33,7 @@ interface TaskCanvasProps {
   actionLoading: boolean;
   result: Record<string, unknown> | null;
   loading?: boolean;
+  credits?: number | null;
 }
 
 function getApprovalType(interaction: Interaction | null): ApprovalType | null {
@@ -198,7 +199,7 @@ function getNarrativeMode(status: TaskStatus, isApproval: boolean, isGenericInte
 export function TaskCanvas({
   taskId, title, type, status, input, events, currentInteraction,
   onInteractionSubmit, onApprove, onReject, onAdjustStructure, onAdjustProposal, onReviseEmail,
-  actionLoading, result, loading,
+  actionLoading, result, loading, credits,
 }: TaskCanvasProps) {
   const prevTaskIdRef = useRef(taskId);
   if (taskId !== prevTaskIdRef.current) {
@@ -284,6 +285,11 @@ export function TaskCanvas({
             <div className="flex items-center gap-2 mt-0.5">
               <Badge status={status} />
               <span className="text-xs text-content-tertiary">{TYPE_LABELS[type] || type}</span>
+              {typeof credits === 'number' ? (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium ml-auto">
+                  {credits} 额度
+                </span>
+              ) : null}
             </div>
           </div>
         </div>

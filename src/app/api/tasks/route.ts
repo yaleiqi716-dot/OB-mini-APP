@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createTask, listTasks, formatTask, updateTaskType, updateTaskStatus, emitLog } from '@/services/task-manager';
 import { routeTask } from '@/services/task-router';
 import { getWorkflow } from '@/services/workflows';
-import { checkQuota, consumeQuota } from '@/services/billing';
+import { checkCredits, getEstimatedCost } from '@/services/billing';
 import { CreateTaskRequest } from '@/types/api';
 import { TaskType } from '@/types/task';
 import { prisma } from '@/lib/prisma';
@@ -44,11 +44,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '请输入任务内容' }, { status: 400 });
     }
 
-    // Quota check
+    // Credits check
     const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value || 'default-user';
-    const quotaCheck = await checkQuota(userId);
-    if (!quotaCheck.allowed) {
-      return NextResponse.json({ error: quotaCheck.reason }, { status: 403 });
+    const estimatedType = body.type || 'unknown';
+    const creditCheck = await checkCredits(userId, estimatedType);
+    if (!creditCheck.allowed) {
+      return NextResponse.json({ error: creditCheck.reason }, { status: 403 });
     }
 
     // Concurrency limit: max active tasks
@@ -62,7 +63,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const task = await createTask(body.input.trim(), body.source || 'agent');
+    const task = await createTask(body.input.trim(), body.source || 'agent', {
+      userId,
+      estimatedCost: creditCheck.estimatedCost,
+    });
 
     processTask(task.id, body.input.trim(), body.type, userId).catch((err) => {
       console.error('[TASK_PROCESS_ERROR]', task.id, err);
@@ -122,13 +126,7 @@ async function processTask(taskId: string, input: string, presetType?: TaskType,
     }
 
     await workflow.start({ taskId, input, context: {} });
-
-    // Consume credits after successful workflow start
-    if (userId) {
-      await consumeQuota(userId, taskType).catch((err) =>
-        console.error('[BILLING_ERROR]', err)
-      );
-    }
+    // Credits deducted in completeTask (task-manager.ts)
   } catch (error) {
     console.error('[WORKFLOW_ERROR]', taskId, error);
     const { failTask } = await import('@/services/task-manager');

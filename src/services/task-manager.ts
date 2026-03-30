@@ -26,7 +26,9 @@ function fromJsonNullable(raw: string | null): Record<string, unknown> | null {
 export function formatTask(t: {
   id: string; type: string; status: string; title: string; input: string;
   context: string; currentStep: string; result: string | null;
-  errorMessage: string | null; source: string; createdAt: Date; updatedAt: Date;
+  errorMessage: string | null; source: string;
+  estimatedCost?: number; actualCost?: number; userId?: string | null;
+  createdAt: Date; updatedAt: Date;
   events?: { id: string; taskId: string; type: string; data: string; createdAt: Date }[];
 }) {
   return {
@@ -40,6 +42,8 @@ export function formatTask(t: {
     result: fromJsonNullable(t.result),
     errorMessage: t.errorMessage,
     source: t.source,
+    estimatedCost: t.estimatedCost || 0,
+    actualCost: t.actualCost || 0,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
     events: t.events?.map(formatEvent) ?? [],
@@ -58,13 +62,19 @@ export function formatEvent(e: { id: string; taskId: string; type: string; data:
 
 // ---- Task CRUD ----
 
-export async function createTask(input: string, source: TaskSource = 'agent') {
+export async function createTask(
+  input: string,
+  source: TaskSource = 'agent',
+  opts?: { userId?: string; estimatedCost?: number }
+) {
   const task = await prisma.task.create({
     data: {
       type: 'unknown',
       input,
       source,
       status: 'pending',
+      userId: opts?.userId || null,
+      estimatedCost: opts?.estimatedCost || 0,
     },
   });
 
@@ -122,6 +132,8 @@ export async function updateTaskStep(taskId: string, step: string) {
 // 写入 result → 发 task_completed → status_change → artifact
 // workflow 层只需调用此方法，传入对象即可
 export async function completeTask(taskId: string, result: Record<string, unknown>, message?: string) {
+  const task = await prisma.task.findUnique({ where: { id: taskId } });
+
   await prisma.task.update({
     where: { id: taskId },
     data: {
@@ -129,6 +141,17 @@ export async function completeTask(taskId: string, result: Record<string, unknow
       result: toJson(result),
     },
   });
+
+  // Deduct credits on completion
+  if (task?.userId) {
+    try {
+      const { deductCredits } = await import('@/services/billing');
+      const cost = await deductCredits(task.userId, taskId, task.type);
+      await emitEvent(taskId, 'log', { message: `消耗 ${cost} 额度` });
+    } catch (err) {
+      console.error('[BILLING_DEDUCT_ERROR]', taskId, err);
+    }
+  }
 
   await emitEvent(taskId, 'task_completed', {
     message: message || '任务完成',
