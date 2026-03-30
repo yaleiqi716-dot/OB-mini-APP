@@ -3,7 +3,51 @@ import { eventBus } from './event-bus';
 import { TaskStatus, TaskType, TaskEventType, TaskSource } from '@/types/task';
 import { Interaction } from '@/types/interaction';
 import { VALID_STATUS_TRANSITIONS } from '@/lib/constants';
-import { parseJSON } from '@/lib/utils';
+
+// ---- JSON helpers (centralized) ----
+
+function parseCtx(raw: string): Record<string, unknown> {
+  try { return JSON.parse(raw); } catch { return {}; }
+}
+
+function parseResult(raw: string | null): Record<string, unknown> | null {
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+function parseEventData(raw: string): Record<string, unknown> {
+  try { return JSON.parse(raw); } catch { return {}; }
+}
+
+// ---- Serialized task/event formatting for API responses ----
+
+export function formatTask(t: {
+  id: string; type: string; status: string; title: string; input: string;
+  context: string; currentStep: string; result: string | null;
+  errorMessage: string | null; source: string; createdAt: Date; updatedAt: Date;
+  events?: { id: string; taskId: string; type: string; data: string; createdAt: Date }[];
+}) {
+  return {
+    ...t,
+    context: parseCtx(t.context),
+    result: parseResult(t.result),
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString(),
+    events: t.events?.map(formatEvent) ?? [],
+  };
+}
+
+export function formatEvent(e: { id: string; taskId: string; type: string; data: string; createdAt: Date }) {
+  return {
+    id: e.id,
+    taskId: e.taskId,
+    type: e.type,
+    data: parseEventData(e.data),
+    createdAt: e.createdAt.toISOString(),
+  };
+}
+
+// ---- Task CRUD ----
 
 export async function createTask(input: string, source: TaskSource = 'agent') {
   const task = await prisma.task.create({
@@ -39,18 +83,17 @@ export async function updateTaskStatus(taskId: string, status: TaskStatus) {
 }
 
 export async function updateTaskType(taskId: string, type: TaskType, title: string) {
-  const updated = await prisma.task.update({
+  return prisma.task.update({
     where: { id: taskId },
     data: { type, title },
   });
-  return updated;
 }
 
 export async function updateTaskContext(taskId: string, contextUpdate: Record<string, unknown>) {
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) throw new Error(`任务不存在: ${taskId}`);
 
-  const existing = parseJSON<Record<string, unknown>>(task.context, {});
+  const existing = parseCtx(task.context);
   const merged = { ...existing, ...contextUpdate };
 
   return prisma.task.update({
@@ -127,6 +170,15 @@ export async function getTask(taskId: string) {
   });
 }
 
+export async function getTaskFormatted(taskId: string) {
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    include: { events: { orderBy: { createdAt: 'asc' } } },
+  });
+  if (!task) return null;
+  return formatTask(task);
+}
+
 export async function listTasks(limit = 20) {
   return prisma.task.findMany({
     orderBy: { createdAt: 'desc' },
@@ -143,5 +195,5 @@ export async function listTasks(limit = 20) {
 export async function getTaskContext(taskId: string): Promise<Record<string, unknown>> {
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) throw new Error(`任务不存在: ${taskId}`);
-  return parseJSON<Record<string, unknown>>(task.context, {});
+  return parseCtx(task.context);
 }

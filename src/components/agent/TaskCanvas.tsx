@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/Button';
 import { InteractionPanel } from './InteractionPanel';
 import { Interaction } from '@/types/interaction';
 import { TaskStatus } from '@/types/task';
-import { cn } from '@/lib/utils';
 
 interface TaskEvent {
   type: string;
@@ -42,7 +41,6 @@ export function TaskCanvas({
   const logs = events.filter((e) => e.type === 'log');
   const stepUpdates = events.filter((e) => e.type === 'step_update');
   const structureEvent = events.findLast((e) => e.type === 'structure_generated');
-  const taskCompletedEvent = events.findLast((e) => e.type === 'task_completed');
   const isActive = !['completed', 'failed'].includes(status);
 
   return (
@@ -62,22 +60,22 @@ export function TaskCanvas({
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {/* Logs */}
         {logs.map((event, i) => (
-          <LogEntry key={`log-${i}`} message={String((event.data).message || '')} />
+          <LogEntry key={`log-${i}`} message={String(event.data.message || '')} />
         ))}
 
         {/* Structure Card — shown when structuring */}
         {structureEvent && status === 'structuring' ? (
           <StructureCard
-            structure={(structureEvent.data).structure as string[]}
+            structure={structureEvent.data.structure as string[]}
             onApprove={onApproveStructure}
             onAdjust={onAdjustStructure}
           />
         ) : null}
 
         {/* Structure Card — shown as completed when past structuring */}
-        {structureEvent && status !== 'structuring' && status !== 'understanding' ? (
+        {structureEvent && status !== 'structuring' && status !== 'understanding' && status !== 'pending' ? (
           <StructureCardCompleted
-            structure={(structureEvent.data).structure as string[]}
+            structure={structureEvent.data.structure as string[]}
           />
         ) : null}
 
@@ -121,7 +119,7 @@ export function TaskCanvas({
         {status === 'failed' ? (
           <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
             {events.find((e) => e.type === 'error')
-              ? String((events.find((e) => e.type === 'error')!.data).message || '任务执行失败')
+              ? String(events.find((e) => e.type === 'error')!.data.message || '任务执行失败')
               : '任务执行失败'}
           </div>
         ) : null}
@@ -294,7 +292,6 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     );
   }
 
-  // Generic result
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-green-400 text-sm font-medium">

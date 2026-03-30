@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createTask, listTasks, updateTaskType, updateTaskStatus, emitLog } from '@/services/task-manager';
+import { createTask, listTasks, formatTask, updateTaskType, updateTaskStatus, emitLog } from '@/services/task-manager';
 import { routeTask } from '@/services/task-router';
 import { getWorkflow } from '@/services/workflows';
-import { parseJSON } from '@/lib/utils';
 import { CreateTaskRequest } from '@/types/api';
 import { TaskType } from '@/types/task';
 
@@ -39,15 +38,7 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   try {
     const tasks = await listTasks(50);
-    const formatted = tasks.map((t) => ({
-      ...t,
-      context: parseJSON(t.context, {}),
-      result: t.result ? parseJSON(t.result, null) : null,
-      events: t.events.map((e) => ({
-        ...e,
-        data: parseJSON(e.data, {}),
-      })),
-    }));
+    const formatted = tasks.map(formatTask);
     return NextResponse.json(formatted);
   } catch (error) {
     console.error('获取任务列表失败:', error);

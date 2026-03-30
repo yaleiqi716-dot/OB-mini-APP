@@ -5,11 +5,13 @@ import {
   updateTaskStatus,
   updateTaskContext,
   updateTaskStep,
+  requestInteraction,
   emitEvent,
   emitLog,
   getTaskContext,
   failTask,
 } from '@/services/task-manager';
+import { generateId } from '@/lib/utils';
 
 interface PPTContext {
   currentPhase: 'understanding' | 'structuring' | 'executing' | 'completed';
@@ -36,12 +38,10 @@ const pptWorkflow: BaseWorkflow = {
     const { taskId, input } = ctx;
 
     try {
-      // Step 1: Understanding
       await updateTaskStep(taskId, 'understanding');
       await updateTaskStatus(taskId, 'understanding');
       await emitLog(taskId, '正在理解你的需求...');
 
-      // Call AI to understand and generate structure
       const result = await chatCompletion(
         [
           {
@@ -73,7 +73,6 @@ const pptWorkflow: BaseWorkflow = {
         return;
       }
 
-      // Save structure to context
       const pptCtx: PPTContext = {
         ...defaultPPTContext,
         currentPhase: 'structuring',
@@ -81,16 +80,11 @@ const pptWorkflow: BaseWorkflow = {
       };
       await updateTaskContext(taskId, { ppt: pptCtx });
 
-      // Step 2: Enter structuring — emit structure_generated and STOP
       await updateTaskStep(taskId, 'structuring');
       await updateTaskStatus(taskId, 'structuring');
       await emitLog(taskId, '结构已生成，等待确认...');
 
-      await emitEvent(taskId, 'structure_generated', {
-        structure,
-      });
-
-      // DO NOT proceed to executing — wait for user approval via /approve-structure
+      await emitEvent(taskId, 'structure_generated', { structure });
     } catch (error) {
       const msg = error instanceof Error ? error.message : '启动失败';
       await failTask(taskId, msg);
@@ -98,23 +92,35 @@ const pptWorkflow: BaseWorkflow = {
   },
 
   async handleInteraction(ctx: WorkflowContext, stepId: string, value: unknown) {
-    // PPT workflow no longer uses interaction_request for structure confirmation
-    // Structure approval is handled via /api/tasks/:id/approve-structure
-    // This handler is kept for potential future use (e.g., adjust structure via text)
     const { taskId, input } = ctx;
 
     try {
-      if (stepId === 'adjust_structure') {
-        // User wants to adjust structure — re-generate with hint
+      if (stepId === 'request_adjust_structure') {
+        // User clicked "调整结构" — send a text_input interaction
+        await requestInteraction(taskId, {
+          id: generateId(),
+          taskId,
+          stepId: 'adjust_structure',
+          type: 'text_input',
+          question: '你希望怎么调整这份结构？',
+          placeholder: '例如：减少到6页，偏融资路演风格',
+        });
+      } else if (stepId === 'adjust_structure') {
+        // User submitted adjustment text — re-generate structure
         const hint = String(value || '');
         await updateTaskStatus(taskId, 'understanding');
         await emitLog(taskId, '正在根据反馈调整结构...');
+
+        const taskContext = await getTaskContext(taskId);
+        const pptCtx = (taskContext.ppt as PPTContext) || defaultPPTContext;
 
         const result = await chatCompletion(
           [
             {
               role: 'system',
               content: `你是一个专业的演示文稿设计师。用户想要调整演示文稿的页面结构。
+
+当前结构：${JSON.stringify(pptCtx.structure)}
 
 请以 JSON 格式返回：
 {
@@ -124,6 +130,7 @@ const pptWorkflow: BaseWorkflow = {
 规则：
 - 6-12页为宜
 - 结构清晰、逻辑连贯
+- 根据用户的调整要求修改
 - 只返回 JSON`,
             },
             {
@@ -137,8 +144,6 @@ const pptWorkflow: BaseWorkflow = {
         const parsed = JSON.parse(result.content);
         const structure: string[] = parsed.structure || [];
 
-        const taskContext = await getTaskContext(taskId);
-        const pptCtx = (taskContext.ppt as PPTContext) || defaultPPTContext;
         const updated: PPTContext = { ...pptCtx, currentPhase: 'structuring', structure };
         await updateTaskContext(taskId, { ppt: updated });
 
@@ -155,12 +160,11 @@ const pptWorkflow: BaseWorkflow = {
   },
 };
 
-// Register
 registerWorkflow(pptWorkflow);
 
 export { pptWorkflow };
 
-// Exported for orchestrator to call after approval
+// Called by approve-structure after user confirms
 export async function executePPTGeneration(taskId: string, input: string) {
   const taskContext = await getTaskContext(taskId);
   const pptCtx = (taskContext.ppt as PPTContext) || defaultPPTContext;
@@ -171,10 +175,9 @@ export async function executePPTGeneration(taskId: string, input: string) {
     return;
   }
 
-  // Update to executing
   await updateTaskStep(taskId, 'executing');
-  await updateTaskStatus(taskId, 'executing');
 
+  // Single execution_started event — only here, not in approve-structure
   await emitEvent(taskId, 'execution_started', {
     message: '开始生成演示文稿内容',
     totalPages: structure.length,
@@ -240,7 +243,6 @@ export async function executePPTGeneration(taskId: string, input: string) {
     });
   }
 
-  // Save result and complete
   const finalResult = {
     type: 'ppt',
     title: structure[0] || '演示文稿',
@@ -256,7 +258,7 @@ export async function executePPTGeneration(taskId: string, input: string) {
   };
   await updateTaskContext(taskId, { ppt: updatedCtx });
 
-  // Mark complete
+  // Complete — single sequence: task_completed → status_change → artifact
   const { prisma } = await import('@/lib/prisma');
   await prisma.task.update({
     where: { id: taskId },

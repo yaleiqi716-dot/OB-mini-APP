@@ -11,6 +11,12 @@ import { useSSE } from '@/hooks/useSSE';
 import { TaskStatus, TaskType } from '@/types/task';
 import { Interaction } from '@/types/interaction';
 
+interface TaskEvent {
+  type: string;
+  data: Record<string, unknown>;
+  createdAt: string;
+}
+
 interface TaskState {
   id: string;
   type: TaskType;
@@ -18,7 +24,8 @@ interface TaskState {
   title: string;
   input: string;
   createdAt: string;
-  events: { type: string; data: Record<string, unknown>; createdAt: string }[];
+  events: TaskEvent[];
+  eventsLoaded: boolean;
   currentInteraction: Interaction | null;
   result: Record<string, unknown> | null;
 }
@@ -36,7 +43,7 @@ export default function AgentPage() {
   useSSE(activeTaskId, {
     enabled: !!activeTaskId,
     onEvent: useCallback(
-      (event: { type: string; data: Record<string, unknown>; createdAt: string }) => {
+      (event: TaskEvent) => {
         if (!activeTaskId) return;
 
         setTasks((prev) =>
@@ -82,6 +89,7 @@ export default function AgentPage() {
             input: (t.input as string) || '',
             createdAt: (t.createdAt as string) || new Date().toISOString(),
             events: [],
+            eventsLoaded: false,
             currentInteraction: null,
             result: (t.result as Record<string, unknown>) || null,
           }));
@@ -91,6 +99,54 @@ export default function AgentPage() {
       })
       .catch(() => {});
   }, []);
+
+  // Fetch full events when switching to a task that hasn't loaded events yet
+  useEffect(() => {
+    if (!activeTaskId) return;
+
+    const task = tasks.find((t) => t.id === activeTaskId);
+    if (!task || task.eventsLoaded) return;
+
+    fetch(`/api/tasks/${activeTaskId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data || data.error) return;
+
+        const events: TaskEvent[] = Array.isArray(data.events)
+          ? data.events.map((e: Record<string, unknown>) => ({
+              type: e.type as string,
+              data: (e.data as Record<string, unknown>) || {},
+              createdAt: (e.createdAt as string) || new Date().toISOString(),
+            }))
+          : [];
+
+        // Reconstruct currentInteraction from last interaction_request
+        let currentInteraction: Interaction | null = null;
+        if (data.status === 'interacting') {
+          const lastIR = [...events].reverse().find((e) => e.type === 'interaction_request');
+          if (lastIR) {
+            currentInteraction = lastIR.data as unknown as Interaction;
+          }
+        }
+
+        setTasks((prev) =>
+          prev.map((t) => {
+            if (t.id !== activeTaskId) return t;
+            return {
+              ...t,
+              type: (data.type as TaskType) || t.type,
+              status: (data.status as TaskStatus) || t.status,
+              title: (data.title as string) || t.title,
+              events,
+              eventsLoaded: true,
+              currentInteraction,
+              result: (data.result as Record<string, unknown>) || t.result,
+            };
+          })
+        );
+      })
+      .catch(() => {});
+  }, [activeTaskId, tasks]);
 
   // Auto scroll
   useEffect(() => {
@@ -123,6 +179,7 @@ export default function AgentPage() {
           input,
           createdAt: new Date().toISOString(),
           events: [],
+          eventsLoaded: true, // New task, no history to load
           currentInteraction: null,
           result: null,
         };
@@ -177,15 +234,15 @@ export default function AgentPage() {
   async function handleAdjustStructure() {
     if (!activeTaskId) return;
 
-    // Submit an interaction to re-generate structure
+    // Tell the workflow to send a text_input interaction_request
     try {
       await fetch(`/api/tasks/${activeTaskId}/interact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           interactionId: '',
-          stepId: 'adjust_structure',
-          value: '请调整结构',
+          stepId: 'request_adjust_structure',
+          value: '',
         }),
       });
     } catch (error) {
@@ -232,7 +289,6 @@ export default function AgentPage() {
         {/* Main Area */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {activeTask ? (
-            /* Task Canvas */
             <div className="flex-1 overflow-y-auto custom-scrollbar">
               <div className="max-w-3xl mx-auto">
                 <TaskCanvas
@@ -251,7 +307,6 @@ export default function AgentPage() {
               </div>
             </div>
           ) : (
-            /* Welcome Screen */
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center space-y-6 max-w-xl px-4">
                 {showWelcome ? (
@@ -271,7 +326,7 @@ export default function AgentPage() {
             </div>
           )}
 
-          {/* Input Area - Always visible */}
+          {/* Input Area */}
           <div className="border-t border-border p-4 bg-surface-primary">
             {!activeTask && !showWelcome ? (
               <div className="max-w-3xl mx-auto mb-3">

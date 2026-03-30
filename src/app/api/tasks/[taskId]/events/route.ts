@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { eventBus } from '@/services/event-bus';
 import { prisma } from '@/lib/prisma';
 import { sseHeaders, encodeSSE } from '@/lib/sse';
-import { parseJSON } from '@/lib/utils';
+import { formatEvent } from '@/services/task-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -26,23 +26,16 @@ export async function GET(
       // Send initial connection event
       controller.enqueue(encoder.encode(encodeSSE('connected', { taskId })));
 
-      // Replay recent events
+      // Replay all events from DB
       const recentEvents = await prisma.taskEvent.findMany({
         where: { taskId },
         orderBy: { createdAt: 'asc' },
-        take: 100,
+        take: 200,
       });
 
       for (const event of recentEvents) {
         controller.enqueue(
-          encoder.encode(
-            encodeSSE('task_event', {
-              id: event.id,
-              type: event.type,
-              data: parseJSON(event.data, {}),
-              createdAt: event.createdAt.toISOString(),
-            })
-          )
+          encoder.encode(encodeSSE('task_event', formatEvent(event)))
         );
       }
 

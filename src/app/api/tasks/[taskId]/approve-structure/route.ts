@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { emitEvent, emitLog } from '@/services/task-manager';
-import { parseJSON } from '@/lib/utils';
+import { emitEvent } from '@/services/task-manager';
 
 import '@/services/workflows';
 
@@ -31,15 +30,12 @@ export async function POST(
       );
     }
 
-    // Update status to executing
+    // Only update status — executePPTGeneration handles all events
     await prisma.task.update({
       where: { id: taskId },
       data: { status: 'executing' },
     });
 
-    await emitEvent(taskId, 'execution_started', {
-      message: '结构已确认，开始执行',
-    });
     await emitEvent(taskId, 'status_change', { status: 'executing' });
 
     // Execute PPT generation in background

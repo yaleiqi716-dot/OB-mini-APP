@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTask, getTaskContext, emitEvent } from '@/services/task-manager';
+import { getTask, emitEvent } from '@/services/task-manager';
 import { getWorkflow } from '@/services/workflows';
-import { parseJSON } from '@/lib/utils';
 import { InteractionSubmitRequest } from '@/types/api';
 import { TaskType } from '@/types/task';
 
-// Ensure workflows are registered
 import '@/services/workflows';
 
 export async function POST(
@@ -43,15 +41,13 @@ export async function POST(
       );
     }
 
-    const context = getTaskContext(taskId);
-
     // Process interaction in background
     workflow
       .handleInteraction(
         {
           taskId,
           input: task.input,
-          context: parseJSON(task.context, {}),
+          context: {},
         },
         body.stepId,
         body.value
