@@ -75,13 +75,10 @@ export default function AgentPage() {
     onEvent: useCallback(
       (event: TaskEvent) => {
         if (!activeTaskId) return;
-
         setTasks((prev) =>
           prev.map((t) => {
             if (t.id !== activeTaskId) return t;
-
             const updated = { ...t, events: [...t.events, event] };
-
             if (event.type === 'status_change') {
               updated.status = event.data.status as TaskStatus;
             }
@@ -96,7 +93,6 @@ export default function AgentPage() {
               updated.result = event.data.result as Record<string, unknown>;
               updated.status = 'completed';
             }
-
             return updated;
           })
         );
@@ -131,7 +127,6 @@ export default function AgentPage() {
 
   useEffect(() => {
     if (!activeTaskId) return;
-
     const task = tasks.find((t) => t.id === activeTaskId);
     if (!task || task.eventsLoaded) return;
 
@@ -140,7 +135,6 @@ export default function AgentPage() {
       .then((data) => {
         if (!data || data.error) return;
         const fullTask = parseTaskFromAPI(data);
-
         setTasks((prev) =>
           prev.map((t) => (t.id !== activeTaskId ? t : fullTask))
         );
@@ -160,11 +154,7 @@ export default function AgentPage() {
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          input,
-          type: type || undefined,
-          source: 'agent',
-        }),
+        body: JSON.stringify({ input, type: type || undefined, source: 'agent' }),
       });
 
       const data = await res.json();
@@ -203,13 +193,11 @@ export default function AgentPage() {
 
   async function handleInteractionSubmit(stepId: string, value: unknown) {
     if (!activeTaskId) return;
-
     setTasks((prev) =>
       prev.map((t) =>
         t.id === activeTaskId ? { ...t, currentInteraction: null } : t
       )
     );
-
     try {
       await fetch(`/api/tasks/${activeTaskId}/interact`, {
         method: 'POST',
@@ -239,14 +227,28 @@ export default function AgentPage() {
       await fetch(`/api/tasks/${activeTaskId}/interact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          interactionId: '',
-          stepId: 'request_adjust_structure',
-          value: '',
-        }),
+        body: JSON.stringify({ interactionId: '', stepId: 'request_adjust_structure', value: '' }),
       });
     } catch (error) {
       console.error('调整结构失败:', error);
+    }
+  }
+
+  async function handleSendEmail() {
+    if (!activeTaskId) return;
+    // Clear interaction immediately for responsive UI
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === activeTaskId ? { ...t, currentInteraction: null } : t
+      )
+    );
+    try {
+      await fetch(`/api/tasks/${activeTaskId}/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      console.error('发送邮件失败:', error);
     }
   }
 
@@ -271,11 +273,7 @@ export default function AgentPage() {
           <aside className="w-72 border-r border-border p-3 overflow-y-auto custom-scrollbar flex-shrink-0">
             <TaskList
               tasks={tasks.map((t) => ({
-                id: t.id,
-                type: t.type,
-                status: t.status,
-                title: t.title,
-                createdAt: t.createdAt,
+                id: t.id, type: t.type, status: t.status, title: t.title, createdAt: t.createdAt,
               }))}
               activeTaskId={activeTaskId}
               onSelect={setActiveTaskId}
@@ -297,6 +295,7 @@ export default function AgentPage() {
                   onInteractionSubmit={handleInteractionSubmit}
                   onApproveStructure={handleApproveStructure}
                   onAdjustStructure={handleAdjustStructure}
+                  onSendEmail={handleSendEmail}
                   result={activeTask.result}
                 />
                 <div ref={canvasEndRef} />

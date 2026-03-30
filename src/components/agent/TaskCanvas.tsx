@@ -23,6 +23,7 @@ interface TaskCanvasProps {
   onInteractionSubmit: (stepId: string, value: unknown) => void;
   onApproveStructure: () => void;
   onAdjustStructure: () => void;
+  onSendEmail: () => void;
   result: Record<string, unknown> | null;
 }
 
@@ -36,12 +37,20 @@ export function TaskCanvas({
   onInteractionSubmit,
   onApproveStructure,
   onAdjustStructure,
+  onSendEmail,
   result,
 }: TaskCanvasProps) {
   const logs = events.filter((e) => e.type === 'log');
   const stepUpdates = events.filter((e) => e.type === 'step_update');
   const structureEvent = events.findLast((e) => e.type === 'structure_generated');
   const isActive = !['completed', 'failed'].includes(status);
+
+  // Detect email confirm interaction
+  const isEmailConfirm =
+    type === 'email' &&
+    currentInteraction !== null &&
+    currentInteraction.type === 'confirm' &&
+    currentInteraction.stepId === 'confirm_send';
 
   return (
     <div className="flex flex-col h-full">
@@ -63,7 +72,7 @@ export function TaskCanvas({
           <LogEntry key={`log-${i}`} message={String(event.data.message || '')} />
         ))}
 
-        {/* Structure Card — shown when structuring */}
+        {/* Structure Card — PPT structuring */}
         {structureEvent && status === 'structuring' ? (
           <StructureCard
             structure={structureEvent.data.structure as string[]}
@@ -72,14 +81,14 @@ export function TaskCanvas({
           />
         ) : null}
 
-        {/* Structure Card — shown as completed when past structuring */}
+        {/* Structure Card — completed (past structuring) */}
         {structureEvent && status !== 'structuring' && status !== 'understanding' && status !== 'pending' ? (
           <StructureCardCompleted
             structure={structureEvent.data.structure as string[]}
           />
         ) : null}
 
-        {/* Step updates during execution */}
+        {/* Step updates */}
         {stepUpdates.map((event, i) => (
           <StepUpdateEntry key={`step-${i}`} data={event.data} />
         ))}
@@ -100,8 +109,21 @@ export function TaskCanvas({
           </div>
         ) : null}
 
-        {/* Interaction */}
-        {currentInteraction !== null && status === 'interacting' ? (
+        {/* Email Confirm Card — special rendering */}
+        {isEmailConfirm && status === 'interacting' ? (
+          <EmailConfirmCard
+            detail={
+              currentInteraction.type === 'confirm'
+                ? (currentInteraction as { detail: string }).detail
+                : ''
+            }
+            onSend={onSendEmail}
+            onRevise={() => onInteractionSubmit('revise_email_request', '')}
+          />
+        ) : null}
+
+        {/* Generic Interaction — non-email-confirm */}
+        {currentInteraction !== null && status === 'interacting' && !isEmailConfirm ? (
           <div className="mt-4 p-4 rounded-xl border border-accent/20 bg-accent/5">
             <InteractionPanel
               interaction={currentInteraction}
@@ -128,6 +150,8 @@ export function TaskCanvas({
   );
 }
 
+// ---- Sub-components ----
+
 function LogEntry({ message }: { message: string }) {
   return (
     <div className="flex items-start gap-2 text-sm">
@@ -149,6 +173,66 @@ function StepUpdateEntry({ data }: { data: Record<string, unknown> }) {
       {current !== undefined && total !== undefined ? (
         <span className="text-content-tertiary text-xs">{current}/{total}</span>
       ) : null}
+    </div>
+  );
+}
+
+function EmailConfirmCard({
+  detail,
+  onSend,
+  onRevise,
+}: {
+  detail: string;
+  onSend: () => void;
+  onRevise: () => void;
+}) {
+  // Parse subject and body from detail string
+  const lines = detail.split('\n');
+  let subject = '';
+  let body = '';
+
+  const subjectLine = lines.find((l) => l.startsWith('主题：'));
+  if (subjectLine) {
+    subject = subjectLine.replace('主题：', '').trim();
+    const subjectIndex = lines.indexOf(subjectLine);
+    body = lines
+      .slice(subjectIndex + 1)
+      .join('\n')
+      .trim();
+  } else {
+    body = detail;
+  }
+
+  return (
+    <div className="rounded-xl border border-accent/30 bg-accent/5 p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <span className="text-accent text-sm font-medium">邮件预览</span>
+      </div>
+
+      {subject ? (
+        <div className="space-y-1">
+          <p className="text-xs text-content-tertiary">主题</p>
+          <p className="text-sm font-medium text-content-primary">{subject}</p>
+        </div>
+      ) : null}
+
+      <div className="space-y-1">
+        <p className="text-xs text-content-tertiary">正文</p>
+        <div className="rounded-lg bg-surface-secondary border border-border p-4">
+          <p className="text-sm text-content-secondary whitespace-pre-wrap leading-relaxed">
+            {body}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex gap-3 pt-2">
+        <Button onClick={onSend} size="sm">
+          确认发送
+        </Button>
+        <Button onClick={onRevise} variant="secondary" size="sm">
+          继续修改
+        </Button>
+      </div>
     </div>
   );
 }
@@ -215,9 +299,9 @@ function StructureCardCompleted({ structure }: { structure: string[] }) {
 
 function ResultView({ result }: { result: Record<string, unknown> }) {
   const data = result;
-  const type = data.type as string;
+  const resultType = data.type as string;
 
-  if (type === 'ppt' && data.slides) {
+  if (resultType === 'ppt' && data.slides) {
     const slides = data.slides as { index: number; title: string; content: string[]; notes: string }[];
     return (
       <div className="space-y-4">
@@ -251,13 +335,13 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     );
   }
 
-  if (type === 'email' && data.content) {
+  if (resultType === 'email' && data.content) {
     const email = data.content as { subject: string; body: string };
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
           <span>✓</span>
-          <span>邮件生成完成</span>
+          <span>邮件已确认发送</span>
         </div>
         <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
           <p className="text-sm font-medium text-content-primary mb-3">
@@ -271,7 +355,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     );
   }
 
-  if (type === 'proposal' && data.content) {
+  if (resultType === 'proposal' && data.content) {
     const proposal = data.content as { title: string; sections: { heading: string; content: string }[]; summary: string };
     return (
       <div className="space-y-3">
