@@ -236,9 +236,27 @@ export function TaskCanvas({
   const progress = isExecuting ? getProgress(events) : null;
   const completedSteps = getCompletedSteps(events);
 
+  // ---- Continuous thinking stream ----
+  // Single string that grows via Typewriter append mode.
+  // Completed: all phases joined. Result/error: final line appended.
   const showThinking = mode === 'thinking' || mode === 'executing';
-  const thinkingPhases = showThinking ? buildThinkingPhases(events) : [];
-  const hasThinking = thinkingPhases.length > 0;
+  const thinkingStream = (() => {
+    if (!showThinking) return null;
+    const phases = buildThinkingPhases(events);
+    if (phases.length === 0) return null;
+    return phases.map((p) => p.text).join('  ');
+  })();
+  const hasThinking = thinkingStream !== null;
+
+  // Completion closing line (appended to stream when done)
+  const isJustCompleted = status === 'completed' && events.some((e) => e.type === 'task_completed');
+  const closingThinking = isJustCompleted
+    ? (() => {
+        const phases = buildThinkingPhases(events);
+        if (phases.length === 0) return null;
+        return phases.map((p) => p.text).join('  ') + '  好，这个我已经帮你全部完成了，你可以直接查看结果';
+      })()
+    : null;
 
   // Logs — only in result/error mode for review
   const allLogs = events.filter((e) => e.type === 'log');
@@ -338,34 +356,34 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {/* Phase-based thinking */}
-              {/* Thinking — subtle inline flow, not a card */}
-              {hasThinking ? (
-                <div className="pl-3 border-l-2 border-accent/15 space-y-0.5">
-                  {thinkingPhases.map((phase, i) =>
-                    phase.completed ? (
-                      <p key={i} className="text-[11px] text-content-tertiary/40 italic leading-relaxed">
-                        {phase.text}
-                      </p>
-                    ) : (
-                      <p key={i} className="text-xs text-content-secondary/60 italic leading-relaxed">
-                        <Typewriter text={phase.text} speed={20} />
-                      </p>
-                    )
-                  )}
+              {/* Continuous thinking stream — single Typewriter, never disappears */}
+              {hasThinking && thinkingStream ? (
+                <div className="pl-3 border-l-2 border-accent/15">
+                  <p className="text-xs text-content-secondary/60 italic leading-relaxed">
+                    <Typewriter text={thinkingStream} speed={20} />
+                  </p>
                 </div>
               ) : null}
 
-              {/* Idle executing hint — when executing but no recent progress */}
+              {/* Closing thinking — after completion */}
+              {closingThinking && !hasThinking ? (
+                <div className="pl-3 border-l-2 border-green-400/15">
+                  <p className="text-xs text-content-secondary/50 italic leading-relaxed">
+                    <Typewriter text={closingThinking} speed={15} />
+                  </p>
+                </div>
+              ) : null}
+
+              {/* Idle hint — executing but nothing from backend yet */}
               {mode === 'executing' && completedSteps.length === 0 && !hasThinking ? (
-                <p className="text-xs text-content-secondary/60 italic animate-progress-pulse">
+                <p className="text-xs text-content-secondary/50 italic animate-progress-pulse">
                   我在帮你完善内容，持续推进中...
                 </p>
               ) : null}
 
-              {/* Pending hint — task just created */}
+              {/* Pending hint */}
               {status === 'pending' && events.length <= 1 ? (
-                <p className="text-xs text-content-secondary/60 italic animate-progress-pulse">
+                <p className="text-xs text-content-secondary/50 italic animate-progress-pulse">
                   收到，我马上开始...
                 </p>
               ) : null}
