@@ -5,9 +5,8 @@ import { Interaction } from '@/types/interaction';
 import { VALID_STATUS_TRANSITIONS } from '@/lib/constants';
 
 // ---- JSON serialization boundary ----
-// SQLite stores JSON as String. These helpers form the ONLY place
-// where JSON.stringify / JSON.parse happen for task data fields.
-// All other code works with plain objects.
+// SQLite stores JSON as String. These three helpers are the ONLY place
+// in the entire project where JSON.stringify / JSON.parse touch task data fields.
 
 function toJson(obj: unknown): string {
   return JSON.stringify(obj);
@@ -119,8 +118,11 @@ export async function updateTaskStep(taskId: string, step: string) {
   });
 }
 
-export async function completeTask(taskId: string, result: Record<string, unknown>) {
-  const updated = await prisma.task.update({
+// completeTask: 统一任务完成入口
+// 写入 result → 发 task_completed → status_change → artifact
+// workflow 层只需调用此方法，传入对象即可
+export async function completeTask(taskId: string, result: Record<string, unknown>, message?: string) {
+  await prisma.task.update({
     where: { id: taskId },
     data: {
       status: 'completed',
@@ -128,13 +130,16 @@ export async function completeTask(taskId: string, result: Record<string, unknow
     },
   });
 
+  await emitEvent(taskId, 'task_completed', {
+    message: message || '任务完成',
+    result,
+  });
   await emitEvent(taskId, 'status_change', { status: 'completed' });
   await emitEvent(taskId, 'artifact', { result });
-  return updated;
 }
 
 export async function failTask(taskId: string, errorMessage: string) {
-  const updated = await prisma.task.update({
+  await prisma.task.update({
     where: { id: taskId },
     data: {
       status: 'failed',
@@ -144,7 +149,6 @@ export async function failTask(taskId: string, errorMessage: string) {
 
   await emitEvent(taskId, 'error', { message: errorMessage });
   await emitEvent(taskId, 'status_change', { status: 'failed' });
-  return updated;
 }
 
 export async function requestInteraction(taskId: string, interaction: Interaction) {

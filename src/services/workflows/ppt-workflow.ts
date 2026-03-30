@@ -6,6 +6,7 @@ import {
   updateTaskContext,
   updateTaskStep,
   requestInteraction,
+  completeTask,
   emitEvent,
   emitLog,
   getTaskContext,
@@ -96,7 +97,6 @@ const pptWorkflow: BaseWorkflow = {
 
     try {
       if (stepId === 'request_adjust_structure') {
-        // User clicked "调整结构" — send a text_input interaction
         await requestInteraction(taskId, {
           id: generateId(),
           taskId,
@@ -106,13 +106,13 @@ const pptWorkflow: BaseWorkflow = {
           placeholder: '例如：减少到6页，偏融资路演风格',
         });
       } else if (stepId === 'adjust_structure') {
-        // User submitted adjustment text — re-generate structure
         const hint = String(value || '');
         await updateTaskStatus(taskId, 'understanding');
         await emitLog(taskId, '正在根据反馈调整结构...');
 
         const taskContext = await getTaskContext(taskId);
         const pptCtx = (taskContext.ppt as PPTContext) || defaultPPTContext;
+        const currentStructureText = pptCtx.structure.join('、');
 
         const result = await chatCompletion(
           [
@@ -120,7 +120,7 @@ const pptWorkflow: BaseWorkflow = {
               role: 'system',
               content: `你是一个专业的演示文稿设计师。用户想要调整演示文稿的页面结构。
 
-当前结构：${JSON.stringify(pptCtx.structure)}
+当前结构：${currentStructureText}
 
 请以 JSON 格式返回：
 {
@@ -177,7 +177,6 @@ export async function executePPTGeneration(taskId: string, input: string) {
 
   await updateTaskStep(taskId, 'executing');
 
-  // Single execution_started event — only here, not in approve-structure
   await emitEvent(taskId, 'execution_started', {
     message: '开始生成演示文稿内容',
     totalPages: structure.length,
@@ -258,23 +257,13 @@ export async function executePPTGeneration(taskId: string, input: string) {
   };
   await updateTaskContext(taskId, { ppt: updatedCtx });
 
-  // Complete — single sequence: task_completed → status_change → artifact
-  const { prisma } = await import('@/lib/prisma');
-  await prisma.task.update({
-    where: { id: taskId },
-    data: {
-      status: 'completed',
-      result: JSON.stringify(finalResult),
-    },
-  });
-
-  await emitEvent(taskId, 'task_completed', {
-    message: `演示文稿生成完成，共 ${slides.length} 页`,
-    result: finalResult,
-  });
-
-  await emitEvent(taskId, 'status_change', { status: 'completed' });
-  await emitEvent(taskId, 'artifact', { result: finalResult });
+  // 通过 task-manager.completeTask 统一完成
+  // 内部处理 result 序列化 + task_completed / status_change / artifact 事件
+  await completeTask(
+    taskId,
+    finalResult,
+    `演示文稿生成完成，共 ${slides.length} 页`
+  );
 
   await emitLog(taskId, `演示文稿生成完成，共 ${slides.length} 页`);
 }
