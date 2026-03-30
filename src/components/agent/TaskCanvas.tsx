@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useEffect } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
@@ -148,10 +149,25 @@ export function TaskCanvas({
   const progress = isExecuting ? getProgress(events) : null;
   const completedSteps = getCompletedSteps(events);
 
-  // Thinking: persistent across thinking + executing modes (continuous background stream)
-  // Hidden only during interaction, result, error
+  // Persistent thinking: survives across events, only updates when new thinking arrives
+  const thinkingRef = useRef<string | null>(null);
+  const prevTaskIdRef = useRef(taskId);
+
+  // Reset thinking when task changes
+  if (taskId !== prevTaskIdRef.current) {
+    prevTaskIdRef.current = taskId;
+    thinkingRef.current = null;
+  }
+
+  // Scan for latest thinking event and persist it
+  const latestThinkingFromEvents = getLatestThinking(events);
+  if (latestThinkingFromEvents && latestThinkingFromEvents !== thinkingRef.current) {
+    thinkingRef.current = latestThinkingFromEvents;
+  }
+
+  // Show thinking in working modes only; clear on terminal/interaction states
   const showThinking = mode === 'thinking' || mode === 'executing';
-  const thinkingText = showThinking ? getLatestThinking(events) : null;
+  const thinkingText = showThinking ? thinkingRef.current : null;
 
   // Logs: filter to phase-transition messages, not noisy detail
   const allLogs = events.filter((e) => e.type === 'log');
