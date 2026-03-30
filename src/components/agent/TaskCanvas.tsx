@@ -323,15 +323,15 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {/* Completed steps — humanized */}
+              {/* Completed steps — action feed (brighter than thinking) */}
               {completedSteps.length > 0 ? (
-                <div className="space-y-1.5 animate-flow-in">
+                <div className="space-y-2 animate-flow-in">
                   {completedSteps.map((step, i) => (
-                    <div key={`step-${i}`} className="flex items-center gap-2 text-xs text-content-secondary">
-                      <span className="text-green-400">✓</span>
-                      <span>{step.text}</span>
+                    <div key={`step-${i}`} className="flex items-start gap-2 text-[13px] text-content-primary leading-relaxed">
+                      <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
+                      <span className="flex-1">{step.text}</span>
                       {step.current !== undefined && step.total !== undefined ? (
-                        <span className="text-content-tertiary tabular-nums ml-auto">{step.current}/{step.total}</span>
+                        <span className="text-content-tertiary text-xs tabular-nums flex-shrink-0 mt-0.5">{step.current}/{step.total}</span>
                       ) : null}
                     </div>
                   ))}
@@ -339,15 +339,16 @@ export function TaskCanvas({
               ) : null}
 
               {/* Phase-based thinking */}
+              {/* Thinking — background planning layer (dimmer than steps) */}
               {hasThinking ? (
-                <div className="rounded-lg bg-surface-tertiary/50 border-l-2 border-accent/30 py-2 px-3 space-y-1">
+                <div className="rounded-lg bg-surface-tertiary/40 border-l-2 border-accent/20 py-2 px-3 space-y-1">
                   {thinkingPhases.map((phase, i) =>
                     phase.completed ? (
-                      <p key={i} className="text-xs text-content-tertiary/60 italic leading-relaxed">
+                      <p key={i} className="text-[11px] text-content-tertiary/50 italic leading-relaxed">
                         {phase.text}
                       </p>
                     ) : (
-                      <p key={i} className="text-xs text-content-secondary/80 italic leading-relaxed">
+                      <p key={i} className="text-xs text-content-secondary/70 italic leading-relaxed">
                         <Typewriter text={phase.text} speed={20} />
                       </p>
                     )
@@ -355,10 +356,15 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {/* Transition line before approval */}
-              {isApprovalGate ? (
+              {/* Transition line before approval — context-specific */}
+              {isApprovalGate && approvalType === 'send_email' ? (
                 <p className="text-xs text-content-secondary/70 italic animate-flow-in">
-                  你可以先看一下，如果需要调整我们可以一起改
+                  邮件我已经帮你整理好了，你看一下内容，没问题的话我就帮你确认发送
+                </p>
+              ) : null}
+              {isApprovalGate && (approvalType === 'use_structure' || approvalType === 'use_proposal_structure') ? (
+                <p className="text-xs text-content-secondary/70 italic animate-flow-in">
+                  结构我先帮你搭出来了，你看一下整体思路，如果没问题我就继续往下生成内容
                 </p>
               ) : null}
 
