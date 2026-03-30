@@ -167,28 +167,33 @@ export async function completeTask(taskId: string, result: Record<string, unknow
   }
 }
 
-function getNextSuggestions(type: string, input: string): { label: string; prompt: string; type: string }[] {
+function getNextSuggestions(type: string, input: string): { label: string; prompt: string; type: string; cost: number }[] {
   const base = input.slice(0, 80);
-  const map: Record<string, { label: string; prompt: string; type: string }[]> = {
+  const map: Record<string, { label: string; prompt: string; type: string; cost: number }[]> = {
     email: [
-      { label: '优化内容', prompt: `帮我优化这封邮件的措辞和结构：${base}`, type: 'email' },
-      { label: '写跟进邮件', prompt: `帮我写一封跟进邮件，基于之前的内容：${base}`, type: 'email' },
-      { label: '生成回复模板', prompt: '帮我生成一个通用的客户回复模板', type: 'email' },
+      { label: '优化这封邮件', prompt: `帮我优化这封邮件的措辞和结构：${base}`, type: 'email', cost: 5 },
+      { label: '生成高级版', prompt: `帮我重新写一版更专业的邮件：${base}`, type: 'email', cost: 10 },
+      { label: '写跟进邮件', prompt: `帮我写一封跟进邮件：${base}`, type: 'email', cost: 5 },
+      { label: '发送给客户', prompt: `帮我整理并发送这封邮件给客户：${base}`, type: 'email', cost: 3 },
     ],
     ppt: [
-      { label: '优化内容', prompt: `帮我优化这份演示文稿的内容和结构：${base}`, type: 'ppt' },
-      { label: '生成第二版', prompt: `帮我重新做一版风格不同的演示文稿：${base}`, type: 'ppt' },
-      { label: '写演讲稿', prompt: `根据这份演示文稿帮我写一份演讲稿：${base}`, type: 'proposal' },
+      { label: '优化内容', prompt: `帮我优化这份演示文稿：${base}`, type: 'ppt', cost: 10 },
+      { label: '生成高级版', prompt: `帮我重新做一版更专业的演示文稿：${base}`, type: 'ppt', cost: 20 },
+      { label: '生成演讲稿', prompt: `根据这份PPT帮我写演讲稿：${base}`, type: 'proposal', cost: 15 },
+      { label: '导出并发送', prompt: `帮我写一封邮件发送这份PPT：${base}`, type: 'email', cost: 5 },
     ],
     proposal: [
-      { label: '优化内容', prompt: `帮我优化这份方案的内容：${base}`, type: 'proposal' },
-      { label: '做配套PPT', prompt: `根据这份方案帮我做一份演示文稿：${base}`, type: 'ppt' },
-      { label: '写发送邮件', prompt: `帮我写一封邮件发送这份方案给客户：${base}`, type: 'email' },
+      { label: '优化方案', prompt: `帮我优化这份方案：${base}`, type: 'proposal', cost: 10 },
+      { label: '生成高级版', prompt: `帮我重写一版更完整的方案：${base}`, type: 'proposal', cost: 15 },
+      { label: '做配套PPT', prompt: `根据方案做演示文稿：${base}`, type: 'ppt', cost: 20 },
+      { label: '发送给客户', prompt: `帮我写邮件发送这份方案：${base}`, type: 'email', cost: 5 },
+    ],
+    direct: [
+      { label: '优化结果', prompt: `帮我优化上面的内容：${base}`, type: 'unknown', cost: 5 },
+      { label: '生成高级版', prompt: `帮我重新生成一版更专业的：${base}`, type: 'unknown', cost: 10 },
     ],
   };
-  return map[type] || [
-    { label: '继续优化', prompt: `帮我优化上一个任务的结果：${base}`, type: 'unknown' },
-  ];
+  return map[type] || map.direct;
 }
 
 export async function failTask(taskId: string, errorMessage: string) {

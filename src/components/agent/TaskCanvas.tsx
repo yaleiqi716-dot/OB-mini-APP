@@ -501,7 +501,7 @@ export function TaskCanvas({
                   {onNewTask ? (() => {
                     // Prefer server-driven suggestions from event
                     const sugEvent = events.findLast((e) => e.type === 'next_suggestions');
-                    const serverSugs = sugEvent?.data?.suggestions as { label: string; prompt: string; type: string }[] | undefined;
+                    const serverSugs = sugEvent?.data?.suggestions as { label: string; prompt: string; type: string; cost?: number }[] | undefined;
                     const resultType = (result?.type as string) || type;
                     const suggestions = serverSugs || SUGGESTIONS[resultType] || SUGGESTIONS.direct || [];
                     return suggestions.length > 0 ? (
@@ -512,9 +512,12 @@ export function TaskCanvas({
                             <button
                               key={i}
                               onClick={() => onNewTask(s.prompt, s.type)}
-                              className="text-xs px-3 py-1.5 rounded-lg border border-border bg-surface-secondary hover:bg-surface-tertiary hover:border-accent/30 text-content-primary transition-all"
+                              className="text-xs px-3 py-1.5 rounded-lg border border-border bg-surface-secondary hover:bg-surface-tertiary hover:border-accent/30 text-content-primary transition-all flex items-center gap-1.5"
                             >
                               {s.label}
+                              {'cost' in s && typeof s.cost === 'number' ? (
+                                <span className="text-accent font-medium">-{s.cost}</span>
+                              ) : null}
                             </button>
                           ))}
                         </div>
