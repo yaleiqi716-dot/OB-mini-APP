@@ -48,6 +48,62 @@ const TYPE_LABELS: Record<string, string> = {
   website: '网页', video: '视频', unknown: '任务',
 };
 
+// ---- Narrative language transforms ----
+// Convert system/technical language to AI assistant voice
+
+function humanizeThinking(text: string): string {
+  const map: [RegExp, string][] = [
+    [/^正在分析.*需求.*$/, '我先看一下你的需求...'],
+    [/^正在分析.*主题.*受众.*$/, '我先帮你梳理一下主题和受众...'],
+    [/^正在分析.*场景.*收件人.*$/, '我先了解一下这封邮件的场景...'],
+    [/^正在分析.*背景.*目标.*$/, '我先理解一下项目背景和目标...'],
+    [/^正在规划.*结构.*逻辑.*$/, '我大概有个结构思路了，先给你列一下框架...'],
+    [/^正在规划.*框架.*章节.*$/, '我已经想好了方案的框架，先给你看看...'],
+    [/^正在拆解.*逐页.*$/, '好的，我开始一页一页帮你完善内容...'],
+    [/^正在拆解.*逐章.*$/, '好的，我开始逐个章节帮你写详细内容...'],
+    [/^正在组织.*结构.*措辞.*$/, '我在帮你组织邮件的结构和措辞...'],
+    [/^正在理解.*修改.*调整.*$/, '好的，我理解你的修改意图了...'],
+    [/^正在重新规划.*$/, '好的，我重新帮你想一个结构...'],
+  ];
+  for (const [pattern, replacement] of map) {
+    if (pattern.test(text)) return replacement;
+  }
+  // Fallback: prefix with "我" if not already conversational
+  if (text.startsWith('正在')) {
+    return '我' + text.replace('正在', '在帮你');
+  }
+  return text;
+}
+
+function humanizeStep(text: string): string {
+  // "xxx已生成" → "xxx 我已经整理好了"
+  if (text.includes('已生成')) {
+    const subject = text.replace('已生成', '').trim();
+    return subject ? `${subject}，已经整理好了` : '已经整理好了';
+  }
+  if (text.includes('已完成')) {
+    const subject = text.replace('已完成', '').trim();
+    return subject ? `${subject}，已经完成了` : '已经完成了';
+  }
+  // "正在生成：xxx" → keep as-is for in-progress (shown in status bar)
+  return text;
+}
+
+function humanizeStatusBar(status: TaskStatus, text: string | null): string | null {
+  if (!text) return null;
+  // Progress text: "正在生成：XXX (3/10)" → "帮你写第 3 项..."
+  const progressMatch = text.match(/\((\d+)\/(\d+)\)/);
+  if (progressMatch) {
+    return `帮你写第 ${progressMatch[1]} 项，共 ${progressMatch[2]} 项...`;
+  }
+  if (status === 'understanding') return '我在理解你的需求...';
+  if (status === 'executing') return '我在逐步帮你完成...';
+  if (text.includes('正在')) return text.replace('正在', '我在帮你');
+  return text;
+}
+
+// ---- Data extraction ----
+
 function getProgress(events: TaskEvent[]): { current: number; total: number } | null {
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
@@ -58,7 +114,7 @@ function getProgress(events: TaskEvent[]): { current: number; total: number } | 
   return null;
 }
 
-function getStatusBarText(status: TaskStatus, events: TaskEvent[]): string | null {
+function getRawStatusBarText(status: TaskStatus, events: TaskEvent[]): string | null {
   if (status !== 'understanding' && status !== 'executing' && status !== 'structuring') return null;
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
@@ -69,25 +125,29 @@ function getStatusBarText(status: TaskStatus, events: TaskEvent[]): string | nul
   for (let i = events.length - 1; i >= 0; i--) {
     if (events[i].type === 'log') return String(events[i].data.message || '');
   }
-  if (status === 'understanding') return '正在理解需求...';
-  if (status === 'executing') return '正在执行...';
   return null;
 }
 
-function getCompletedSteps(events: TaskEvent[]): TaskEvent[] {
+function getCompletedSteps(events: TaskEvent[]): { key: string; text: string; current?: number; total?: number }[] {
   const map = new Map<string, TaskEvent>();
   for (const e of events) {
     if (e.type === 'step_update') map.set(String(e.data.step || ''), e);
   }
-  return Array.from(map.values()).filter((e) => {
-    const t = String(e.data.text || '');
-    return t.includes('已生成') || t.includes('已完成');
-  });
+  return Array.from(map.values())
+    .filter((e) => {
+      const t = String(e.data.text || '');
+      return t.includes('已生成') || t.includes('已完成');
+    })
+    .map((e) => ({
+      key: String(e.data.step || ''),
+      text: humanizeStep(String(e.data.text || '')),
+      current: typeof e.data.current === 'number' ? (e.data.current as number) : undefined,
+      total: typeof e.data.total === 'number' ? (e.data.total as number) : undefined,
+    }));
 }
 
 // ---- Phase-based thinking ----
-// Each thinking event = one phase. Current phase uses Typewriter.
-// Past phases shown as completed trail (static text).
+
 interface ThinkingPhase {
   text: string;
   completed: boolean;
@@ -98,19 +158,20 @@ function buildThinkingPhases(events: TaskEvent[]): ThinkingPhase[] {
   const seen = new Set<string>();
   for (const e of events) {
     if (e.type === 'thinking') {
-      const text = String(e.data.text || '');
-      if (text && !seen.has(text)) {
-        seen.add(text);
-        phases.push({ text, completed: false });
+      const raw = String(e.data.text || '');
+      if (raw && !seen.has(raw)) {
+        seen.add(raw);
+        phases.push({ text: humanizeThinking(raw), completed: false });
       }
     }
   }
-  // All but last are completed
   for (let i = 0; i < phases.length - 1; i++) {
     phases[i].completed = true;
   }
   return phases;
 }
+
+// ---- Narrative mode ----
 
 type NarrativeMode = 'interaction' | 'executing' | 'thinking' | 'result' | 'error' | 'idle';
 
@@ -123,12 +184,13 @@ function getNarrativeMode(status: TaskStatus, isApproval: boolean, isGenericInte
   return 'idle';
 }
 
+// ---- Main component ----
+
 export function TaskCanvas({
   taskId, title, type, status, input, events, currentInteraction,
   onInteractionSubmit, onApprove, onReject, onAdjustStructure, onAdjustProposal, onReviseEmail,
   actionLoading, result, loading,
 }: TaskCanvasProps) {
-  // Track task switch for phase reset
   const prevTaskIdRef = useRef(taskId);
   if (taskId !== prevTaskIdRef.current) {
     prevTaskIdRef.current = taskId;
@@ -160,16 +222,16 @@ export function TaskCanvas({
 
   const mode = getNarrativeMode(status, isApprovalGate, isGenericInteraction);
   const typeInfo = TASK_TYPES.find((t) => t.value === type);
-  const statusBarText = getStatusBarText(status, events);
+  const rawStatusBar = getRawStatusBarText(status, events);
+  const statusBarText = humanizeStatusBar(status, rawStatusBar);
   const progress = isExecuting ? getProgress(events) : null;
   const completedSteps = getCompletedSteps(events);
 
-  // Phase-based thinking
   const showThinking = mode === 'thinking' || mode === 'executing';
   const thinkingPhases = showThinking ? buildThinkingPhases(events) : [];
   const hasThinking = thinkingPhases.length > 0;
 
-  // Logs
+  // Logs — only in result/error mode for review
   const allLogs = events.filter((e) => e.type === 'log');
   const phaseLogs = allLogs.filter((e) => {
     const msg = String(e.data.message || '');
@@ -181,11 +243,7 @@ export function TaskCanvas({
   });
   const visibleLogs = (() => {
     if (mode === 'result' || mode === 'error') return phaseLogs;
-    if (mode === 'interaction') return [];
-    if (hasThinking) return [];
-    if (mode === 'executing') return phaseLogs.slice(-1);
-    if (mode === 'thinking') return phaseLogs.slice(-1);
-    return phaseLogs.slice(-2);
+    return [];
   })();
 
   return (
@@ -242,7 +300,7 @@ export function TaskCanvas({
             </div>
             <div className="flex-1 min-w-0 space-y-3 pt-1">
 
-              {/* Logs */}
+              {/* Logs — only during review */}
               {visibleLogs.map((event, i) => (
                 <div key={`log-${i}`} className="animate-flow-in text-sm text-content-tertiary leading-relaxed">
                   {String(event.data.message || '')}
@@ -256,15 +314,15 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {/* Completed steps */}
+              {/* Completed steps — humanized */}
               {completedSteps.length > 0 ? (
-                <div className="space-y-1 animate-flow-in">
-                  {completedSteps.map((event, i) => (
+                <div className="space-y-1.5 animate-flow-in">
+                  {completedSteps.map((step, i) => (
                     <div key={`step-${i}`} className="flex items-center gap-2 text-xs text-content-secondary">
                       <span className="text-green-400">✓</span>
-                      <span>{String(event.data.text || '')}</span>
-                      {typeof event.data.current === 'number' && typeof event.data.total === 'number' ? (
-                        <span className="text-content-tertiary tabular-nums ml-auto">{event.data.current as number}/{event.data.total as number}</span>
+                      <span>{step.text}</span>
+                      {step.current !== undefined && step.total !== undefined ? (
+                        <span className="text-content-tertiary tabular-nums ml-auto">{step.current}/{step.total}</span>
                       ) : null}
                     </div>
                   ))}
@@ -336,8 +394,8 @@ export function TaskCanvas({
                 <div className="animate-flow-in p-4 rounded-xl bg-red-500/10 border border-red-500/20">
                   <p className="text-sm text-red-400">
                     {events.find((e) => e.type === 'error')
-                      ? String(events.find((e) => e.type === 'error')!.data.message || '执行失败')
-                      : '执行失败'}
+                      ? String(events.find((e) => e.type === 'error')!.data.message || '遇到了一些问题，请重试')
+                      : '遇到了一些问题，请重试'}
                   </p>
                 </div>
               ) : null}
@@ -409,7 +467,7 @@ function EmailPreview({ interaction, events }: { interaction: ConfirmInteraction
   return (
     <div className="space-y-3">
       {hasRevision ? (
-        <p className="text-[11px] text-accent">已根据反馈重新生成</p>
+        <p className="text-[11px] text-accent">已根据你的反馈重新写了一版</p>
       ) : null}
       {subject ? (
         <div>
@@ -448,7 +506,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   if (resultType === 'ppt' && data.slides) {
     const slides = data.slides as { index: number; title: string; content: string[]; notes: string }[];
     return (
-      <ResultContainer title="演示文稿生成完成" subtitle={`共 ${slides.length} 页`}>
+      <ResultContainer title="演示文稿已经帮你整理好了" subtitle={`共 ${slides.length} 页`}>
         {slides.map((slide) => (
           <div key={slide.index} className="p-4 rounded-lg bg-surface-tertiary border border-border">
             <p className="text-sm font-medium text-content-primary mb-2">第 {slide.index + 1} 页：{slide.title}</p>
@@ -467,7 +525,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   if (resultType === 'email' && data.content) {
     const email = data.content as { subject: string; body: string };
     return (
-      <ResultContainer title="邮件已确认发送">
+      <ResultContainer title="邮件已经帮你准备好了">
         <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
           <p className="text-sm font-medium text-content-primary mb-3">主题：{email.subject}</p>
           <p className="text-sm text-content-secondary whitespace-pre-wrap leading-relaxed">{email.body}</p>
@@ -481,7 +539,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     const proposalTitle = (data.title as string) || '策划方案';
     const summary = data.summary as string | undefined;
     return (
-      <ResultContainer title="方案生成完成" subtitle={summary}>
+      <ResultContainer title="方案已经帮你写好了" subtitle={summary}>
         <p className="text-sm font-medium text-content-primary px-1">{proposalTitle}</p>
         {sections?.map((s, i) => (
           <div key={i} className="p-4 rounded-lg bg-surface-tertiary border border-border">
@@ -494,7 +552,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   }
 
   return (
-    <ResultContainer title="任务完成">
+    <ResultContainer title="已经帮你完成了">
       <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
         <pre className="text-xs text-content-secondary whitespace-pre-wrap font-sans">{JSON.stringify(data, null, 2)}</pre>
       </div>
