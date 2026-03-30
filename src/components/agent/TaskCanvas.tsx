@@ -724,6 +724,24 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     );
   }
 
+  if (resultType === 'orchestrator' && data.plan) {
+    const plan = data.plan as { type: string; input: string }[];
+    return (
+      <ResultContainer title="已帮你拆解并分发任务" subtitle={`共 ${plan.length} 个子任务`}>
+        <div className="space-y-2">
+          {plan.map((t, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs text-content-secondary">
+              <span className="text-accent">→</span>
+              <span className="font-medium text-content-primary">{t.type}</span>
+              <span className="truncate">{t.input}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-[11px] text-content-tertiary mt-2">子任务已自动创建并开始执行，可在左侧查看</p>
+      </ResultContainer>
+    );
+  }
+
   if (resultType === 'direct' && data.content) {
     return (
       <ResultContainer title="已经帮你完成了，你看一下结果">

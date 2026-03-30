@@ -1,5 +1,6 @@
-import { updateTaskStatus, emitLog, emitThinking, updateTaskType, updateTaskContext, completeTask } from './task-manager';
+import { createTask, updateTaskStatus, emitLog, emitThinking, emitEvent, updateTaskType, updateTaskContext, completeTask } from './task-manager';
 import { routeAndPlan } from './agent-router';
+import { planTasks } from './agent-planner';
 import { getWorkflow } from './workflows';
 import { checkCredits, checkUserConcurrency } from './billing';
 import { estimateCost } from '@/lib/cost';
@@ -58,8 +59,50 @@ async function fetchNextQueuedTask() {
 
 async function executeTask(taskId: string, input: string, presetType?: string, userId?: string) {
   await updateTaskStatus(taskId, 'understanding');
-  await emitLog(taskId, '正在识别任务类型...');
+  await emitLog(taskId, '正在分析任务...');
+  await emitThinking(taskId, '我先帮你拆解一下需求...');
 
+  // Use planner for open-ended input, routeAndPlan for preset types
+  if (!presetType || presetType === 'unknown') {
+    const agentPlan = await planTasks(input);
+
+    if (agentPlan.tasks.length > 1) {
+      // Multi-task plan: create sub-tasks, complete parent as orchestrator
+      await emitLog(taskId, `拆解为 ${agentPlan.tasks.length} 个子任务`);
+      await updateTaskContext(taskId, { subtasks: agentPlan.tasks.map((t) => t.type) });
+
+      const subTaskIds: string[] = [];
+      for (const sub of agentPlan.tasks) {
+        const subTask = await createTask(sub.input, 'api', {
+          userId: userId || undefined,
+          estimatedCost: estimateCost(sub.type),
+        });
+        await prisma.task.update({
+          where: { id: subTask.id },
+          data: { type: sub.type, title: sub.input.slice(0, 50), priority: 0 },
+        });
+        await updateTaskStatus(subTask.id, 'queued');
+        await emitLog(subTask.id, `子任务：${sub.type}`);
+        subTaskIds.push(subTask.id);
+      }
+
+      await completeTask(taskId, {
+        type: 'orchestrator',
+        subtasks: subTaskIds,
+        plan: agentPlan.tasks,
+      }, `已拆解为 ${subTaskIds.length} 个子任务并开始执行`);
+      return;
+    }
+
+    // Single task from planner — route it
+    presetType = agentPlan.tasks[0].type;
+    // Use planner's refined input if different
+    if (agentPlan.tasks[0].input !== input) {
+      input = agentPlan.tasks[0].input;
+    }
+  }
+
+  // Single task execution (existing flow)
   const plan = await routeAndPlan(input, presetType as TaskType | undefined);
   await updateTaskType(taskId, plan.taskType, plan.title);
 
@@ -73,19 +116,16 @@ async function executeTask(taskId: string, input: string, presetType?: string, u
   if (userId) {
     const recheckResult = await checkCredits(userId, plan.taskType);
     if (!recheckResult.allowed) {
-      // Block task — do NOT fail. Payment will unblock.
       await prisma.task.update({
         where: { id: taskId },
         data: { status: 'blocked', errorMessage: recheckResult.reason || '余额不足，请充值' },
       });
-      const { emitEvent } = await import('./task-manager');
       await emitEvent(taskId, 'payment_required', {
         required: recheckResult.estimatedCost,
         current: 0,
         reason: recheckResult.reason,
       });
       await emitEvent(taskId, 'status_change', { status: 'blocked' });
-      console.log(`[WORKER] Task ${taskId} blocked — insufficient credits`);
       return;
     }
   }
