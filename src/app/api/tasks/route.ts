@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createTask, listTasks, formatTask, updateTaskStatus, emitLog } from '@/services/task-manager';
-import { checkCredits, getOrCreateUser } from '@/services/billing';
+import { checkCredits, getOrCreateUser, checkUserConcurrency } from '@/services/billing';
 import { startWorker } from '@/services/worker';
 import { CreateTaskRequest } from '@/types/api';
 import { prisma } from '@/lib/prisma';
@@ -54,7 +54,13 @@ export async function POST(req: NextRequest) {
 
     const activeTasks = await prisma.task.count({ where: { status: { in: ACTIVE_STATUSES } } });
     if (activeTasks >= MAX_ACTIVE_TASKS) {
-      return NextResponse.json({ error: '当前有任务正在执行，请稍后再试' }, { status: 429 });
+      return NextResponse.json({ error: '系统繁忙，请稍后再试' }, { status: 429 });
+    }
+
+    // Per-user concurrency
+    const canRun = await checkUserConcurrency(userId);
+    if (!canRun) {
+      return NextResponse.json({ error: '你有任务正在执行中，请等待完成后再提交' }, { status: 429 });
     }
 
     // Determine priority from user plan

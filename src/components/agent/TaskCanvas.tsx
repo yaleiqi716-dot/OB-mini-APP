@@ -467,6 +467,14 @@ export function TaskCanvas({
                       </div>
                     </div>
                   )}
+                  {/* Cost display */}
+                  {(() => {
+                    const costEvent = events.findLast((e) => e.type === 'task_completed' && typeof e.data.cost === 'number');
+                    const cost = costEvent ? (costEvent.data.cost as number) : 0;
+                    return cost > 0 ? (
+                      <p className="text-[11px] text-content-tertiary mt-2">本次消耗 {cost} 额度</p>
+                    ) : null;
+                  })()}
                 </div>
               ) : null}
 

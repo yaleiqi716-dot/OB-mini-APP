@@ -1,7 +1,7 @@
 import { updateTaskStatus, emitLog, emitThinking, updateTaskType, updateTaskContext, completeTask } from './task-manager';
 import { routeAndPlan } from './agent-router';
 import { getWorkflow } from './workflows';
-import { checkCredits } from './billing';
+import { checkCredits, checkUserConcurrency } from './billing';
 import { estimateCost } from '@/lib/cost';
 import { chatCompletion } from '@/lib/openrouter';
 import { prisma } from '@/lib/prisma';
@@ -111,6 +111,15 @@ async function executeTask(taskId: string, input: string, presetType?: string, u
 // ---- Process one task with lock + timeout + concurrency slot ----
 
 async function processTask(task: { id: string; input: string; type: string; userId: string | null }) {
+  // Per-user concurrency check
+  if (task.userId) {
+    const canRun = await checkUserConcurrency(task.userId);
+    if (!canRun) {
+      console.log(`[WORKER] Skipping task ${task.id} (user ${task.userId} at concurrency limit)`);
+      return; // Will be retried next poll
+    }
+  }
+
   const locked = await acquireLock(task.id);
   if (!locked) return;
 

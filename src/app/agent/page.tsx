@@ -119,7 +119,10 @@ export default function AgentPage() {
   const [interactingTaskId, setInteractingTaskId] = useState<string | null>(null);
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
-  const [quota, setQuota] = useState<{ credits: number; dailyTaskCount: number; dailyLimit: number } | null>(null);
+  const [quota, setQuota] = useState<{
+    credits: number; plan: string;
+    limits: { maxConcurrent: number; allowedTypes: string[] };
+  } | null>(null);
   const canvasEndRef = useRef<HTMLDivElement>(null);
   const activeTaskIdRef = useRef<string | null>(null);
 
@@ -255,7 +258,7 @@ export default function AgentPage() {
 
   function fetchQuota() {
     fetch('/api/user').then((r) => r.json()).then((d) => {
-      if (d.credits !== undefined) setQuota({ credits: d.credits, dailyTaskCount: 0, dailyLimit: 3 });
+      if (d.credits !== undefined) setQuota(d);
     }).catch(() => {});
   }
 
@@ -458,8 +461,14 @@ export default function AgentPage() {
         <div className="flex items-center gap-3">
           {quota ? (
             <div className="hidden sm:flex items-center gap-2 text-xs text-content-tertiary">
-              <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium">{quota.credits}</span>
+              <span className="px-1 py-0.5 rounded bg-surface-tertiary text-content-tertiary text-[10px] uppercase">{quota.plan}</span>
+              <span className={`px-1.5 py-0.5 rounded font-medium ${quota.credits < 20 ? 'bg-red-500/10 text-red-400' : 'bg-accent/10 text-accent'}`}>
+                {quota.credits}
+              </span>
               <span>额度</span>
+              {quota.credits < 20 ? (
+                <span className="text-red-400 text-[10px]">余额不足</span>
+              ) : null}
               <button onClick={handleAddCredits} className="px-2 py-0.5 rounded bg-accent/10 text-accent hover:bg-accent/20 transition-colors font-medium">
                 充值
               </button>
