@@ -32,6 +32,7 @@ model Task {
   estimatedCost Int         @default(0)
   actualCost    Int         @default(0)
   processing    Boolean     @default(false)
+  priority      Int         @default(0)
   userId        String?
   user          User?       @relation(fields: [userId], references: [id])
   createdAt     DateTime    @default(now())

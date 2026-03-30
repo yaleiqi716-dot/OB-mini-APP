@@ -1,4 +1,3 @@
-import { dequeue, enqueue, getQueueLength } from './task-queue';
 import { updateTaskStatus, emitLog, emitThinking, updateTaskType, updateTaskContext, completeTask } from './task-manager';
 import { routeAndPlan } from './agent-router';
 import { getWorkflow } from './workflows';
@@ -10,18 +9,19 @@ import { TaskType } from '@/types/task';
 
 import './workflows';
 
-let workerRunning = false;
-let workerInterval: ReturnType<typeof setInterval> | null = null;
-const TASK_TIMEOUT_MS = 120_000; // 2 minutes
+// ---- Concurrency control ----
 
-// ---- Execution lock helpers ----
+const MAX_CONCURRENT = 3;
+const TASK_TIMEOUT_MS = 120_000;
+
+let runningCount = 0;
+let workerInterval: ReturnType<typeof setInterval> | null = null;
+
+// ---- Execution lock ----
 
 async function acquireLock(taskId: string): Promise<boolean> {
   const task = await prisma.task.findUnique({ where: { id: taskId } });
-  if (!task || task.processing) {
-    console.log(`[WORKER] Skipping task ${taskId} (${!task ? 'not found' : 'already processing'})`);
-    return false;
-  }
+  if (!task || task.processing) return false;
   await prisma.task.update({ where: { id: taskId }, data: { processing: true } });
   return true;
 }
@@ -34,10 +34,23 @@ async function releaseLock(taskId: string) {
   }
 }
 
-// ---- Core execution (wrapped with timeout) ----
+// ---- Fetch next task from DB by priority ----
+
+async function fetchNextQueuedTask() {
+  // Fetch highest priority first, then oldest
+  const task = await prisma.task.findFirst({
+    where: { status: 'queued', processing: false },
+    orderBy: [
+      { priority: 'desc' },
+      { createdAt: 'asc' },
+    ],
+  });
+  return task;
+}
+
+// ---- Core execution ----
 
 async function executeTask(taskId: string, input: string, presetType?: string, userId?: string) {
-  // Move from queued → understanding
   await updateTaskStatus(taskId, 'understanding');
   await emitLog(taskId, '正在识别任务类型...');
 
@@ -89,86 +102,59 @@ async function executeTask(taskId: string, input: string, presetType?: string, u
   }
 }
 
-// ---- Process one queue item with lock + timeout ----
+// ---- Process one task with lock + timeout + concurrency slot ----
 
-async function processQueueItem() {
-  const item = dequeue();
-  if (!item) return;
-
-  const { taskId, input, presetType, userId } = item;
-
-  // Acquire execution lock
-  const locked = await acquireLock(taskId);
+async function processTask(task: { id: string; input: string; type: string; userId: string | null }) {
+  const locked = await acquireLock(task.id);
   if (!locked) return;
 
-  console.log(`[WORKER] Processing task ${taskId}`);
+  runningCount++;
+  console.log(`[WORKER] Processing task ${task.id} (running: ${runningCount}/${MAX_CONCURRENT})`);
 
   try {
-    // Execute with timeout
     await Promise.race([
-      executeTask(taskId, input, presetType, userId),
+      executeTask(task.id, task.input, task.type !== 'unknown' ? task.type : undefined, task.userId || undefined),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('任务执行超时，请重试')), TASK_TIMEOUT_MS)
       ),
     ]);
-
-    console.log(`[WORKER] Completed task ${taskId}`);
+    console.log(`[WORKER] Completed task ${task.id}`);
   } catch (error) {
-    console.error(`[WORKER] Failed task ${taskId}:`, error);
+    console.error(`[WORKER] Failed task ${task.id}:`, error);
     try {
       const { failTask } = await import('./task-manager');
-      await failTask(taskId, error instanceof Error ? error.message : '处理失败，请重试');
-    } catch (failErr) {
-      console.error(`[WORKER] failTask also failed for ${taskId}:`, failErr);
-    }
+      await failTask(task.id, error instanceof Error ? error.message : '处理失败，请重试');
+    } catch {}
   } finally {
-    // Always release lock
-    await releaseLock(taskId);
+    runningCount--;
+    await releaseLock(task.id);
   }
 }
 
-// ---- Worker loop ----
+// ---- Worker loop: poll DB, respect concurrency limit ----
 
 async function workerLoop() {
-  if (workerRunning) return;
-  if (getQueueLength() === 0) return;
+  if (runningCount >= MAX_CONCURRENT) return;
 
-  workerRunning = true;
-  try {
-    await processQueueItem();
-  } finally {
-    workerRunning = false;
-  }
+  const task = await fetchNextQueuedTask();
+  if (!task) return;
+
+  // Fire and forget — don't await, so multiple tasks can run concurrently
+  processTask(task).catch(() => {});
 }
 
-// ---- Recovery: re-enqueue orphaned tasks on startup ----
+// ---- Recovery ----
 
 async function recoverOrphanedTasks() {
   try {
-    // Reset any stuck processing flags
     await prisma.task.updateMany({
       where: { processing: true },
       data: { processing: false },
     });
 
-    // Re-enqueue tasks that are still queued
-    const queuedTasks = await prisma.task.findMany({
-      where: { status: 'queued' },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    for (const task of queuedTasks) {
-      enqueue({
-        taskId: task.id,
-        input: task.input,
-        presetType: task.type !== 'unknown' ? task.type : undefined,
-        userId: task.userId || undefined,
-        enqueuedAt: Date.now(),
-      });
-    }
-
-    if (queuedTasks.length > 0) {
-      console.log(`[WORKER] Recovered ${queuedTasks.length} orphaned tasks`);
+    const queuedCount = await prisma.task.count({ where: { status: 'queued' } });
+    if (queuedCount > 0) {
+      console.log(`[WORKER] ${queuedCount} queued tasks found, will be picked up by polling`);
     }
   } catch (err) {
     console.error('[WORKER] Recovery failed:', err);
@@ -179,11 +165,9 @@ async function recoverOrphanedTasks() {
 
 export function startWorker(intervalMs = 1000) {
   if (workerInterval) return;
-  console.log('[WORKER] Started (polling every', intervalMs, 'ms)');
+  console.log(`[WORKER] Started (polling every ${intervalMs}ms, max concurrent: ${MAX_CONCURRENT})`);
 
-  // Recover orphaned tasks from previous run
   recoverOrphanedTasks().catch(() => {});
-
   workerInterval = setInterval(workerLoop, intervalMs);
 }
 
