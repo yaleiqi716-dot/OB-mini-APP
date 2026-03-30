@@ -31,6 +31,7 @@ interface TaskState {
   currentInteraction: Interaction | null;
   result: Record<string, unknown> | null;
   lastSeenUpdatedAt: string;
+  context: Record<string, unknown>;
 }
 
 function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
@@ -65,6 +66,7 @@ function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
     currentInteraction,
     result: (data.result as Record<string, unknown>) || null,
     lastSeenUpdatedAt: updatedAt,
+    context: (data.context as Record<string, unknown>) || {},
   };
 }
 
@@ -203,7 +205,7 @@ export default function AgentPage() {
                   source: (t.source as TaskSource) || 'agent',
                   createdAt: (t.createdAt as string) || now, updatedAt: serverUpdatedAt || now,
                   events: [], eventsLoaded: false, currentInteraction: null,
-                  result: (t.result as Record<string, unknown>) || null, lastSeenUpdatedAt: '',
+                  result: (t.result as Record<string, unknown>) || null, lastSeenUpdatedAt: '', context: {},
                 });
               }
             }
@@ -311,7 +313,7 @@ export default function AgentPage() {
             createdAt: now, updatedAt: now,
             events: [instantThinking], eventsLoaded: false,
             currentInteraction: null, result: null,
-            lastSeenUpdatedAt: now,
+            lastSeenUpdatedAt: now, context: {},
           };
         }
         setTasks((prev) => [newTask, ...prev]);
@@ -513,6 +515,8 @@ export default function AgentPage() {
                     result={activeTask.result}
                     loading={!!isActiveTaskLoading}
                     credits={quota?.credits ?? null}
+                    executionStrategy={(activeTask.context.executionStrategy as string) || undefined}
+                    modelName={(activeTask.context.model as string) || undefined}
                   />
                   <div ref={canvasEndRef} />
                 </div>
