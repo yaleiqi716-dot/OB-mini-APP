@@ -252,9 +252,20 @@ export default function AgentPage() {
   }
 
   function fetchQuota() {
-    fetch('/api/billing/status').then((r) => r.json()).then((d) => {
-      if (d.credits !== undefined) setQuota(d);
+    fetch('/api/user').then((r) => r.json()).then((d) => {
+      if (d.credits !== undefined) setQuota({ credits: d.credits, dailyTaskCount: 0, dailyLimit: 3 });
     }).catch(() => {});
+  }
+
+  async function handleAddCredits() {
+    try {
+      const res = await fetch('/api/billing/add-credits', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const data = await res.json();
+      if (data.success) {
+        fetchQuota();
+        showError('充值成功 +100 额度');
+      }
+    } catch { showError('充值失败'); }
   }
 
   useEffect(() => { fetchQuota(); }, []);
@@ -447,8 +458,9 @@ export default function AgentPage() {
             <div className="hidden sm:flex items-center gap-2 text-xs text-content-tertiary">
               <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium">{quota.credits}</span>
               <span>额度</span>
-              <span className="text-content-tertiary/50">|</span>
-              <span>{quota.dailyTaskCount}/{quota.dailyLimit} 今日</span>
+              <button onClick={handleAddCredits} className="px-2 py-0.5 rounded bg-accent/10 text-accent hover:bg-accent/20 transition-colors font-medium">
+                充值
+              </button>
             </div>
           ) : null}
           <ThemeToggle />

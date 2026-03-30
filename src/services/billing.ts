@@ -1,20 +1,12 @@
 import { prisma } from '@/lib/prisma';
 import { TaskType } from '@/types/task';
+import { estimateCost } from '@/lib/cost';
 
 const DAILY_TASK_LIMIT: Record<string, number> = {
   free: 3,
   basic: 10,
   pro: 50,
   team: 200,
-};
-
-const TASK_CREDIT_COST: Record<string, number> = {
-  ppt: 20,
-  email: 5,
-  proposal: 15,
-  website: 10,
-  video: 15,
-  unknown: 5,
 };
 
 function today(): string {
@@ -42,7 +34,7 @@ export async function getOrCreateUser(userId: string) {
 }
 
 export function getEstimatedCost(taskType: TaskType | string): number {
-  return TASK_CREDIT_COST[taskType] || 5;
+  return estimateCost(taskType);
 }
 
 export async function checkCredits(
@@ -66,7 +58,7 @@ export async function checkCredits(
 
 export async function deductCredits(userId: string, taskId: string, taskType: TaskType | string) {
   const user = await getOrCreateUser(userId);
-  const cost = getEstimatedCost(taskType);
+  const cost = estimateCost(taskType);
   const actualCost = Math.min(cost, user.credits);
 
   await prisma.user.update({

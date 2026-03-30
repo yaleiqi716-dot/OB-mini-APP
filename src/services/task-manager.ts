@@ -143,11 +143,11 @@ export async function completeTask(taskId: string, result: Record<string, unknow
   });
 
   // Deduct credits on completion
+  let actualCost = 0;
   if (task?.userId) {
     try {
       const { deductCredits } = await import('@/services/billing');
-      const cost = await deductCredits(task.userId, taskId, task.type);
-      await emitEvent(taskId, 'log', { message: `消耗 ${cost} 额度` });
+      actualCost = await deductCredits(task.userId, taskId, task.type);
     } catch (err) {
       console.error('[BILLING_DEDUCT_ERROR]', taskId, err);
     }
@@ -155,6 +155,7 @@ export async function completeTask(taskId: string, result: Record<string, unknow
 
   await emitEvent(taskId, 'task_completed', {
     message: message || '任务完成',
+    cost: actualCost,
     result,
   });
   await emitEvent(taskId, 'status_change', { status: 'completed' });

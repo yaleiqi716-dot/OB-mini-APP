@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Credits check
-    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value || 'default-user';
+    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value || 'demo-user';
     const estimatedType = body.type || 'unknown';
     const creditCheck = await checkCredits(userId, estimatedType);
     if (!creditCheck.allowed) {
@@ -115,6 +115,23 @@ async function processTask(taskId: string, input: string, presetType?: TaskType,
     }
 
     await updateTaskType(taskId, taskType, title);
+
+    // Update estimated cost now that we know the actual type
+    const { estimateCost } = await import('@/lib/cost');
+    const cost = estimateCost(taskType);
+    await prisma.task.update({ where: { id: taskId }, data: { estimatedCost: cost } });
+
+    // Check credits with actual type (may differ from initial estimate)
+    if (userId) {
+      const { checkCredits: recheck } = await import('@/services/billing');
+      const recheckResult = await recheck(userId, taskType);
+      if (!recheckResult.allowed) {
+        const { failTask } = await import('@/services/task-manager');
+        await failTask(taskId, recheckResult.reason || '余额不足，请充值');
+        return;
+      }
+    }
+
     await emitLog(taskId, `任务类型：${taskType}`);
 
     const workflow = getWorkflow(taskType);
