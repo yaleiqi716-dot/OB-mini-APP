@@ -226,6 +226,25 @@ export default function AgentPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Auto-create first task for new users
+  const firstTaskTriggered = useRef(false);
+  useEffect(() => {
+    if (firstTaskTriggered.current) return;
+    if (typeof window === 'undefined') return;
+    if (localStorage.getItem('ob_first_task_done')) return;
+
+    // Wait for initial poll to determine if user has tasks
+    const timer = setTimeout(() => {
+      if (tasks.length === 0 && !firstTaskTriggered.current) {
+        firstTaskTriggered.current = true;
+        localStorage.setItem('ob_first_task_done', '1');
+        handleSubmit('帮我生成一份今日工作总结邮件', 'email');
+      }
+    }, 2000); // 2s delay to let initial poll complete
+
+    return () => clearTimeout(timer);
+  }, [tasks.length]);
+
   // Fetch full events on task switch
   useEffect(() => {
     if (!activeTaskId) return;
