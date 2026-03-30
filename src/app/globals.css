@@ -39,7 +39,6 @@ body {
   color: var(--content-primary);
 }
 
-/* Hide scrollbar but keep functionality */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -48,7 +47,6 @@ body {
   display: none;
 }
 
-/* Custom scrollbar for content areas */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
@@ -63,14 +61,44 @@ body {
   background: var(--content-tertiary);
 }
 
-/* Smooth transitions */
+/* Smooth base transitions */
 * {
   transition-property: color, background-color, border-color;
   transition-timing-function: ease;
   transition-duration: 100ms;
 }
 
-/* Override transition for elements that need instant response */
 button, a, input, textarea {
   transition-duration: 150ms;
+}
+
+/* ---- Execution flow animations ---- */
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes progressPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-flow-in {
+  animation: fadeSlideIn 0.3s ease-out both;
+}
+
+.animate-progress-pulse {
+  animation: progressPulse 2s ease-in-out infinite;
+}
+
+/* Progress bar smooth fill */
+.progress-bar-fill {
+  transition: width 0.5s ease-out;
 }

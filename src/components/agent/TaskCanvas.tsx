@@ -19,6 +19,7 @@ interface TaskCanvasProps {
   title: string;
   type: string;
   status: TaskStatus;
+  input: string;
   events: TaskEvent[];
   currentInteraction: Interaction | null;
   onInteractionSubmit: (stepId: string, value: unknown) => void;
@@ -40,37 +41,89 @@ function getApprovalType(interaction: Interaction | null): ApprovalType | null {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  ppt: '演示文稿',
-  email: '邮件',
-  proposal: '方案',
-  website: '网页',
-  video: '视频',
-  unknown: '任务',
+  ppt: '演示文稿', email: '邮件', proposal: '方案',
+  website: '网页', video: '视频', unknown: '任务',
 };
 
+// Derive current status text from events
+function getCurrentPhaseText(status: TaskStatus, events: TaskEvent[]): string | null {
+  if (status === 'completed' || status === 'failed') return null;
+
+  // Find latest step_update with progress
+  for (let i = events.length - 1; i >= 0; i--) {
+    const e = events[i];
+    if (e.type === 'step_update' && e.data.current && e.data.total) {
+      return `${e.data.text || '生成中'} (${e.data.current}/${e.data.total})`;
+    }
+  }
+
+  // Fall back to latest log
+  for (let i = events.length - 1; i >= 0; i--) {
+    const e = events[i];
+    if (e.type === 'log') return String(e.data.message || '');
+  }
+
+  if (status === 'understanding') return '正在理解需求...';
+  if (status === 'executing') return '正在执行...';
+  if (status === 'interacting') return '等待确认';
+  if (status === 'structuring') return '等待确认结构';
+  return null;
+}
+
+// Deduplicate step_updates: only keep the latest per step key
+function getLatestStepUpdates(events: TaskEvent[]): TaskEvent[] {
+  const map = new Map<string, TaskEvent>();
+  for (const e of events) {
+    if (e.type === 'step_update') {
+      const key = String(e.data.step || '');
+      map.set(key, e);
+    }
+  }
+  return Array.from(map.values());
+}
+
+// Get progress from latest step_update
+function getProgress(events: TaskEvent[]): { current: number; total: number } | null {
+  for (let i = events.length - 1; i >= 0; i--) {
+    const e = events[i];
+    if (e.type === 'step_update' && typeof e.data.current === 'number' && typeof e.data.total === 'number') {
+      return { current: e.data.current as number, total: e.data.total as number };
+    }
+  }
+  return null;
+}
+
 export function TaskCanvas({
-  taskId, title, type, status, events, currentInteraction,
+  taskId, title, type, status, input, events, currentInteraction,
   onInteractionSubmit, onApprove, onReject, onAdjustStructure, onAdjustProposal, onReviseEmail,
   actionLoading, result,
 }: TaskCanvasProps) {
-  const logs = events.filter((e) => e.type === 'log');
-  const stepUpdates = events.filter((e) => e.type === 'step_update');
   const structureEvent = events.findLast((e) => e.type === 'structure_generated');
   const isActive = !['completed', 'failed'].includes(status);
+  const isExecuting = isActive && status === 'executing';
 
   const approvalType = getApprovalType(currentInteraction);
   const isApprovalGate = approvalType !== null && status === 'interacting';
   const isGenericInteraction = currentInteraction !== null && status === 'interacting' && !isApprovalGate;
 
   const typeInfo = TASK_TYPES.find((t) => t.value === type);
+  const phaseText = getCurrentPhaseText(status, events);
+  const progress = isExecuting ? getProgress(events) : null;
+  const deduplicatedSteps = getLatestStepUpdates(events);
+
+  // Only show completed steps (text ends with "已生成" or "已完成")
+  const completedSteps = deduplicatedSteps.filter((e) => {
+    const text = String(e.data.text || '');
+    return text.includes('已生成') || text.includes('已完成');
+  });
 
   return (
     <div className="flex flex-col h-full">
-      {/* Task header */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+      {/* Header with live status */}
+      <div className="px-5 py-3.5 border-b border-border">
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-base flex-shrink-0">{typeInfo?.icon || '📎'}</span>
-          <div className="min-w-0">
+          <div className="flex-1 min-w-0">
             <h3 className="text-sm font-medium text-content-primary truncate">{title || '新任务'}</h3>
             <div className="flex items-center gap-2 mt-0.5">
               <Badge status={status} />
@@ -78,139 +131,155 @@ export function TaskCanvas({
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Event timeline */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-3">
-        {/* Activity log */}
-        {logs.map((event, i) => (
-          <LogEntry key={`log-${i}`} message={String(event.data.message || '')} />
-        ))}
-
-        {/* Completed structure badge */}
-        {structureEvent && (status === 'executing' || !isActive) ? (
-          <CompletedStructure structure={structureEvent.data.structure as string[]} />
-        ) : null}
-
-        {/* Step progress */}
-        {stepUpdates.map((event, i) => (
-          <StepEntry key={`step-${i}`} data={event.data} />
-        ))}
-
-        {/* Loading states */}
-        {isActive && status === 'executing' ? (
-          <LoadingHint text="正在生成内容..." />
-        ) : null}
-
-        {status === 'understanding' ? (
-          <LoadingHint text="正在理解需求..." />
-        ) : null}
-
-        {/* Approval cards */}
-        {isApprovalGate && approvalType === 'send_email' ? (
-          <ApprovalCard
-            icon="✉️"
-            label="邮件预览"
-            loading={actionLoading}
-            onApprove={() => onApprove('send_email')}
-            approveLabel="确认发送"
-            loadingLabel="发送中..."
-            onSecondary={onReviseEmail}
-            secondaryLabel="继续修改"
-            onReject={() => onReject('send_email')}
-          >
-            <EmailPreview interaction={currentInteraction as ConfirmInteraction} />
-          </ApprovalCard>
-        ) : null}
-
-        {isApprovalGate && approvalType === 'use_structure' ? (
-          <ApprovalCard
-            icon="📊"
-            label="演示文稿结构"
-            loading={actionLoading}
-            onApprove={() => onApprove('use_structure')}
-            approveLabel="继续生成"
-            onSecondary={onAdjustStructure}
-            secondaryLabel="调整结构"
-            onReject={() => onReject('use_structure')}
-          >
-            <StructureList structure={((currentInteraction as ConfirmInteraction).detailData?.structure as string[]) || []} />
-          </ApprovalCard>
-        ) : null}
-
-        {isApprovalGate && approvalType === 'use_proposal_structure' ? (
-          <ApprovalCard
-            icon="📋"
-            label="方案结构"
-            loading={actionLoading}
-            onApprove={() => onApprove('use_proposal_structure')}
-            approveLabel="继续生成"
-            onSecondary={onAdjustProposal}
-            secondaryLabel="调整结构"
-            onReject={() => onReject('use_proposal_structure')}
-          >
-            <StructureList structure={((currentInteraction as ConfirmInteraction).detailData?.structure as string[]) || []} />
-          </ApprovalCard>
-        ) : null}
-
-        {/* Generic interaction */}
-        {isGenericInteraction ? (
-          <div className="p-4 rounded-xl border border-accent/20 bg-accent/5">
-            <InteractionPanel interaction={currentInteraction!} onSubmit={onInteractionSubmit} />
-          </div>
-        ) : null}
-
-        {/* Result */}
-        {status === 'completed' && result !== null ? <ResultView result={result} /> : null}
-
-        {/* Error */}
-        {status === 'failed' ? (
-          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-            <p className="text-sm text-red-400">
-              {events.find((e) => e.type === 'error')
-                ? String(events.find((e) => e.type === 'error')!.data.message || '执行失败')
-                : '执行失败'}
-            </p>
+        {/* Live status bar */}
+        {phaseText && isActive ? (
+          <div className="mt-3 animate-flow-in">
+            <div className="flex items-center gap-2 text-xs text-content-secondary">
+              <Spinner size="sm" />
+              <span className="animate-progress-pulse">{phaseText}</span>
+            </div>
+            {progress ? (
+              <div className="mt-2 h-1 rounded-full bg-surface-tertiary overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-accent progress-bar-fill"
+                  style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }}
+                />
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>
+
+      {/* Execution flow */}
+      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+
+        {/* User input as conversation starter */}
+        {input ? (
+          <div className="flex gap-3 animate-flow-in">
+            <div className="h-7 w-7 rounded-full bg-accent/15 flex items-center justify-center flex-shrink-0">
+              <span className="text-xs text-accent font-medium">你</span>
+            </div>
+            <div className="pt-1">
+              <p className="text-sm text-content-primary leading-relaxed">{input}</p>
+            </div>
+          </div>
+        ) : null}
+
+        {/* AI execution section */}
+        {events.length > 0 ? (
+          <div className="flex gap-3">
+            <div className="h-7 w-7 rounded-full bg-surface-tertiary flex items-center justify-center flex-shrink-0">
+              <span className="text-xs text-content-tertiary font-medium">{typeInfo?.icon || 'AI'}</span>
+            </div>
+            <div className="flex-1 min-w-0 space-y-3 pt-1">
+
+              {/* Collapsed activity log — only show last 3 during execution */}
+              {(() => {
+                const logs = events.filter((e) => e.type === 'log');
+                const showLogs = isApprovalGate || !isActive ? logs : logs.slice(-3);
+                return showLogs.map((event, i) => (
+                  <div key={`log-${i}`} className="animate-flow-in text-sm text-content-secondary leading-relaxed">
+                    {String(event.data.message || '')}
+                  </div>
+                ));
+              })()}
+
+              {/* Completed structure badge */}
+              {structureEvent && (isExecuting || !isActive) ? (
+                <div className="animate-flow-in">
+                  <CompletedStructure structure={structureEvent.data.structure as string[]} />
+                </div>
+              ) : null}
+
+              {/* Step progress — only completed steps */}
+              {completedSteps.length > 0 ? (
+                <div className="space-y-1 animate-flow-in">
+                  {completedSteps.map((event, i) => (
+                    <div key={`step-${i}`} className="flex items-center gap-2 text-xs text-content-secondary">
+                      <span className="text-green-400">✓</span>
+                      <span>{String(event.data.text || '')}</span>
+                      {typeof event.data.current === 'number' && typeof event.data.total === 'number' ? (
+                        <span className="text-content-tertiary tabular-nums ml-auto">{event.data.current as number}/{event.data.total as number}</span>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {/* Approval cards — prominent when active */}
+              {isApprovalGate && approvalType === 'send_email' ? (
+                <div className="animate-flow-in">
+                  <ApprovalCard
+                    icon="✉️" label="邮件预览" loading={actionLoading}
+                    onApprove={() => onApprove('send_email')} approveLabel="确认发送" loadingLabel="发送中..."
+                    onSecondary={onReviseEmail} secondaryLabel="继续修改"
+                    onReject={() => onReject('send_email')}
+                  >
+                    <EmailPreview interaction={currentInteraction as ConfirmInteraction} />
+                  </ApprovalCard>
+                </div>
+              ) : null}
+
+              {isApprovalGate && approvalType === 'use_structure' ? (
+                <div className="animate-flow-in">
+                  <ApprovalCard
+                    icon="📊" label="演示文稿结构" loading={actionLoading}
+                    onApprove={() => onApprove('use_structure')} approveLabel="继续生成"
+                    onSecondary={onAdjustStructure} secondaryLabel="调整结构"
+                    onReject={() => onReject('use_structure')}
+                  >
+                    <StructureList structure={((currentInteraction as ConfirmInteraction).detailData?.structure as string[]) || []} />
+                  </ApprovalCard>
+                </div>
+              ) : null}
+
+              {isApprovalGate && approvalType === 'use_proposal_structure' ? (
+                <div className="animate-flow-in">
+                  <ApprovalCard
+                    icon="📋" label="方案结构" loading={actionLoading}
+                    onApprove={() => onApprove('use_proposal_structure')} approveLabel="继续生成"
+                    onSecondary={onAdjustProposal} secondaryLabel="调整结构"
+                    onReject={() => onReject('use_proposal_structure')}
+                  >
+                    <StructureList structure={((currentInteraction as ConfirmInteraction).detailData?.structure as string[]) || []} />
+                  </ApprovalCard>
+                </div>
+              ) : null}
+
+              {/* Generic interaction */}
+              {isGenericInteraction ? (
+                <div className="animate-flow-in p-4 rounded-xl border border-accent/20 bg-accent/5">
+                  <InteractionPanel interaction={currentInteraction!} onSubmit={onInteractionSubmit} />
+                </div>
+              ) : null}
+
+              {/* Result */}
+              {status === 'completed' && result !== null ? (
+                <div className="animate-flow-in">
+                  <ResultView result={result} />
+                </div>
+              ) : null}
+
+              {/* Error */}
+              {status === 'failed' ? (
+                <div className="animate-flow-in p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <p className="text-sm text-red-400">
+                    {events.find((e) => e.type === 'error')
+                      ? String(events.find((e) => e.type === 'error')!.data.message || '执行失败')
+                      : '执行失败'}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
 
-// ---- Shared sub-components ----
-
-function LogEntry({ message }: { message: string }) {
-  return (
-    <div className="flex items-start gap-2.5 text-sm">
-      <span className="text-accent/70 mt-0.5 flex-shrink-0 text-xs">›</span>
-      <span className="text-content-secondary leading-relaxed">{message}</span>
-    </div>
-  );
-}
-
-function StepEntry({ data }: { data: Record<string, unknown> }) {
-  const text = String(data.text || data.step || '');
-  const current = data.current as number | undefined;
-  const total = data.total as number | undefined;
-  return (
-    <div className="flex items-start gap-2.5 text-sm">
-      <span className="text-green-400 mt-0.5 flex-shrink-0 text-xs">✓</span>
-      <span className="text-content-primary flex-1">{text}</span>
-      {current !== undefined && total !== undefined ? (
-        <span className="text-content-tertiary text-xs tabular-nums">{current}/{total}</span>
-      ) : null}
-    </div>
-  );
-}
-
-function LoadingHint({ text }: { text: string }) {
-  return (
-    <div className="flex items-center gap-2 text-content-secondary text-sm py-1">
-      <Spinner size="sm" /><span>{text}</span>
-    </div>
-  );
-}
+// ---- Sub-components ----
 
 function CompletedStructure({ structure }: { structure: string[] }) {
   return (
@@ -229,24 +298,14 @@ function CompletedStructure({ structure }: { structure: string[] }) {
   );
 }
 
-// ---- Unified approval card ----
-
 function ApprovalCard({
   icon, label, loading, children,
   onApprove, approveLabel, loadingLabel,
-  onSecondary, secondaryLabel,
-  onReject,
+  onSecondary, secondaryLabel, onReject,
 }: {
-  icon: string;
-  label: string;
-  loading: boolean;
-  children: React.ReactNode;
-  onApprove: () => void;
-  approveLabel: string;
-  loadingLabel?: string;
-  onSecondary?: () => void;
-  secondaryLabel?: string;
-  onReject: () => void;
+  icon: string; label: string; loading: boolean; children: React.ReactNode;
+  onApprove: () => void; approveLabel: string; loadingLabel?: string;
+  onSecondary?: () => void; secondaryLabel?: string; onReject: () => void;
 }) {
   return (
     <div className="rounded-xl border border-accent/25 bg-accent/[0.03] p-5 space-y-4">
@@ -260,15 +319,9 @@ function ApprovalCard({
           {loading ? (loadingLabel || '处理中...') : approveLabel}
         </Button>
         {onSecondary && secondaryLabel ? (
-          <Button onClick={onSecondary} variant="secondary" size="sm" disabled={loading}>
-            {secondaryLabel}
-          </Button>
+          <Button onClick={onSecondary} variant="secondary" size="sm" disabled={loading}>{secondaryLabel}</Button>
         ) : null}
-        <button
-          onClick={onReject}
-          disabled={loading}
-          className="text-xs text-content-tertiary hover:text-content-secondary transition-colors disabled:opacity-50 ml-auto"
-        >
+        <button onClick={onReject} disabled={loading} className="text-xs text-content-tertiary hover:text-content-secondary transition-colors disabled:opacity-50 ml-auto">
           重新生成
         </button>
       </div>
@@ -276,13 +329,10 @@ function ApprovalCard({
   );
 }
 
-// ---- Approval content blocks ----
-
 function EmailPreview({ interaction }: { interaction: ConfirmInteraction }) {
   const dd = interaction.detailData;
   const subject = (dd?.subject as string) || '';
   const body = (dd?.body as string) || interaction.detail || '';
-
   return (
     <div className="space-y-3">
       {subject ? (
@@ -314,8 +364,6 @@ function StructureList({ structure }: { structure: string[] }) {
     </div>
   );
 }
-
-// ---- Result views ----
 
 function ResultView({ result }: { result: Record<string, unknown> }) {
   const data = result;

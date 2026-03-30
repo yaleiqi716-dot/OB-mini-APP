@@ -343,7 +343,7 @@ export default function AgentPage() {
               <div className="max-w-3xl mx-auto pb-4">
                 <TaskCanvas
                   taskId={activeTask.id} title={activeTask.title} type={activeTask.type}
-                  status={activeTask.status} events={activeTask.events}
+                  status={activeTask.status} input={activeTask.input} events={activeTask.events}
                   currentInteraction={activeTask.currentInteraction}
                   onInteractionSubmit={handleInteractionSubmit}
                   onApprove={handleApprove}
