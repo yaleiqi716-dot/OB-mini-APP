@@ -79,6 +79,9 @@ function getTaskSummary(task: TaskState): string {
   return '';
 }
 
+// Status priority for determining if polling should NOT overwrite
+const TERMINAL_STATUSES = new Set(['completed', 'failed']);
+
 export default function AgentPage() {
   const [tasks, setTasks] = useState<TaskState[]>([]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
@@ -118,7 +121,7 @@ export default function AgentPage() {
     }, []),
   });
 
-  // 5s task list polling
+  // 5s task list polling — protected merge
   useEffect(() => {
     function pollTasks() {
       fetch('/api/tasks')
@@ -133,23 +136,39 @@ export default function AgentPage() {
             for (const t of data as Record<string, unknown>[]) {
               const id = t.id as string;
               const serverUpdatedAt = (t.updatedAt as string) || '';
+              const serverStatus = (t.status as TaskStatus) || 'pending';
               const existing = prevMap.get(id);
               if (existing) {
                 const isActive = id === currentActiveId;
-                merged.push({
-                  ...existing,
-                  type: (t.type as TaskType) || existing.type,
-                  status: isActive ? existing.status : ((t.status as TaskStatus) || existing.status),
-                  title: (t.title as string) || existing.title,
-                  source: (t.source as TaskSource) || existing.source,
-                  updatedAt: serverUpdatedAt || existing.updatedAt,
-                  result: isActive ? existing.result : ((t.result as Record<string, unknown>) || existing.result),
-                  lastSeenUpdatedAt: isActive ? serverUpdatedAt || existing.lastSeenUpdatedAt : existing.lastSeenUpdatedAt,
-                });
+                // PROTECT: never let poll regress active task or overwrite SSE-driven fields
+                if (isActive) {
+                  // Only update title (which may come from routing) and updatedAt
+                  merged.push({
+                    ...existing,
+                    title: (t.title as string) || existing.title,
+                    type: (t.type as TaskType) || existing.type,
+                    source: (t.source as TaskSource) || existing.source,
+                    updatedAt: serverUpdatedAt > existing.updatedAt ? serverUpdatedAt : existing.updatedAt,
+                    lastSeenUpdatedAt: serverUpdatedAt > existing.lastSeenUpdatedAt ? serverUpdatedAt : existing.lastSeenUpdatedAt,
+                  });
+                } else {
+                  // Non-active: update summary fields but never regress status
+                  const shouldUpdateStatus = !TERMINAL_STATUSES.has(existing.status) || TERMINAL_STATUSES.has(serverStatus);
+                  merged.push({
+                    ...existing,
+                    type: (t.type as TaskType) || existing.type,
+                    status: shouldUpdateStatus ? serverStatus : existing.status,
+                    title: (t.title as string) || existing.title,
+                    source: (t.source as TaskSource) || existing.source,
+                    updatedAt: serverUpdatedAt || existing.updatedAt,
+                    result: (t.result as Record<string, unknown>) || existing.result,
+                    lastSeenUpdatedAt: existing.lastSeenUpdatedAt,
+                  });
+                }
               } else {
                 const now = new Date().toISOString();
                 merged.push({
-                  id, type: (t.type as TaskType) || 'unknown', status: (t.status as TaskStatus) || 'pending',
+                  id, type: (t.type as TaskType) || 'unknown', status: serverStatus,
                   title: (t.title as string) || '', input: (t.input as string) || '',
                   source: (t.source as TaskSource) || 'agent',
                   createdAt: (t.createdAt as string) || now, updatedAt: serverUpdatedAt || now,
@@ -305,12 +324,12 @@ export default function AgentPage() {
   function handleCardSelect(prompt: string, type: string) { handleSubmit(prompt, type); }
 
   const hasTasks = tasks.length > 0;
+  const isActiveTaskLoading = activeTask && !activeTask.eventsLoaded;
 
   // ---- Render ----
 
   return (
     <div className="h-screen flex flex-col bg-surface-primary">
-      {/* Header */}
       <header className="flex items-center justify-between px-6 h-12 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-1.5">
           <span className="text-accent font-bold text-base tracking-tight">ORANGE</span>
@@ -320,7 +339,6 @@ export default function AgentPage() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
         {hasTasks ? (
           <aside className="w-72 border-r border-border p-2.5 overflow-y-auto custom-scrollbar flex-shrink-0">
             <TaskList
@@ -336,7 +354,6 @@ export default function AgentPage() {
           </aside>
         ) : null}
 
-        {/* Main */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {activeTask ? (
             <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -353,6 +370,7 @@ export default function AgentPage() {
                   onReviseEmail={handleReviseEmail}
                   actionLoading={actionLoadingTaskId === activeTask.id}
                   result={activeTask.result}
+                  loading={!!isActiveTaskLoading}
                 />
                 <div ref={canvasEndRef} />
               </div>
@@ -377,7 +395,6 @@ export default function AgentPage() {
             </div>
           )}
 
-          {/* Input area */}
           <div className="border-t border-border px-4 py-3 bg-surface-primary flex-shrink-0">
             {!activeTask && !showWelcome ? (
               <div className="max-w-3xl mx-auto mb-3">

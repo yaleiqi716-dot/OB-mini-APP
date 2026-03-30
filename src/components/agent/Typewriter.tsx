@@ -1,46 +1,53 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 
 interface TypewriterProps {
   text: string;
   speed?: number;
-  onComplete?: () => void;
   className?: string;
 }
 
-export function Typewriter({ text, speed = 30, onComplete, className }: TypewriterProps) {
+// Memoized to prevent parent re-renders from resetting the animation.
+// Only re-runs when `text` actually changes.
+export const Typewriter = memo(function Typewriter({ text, speed = 30, className }: TypewriterProps) {
   const [displayed, setDisplayed] = useState('');
   const indexRef = useRef(0);
-  const prevTextRef = useRef('');
+  const completedTextRef = useRef('');
 
   useEffect(() => {
-    // Reset when text changes
-    if (text !== prevTextRef.current) {
-      prevTextRef.current = text;
-      indexRef.current = 0;
-      setDisplayed('');
+    // If this text was already fully displayed, show it instantly
+    if (text === completedTextRef.current) {
+      setDisplayed(text);
+      return;
     }
 
+    // New text — start typing from scratch
+    indexRef.current = 0;
+    setDisplayed('');
+
     const interval = setInterval(() => {
-      if (indexRef.current < text.length) {
-        indexRef.current++;
-        setDisplayed(text.slice(0, indexRef.current));
-      } else {
+      indexRef.current++;
+      if (indexRef.current >= text.length) {
+        setDisplayed(text);
+        completedTextRef.current = text;
         clearInterval(interval);
-        onComplete?.();
+      } else {
+        setDisplayed(text.slice(0, indexRef.current));
       }
     }, speed);
 
     return () => clearInterval(interval);
-  }, [text, speed, onComplete]);
+  }, [text, speed]);
+
+  const isTyping = displayed.length < text.length;
 
   return (
     <span className={className}>
       {displayed}
-      {displayed.length < text.length ? (
+      {isTyping ? (
         <span className="inline-block w-0.5 h-3.5 bg-accent/60 ml-0.5 animate-pulse align-middle" />
       ) : null}
     </span>
   );
-}
+});

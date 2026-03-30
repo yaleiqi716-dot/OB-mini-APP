@@ -31,6 +31,7 @@ interface TaskCanvasProps {
   onReviseEmail: () => void;
   actionLoading: boolean;
   result: Record<string, unknown> | null;
+  loading?: boolean;
 }
 
 function getApprovalType(interaction: Interaction | null): ApprovalType | null {
@@ -46,11 +47,9 @@ const TYPE_LABELS: Record<string, string> = {
   website: '网页', video: '视频', unknown: '任务',
 };
 
-// Derive current status text from events
 function getCurrentPhaseText(status: TaskStatus, events: TaskEvent[]): string | null {
   if (status === 'completed' || status === 'failed') return null;
 
-  // Find latest step_update with progress
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
     if (e.type === 'step_update' && e.data.current && e.data.total) {
@@ -58,32 +57,25 @@ function getCurrentPhaseText(status: TaskStatus, events: TaskEvent[]): string | 
     }
   }
 
-  // Fall back to latest log
   for (let i = events.length - 1; i >= 0; i--) {
-    const e = events[i];
-    if (e.type === 'log') return String(e.data.message || '');
+    if (events[i].type === 'log') return String(events[i].data.message || '');
   }
 
   if (status === 'understanding') return '正在理解需求...';
   if (status === 'executing') return '正在执行...';
   if (status === 'interacting') return '等待确认';
-  if (status === 'structuring') return '等待确认结构';
+  if (status === 'structuring') return '等待确认';
   return null;
 }
 
-// Deduplicate step_updates: only keep the latest per step key
 function getLatestStepUpdates(events: TaskEvent[]): TaskEvent[] {
   const map = new Map<string, TaskEvent>();
   for (const e of events) {
-    if (e.type === 'step_update') {
-      const key = String(e.data.step || '');
-      map.set(key, e);
-    }
+    if (e.type === 'step_update') map.set(String(e.data.step || ''), e);
   }
   return Array.from(map.values());
 }
 
-// Get progress from latest step_update
 function getProgress(events: TaskEvent[]): { current: number; total: number } | null {
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
@@ -94,14 +86,39 @@ function getProgress(events: TaskEvent[]): { current: number; total: number } | 
   return null;
 }
 
+function getLatestThinking(events: TaskEvent[]): string | null {
+  for (let i = events.length - 1; i >= 0; i--) {
+    if (events[i].type === 'thinking') return String(events[i].data.text || '');
+  }
+  return null;
+}
+
 export function TaskCanvas({
   taskId, title, type, status, input, events, currentInteraction,
   onInteractionSubmit, onApprove, onReject, onAdjustStructure, onAdjustProposal, onReviseEmail,
-  actionLoading, result,
+  actionLoading, result, loading,
 }: TaskCanvasProps) {
+  // Loading skeleton
+  if (loading) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="px-5 py-4 border-b border-border">
+          <div className="h-4 w-48 rounded bg-surface-tertiary animate-pulse" />
+          <div className="h-3 w-24 rounded bg-surface-tertiary animate-pulse mt-2" />
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="h-3 w-full rounded bg-surface-tertiary animate-pulse" />
+          <div className="h-3 w-3/4 rounded bg-surface-tertiary animate-pulse" />
+          <div className="h-3 w-1/2 rounded bg-surface-tertiary animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   const structureEvent = events.findLast((e) => e.type === 'structure_generated');
   const isActive = !['completed', 'failed'].includes(status);
   const isExecuting = isActive && status === 'executing';
+  const isWorking = status === 'understanding' || status === 'executing' || status === 'structuring';
 
   const approvalType = getApprovalType(currentInteraction);
   const isApprovalGate = approvalType !== null && status === 'interacting';
@@ -112,24 +129,21 @@ export function TaskCanvas({
   const progress = isExecuting ? getProgress(events) : null;
   const deduplicatedSteps = getLatestStepUpdates(events);
 
-  // Only show completed steps (text ends with "已生成" or "已完成")
   const completedSteps = deduplicatedSteps.filter((e) => {
     const text = String(e.data.text || '');
     return text.includes('已生成') || text.includes('已完成');
   });
 
-  // Get latest thinking event — only show when task is actively working
-  const latestThinking = isActive
-    ? (() => {
-        for (let i = events.length - 1; i >= 0; i--) {
-          if (events[i].type === 'thinking') return String(events[i].data.text || '');
-        }
-        return null;
-      })()
-    : null;
+  // Thinking: only show during active working phases, never during approval/completed/failed
+  const thinkingText = isWorking ? getLatestThinking(events) : null;
 
-  // Thinking is "live" if it's the most recent non-status event
-  const isThinkingLive = latestThinking && isActive && (status === 'understanding' || status === 'executing' || status === 'structuring');
+  // Logs: show fewer when thinking is visible
+  const allLogs = events.filter((e) => e.type === 'log');
+  const visibleLogs = (() => {
+    if (!isActive || isApprovalGate) return allLogs; // Full logs when done or in approval
+    if (thinkingText) return allLogs.slice(-1); // Only last 1 when thinking
+    return allLogs.slice(-2); // Last 2 otherwise
+  })();
 
   return (
     <div className="flex flex-col h-full">
@@ -146,8 +160,8 @@ export function TaskCanvas({
           </div>
         </div>
 
-        {/* Live status bar */}
-        {phaseText && isActive ? (
+        {/* Live status bar — only during active phases */}
+        {phaseText && isWorking ? (
           <div className="mt-3 animate-flow-in">
             <div className="flex items-center gap-2 text-xs text-content-secondary">
               <Spinner size="sm" />
@@ -168,7 +182,7 @@ export function TaskCanvas({
       {/* Execution flow */}
       <div className="flex-1 overflow-y-auto p-5 space-y-4">
 
-        {/* User input as conversation starter */}
+        {/* User input */}
         {input ? (
           <div className="flex gap-3 animate-flow-in">
             <div className="h-7 w-7 rounded-full bg-accent/15 flex items-center justify-center flex-shrink-0">
@@ -180,42 +194,38 @@ export function TaskCanvas({
           </div>
         ) : null}
 
-        {/* AI execution section */}
-        {events.length > 0 ? (
+        {/* AI response section */}
+        {(events.length > 0 || isActive) ? (
           <div className="flex gap-3">
             <div className="h-7 w-7 rounded-full bg-surface-tertiary flex items-center justify-center flex-shrink-0">
               <span className="text-xs text-content-tertiary font-medium">{typeInfo?.icon || 'AI'}</span>
             </div>
             <div className="flex-1 min-w-0 space-y-3 pt-1">
 
-              {/* Activity log — dimmed when thinking is active */}
-              {(() => {
-                const logs = events.filter((e) => e.type === 'log');
-                const showLogs = isApprovalGate || !isActive ? logs : logs.slice(-2);
-                return showLogs.map((event, i) => (
-                  <div key={`log-${i}`} className={`animate-flow-in text-sm leading-relaxed ${isThinkingLive ? 'text-content-tertiary' : 'text-content-secondary'}`}>
-                    {String(event.data.message || '')}
-                  </div>
-                ));
-              })()}
+              {/* Activity log */}
+              {visibleLogs.map((event, i) => (
+                <div key={`log-${i}`} className={`animate-flow-in text-sm leading-relaxed ${thinkingText ? 'text-content-tertiary' : 'text-content-secondary'}`}>
+                  {String(event.data.message || '')}
+                </div>
+              ))}
 
-              {/* Thinking layer — typewriter effect */}
-              {isThinkingLive && latestThinking ? (
+              {/* Thinking layer */}
+              {thinkingText ? (
                 <div className="animate-flow-in py-1.5 px-3 rounded-lg bg-surface-tertiary/50 border-l-2 border-accent/30">
                   <p className="text-xs text-content-secondary italic">
-                    <Typewriter text={latestThinking} speed={25} />
+                    <Typewriter text={thinkingText} speed={25} />
                   </p>
                 </div>
               ) : null}
 
-              {/* Completed structure badge */}
+              {/* Completed structure */}
               {structureEvent && (isExecuting || !isActive) ? (
                 <div className="animate-flow-in">
                   <CompletedStructure structure={structureEvent.data.structure as string[]} />
                 </div>
               ) : null}
 
-              {/* Step progress — only completed steps */}
+              {/* Step progress */}
               {completedSteps.length > 0 ? (
                 <div className="space-y-1 animate-flow-in">
                   {completedSteps.map((event, i) => (
@@ -230,15 +240,13 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {/* Approval cards — prominent when active */}
+              {/* Approval cards */}
               {isApprovalGate && approvalType === 'send_email' ? (
                 <div className="animate-flow-in">
-                  <ApprovalCard
-                    icon="✉️" label="邮件预览" loading={actionLoading}
+                  <ApprovalCard icon="✉️" label="邮件预览" loading={actionLoading}
                     onApprove={() => onApprove('send_email')} approveLabel="确认发送" loadingLabel="发送中..."
                     onSecondary={onReviseEmail} secondaryLabel="继续修改"
-                    onReject={() => onReject('send_email')}
-                  >
+                    onReject={() => onReject('send_email')}>
                     <EmailPreview interaction={currentInteraction as ConfirmInteraction} />
                   </ApprovalCard>
                 </div>
@@ -246,12 +254,10 @@ export function TaskCanvas({
 
               {isApprovalGate && approvalType === 'use_structure' ? (
                 <div className="animate-flow-in">
-                  <ApprovalCard
-                    icon="📊" label="演示文稿结构" loading={actionLoading}
+                  <ApprovalCard icon="📊" label="演示文稿结构" loading={actionLoading}
                     onApprove={() => onApprove('use_structure')} approveLabel="继续生成"
                     onSecondary={onAdjustStructure} secondaryLabel="调整结构"
-                    onReject={() => onReject('use_structure')}
-                  >
+                    onReject={() => onReject('use_structure')}>
                     <StructureList structure={((currentInteraction as ConfirmInteraction).detailData?.structure as string[]) || []} />
                   </ApprovalCard>
                 </div>
@@ -259,12 +265,10 @@ export function TaskCanvas({
 
               {isApprovalGate && approvalType === 'use_proposal_structure' ? (
                 <div className="animate-flow-in">
-                  <ApprovalCard
-                    icon="📋" label="方案结构" loading={actionLoading}
+                  <ApprovalCard icon="📋" label="方案结构" loading={actionLoading}
                     onApprove={() => onApprove('use_proposal_structure')} approveLabel="继续生成"
                     onSecondary={onAdjustProposal} secondaryLabel="调整结构"
-                    onReject={() => onReject('use_proposal_structure')}
-                  >
+                    onReject={() => onReject('use_proposal_structure')}>
                     <StructureList structure={((currentInteraction as ConfirmInteraction).detailData?.structure as string[]) || []} />
                   </ApprovalCard>
                 </div>
@@ -279,9 +283,7 @@ export function TaskCanvas({
 
               {/* Result */}
               {status === 'completed' && result !== null ? (
-                <div className="animate-flow-in">
-                  <ResultView result={result} />
-                </div>
+                <div className="animate-flow-in"><ResultView result={result} /></div>
               ) : null}
 
               {/* Error */}
