@@ -30,6 +30,7 @@ export type TaskEventType =
   | 'thinking'
   | 'insufficient_credits'
   | 'payment_required'
+  | 'next_suggestions'
   | 'artifact'
   | 'error'
   | 'log';

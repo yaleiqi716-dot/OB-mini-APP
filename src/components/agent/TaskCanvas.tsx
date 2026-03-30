@@ -497,10 +497,13 @@ export function TaskCanvas({
                     ) : null;
                   })()}
 
-                  {/* Next-step suggestions */}
+                  {/* Next-step suggestions — server-driven with static fallback */}
                   {onNewTask ? (() => {
+                    // Prefer server-driven suggestions from event
+                    const sugEvent = events.findLast((e) => e.type === 'next_suggestions');
+                    const serverSugs = sugEvent?.data?.suggestions as { label: string; prompt: string; type: string }[] | undefined;
                     const resultType = (result?.type as string) || type;
-                    const suggestions = SUGGESTIONS[resultType] || SUGGESTIONS.direct || [];
+                    const suggestions = serverSugs || SUGGESTIONS[resultType] || SUGGESTIONS.direct || [];
                     return suggestions.length > 0 ? (
                       <div className="mt-4 space-y-2">
                         <p className="text-xs text-content-tertiary">你还可以继续：</p>

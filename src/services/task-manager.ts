@@ -158,6 +158,37 @@ export async function completeTask(taskId: string, result: Record<string, unknow
   });
   await emitEvent(taskId, 'status_change', { status: 'completed' });
   await emitEvent(taskId, 'artifact', { result });
+
+  // Emit next-step suggestions to drive continued engagement
+  const taskType = task?.type || 'unknown';
+  const suggestions = getNextSuggestions(taskType, task?.input || '');
+  if (suggestions.length > 0) {
+    await emitEvent(taskId, 'next_suggestions', { suggestions });
+  }
+}
+
+function getNextSuggestions(type: string, input: string): { label: string; prompt: string; type: string }[] {
+  const base = input.slice(0, 80);
+  const map: Record<string, { label: string; prompt: string; type: string }[]> = {
+    email: [
+      { label: '优化内容', prompt: `帮我优化这封邮件的措辞和结构：${base}`, type: 'email' },
+      { label: '写跟进邮件', prompt: `帮我写一封跟进邮件，基于之前的内容：${base}`, type: 'email' },
+      { label: '生成回复模板', prompt: '帮我生成一个通用的客户回复模板', type: 'email' },
+    ],
+    ppt: [
+      { label: '优化内容', prompt: `帮我优化这份演示文稿的内容和结构：${base}`, type: 'ppt' },
+      { label: '生成第二版', prompt: `帮我重新做一版风格不同的演示文稿：${base}`, type: 'ppt' },
+      { label: '写演讲稿', prompt: `根据这份演示文稿帮我写一份演讲稿：${base}`, type: 'proposal' },
+    ],
+    proposal: [
+      { label: '优化内容', prompt: `帮我优化这份方案的内容：${base}`, type: 'proposal' },
+      { label: '做配套PPT', prompt: `根据这份方案帮我做一份演示文稿：${base}`, type: 'ppt' },
+      { label: '写发送邮件', prompt: `帮我写一封邮件发送这份方案给客户：${base}`, type: 'email' },
+    ],
+  };
+  return map[type] || [
+    { label: '继续优化', prompt: `帮我优化上一个任务的结果：${base}`, type: 'unknown' },
+  ];
 }
 
 export async function failTask(taskId: string, errorMessage: string) {
