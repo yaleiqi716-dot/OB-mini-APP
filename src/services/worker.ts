@@ -73,13 +73,19 @@ async function executeTask(taskId: string, input: string, presetType?: string, u
   if (userId) {
     const recheckResult = await checkCredits(userId, plan.taskType);
     if (!recheckResult.allowed) {
-      const { failTask, emitEvent } = await import('./task-manager');
-      await emitEvent(taskId, 'insufficient_credits', {
+      // Block task — do NOT fail. Payment will unblock.
+      await prisma.task.update({
+        where: { id: taskId },
+        data: { status: 'blocked', errorMessage: recheckResult.reason || '余额不足，请充值' },
+      });
+      const { emitEvent } = await import('./task-manager');
+      await emitEvent(taskId, 'payment_required', {
         required: recheckResult.estimatedCost,
         current: 0,
         reason: recheckResult.reason,
       });
-      await failTask(taskId, recheckResult.reason || '余额不足，请充值');
+      await emitEvent(taskId, 'status_change', { status: 'blocked' });
+      console.log(`[WORKER] Task ${taskId} blocked — insufficient credits`);
       return;
     }
   }

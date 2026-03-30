@@ -8,6 +8,7 @@ export type TaskStatus =
   | 'structuring'    // 已生成结构，等待用户确认
   | 'interacting'    // 需要用户交互（单选 / 文本输入 / 确认）
   | 'executing'      // 正在执行生成
+  | 'blocked'        // 余额不足，等待充值
   | 'completed'      // 任务完成
   | 'failed';        // 任务失败
 
@@ -28,6 +29,7 @@ export type TaskEventType =
   | 'approval_rejected'
   | 'thinking'
   | 'insufficient_credits'
+  | 'payment_required'
   | 'artifact'
   | 'error'
   | 'log';

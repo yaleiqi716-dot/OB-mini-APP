@@ -16,17 +16,19 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   structuring: '生成结构',
   interacting: '交互中',
   executing: '执行中',
+  blocked: '等待充值',
   completed: '已完成',
   failed: '失败',
 };
 
 export const VALID_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   pending: ['queued', 'understanding', 'structuring', 'executing', 'failed'],
-  queued: ['understanding', 'failed'],
-  understanding: ['structuring', 'interacting', 'executing', 'failed'],
+  queued: ['understanding', 'blocked', 'failed'],
+  understanding: ['structuring', 'interacting', 'executing', 'blocked', 'failed'],
   structuring: ['understanding', 'interacting', 'executing', 'failed'],
   interacting: ['understanding', 'structuring', 'executing', 'interacting', 'failed'],
   executing: ['completed', 'failed', 'interacting'],
+  blocked: ['queued', 'failed'],
   completed: [],
   failed: [],
 };

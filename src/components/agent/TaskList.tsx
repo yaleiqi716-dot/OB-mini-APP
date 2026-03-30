@@ -23,14 +23,15 @@ interface TaskListProps {
 }
 
 const STATUS_PRIORITY: Record<TaskStatus, number> = {
-  interacting: 0,
-  structuring: 1,
-  executing: 2,
-  understanding: 3,
-  queued: 4,
-  pending: 5,
-  completed: 6,
-  failed: 7,
+  blocked: 0,
+  interacting: 1,
+  structuring: 2,
+  executing: 3,
+  understanding: 4,
+  queued: 5,
+  pending: 6,
+  completed: 7,
+  failed: 8,
 };
 
 const SOURCE_LABELS: Record<TaskSource, string> = {
@@ -49,7 +50,7 @@ export function TaskList({ tasks, activeTaskId, onSelect }: TaskListProps) {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
-  const waiting = sorted.filter((t) => t.status === 'interacting' || t.status === 'structuring');
+  const waiting = sorted.filter((t) => t.status === 'interacting' || t.status === 'structuring' || t.status === 'blocked');
   const active = sorted.filter((t) => t.status === 'executing' || t.status === 'understanding' || t.status === 'pending' || t.status === 'queued');
   const done = sorted.filter((t) => t.status === 'completed' || t.status === 'failed');
 

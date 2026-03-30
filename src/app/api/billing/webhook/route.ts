@@ -82,10 +82,10 @@ async function requeueBlockedTasks(userId: string) {
   const blockedTasks = await prisma.task.findMany({
     where: {
       userId,
-      status: 'failed',
       OR: [
-        { errorMessage: { contains: '余额不足' } },
-        { errorMessage: { contains: '额度不足' } },
+        { status: 'blocked' },
+        { status: 'failed', errorMessage: { contains: '余额不足' } },
+        { status: 'failed', errorMessage: { contains: '额度不足' } },
       ],
     },
     orderBy: { createdAt: 'desc' },

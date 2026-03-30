@@ -210,10 +210,11 @@ function buildThinkingPhases(events: TaskEvent[]): ThinkingPhase[] {
 
 // ---- Narrative mode ----
 
-type NarrativeMode = 'interaction' | 'executing' | 'thinking' | 'result' | 'error' | 'idle';
+type NarrativeMode = 'interaction' | 'executing' | 'thinking' | 'result' | 'error' | 'blocked' | 'idle';
 
 function getNarrativeMode(status: TaskStatus, isApproval: boolean, isGenericInteraction: boolean): NarrativeMode {
   if (status === 'completed') return 'result';
+  if (status === 'blocked') return 'blocked';
   if (status === 'failed') return 'error';
   if (isApproval || isGenericInteraction) return 'interaction';
   if (status === 'executing') return 'executing';
@@ -519,6 +520,27 @@ export function TaskCanvas({
                   })() : null}
                 </div>
               ) : null}
+
+              {/* Blocked — payment required */}
+              {mode === 'blocked' ? (() => {
+                const payEvent = events.findLast((e) => e.type === 'payment_required');
+                const required = payEvent ? (payEvent.data.required as number) : 0;
+                return (
+                  <div className="animate-flow-in p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
+                    <p className="text-sm font-medium text-amber-400">余额不足，任务已暂停</p>
+                    {required > 0 ? (
+                      <p className="text-xs text-content-tertiary">此任务需要 {required} 额度</p>
+                    ) : null}
+                    <p className="text-xs text-content-tertiary">充值后任务将自动恢复执行</p>
+                    <button
+                      onClick={() => window.location.href = '/api/billing/create-order'}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors"
+                    >
+                      立即充值
+                    </button>
+                  </div>
+                );
+              })() : null}
 
               {mode === 'error' ? (() => {
                 const errMsg = events.find((e) => e.type === 'error')
