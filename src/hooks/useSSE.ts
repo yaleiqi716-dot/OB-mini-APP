@@ -16,9 +16,10 @@ interface UseSSEOptions {
 export function useSSE(taskId: string | null, options: UseSSEOptions = {}) {
   const { onEvent, enabled = true } = options;
   const [connected, setConnected] = useState(false);
-  const [events, setEvents] = useState<SSEEvent[]>([]);
+  const [reconnecting, setReconnecting] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
   const onEventRef = useRef(onEvent);
+  const retryCountRef = useRef(0);
   onEventRef.current = onEvent;
 
   const connect = useCallback(() => {
@@ -29,34 +30,46 @@ export function useSSE(taskId: string | null, options: UseSSEOptions = {}) {
 
     es.addEventListener('connected', () => {
       setConnected(true);
+      setReconnecting(false);
+      retryCountRef.current = 0;
     });
 
     es.addEventListener('task_event', (e) => {
       try {
         const event: SSEEvent = JSON.parse(e.data);
-        setEvents((prev) => [...prev, event]);
         onEventRef.current?.(event);
       } catch {}
     });
 
-    es.addEventListener('replay_complete', () => {
-      // Replay done, now receiving live events
-    });
+    es.addEventListener('replay_complete', () => {});
 
     es.onerror = () => {
       setConnected(false);
       es.close();
-      // Reconnect after 2 seconds
-      setTimeout(() => connect(), 2000);
+
+      // Exponential backoff: 2s, 4s, 8s, max 15s
+      const retryDelay = Math.min(2000 * Math.pow(2, retryCountRef.current), 15000);
+      retryCountRef.current++;
+
+      if (retryCountRef.current <= 10) {
+        setReconnecting(true);
+        setTimeout(() => connect(), retryDelay);
+      } else {
+        // Stop retrying after 10 attempts — rely on polling
+        setReconnecting(false);
+        console.warn('[SSE] Max retries reached, falling back to polling');
+      }
     };
 
     return () => {
       es.close();
       setConnected(false);
+      setReconnecting(false);
     };
   }, [taskId, enabled]);
 
   useEffect(() => {
+    retryCountRef.current = 0;
     const cleanup = connect();
     return () => {
       cleanup?.();
@@ -64,9 +77,5 @@ export function useSSE(taskId: string | null, options: UseSSEOptions = {}) {
     };
   }, [connect]);
 
-  const reset = useCallback(() => {
-    setEvents([]);
-  }, []);
-
-  return { connected, events, reset };
+  return { connected, reconnecting };
 }

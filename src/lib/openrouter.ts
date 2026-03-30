@@ -9,6 +9,7 @@ export interface OpenRouterOptions {
   maxTokens?: number;
   jsonMode?: boolean;
   stream?: boolean;
+  timeoutMs?: number;
 }
 
 export interface OpenRouterResponse {
@@ -18,6 +19,7 @@ export interface OpenRouterResponse {
 }
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const DEFAULT_TIMEOUT_MS = 60_000; // 60 seconds
 
 function getApiKey(): string {
   const key = process.env.OPENROUTER_API_KEY;
@@ -37,6 +39,7 @@ export async function chatCompletion(
 ): Promise<OpenRouterResponse> {
   const apiKey = getApiKey();
   const model = options.model || getDefaultModel();
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
   const body: Record<string, unknown> = {
     model,
@@ -49,34 +52,61 @@ export async function chatCompletion(
     body.response_format = { type: 'json_object' };
   }
 
-  const res = await fetch(OPENROUTER_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': 'https://orangebench.app',
-      'X-Title': 'ORANGEBENCH',
-    },
-    body: JSON.stringify(body),
-  });
+  // Timeout via AbortController
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`OpenRouter 调用失败 (${res.status}): ${errorText}`);
+  try {
+    const res = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://orangebench.app',
+        'X-Title': 'ORANGEBENCH',
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => 'unknown');
+      console.error('[LLM_ERROR]', res.status, errorText.slice(0, 200));
+      throw new Error(`AI 调用失败 (${res.status})`);
+    }
+
+    const data = await res.json();
+    const choice = data.choices?.[0];
+
+    if (!choice?.message?.content) {
+      console.error('[LLM_EMPTY]', data);
+      throw new Error('AI 返回了空响应');
+    }
+
+    return {
+      content: choice.message.content,
+      model: data.model || model,
+      usage: data.usage || { prompt_tokens: 0, completion_tokens: 0 },
+    };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.error('[LLM_TIMEOUT]', timeoutMs, 'ms');
+      throw new Error('AI 响应超时，请重试');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
+}
 
-  const data = await res.json();
-  const choice = data.choices?.[0];
-
-  if (!choice?.message?.content) {
-    throw new Error('OpenRouter 返回了空响应');
+// Safe JSON parse for LLM responses — returns fallback on failure
+export function safeParseLLMJson<T>(content: string, fallback: T): T {
+  try {
+    return JSON.parse(content);
+  } catch {
+    console.error('[LLM_JSON_PARSE_ERROR]', content.slice(0, 200));
+    return fallback;
   }
-
-  return {
-    content: choice.message.content,
-    model: data.model || model,
-    usage: data.usage || { prompt_tokens: 0, completion_tokens: 0 },
-  };
 }
 
 export async function* streamChatCompletion(
@@ -107,7 +137,7 @@ export async function* streamChatCompletion(
 
   if (!res.ok) {
     const errorText = await res.text();
-    throw new Error(`OpenRouter 流式调用失败 (${res.status}): ${errorText}`);
+    throw new Error(`AI 流式调用失败 (${res.status}): ${errorText}`);
   }
 
   const reader = res.body?.getReader();

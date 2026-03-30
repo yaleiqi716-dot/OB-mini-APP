@@ -124,7 +124,7 @@ export default function AgentPage() {
   const activeTask = tasks.find((t) => t.id === activeTaskId) || null;
 
   // SSE for active task
-  useSSE(activeTaskId, {
+  const { reconnecting: sseReconnecting } = useSSE(activeTaskId, {
     enabled: !!activeTaskId,
     onEvent: useCallback((event: TaskEvent) => {
       const currentId = activeTaskIdRef.current;
@@ -430,6 +430,13 @@ export default function AgentPage() {
         </div>
         <ThemeToggle />
       </header>
+
+      {/* Connection indicator */}
+      {sseReconnecting ? (
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-1.5 text-center text-xs text-amber-400 flex-shrink-0">
+          连接中断，正在重连...
+        </div>
+      ) : null}
 
       <div className="flex-1 flex overflow-hidden relative">
         {/* Desktop sidebar — softer, like history panel */}
