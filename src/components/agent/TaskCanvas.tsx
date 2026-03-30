@@ -520,15 +520,33 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {mode === 'error' ? (
-                <div className="animate-flow-in p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-                  <p className="text-sm text-red-400">
-                    {events.find((e) => e.type === 'error')
-                      ? String(events.find((e) => e.type === 'error')!.data.message || '遇到了一些问题，如果需要我可以重新试一下')
-                      : '遇到了一些问题，如果需要我可以重新试一下'}
-                  </p>
-                </div>
-              ) : null}
+              {mode === 'error' ? (() => {
+                const errMsg = events.find((e) => e.type === 'error')
+                  ? String(events.find((e) => e.type === 'error')!.data.message || '')
+                  : '';
+                const isCreditsError = errMsg.includes('余额不足') || errMsg.includes('额度不足');
+
+                return isCreditsError ? (
+                  <div className="animate-flow-in p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
+                    <p className="text-sm text-amber-400">余额不足，任务已暂停</p>
+                    <p className="text-xs text-content-tertiary">充值后任务将自动恢复执行</p>
+                    {onNewTask ? (
+                      <button
+                        onClick={() => window.location.href = '/api/billing/webhook?orderId=mock&mock=true'}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors"
+                      >
+                        立即充值
+                      </button>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="animate-flow-in p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                    <p className="text-sm text-red-400">
+                      {errMsg || '遇到了一些问题，如果需要我可以重新试一下'}
+                    </p>
+                  </div>
+                );
+              })() : null}
             </div>
           </div>
         ) : null}

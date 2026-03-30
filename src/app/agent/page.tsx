@@ -149,6 +149,8 @@ export default function AgentPage() {
           if (event.type === 'task_completed' && event.data.result) {
             updated.result = event.data.result as Record<string, unknown>;
             updated.status = 'completed';
+            // Refresh credits after task completion
+            fetchQuota();
           }
           return updated;
         })
@@ -283,11 +285,17 @@ export default function AgentPage() {
 
   async function handleAddCredits() {
     try {
-      const res = await fetch('/api/billing/add-credits', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const res = await fetch('/api/billing/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tierId: 'tier_100', provider: 'mock' }),
+      });
       const data = await res.json();
-      if (data.success) {
-        fetchQuota();
-        showError('充值成功 +100 额度');
+      if (data.payUrl) {
+        // Mock: directly complete payment via GET
+        window.location.href = data.payUrl;
+      } else {
+        showError('创建订单失败');
       }
     } catch { showError('充值失败'); }
   }

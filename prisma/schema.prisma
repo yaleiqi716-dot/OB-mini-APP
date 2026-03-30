@@ -64,3 +64,14 @@ model AutoTask {
   lastRunAt DateTime?
   createdAt DateTime @default(now())
 }
+
+model Order {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Int      // price in cents (e.g. 500 = $5)
+  credits   Int      // credits to add on payment
+  status    String   @default("pending") // pending | paid | failed
+  provider  String   @default("") // wechat | alipay | paypal | mock
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
