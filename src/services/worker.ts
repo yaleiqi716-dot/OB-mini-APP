@@ -123,6 +123,16 @@ async function processTask(task: { id: string; input: string; type: string; user
   const locked = await acquireLock(task.id);
   if (!locked) return;
 
+  // Charge credits BEFORE execution (idempotent via charged flag)
+  if (task.userId) {
+    try {
+      const { chargeCredits } = await import('./billing');
+      await chargeCredits(task.userId, task.id, task.type);
+    } catch (err) {
+      console.error(`[WORKER] Billing failed for ${task.id}, proceeding anyway:`, err);
+    }
+  }
+
   runningCount++;
   console.log(`[WORKER] Processing task ${task.id} (running: ${runningCount}/${MAX_CONCURRENT})`);
 

@@ -147,31 +147,44 @@ export async function checkUserConcurrency(userId: string): Promise<boolean> {
 
 // ---- Deduct credits (idempotent) ----
 
-export async function deductCredits(userId: string, taskId: string, taskType: TaskType | string) {
+// Charge credits — atomic, idempotent via charged flag.
+// Call BEFORE execution starts (in worker, not in completeTask).
+export async function chargeCredits(userId: string, taskId: string, taskType: TaskType | string): Promise<number> {
+  // Idempotency: check charged flag
   const task = await prisma.task.findUnique({ where: { id: taskId } });
-  if (task && task.actualCost > 0) {
-    return task.actualCost;
+  if (!task) return 0;
+  if (task.charged) {
+    console.log(`[BILLING] Already charged for task ${taskId} (cost: ${task.cost})`);
+    return task.cost;
   }
 
   const user = await getOrCreateUser(userId);
-  const cost = estimateCost(taskType);
-  const actualCost = Math.min(cost, user.credits);
+  const calculatedCost = Math.min(estimateCost(taskType), user.credits);
 
+  // Deduct from user + mark task as charged in one go
   await prisma.user.update({
     where: { id: userId },
     data: {
-      credits: Math.max(0, user.credits - actualCost),
+      credits: Math.max(0, user.credits - calculatedCost),
       dailyTaskCount: user.dailyTaskCount + 1,
     },
   });
 
   await prisma.task.update({
     where: { id: taskId },
-    data: { actualCost },
+    data: {
+      charged: true,
+      cost: calculatedCost,
+      actualCost: calculatedCost,
+    },
   });
 
-  return actualCost;
+  console.log(`[BILLING] Charged ${calculatedCost} credits for task ${taskId}`);
+  return calculatedCost;
 }
+
+// Legacy alias
+export const deductCredits = chargeCredits;
 
 // ---- Credits management ----
 

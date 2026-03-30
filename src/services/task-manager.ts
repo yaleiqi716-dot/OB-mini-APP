@@ -148,20 +148,12 @@ export async function completeTask(taskId: string, result: Record<string, unknow
     },
   });
 
-  // Deduct credits — only if not already charged (actualCost === 0)
-  let actualCost = 0;
-  if (task?.userId && (task.actualCost === 0 || task.actualCost === undefined)) {
-    try {
-      const { deductCredits } = await import('@/services/billing');
-      actualCost = await deductCredits(task.userId, taskId, task.type);
-    } catch (err) {
-      console.error('[BILLING_DEDUCT_ERROR]', taskId, err);
-    }
-  }
+  // Credits already charged in worker before execution — read cost from task
+  const cost = task?.cost || 0;
 
   await emitEvent(taskId, 'task_completed', {
     message: message || '任务完成',
-    cost: actualCost,
+    cost,
     result,
   });
   await emitEvent(taskId, 'status_change', { status: 'completed' });

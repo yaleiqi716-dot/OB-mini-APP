@@ -31,6 +31,8 @@ model Task {
   source        String      @default("agent")
   estimatedCost Int         @default(0)
   actualCost    Int         @default(0)
+  charged       Boolean     @default(false)
+  cost          Int         @default(0)
   processing    Boolean     @default(false)
   isExecuting   Boolean     @default(false)
   priority      Int         @default(0)
