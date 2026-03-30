@@ -724,6 +724,25 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     );
   }
 
+  if (resultType === 'agent_loop') {
+    const history = data.history as { action: string; result: string }[] | undefined;
+    const summary = data.summary as string || '已完成';
+    return (
+      <ResultContainer title={summary} subtitle={`${data.iterations || 0} 轮推进`}>
+        {history && history.length > 0 ? (
+          <div className="space-y-1.5">
+            {history.map((h, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs text-content-secondary">
+                <span className="text-accent flex-shrink-0">→</span>
+                <span>{h.action}: {h.result}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </ResultContainer>
+    );
+  }
+
   if (resultType === 'orchestrator' && data.plan) {
     const plan = data.plan as { type: string; input: string }[];
     return (
