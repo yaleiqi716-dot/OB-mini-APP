@@ -1,7 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/Badge';
-import { TaskStatus, TaskType } from '@/types/task';
+import { TaskStatus, TaskType, TaskSource } from '@/types/task';
 import { TASK_TYPES } from '@/lib/constants';
 import { cn, formatTime } from '@/lib/utils';
 
@@ -13,6 +13,7 @@ interface TaskItem {
   createdAt: string;
   summary: string;
   hasUnread: boolean;
+  source: TaskSource;
 }
 
 interface TaskListProps {
@@ -31,6 +32,12 @@ const STATUS_PRIORITY: Record<TaskStatus, number> = {
   failed: 6,
 };
 
+const SOURCE_LABELS: Record<TaskSource, string> = {
+  agent: '',
+  zapier: 'Zapier',
+  api: 'API',
+};
+
 export function TaskList({ tasks, activeTaskId, onSelect }: TaskListProps) {
   if (tasks.length === 0) return null;
 
@@ -47,6 +54,7 @@ export function TaskList({ tasks, activeTaskId, onSelect }: TaskListProps) {
       {sorted.map((task) => {
         const typeInfo = TASK_TYPES.find((t) => t.value === task.type);
         const isWaiting = task.status === 'interacting' || task.status === 'structuring';
+        const sourceLabel = SOURCE_LABELS[task.source];
 
         return (
           <button
@@ -72,6 +80,11 @@ export function TaskList({ tasks, activeTaskId, onSelect }: TaskListProps) {
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <Badge status={task.status} />
+                {sourceLabel ? (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-medium">
+                    {sourceLabel}
+                  </span>
+                ) : null}
                 <span className="text-xs text-content-tertiary">
                   {formatTime(task.createdAt)}
                 </span>

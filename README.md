@@ -1,15 +1,12 @@
 # ORANGEBENCH
 
-企业智能工作系统。以 AGENT 为唯一入口，用户输入自然语言或点击工作卡片，系统自动理解任务、生成结构、执行工作流。
+企业智能工作系统。以 AGENT 为唯一入口，用户输入自然语言或点击工作卡片，系统自动理解任务、生成结构、执行工作流。支持通过 Webhook 外部触发任务。
 
 ## 架构
 
 ```
-用户输入 → task-router（AI分类） → workflow（PPT / 邮件 / 方案 / 网页 / 视频）
-                                        ↓
-                                  task-manager（状态机 + 事件流）
-                                        ↓
-                                  SSE 实时推送 → 前端 TaskCanvas
+用户输入 ──→ task-router（AI分类） → workflow → task-manager → SSE → 前端
+外部事件 ──→ events/ingest ──────→ event-to-task → 同上链路
 ```
 
 ### 系统分层
@@ -18,7 +15,9 @@
 |---|---|---|
 | 前端 | AGENT 单页面，任务列表 + 执行画布 + 交互面板 | `src/app/agent/page.tsx` |
 | API | 任务创建 / 详情 / 交互 / 审批 / 发送 / SSE | `src/app/api/tasks/` |
+| 外部入口 | Webhook 事件接入 | `src/app/api/events/ingest/` |
 | 路由 | AI 识别任务类型 | `src/services/task-router.ts` |
+| 事件转换 | 外部事件 → 任务描述 | `src/services/integrations/event-to-task.ts` |
 | 工作流 | PPT / 邮件 / 方案 / 网页 / 视频 | `src/services/workflows/` |
 | 任务管理 | 状态机 + 事件发布 + JSON序列化边界 | `src/services/task-manager.ts` |
 | 数据 | Prisma + SQLite | `prisma/schema.prisma` |
@@ -60,7 +59,7 @@ npm run dev
 DATABASE_URL="file:./dev.db"
 OPENROUTER_API_KEY="your-openrouter-api-key"
 OPENROUTER_DEFAULT_MODEL="anthropic/claude-sonnet-4"
-ZAPIER_WEBHOOK_SECRET=""
+WEBHOOK_SECRET="your-webhook-secret"
 ```
 
 ## 技术栈
@@ -72,51 +71,70 @@ ZAPIER_WEBHOOK_SECRET=""
 - SSE（Server-Sent Events 实时事件流）
 - OpenRouter（统一 AI 模型接入）
 
-## 项目结构
-
-```
-prisma/schema.prisma          # 数据模型（Task + TaskEvent）
-src/
-  app/
-    agent/page.tsx             # AGENT 主页面（唯一入口）
-    api/
-      tasks/route.ts           # POST 创建任务 / GET 任务列表
-      tasks/[taskId]/
-        route.ts               # GET 任务详情（含完整事件）
-        events/route.ts        # GET SSE 事件流
-        interact/route.ts      # POST 提交交互
-        approve-structure/     # POST 确认 PPT 结构
-        send-email/            # POST 确认发送邮件
-      router/route.ts          # POST 任务类型识别
-      ai/route.ts              # POST OpenRouter 代理
-      webhooks/zapier/         # POST Zapier webhook
-  components/
-    agent/                     # AgentInput, TaskCanvas, TaskList, WorkCard...
-    interactions/              # SingleChoice, YesNo, FileUpload, Confirm, TextInput
-    ui/                        # Button, Badge, Spinner, Input, Card, ThemeToggle
-  services/
-    task-manager.ts            # 任务 CRUD + 事件 + JSON 序列化边界
-    task-router.ts             # AI 任务分类
-    event-bus.ts               # 进程内事件总线
-    workflows/                 # PPT / 邮件 / 方案 / 网页 / 视频
-  hooks/                       # useSSE, useTheme
-  types/                       # task, interaction, workflow, api
-  lib/                         # prisma, openrouter, sse, utils, constants
-```
-
 ## API 接口
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | `/api/tasks` | 创建任务 |
+| POST | `/api/tasks` | 创建任务（AGENT 入口） |
 | GET | `/api/tasks` | 任务列表 |
 | GET | `/api/tasks/:id` | 任务详情（含事件） |
 | GET | `/api/tasks/:id/events` | SSE 事件流 |
 | POST | `/api/tasks/:id/interact` | 提交交互 |
 | POST | `/api/tasks/:id/approve-structure` | 确认 PPT 结构 |
 | POST | `/api/tasks/:id/send-email` | 确认发送邮件 |
+| POST | `/api/events/ingest` | 外部事件入口（Webhook） |
 | POST | `/api/router` | 任务类型识别 |
-| POST | `/api/webhooks/zapier` | Zapier 入口 |
+| POST | `/api/webhooks/zapier` | Zapier 入口（旧版） |
+
+## 外部事件接入（Webhook）
+
+### 配置
+
+在 `.env.local` 中设置：
+
+```
+WEBHOOK_SECRET="your-secret-key-here"
+```
+
+### 调用方式
+
+```bash
+curl -X POST http://localhost:3000/api/events/ingest \
+  -H "Content-Type: application/json" \
+  -H "x-ob-secret: your-secret-key-here" \
+  -d '{
+    "source": "zapier",
+    "eventType": "gmail.new_email",
+    "userId": "demo-user",
+    "spaceId": "default",
+    "title": "客户来信",
+    "payload": {
+      "from": "client@example.com",
+      "subject": "关于合作方案",
+      "body": "请下周给我一份方案和报价。"
+    }
+  }'
+```
+
+### 支持的事件类型
+
+| eventType | 说明 | payload 字段 |
+|---|---|---|
+| `gmail.new_email` | 收到新邮件 | from, subject, body |
+| `form.submitted` | 表单提交 | formName, 其他表单字段 |
+| `slack.mention` | Slack 提及 | channel, user, text |
+| 其他任意值 | 通用事件 | 任意键值对 |
+
+### 返回格式
+
+```json
+{
+  "success": true,
+  "taskId": "clxxx..."
+}
+```
+
+外部创建的任务会自动进入 AI 分类 → 工作流执行链路，在 AGENT 页面侧栏实时出现，标记为 Zapier 或 API 来源。
 
 ## 验证流程
 
@@ -133,3 +151,8 @@ src/
 2. 等待生成邮件草稿 → 邮件预览卡
 3. 点"继续修改" → 输入修改意见 → 提交
 4. 看到新草稿 → 点"确认发送" → completed
+
+### Webhook 外部触发
+1. 用 curl 发送上面的测试请求
+2. 在 AGENT 页面侧栏看到新任务出现（带 Zapier 标签）
+3. 点击查看任务执行过程

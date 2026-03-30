@@ -8,7 +8,7 @@ import { TaskList } from '@/components/agent/TaskList';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Spinner } from '@/components/ui/Spinner';
 import { useSSE } from '@/hooks/useSSE';
-import { TaskStatus, TaskType } from '@/types/task';
+import { TaskStatus, TaskType, TaskSource } from '@/types/task';
 import { Interaction } from '@/types/interaction';
 
 interface TaskEvent {
@@ -23,6 +23,7 @@ interface TaskState {
   status: TaskStatus;
   title: string;
   input: string;
+  source: TaskSource;
   createdAt: string;
   events: TaskEvent[];
   eventsLoaded: boolean;
@@ -52,6 +53,7 @@ function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
     status: (data.status as TaskStatus) || 'pending',
     title: (data.title as string) || '',
     input: (data.input as string) || '',
+    source: (data.source as TaskSource) || 'agent',
     createdAt: (data.createdAt as string) || new Date().toISOString(),
     events,
     eventsLoaded: true,
@@ -79,6 +81,7 @@ export default function AgentPage() {
   const [actionLoadingTaskId, setActionLoadingTaskId] = useState<string | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const canvasEndRef = useRef<HTMLDivElement>(null);
+  const knownTaskIdsRef = useRef<Set<string>>(new Set());
 
   const activeTask = tasks.find((t) => t.id === activeTaskId) || null;
 
@@ -111,29 +114,61 @@ export default function AgentPage() {
   });
 
   // Load tasks on mount
-  useEffect(() => {
+  function loadTasks() {
     fetch('/api/tasks')
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          const loaded: TaskState[] = data.map((t: Record<string, unknown>) => ({
-            id: t.id as string,
-            type: (t.type as TaskType) || 'unknown',
-            status: (t.status as TaskStatus) || 'pending',
-            title: (t.title as string) || '',
-            input: (t.input as string) || '',
-            createdAt: (t.createdAt as string) || new Date().toISOString(),
-            events: [],
-            eventsLoaded: false,
-            currentInteraction: null,
-            result: (t.result as Record<string, unknown>) || null,
-            lastViewedEventCount: 0,
-          }));
-          setTasks(loaded);
-          setShowWelcome(false);
-        }
+        if (!Array.isArray(data)) return;
+        if (data.length > 0) setShowWelcome(false);
+
+        setTasks((prev) => {
+          const prevMap = new Map(prev.map((t) => [t.id, t]));
+          const merged: TaskState[] = [];
+
+          for (const t of data as Record<string, unknown>[]) {
+            const id = t.id as string;
+            const existing = prevMap.get(id);
+            if (existing) {
+              // Update status/title/type from server, keep local events if loaded
+              merged.push({
+                ...existing,
+                type: (t.type as TaskType) || existing.type,
+                status: (t.status as TaskStatus) || existing.status,
+                title: (t.title as string) || existing.title,
+                source: (t.source as TaskSource) || existing.source,
+                result: (t.result as Record<string, unknown>) || existing.result,
+              });
+            } else {
+              // New task from server (external or other tab)
+              merged.push({
+                id,
+                type: (t.type as TaskType) || 'unknown',
+                status: (t.status as TaskStatus) || 'pending',
+                title: (t.title as string) || '',
+                input: (t.input as string) || '',
+                source: (t.source as TaskSource) || 'agent',
+                createdAt: (t.createdAt as string) || new Date().toISOString(),
+                events: [],
+                eventsLoaded: false,
+                currentInteraction: null,
+                result: (t.result as Record<string, unknown>) || null,
+                lastViewedEventCount: 0,
+              });
+            }
+            knownTaskIdsRef.current.add(id);
+          }
+
+          return merged;
+        });
       })
       .catch(() => {});
+  }
+
+  useEffect(() => {
+    loadTasks();
+    // Poll for new external tasks every 10 seconds
+    const interval = setInterval(loadTasks, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   // Fetch full events on task switch
@@ -152,13 +187,11 @@ export default function AgentPage() {
       .catch(() => {});
   }, [activeTaskId, tasks]);
 
-  // Mark current task as "viewed" (clear unread)
+  // Clear unread when viewing task
   useEffect(() => {
     if (!activeTaskId) return;
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === activeTaskId ? { ...t, lastViewedEventCount: t.events.length } : t
-      )
+      prev.map((t) => t.id === activeTaskId ? { ...t, lastViewedEventCount: t.events.length } : t)
     );
   }, [activeTaskId]);
 
@@ -189,12 +222,14 @@ export default function AgentPage() {
         } else {
           newTask = {
             id: data.taskId, type: data.type || 'unknown', status: 'pending',
-            title: input.slice(0, 50), input, createdAt: new Date().toISOString(),
+            title: input.slice(0, 50), input, source: 'agent',
+            createdAt: new Date().toISOString(),
             events: [], eventsLoaded: false, currentInteraction: null, result: null,
             lastViewedEventCount: 0,
           };
         }
 
+        knownTaskIdsRef.current.add(data.taskId);
         setTasks((prev) => [newTask, ...prev]);
         setActiveTaskId(data.taskId);
       }
@@ -207,18 +242,13 @@ export default function AgentPage() {
 
   async function handleInteractionSubmit(stepId: string, value: unknown) {
     if (!activeTaskId) return;
-    setTasks((prev) =>
-      prev.map((t) => t.id === activeTaskId ? { ...t, currentInteraction: null } : t)
-    );
+    setTasks((prev) => prev.map((t) => t.id === activeTaskId ? { ...t, currentInteraction: null } : t));
     try {
       await fetch(`/api/tasks/${activeTaskId}/interact`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ interactionId: '', stepId, value }),
       });
-    } catch (error) {
-      console.error('交互提交失败:', error);
-    }
+    } catch (error) { console.error('交互提交失败:', error); }
   }
 
   async function handleApproveStructure() {
@@ -227,22 +257,17 @@ export default function AgentPage() {
       await fetch(`/api/tasks/${activeTaskId}/approve-structure`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
       });
-    } catch (error) {
-      console.error('结构审批失败:', error);
-    }
+    } catch (error) { console.error('结构审批失败:', error); }
   }
 
   async function handleAdjustStructure() {
     if (!activeTaskId) return;
     try {
       await fetch(`/api/tasks/${activeTaskId}/interact`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ interactionId: '', stepId: 'request_adjust_structure', value: '' }),
       });
-    } catch (error) {
-      console.error('调整结构失败:', error);
-    }
+    } catch (error) { console.error('调整结构失败:', error); }
   }
 
   async function handleSendEmail() {
@@ -252,21 +277,12 @@ export default function AgentPage() {
       const res = await fetch(`/api/tasks/${activeTaskId}/send-email`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
       });
-      if (!res.ok) {
-        console.error('发送邮件失败:', await res.text());
-        // Keep interaction card visible on failure
-      }
-      // On success, SSE will deliver status_change + task_completed to update UI
-    } catch (error) {
-      console.error('发送邮件失败:', error);
-    } finally {
-      setActionLoadingTaskId(null);
-    }
+      if (!res.ok) console.error('发送邮件失败:', await res.text());
+    } catch (error) { console.error('发送邮件失败:', error); }
+    finally { setActionLoadingTaskId(null); }
   }
 
-  function handleCardSelect(prompt: string, type: string) {
-    handleSubmit(prompt, type);
-  }
+  function handleCardSelect(prompt: string, type: string) { handleSubmit(prompt, type); }
 
   const hasTasks = tasks.length > 0;
 
@@ -285,13 +301,10 @@ export default function AgentPage() {
           <aside className="w-72 border-r border-border p-3 overflow-y-auto custom-scrollbar flex-shrink-0">
             <TaskList
               tasks={tasks.map((t) => ({
-                id: t.id,
-                type: t.type,
-                status: t.status,
-                title: t.title,
-                createdAt: t.createdAt,
-                summary: getTaskSummary(t),
+                id: t.id, type: t.type, status: t.status, title: t.title,
+                createdAt: t.createdAt, summary: getTaskSummary(t),
                 hasUnread: t.events.length > t.lastViewedEventCount,
+                source: t.source,
               }))}
               activeTaskId={activeTaskId}
               onSelect={setActiveTaskId}
@@ -304,11 +317,8 @@ export default function AgentPage() {
             <div className="flex-1 overflow-y-auto custom-scrollbar">
               <div className="max-w-3xl mx-auto">
                 <TaskCanvas
-                  taskId={activeTask.id}
-                  title={activeTask.title}
-                  type={activeTask.type}
-                  status={activeTask.status}
-                  events={activeTask.events}
+                  taskId={activeTask.id} title={activeTask.title} type={activeTask.type}
+                  status={activeTask.status} events={activeTask.events}
                   currentInteraction={activeTask.currentInteraction}
                   onInteractionSubmit={handleInteractionSubmit}
                   onApproveStructure={handleApproveStructure}
@@ -326,12 +336,8 @@ export default function AgentPage() {
                 {showWelcome ? (
                   <>
                     <div className="space-y-2">
-                      <h1 className="text-2xl font-semibold text-content-primary">
-                        你好，有什么可以帮你完成的？
-                      </h1>
-                      <p className="text-content-secondary text-sm">
-                        直接描述你的工作需求，或选择下方的快捷卡片开始
-                      </p>
+                      <h1 className="text-2xl font-semibold text-content-primary">你好，有什么可以帮你完成的？</h1>
+                      <p className="text-content-secondary text-sm">直接描述你的工作需求，或选择下方的快捷卡片开始</p>
                     </div>
                     <WorkCardList onSelect={handleCardSelect} />
                   </>
@@ -353,8 +359,7 @@ export default function AgentPage() {
             />
             {isSubmitting ? (
               <div className="flex items-center justify-center gap-2 mt-2 text-content-tertiary text-sm">
-                <Spinner size="sm" />
-                <span>正在处理...</span>
+                <Spinner size="sm" /><span>正在处理...</span>
               </div>
             ) : null}
           </div>
