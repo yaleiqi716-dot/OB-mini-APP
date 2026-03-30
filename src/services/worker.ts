@@ -2,7 +2,7 @@ import { createTask, updateTaskStatus, emitLog, emitThinking, emitEvent, updateT
 import { routeAndPlan } from './agent-router';
 import { planTasks } from './agent-planner';
 import { getWorkflow } from './workflows';
-import { checkCredits, checkUserConcurrency } from './billing';
+import { checkCredits, checkUserConcurrency, executeWithBilling, InsufficientCreditsError } from './billing';
 import { estimateCost } from '@/lib/cost';
 import { chatCompletion } from '@/lib/openrouter';
 import { prisma } from '@/lib/prisma';
@@ -113,49 +113,52 @@ async function executeTask(taskId: string, input: string, presetType?: string, u
     model: plan.model,
   });
 
-  if (userId) {
-    const recheckResult = await checkCredits(userId, plan.taskType);
-    if (!recheckResult.allowed) {
-      await prisma.task.update({
-        where: { id: taskId },
-        data: { status: 'blocked', errorMessage: recheckResult.reason || '余额不足，请充值' },
-      });
-      await emitEvent(taskId, 'payment_required', {
-        required: recheckResult.estimatedCost,
-        current: 0,
-        reason: recheckResult.reason,
-      });
-      await emitEvent(taskId, 'status_change', { status: 'blocked' });
-      return;
-    }
-  }
-
   await emitLog(taskId, `任务类型：${plan.taskType}`);
 
-  if (plan.strategy === 'workflow') {
-    const workflow = getWorkflow(plan.taskType);
-    if (!workflow) {
-      const { failTask } = await import('./task-manager');
-      await failTask(taskId, `暂不支持 "${plan.taskType}" 类型的任务`);
-      return;
+  // ---- Unified billing gateway: charge first, then execute ----
+  const executeFn = async () => {
+    if (plan.strategy === 'workflow') {
+      const workflow = getWorkflow(plan.taskType);
+      if (!workflow) {
+        const { failTask } = await import('./task-manager');
+        await failTask(taskId, `暂不支持 "${plan.taskType}" 类型的任务`);
+        return;
+      }
+      await workflow.start({ taskId, input, context: {} });
+    } else {
+      await updateTaskStatus(taskId, 'executing');
+      await emitThinking(taskId, '我来帮你处理这个请求...');
+      const result = await chatCompletion(
+        [
+          { role: 'system', content: '你是一个专业的工作助手。根据用户需求直接给出完整、实用的回答。内容完整、专业、简洁。' },
+          { role: 'user', content: input },
+        ],
+        { temperature: 0.6, maxTokens: 4096 }
+      );
+      await completeTask(taskId, { type: 'direct', content: result.content }, '已帮你完成');
     }
-    await workflow.start({ taskId, input, context: {} });
+  };
+
+  if (userId) {
+    try {
+      await executeWithBilling(userId, taskId, plan.taskType, executeFn);
+    } catch (err) {
+      if (err instanceof InsufficientCreditsError) {
+        await prisma.task.update({
+          where: { id: taskId },
+          data: { status: 'blocked', errorMessage: err.message },
+        });
+        await emitEvent(taskId, 'payment_required', {
+          required: err.required,
+          current: err.current,
+        });
+        await emitEvent(taskId, 'status_change', { status: 'blocked' });
+        return;
+      }
+      throw err;
+    }
   } else {
-    await updateTaskStatus(taskId, 'executing');
-    await emitThinking(taskId, '我来帮你处理这个请求...');
-
-    const result = await chatCompletion(
-      [
-        {
-          role: 'system',
-          content: '你是一个专业的工作助手。根据用户需求直接给出完整、实用的回答。内容完整、专业、简洁。',
-        },
-        { role: 'user', content: input },
-      ],
-      { temperature: 0.6, maxTokens: 4096 }
-    );
-
-    await completeTask(taskId, { type: 'direct', content: result.content }, '已帮你完成');
+    await executeFn();
   }
 }
 
@@ -174,16 +177,7 @@ async function processTask(task: { id: string; input: string; type: string; user
   const locked = await acquireLock(task.id);
   if (!locked) return;
 
-  // Charge credits BEFORE execution (idempotent via charged flag)
-  if (task.userId) {
-    try {
-      const { chargeCredits } = await import('./billing');
-      await chargeCredits(task.userId, task.id, task.type);
-    } catch (err) {
-      console.error(`[WORKER] Billing failed for ${task.id}, proceeding anyway:`, err);
-    }
-  }
-
+  // Credits charged inside executeWithBilling (within executeTask)
   runningCount++;
   console.log(`[WORKER] Processing task ${task.id} (running: ${runningCount}/${MAX_CONCURRENT})`);
 

@@ -186,6 +186,40 @@ export async function chargeCredits(userId: string, taskId: string, taskType: Ta
 // Legacy alias
 export const deductCredits = chargeCredits;
 
+// ---- Unified billing gateway ----
+// ALL task execution MUST go through this. No bypass allowed.
+
+export class InsufficientCreditsError extends Error {
+  required: number;
+  current: number;
+  constructor(required: number, current: number) {
+    super(`额度不足（需要 ${required}，剩余 ${current}），请充值`);
+    this.required = required;
+    this.current = current;
+  }
+}
+
+export async function executeWithBilling<T>(
+  userId: string,
+  taskId: string,
+  taskType: TaskType | string,
+  fn: () => Promise<T>
+): Promise<T> {
+  // 1. Check credits
+  const user = await getOrCreateUser(userId);
+  const cost = estimateCost(taskType);
+
+  if (user.credits < cost) {
+    throw new InsufficientCreditsError(cost, user.credits);
+  }
+
+  // 2. Charge FIRST (pre-pay model)
+  await chargeCredits(userId, taskId, taskType);
+
+  // 3. Execute
+  return fn();
+}
+
 // ---- Credits management ----
 
 export async function addCredits(userId: string, amount: number) {
