@@ -1,7 +1,6 @@
 import { createTask, updateTaskStatus, emitLog, emitThinking, emitEvent, updateTaskType, updateTaskContext, completeTask } from './task-manager';
 import { routeAndPlan } from './agent-router';
 import { planTasks } from './agent-planner';
-import { runAgentLoop } from './agent-loop';
 import { getWorkflow } from './workflows';
 import { checkCredits, checkUserConcurrency } from './billing';
 import { estimateCost } from '@/lib/cost';
@@ -67,15 +66,7 @@ async function executeTask(taskId: string, input: string, presetType?: string, u
   if (!presetType || presetType === 'unknown') {
     const agentPlan = await planTasks(input);
 
-    if (agentPlan.tasks.length > 2) {
-      // Complex request — use agent loop for iterative reasoning
-      await emitLog(taskId, '复杂任务，启动智能调度...');
-      await updateTaskStatus(taskId, 'executing');
-      await runAgentLoop(taskId, input, userId || undefined);
-      return;
-    }
-
-    if (agentPlan.tasks.length === 2) {
+    if (agentPlan.tasks.length > 1) {
       // Two tasks — create sub-tasks directly
       await emitLog(taskId, `拆解为 ${agentPlan.tasks.length} 个子任务`);
       await updateTaskContext(taskId, { subtasks: agentPlan.tasks.map((t) => t.type) });
