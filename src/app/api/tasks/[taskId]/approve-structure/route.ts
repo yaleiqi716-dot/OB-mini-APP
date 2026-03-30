@@ -30,7 +30,6 @@ export async function POST(
       );
     }
 
-    // Only update status — executePPTGeneration handles all events
     await prisma.task.update({
       where: { id: taskId },
       data: { status: 'executing' },
@@ -38,7 +37,6 @@ export async function POST(
 
     await emitEvent(taskId, 'status_change', { status: 'executing' });
 
-    // Execute PPT generation in background
     (async () => {
       try {
         const { executePPTGeneration } = await import('@/services/workflows/ppt-workflow');

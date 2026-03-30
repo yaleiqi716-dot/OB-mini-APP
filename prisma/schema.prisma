@@ -7,15 +7,23 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// 状态集合: pending | understanding | structuring | interacting | executing | completed | failed
+// 任务类型: ppt | website | video | email | proposal | unknown
+// 任务来源: agent | zapier | api
+//
+// 注意: SQLite 不支持 Prisma Json 类型。
+// context / result / data 在 Prisma 层为 String，存储 JSON 字符串。
+// 应用层通过 task-manager.ts 的 formatTask / formatEvent 统一反序列化。
+
 model Task {
   id           String      @id @default(cuid())
   type         String      // ppt | website | video | email | proposal | unknown
   status       String      @default("pending") // pending | understanding | structuring | interacting | executing | completed | failed
   title        String      @default("")
-  input        String      // Original user input
-  context      String      @default("{}") // JSON: accumulated workflow context
-  currentStep  String      @default("init") // Current workflow step
-  result       String?     // JSON: final output/artifact
+  input        String
+  context      String      @default("{}") // JSON object, app layer handles serialize/deserialize
+  currentStep  String      @default("init")
+  result       String?     // JSON object | null, app layer handles serialize/deserialize
   errorMessage String?
   source       String      @default("agent") // agent | zapier | api
   createdAt    DateTime    @default(now())
@@ -28,7 +36,7 @@ model TaskEvent {
   taskId    String
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   type      String   // status_change | ai_response | interaction_request | interaction_response | step_complete | step_update | structure_generated | execution_started | task_completed | artifact | error | log
-  data      String   // JSON payload
+  data      String   // JSON object, app layer handles serialize/deserialize
   createdAt DateTime @default(now())
 
   @@index([taskId, createdAt])

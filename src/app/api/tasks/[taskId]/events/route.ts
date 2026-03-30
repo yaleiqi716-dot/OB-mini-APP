@@ -13,7 +13,6 @@ export async function GET(
 ) {
   const { taskId } = params;
 
-  // Verify task exists
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) {
     return new Response('任务不存在', { status: 404 });
@@ -23,10 +22,9 @@ export async function GET(
 
   const stream = new ReadableStream({
     async start(controller) {
-      // Send initial connection event
       controller.enqueue(encoder.encode(encodeSSE('connected', { taskId })));
 
-      // Replay all events from DB
+      // Replay events — formatEvent handles JSON deserialization
       const recentEvents = await prisma.taskEvent.findMany({
         where: { taskId },
         orderBy: { createdAt: 'asc' },
@@ -41,7 +39,7 @@ export async function GET(
 
       controller.enqueue(encoder.encode(encodeSSE('replay_complete', { count: recentEvents.length })));
 
-      // Subscribe to live events
+      // Live events — data is already deserialized by eventBus
       const unsubscribe = eventBus.subscribe(taskId, (event) => {
         try {
           controller.enqueue(
@@ -58,7 +56,6 @@ export async function GET(
         }
       });
 
-      // Heartbeat to keep connection alive
       const heartbeat = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(': heartbeat\n\n'));
@@ -68,7 +65,6 @@ export async function GET(
         }
       }, 15000);
 
-      // Cleanup on abort
       req.signal.addEventListener('abort', () => {
         clearInterval(heartbeat);
         unsubscribe();

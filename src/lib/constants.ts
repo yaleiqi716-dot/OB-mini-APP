@@ -8,6 +8,7 @@ export const TASK_TYPES: { value: TaskType; label: string; icon: string }[] = [
   { value: 'proposal', label: '方案策划', icon: '📋' },
 ];
 
+// 与 TaskStatus 类型定义、prisma/schema.prisma 注释保持一致
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   pending: '等待中',
   understanding: '理解中',
@@ -18,11 +19,12 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   failed: '失败',
 };
 
+// 合法状态转换图
 export const VALID_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   pending: ['understanding', 'structuring', 'executing', 'failed'],
   understanding: ['structuring', 'interacting', 'executing', 'failed'],
-  structuring: ['interacting', 'executing', 'failed'],
-  interacting: ['structuring', 'executing', 'interacting', 'failed'],
+  structuring: ['understanding', 'interacting', 'executing', 'failed'],
+  interacting: ['understanding', 'structuring', 'executing', 'interacting', 'failed'],
   executing: ['completed', 'failed', 'interacting'],
   completed: [],
   failed: [],

@@ -4,22 +4,25 @@ import { TaskStatus, TaskType, TaskEventType, TaskSource } from '@/types/task';
 import { Interaction } from '@/types/interaction';
 import { VALID_STATUS_TRANSITIONS } from '@/lib/constants';
 
-// ---- JSON helpers (centralized) ----
+// ---- JSON serialization boundary ----
+// SQLite stores JSON as String. These helpers form the ONLY place
+// where JSON.stringify / JSON.parse happen for task data fields.
+// All other code works with plain objects.
 
-function parseCtx(raw: string): Record<string, unknown> {
+function toJson(obj: unknown): string {
+  return JSON.stringify(obj);
+}
+
+function fromJson(raw: string): Record<string, unknown> {
   try { return JSON.parse(raw); } catch { return {}; }
 }
 
-function parseResult(raw: string | null): Record<string, unknown> | null {
+function fromJsonNullable(raw: string | null): Record<string, unknown> | null {
   if (!raw) return null;
   try { return JSON.parse(raw); } catch { return null; }
 }
 
-function parseEventData(raw: string): Record<string, unknown> {
-  try { return JSON.parse(raw); } catch { return {}; }
-}
-
-// ---- Serialized task/event formatting for API responses ----
+// ---- Formatting for API responses ----
 
 export function formatTask(t: {
   id: string; type: string; status: string; title: string; input: string;
@@ -28,9 +31,16 @@ export function formatTask(t: {
   events?: { id: string; taskId: string; type: string; data: string; createdAt: Date }[];
 }) {
   return {
-    ...t,
-    context: parseCtx(t.context),
-    result: parseResult(t.result),
+    id: t.id,
+    type: t.type,
+    status: t.status,
+    title: t.title,
+    input: t.input,
+    context: fromJson(t.context),
+    currentStep: t.currentStep,
+    result: fromJsonNullable(t.result),
+    errorMessage: t.errorMessage,
+    source: t.source,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
     events: t.events?.map(formatEvent) ?? [],
@@ -42,7 +52,7 @@ export function formatEvent(e: { id: string; taskId: string; type: string; data:
     id: e.id,
     taskId: e.taskId,
     type: e.type,
-    data: parseEventData(e.data),
+    data: fromJson(e.data),
     createdAt: e.createdAt.toISOString(),
   };
 }
@@ -93,12 +103,12 @@ export async function updateTaskContext(taskId: string, contextUpdate: Record<st
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) throw new Error(`任务不存在: ${taskId}`);
 
-  const existing = parseCtx(task.context);
+  const existing = fromJson(task.context);
   const merged = { ...existing, ...contextUpdate };
 
   return prisma.task.update({
     where: { id: taskId },
-    data: { context: JSON.stringify(merged) },
+    data: { context: toJson(merged) },
   });
 }
 
@@ -109,12 +119,12 @@ export async function updateTaskStep(taskId: string, step: string) {
   });
 }
 
-export async function completeTask(taskId: string, result: unknown) {
+export async function completeTask(taskId: string, result: Record<string, unknown>) {
   const updated = await prisma.task.update({
     where: { id: taskId },
     data: {
       status: 'completed',
-      result: JSON.stringify(result),
+      result: toJson(result),
     },
   });
 
@@ -143,15 +153,15 @@ export async function requestInteraction(taskId: string, interaction: Interactio
     data: { status: 'interacting' },
   });
 
-  await emitEvent(taskId, 'interaction_request', interaction);
+  await emitEvent(taskId, 'interaction_request', interaction as unknown as Record<string, unknown>);
 }
 
-export async function emitEvent(taskId: string, type: TaskEventType, data: unknown) {
+export async function emitEvent(taskId: string, type: TaskEventType, data: Record<string, unknown>) {
   const event = await prisma.taskEvent.create({
     data: {
       taskId,
       type,
-      data: JSON.stringify(data),
+      data: toJson(data),
     },
   });
 
@@ -195,5 +205,5 @@ export async function listTasks(limit = 20) {
 export async function getTaskContext(taskId: string): Promise<Record<string, unknown>> {
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) throw new Error(`任务不存在: ${taskId}`);
-  return parseCtx(task.context);
+  return fromJson(task.context);
 }

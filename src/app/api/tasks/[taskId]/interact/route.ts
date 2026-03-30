@@ -26,13 +26,11 @@ export async function POST(
       );
     }
 
-    // Record the interaction response
     await emitEvent(taskId, 'interaction_response', {
       stepId: body.stepId,
-      value: body.value,
+      value: body.value as Record<string, unknown>,
     });
 
-    // Get the workflow and handle the interaction
     const workflow = getWorkflow(task.type as TaskType);
     if (!workflow) {
       return NextResponse.json(
@@ -41,14 +39,9 @@ export async function POST(
       );
     }
 
-    // Process interaction in background
     workflow
       .handleInteraction(
-        {
-          taskId,
-          input: task.input,
-          context: {},
-        },
+        { taskId, input: task.input, context: {} },
         body.stepId,
         body.value
       )

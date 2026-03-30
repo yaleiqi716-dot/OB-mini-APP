@@ -5,7 +5,6 @@ import { getWorkflow } from '@/services/workflows';
 import { CreateTaskRequest } from '@/types/api';
 import { TaskType } from '@/types/task';
 
-// Import workflows to ensure they're registered
 import '@/services/workflows';
 
 export async function POST(req: NextRequest) {
@@ -18,7 +17,6 @@ export async function POST(req: NextRequest) {
 
     const task = await createTask(body.input.trim(), body.source || 'agent');
 
-    // Run routing and workflow in background
     processTask(task.id, body.input.trim(), body.type).catch(console.error);
 
     return NextResponse.json({
@@ -48,7 +46,6 @@ export async function GET() {
 
 async function processTask(taskId: string, input: string, presetType?: TaskType) {
   try {
-    // Route the task
     await updateTaskStatus(taskId, 'understanding');
     await emitLog(taskId, '正在识别任务类型...');
 
@@ -67,7 +64,6 @@ async function processTask(taskId: string, input: string, presetType?: TaskType)
     await updateTaskType(taskId, taskType, title);
     await emitLog(taskId, `任务类型：${taskType}`);
 
-    // Get and start workflow
     const workflow = getWorkflow(taskType);
     if (!workflow) {
       await emitLog(taskId, '暂不支持此类型的任务');
@@ -76,11 +72,7 @@ async function processTask(taskId: string, input: string, presetType?: TaskType)
       return;
     }
 
-    await workflow.start({
-      taskId,
-      input,
-      context: {},
-    });
+    await workflow.start({ taskId, input, context: {} });
   } catch (error) {
     console.error('处理任务失败:', error);
     const { failTask } = await import('@/services/task-manager');
