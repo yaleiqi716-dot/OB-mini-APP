@@ -89,45 +89,36 @@ export default function AgentPage() {
   const activeTaskIdRef = useRef<string | null>(null);
 
   activeTaskIdRef.current = activeTaskId;
-
   const activeTask = tasks.find((t) => t.id === activeTaskId) || null;
 
   // SSE for active task
   useSSE(activeTaskId, {
     enabled: !!activeTaskId,
-    onEvent: useCallback(
-      (event: TaskEvent) => {
-        const currentId = activeTaskIdRef.current;
-        if (!currentId) return;
-        setTasks((prev) =>
-          prev.map((t) => {
-            if (t.id !== currentId) return t;
-            const now = new Date().toISOString();
-            const updated = {
-              ...t,
-              events: [...t.events, event],
-              lastSeenUpdatedAt: now,
-              updatedAt: now,
-            };
-            if (event.type === 'status_change') updated.status = event.data.status as TaskStatus;
-            if (event.type === 'interaction_request') {
-              updated.currentInteraction = event.data as unknown as Interaction;
-              updated.status = 'interacting';
-            }
-            if (event.type === 'artifact' && event.data.result) updated.result = event.data.result as Record<string, unknown>;
-            if (event.type === 'task_completed' && event.data.result) {
-              updated.result = event.data.result as Record<string, unknown>;
-              updated.status = 'completed';
-            }
-            return updated;
-          })
-        );
-      },
-      []
-    ),
+    onEvent: useCallback((event: TaskEvent) => {
+      const currentId = activeTaskIdRef.current;
+      if (!currentId) return;
+      setTasks((prev) =>
+        prev.map((t) => {
+          if (t.id !== currentId) return t;
+          const now = new Date().toISOString();
+          const updated = { ...t, events: [...t.events, event], lastSeenUpdatedAt: now, updatedAt: now };
+          if (event.type === 'status_change') updated.status = event.data.status as TaskStatus;
+          if (event.type === 'interaction_request') {
+            updated.currentInteraction = event.data as unknown as Interaction;
+            updated.status = 'interacting';
+          }
+          if (event.type === 'artifact' && event.data.result) updated.result = event.data.result as Record<string, unknown>;
+          if (event.type === 'task_completed' && event.data.result) {
+            updated.result = event.data.result as Record<string, unknown>;
+            updated.status = 'completed';
+          }
+          return updated;
+        })
+      );
+    }, []),
   });
 
-  // Task list polling — 5s
+  // 5s task list polling
   useEffect(() => {
     function pollTasks() {
       fetch('/api/tasks')
@@ -135,17 +126,14 @@ export default function AgentPage() {
         .then((data) => {
           if (!Array.isArray(data)) return;
           if (data.length > 0) setShowWelcome(false);
-
           setTasks((prev) => {
             const prevMap = new Map(prev.map((t) => [t.id, t]));
             const merged: TaskState[] = [];
             const currentActiveId = activeTaskIdRef.current;
-
             for (const t of data as Record<string, unknown>[]) {
               const id = t.id as string;
               const serverUpdatedAt = (t.updatedAt as string) || '';
               const existing = prevMap.get(id);
-
               if (existing) {
                 const isActive = id === currentActiveId;
                 merged.push({
@@ -156,43 +144,29 @@ export default function AgentPage() {
                   source: (t.source as TaskSource) || existing.source,
                   updatedAt: serverUpdatedAt || existing.updatedAt,
                   result: isActive ? existing.result : ((t.result as Record<string, unknown>) || existing.result),
-                  lastSeenUpdatedAt: isActive
-                    ? serverUpdatedAt || existing.lastSeenUpdatedAt
-                    : existing.lastSeenUpdatedAt,
+                  lastSeenUpdatedAt: isActive ? serverUpdatedAt || existing.lastSeenUpdatedAt : existing.lastSeenUpdatedAt,
                 });
               } else {
                 const now = new Date().toISOString();
                 merged.push({
-                  id,
-                  type: (t.type as TaskType) || 'unknown',
-                  status: (t.status as TaskStatus) || 'pending',
-                  title: (t.title as string) || '',
-                  input: (t.input as string) || '',
+                  id, type: (t.type as TaskType) || 'unknown', status: (t.status as TaskStatus) || 'pending',
+                  title: (t.title as string) || '', input: (t.input as string) || '',
                   source: (t.source as TaskSource) || 'agent',
-                  createdAt: (t.createdAt as string) || now,
-                  updatedAt: serverUpdatedAt || now,
-                  events: [],
-                  eventsLoaded: false,
-                  currentInteraction: null,
-                  result: (t.result as Record<string, unknown>) || null,
-                  lastSeenUpdatedAt: '',
+                  createdAt: (t.createdAt as string) || now, updatedAt: serverUpdatedAt || now,
+                  events: [], eventsLoaded: false, currentInteraction: null,
+                  result: (t.result as Record<string, unknown>) || null, lastSeenUpdatedAt: '',
                 });
               }
             }
-
             if (!currentActiveId && merged.length > 0) {
-              const firstWaiting = merged.find(
-                (t) => t.status === 'interacting' || t.status === 'structuring'
-              );
+              const firstWaiting = merged.find((t) => t.status === 'interacting' || t.status === 'structuring');
               if (firstWaiting) setActiveTaskId(firstWaiting.id);
             }
-
             return merged;
           });
         })
         .catch(() => {});
     }
-
     pollTasks();
     const interval = setInterval(pollTasks, 5000);
     return () => clearInterval(interval);
@@ -203,7 +177,6 @@ export default function AgentPage() {
     if (!activeTaskId) return;
     const task = tasks.find((t) => t.id === activeTaskId);
     if (!task || task.eventsLoaded) return;
-
     fetch(`/api/tasks/${activeTaskId}`)
       .then((r) => r.json())
       .then((data) => {
@@ -214,13 +187,11 @@ export default function AgentPage() {
       .catch(() => {});
   }, [activeTaskId, tasks]);
 
-  // Clear unread when viewing task
+  // Clear unread
   useEffect(() => {
     if (!activeTaskId) return;
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === activeTaskId ? { ...t, lastSeenUpdatedAt: t.updatedAt } : t
-      )
+      prev.map((t) => t.id === activeTaskId ? { ...t, lastSeenUpdatedAt: t.updatedAt } : t)
     );
   }, [activeTaskId]);
 
@@ -229,22 +200,20 @@ export default function AgentPage() {
     canvasEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeTask?.events.length]);
 
+  // ---- Handlers ----
+
   async function handleSubmit(input: string, type?: string) {
     setIsSubmitting(true);
     setShowWelcome(false);
-
     try {
       const res = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input, type: type || undefined, source: 'agent' }),
       });
       const data = await res.json();
-
       if (data.taskId) {
         const detailRes = await fetch(`/api/tasks/${data.taskId}`);
         const detailData = await detailRes.json();
-
         let newTask: TaskState;
         if (detailData && !detailData.error) {
           newTask = parseTaskFromAPI(detailData);
@@ -258,15 +227,11 @@ export default function AgentPage() {
             lastSeenUpdatedAt: now,
           };
         }
-
         setTasks((prev) => [newTask, ...prev]);
         setActiveTaskId(data.taskId);
       }
-    } catch (error) {
-      console.error('提交失败:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    } catch (error) { console.error('提交失败:', error); }
+    finally { setIsSubmitting(false); }
   }
 
   async function handleInteractionSubmit(stepId: string, value: unknown) {
@@ -280,18 +245,16 @@ export default function AgentPage() {
     } catch (error) { console.error('交互提交失败:', error); }
   }
 
-  // Unified approve/reject handler
   async function handleApprove(approvalType: ApprovalType) {
     if (!activeTaskId) return;
     setActionLoadingTaskId(activeTaskId);
     try {
       const res = await fetch(`/api/tasks/${activeTaskId}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approvalType, action: 'approve' }),
       });
-      if (!res.ok) console.error('审批失败:', await res.text());
-    } catch (error) { console.error('审批失败:', error); }
+      if (!res.ok) console.error('确认失败:', await res.text());
+    } catch (error) { console.error('确认失败:', error); }
     finally { setActionLoadingTaskId(null); }
   }
 
@@ -300,11 +263,10 @@ export default function AgentPage() {
     setTasks((prev) => prev.map((t) => t.id === activeTaskId ? { ...t, currentInteraction: null } : t));
     try {
       await fetch(`/api/tasks/${activeTaskId}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approvalType, action: 'reject' }),
       });
-    } catch (error) { console.error('拒绝失败:', error); }
+    } catch (error) { console.error('操作失败:', error); }
   }
 
   async function handleAdjustStructure() {
@@ -344,19 +306,23 @@ export default function AgentPage() {
 
   const hasTasks = tasks.length > 0;
 
+  // ---- Render ----
+
   return (
     <div className="h-screen flex flex-col bg-surface-primary">
-      <header className="flex items-center justify-between px-6 py-3 border-b border-border">
-        <div className="flex items-center gap-2">
-          <span className="text-accent font-bold text-lg">ORANGE</span>
-          <span className="text-content-primary font-bold text-lg">BENCH</span>
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 h-12 border-b border-border flex-shrink-0">
+        <div className="flex items-center gap-1.5">
+          <span className="text-accent font-bold text-base tracking-tight">ORANGE</span>
+          <span className="text-content-primary font-bold text-base tracking-tight">BENCH</span>
         </div>
         <ThemeToggle />
       </header>
 
       <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar */}
         {hasTasks ? (
-          <aside className="w-72 border-r border-border p-3 overflow-y-auto custom-scrollbar flex-shrink-0">
+          <aside className="w-72 border-r border-border p-2.5 overflow-y-auto custom-scrollbar flex-shrink-0">
             <TaskList
               tasks={tasks.map((t) => ({
                 id: t.id, type: t.type, status: t.status, title: t.title,
@@ -370,10 +336,11 @@ export default function AgentPage() {
           </aside>
         ) : null}
 
+        {/* Main */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {activeTask ? (
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <div className="max-w-3xl mx-auto">
+              <div className="max-w-3xl mx-auto pb-4">
                 <TaskCanvas
                   taskId={activeTask.id} title={activeTask.title} type={activeTask.type}
                   status={activeTask.status} events={activeTask.events}
@@ -392,12 +359,16 @@ export default function AgentPage() {
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center space-y-6 max-w-xl px-4">
+              <div className="text-center space-y-8 max-w-2xl px-6">
                 {showWelcome ? (
                   <>
-                    <div className="space-y-2">
-                      <h1 className="text-2xl font-semibold text-content-primary">你好，有什么可以帮你完成的？</h1>
-                      <p className="text-content-secondary text-sm">直接描述你的工作需求，或选择下方的快捷卡片开始</p>
+                    <div className="space-y-3">
+                      <h1 className="text-3xl font-semibold text-content-primary">
+                        你好，有什么可以帮你完成的？
+                      </h1>
+                      <p className="text-content-secondary text-base">
+                        直接描述你的工作需求，或选择下方的快捷入口开始
+                      </p>
                     </div>
                     <WorkCardList onSelect={handleCardSelect} />
                   </>
@@ -406,7 +377,8 @@ export default function AgentPage() {
             </div>
           )}
 
-          <div className="border-t border-border p-4 bg-surface-primary">
+          {/* Input area */}
+          <div className="border-t border-border px-4 py-3 bg-surface-primary flex-shrink-0">
             {!activeTask && !showWelcome ? (
               <div className="max-w-3xl mx-auto mb-3">
                 <WorkCardList onSelect={handleCardSelect} />
