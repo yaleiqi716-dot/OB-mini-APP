@@ -147,7 +147,11 @@ export function TaskCanvas({
   const statusBarText = getStatusBarText(status, events);
   const progress = isExecuting ? getProgress(events) : null;
   const completedSteps = getCompletedSteps(events);
-  const thinkingText = mode === 'thinking' ? getLatestThinking(events) : null;
+
+  // Thinking: persistent across thinking + executing modes (continuous background stream)
+  // Hidden only during interaction, result, error
+  const showThinking = mode === 'thinking' || mode === 'executing';
+  const thinkingText = showThinking ? getLatestThinking(events) : null;
 
   // Logs: filter to phase-transition messages, not noisy detail
   const allLogs = events.filter((e) => e.type === 'log');
@@ -163,8 +167,10 @@ export function TaskCanvas({
   const visibleLogs = (() => {
     if (mode === 'result' || mode === 'error') return phaseLogs;
     if (mode === 'interaction') return [];
+    // When thinking is active, it carries the narrative — hide logs
+    if (thinkingText) return [];
     if (mode === 'executing') return phaseLogs.slice(-1);
-    if (mode === 'thinking') return thinkingText ? [] : phaseLogs.slice(-1);
+    if (mode === 'thinking') return phaseLogs.slice(-1);
     return phaseLogs.slice(-2);
   })();
 
@@ -223,21 +229,12 @@ export function TaskCanvas({
             </div>
             <div className="flex-1 min-w-0 space-y-3 pt-1">
 
-              {/* Logs */}
+              {/* Logs — phase transitions only */}
               {visibleLogs.map((event, i) => (
                 <div key={`log-${i}`} className="animate-flow-in text-sm text-content-tertiary leading-relaxed">
                   {String(event.data.message || '')}
                 </div>
               ))}
-
-              {/* Thinking — only in thinking mode */}
-              {thinkingText ? (
-                <div className="animate-flow-in py-1.5 px-3 rounded-lg bg-surface-tertiary/50 border-l-2 border-accent/30">
-                  <p className="text-xs text-content-secondary italic">
-                    <Typewriter text={thinkingText} speed={25} />
-                  </p>
-                </div>
-              ) : null}
 
               {/* Completed structure */}
               {structureEvent && (isExecuting || mode === 'result' || mode === 'error') ? (
@@ -246,7 +243,7 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {/* Completed steps */}
+              {/* Completed steps — milestones above thinking */}
               {completedSteps.length > 0 ? (
                 <div className="space-y-1 animate-flow-in">
                   {completedSteps.map((event, i) => (
@@ -258,6 +255,15 @@ export function TaskCanvas({
                       ) : null}
                     </div>
                   ))}
+                </div>
+              ) : null}
+
+              {/* Thinking — continuous background stream, below milestones */}
+              {thinkingText ? (
+                <div className="py-1.5 px-3 rounded-lg bg-surface-tertiary/50 border-l-2 border-accent/30">
+                  <p className="text-xs text-content-secondary italic">
+                    <Typewriter text={thinkingText} speed={25} />
+                  </p>
                 </div>
               ) : null}
 
