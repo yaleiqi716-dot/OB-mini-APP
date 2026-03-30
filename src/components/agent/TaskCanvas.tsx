@@ -356,6 +356,20 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
+              {/* Idle executing hint — when executing but no recent progress */}
+              {mode === 'executing' && completedSteps.length === 0 && !hasThinking ? (
+                <p className="text-xs text-content-secondary/60 italic animate-progress-pulse">
+                  我在帮你完善内容，持续推进中...
+                </p>
+              ) : null}
+
+              {/* Pending hint — task just created */}
+              {status === 'pending' && events.length <= 1 ? (
+                <p className="text-xs text-content-secondary/60 italic animate-progress-pulse">
+                  收到，我马上开始...
+                </p>
+              ) : null}
+
               {/* Transition line before approval — context-specific */}
               {isApprovalGate && approvalType === 'send_email' ? (
                 <p className="text-xs text-content-secondary/70 italic animate-flow-in">

@@ -255,18 +255,31 @@ export default function AgentPage() {
       });
       const data = await res.json();
       if (data.taskId) {
+        const now = new Date().toISOString();
+
+        // Instant feedback: inject a synthetic thinking event so canvas is never blank
+        const instantThinking: TaskEvent = {
+          type: 'thinking',
+          data: { text: '好，我来帮你处理这个任务，我先把整体思路理一下' },
+          createdAt: now,
+        };
+
         const detailRes = await fetch(`/api/tasks/${data.taskId}`);
         const detailData = await detailRes.json();
         let newTask: TaskState;
         if (detailData && !detailData.error) {
           newTask = parseTaskFromAPI(detailData);
+          // Prepend instant thinking if no events yet
+          if (newTask.events.length === 0) {
+            newTask.events = [instantThinking];
+          }
         } else {
-          const now = new Date().toISOString();
           newTask = {
             id: data.taskId, type: data.type || 'unknown', status: 'pending',
             title: input.slice(0, 50), input, source: 'agent',
             createdAt: now, updatedAt: now,
-            events: [], eventsLoaded: false, currentInteraction: null, result: null,
+            events: [instantThinking], eventsLoaded: false,
+            currentInteraction: null, result: null,
             lastSeenUpdatedAt: now,
           };
         }
