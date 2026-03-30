@@ -524,7 +524,8 @@ export function TaskCanvas({
                 const errMsg = events.find((e) => e.type === 'error')
                   ? String(events.find((e) => e.type === 'error')!.data.message || '')
                   : '';
-                const isCreditsError = errMsg.includes('余额不足') || errMsg.includes('额度不足');
+                const hasInsufficientEvent = events.some((e) => e.type === 'insufficient_credits');
+                const isCreditsError = hasInsufficientEvent || errMsg.includes('余额不足') || errMsg.includes('额度不足');
 
                 return isCreditsError ? (
                   <div className="animate-flow-in p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">

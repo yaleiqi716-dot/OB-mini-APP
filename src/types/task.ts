@@ -27,6 +27,7 @@ export type TaskEventType =
   | 'approval_approved'
   | 'approval_rejected'
   | 'thinking'
+  | 'insufficient_credits'
   | 'artifact'
   | 'error'
   | 'log';

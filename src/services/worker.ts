@@ -73,7 +73,12 @@ async function executeTask(taskId: string, input: string, presetType?: string, u
   if (userId) {
     const recheckResult = await checkCredits(userId, plan.taskType);
     if (!recheckResult.allowed) {
-      const { failTask } = await import('./task-manager');
+      const { failTask, emitEvent } = await import('./task-manager');
+      await emitEvent(taskId, 'insufficient_credits', {
+        required: recheckResult.estimatedCost,
+        current: 0,
+        reason: recheckResult.reason,
+      });
       await failTask(taskId, recheckResult.reason || '余额不足，请充值');
       return;
     }

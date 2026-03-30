@@ -83,7 +83,10 @@ async function requeueBlockedTasks(userId: string) {
     where: {
       userId,
       status: 'failed',
-      errorMessage: { contains: '余额不足' },
+      OR: [
+        { errorMessage: { contains: '余额不足' } },
+        { errorMessage: { contains: '额度不足' } },
+      ],
     },
     orderBy: { createdAt: 'desc' },
     take: 3, // Re-queue at most 3
