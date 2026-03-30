@@ -1,5 +1,7 @@
 export type InteractionType = 'single_choice' | 'yes_no' | 'file_upload' | 'confirm' | 'text_input';
 
+export type ApprovalType = 'send_email' | 'use_structure' | 'publish_result' | 'generic';
+
 export interface BaseInteraction {
   id: string;
   taskId: string;
@@ -26,7 +28,9 @@ export interface FileUploadInteraction extends BaseInteraction {
 export interface ConfirmInteraction extends BaseInteraction {
   type: 'confirm';
   detail: string;
-  detailData?: Record<string, unknown>;
+  detailData?: Record<string, unknown> & {
+    approvalType?: ApprovalType;
+  };
 }
 
 export interface TextInputInteraction extends BaseInteraction {

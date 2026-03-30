@@ -9,7 +9,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Spinner } from '@/components/ui/Spinner';
 import { useSSE } from '@/hooks/useSSE';
 import { TaskStatus, TaskType, TaskSource } from '@/types/task';
-import { Interaction } from '@/types/interaction';
+import { Interaction, ApprovalType } from '@/types/interaction';
 
 interface TaskEvent {
   type: string;
@@ -30,7 +30,6 @@ interface TaskState {
   eventsLoaded: boolean;
   currentInteraction: Interaction | null;
   result: Record<string, unknown> | null;
-  lastViewedEventCount: number;
   lastSeenUpdatedAt: string;
 }
 
@@ -50,6 +49,7 @@ function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
   }
 
   const now = new Date().toISOString();
+  const updatedAt = (data.updatedAt as string) || now;
 
   return {
     id: data.id as string,
@@ -59,13 +59,12 @@ function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
     input: (data.input as string) || '',
     source: (data.source as TaskSource) || 'agent',
     createdAt: (data.createdAt as string) || now,
-    updatedAt: (data.updatedAt as string) || now,
+    updatedAt,
     events,
     eventsLoaded: true,
     currentInteraction,
     result: (data.result as Record<string, unknown>) || null,
-    lastViewedEventCount: events.length,
-    lastSeenUpdatedAt: (data.updatedAt as string) || now,
+    lastSeenUpdatedAt: updatedAt,
   };
 }
 
@@ -89,12 +88,11 @@ export default function AgentPage() {
   const canvasEndRef = useRef<HTMLDivElement>(null);
   const activeTaskIdRef = useRef<string | null>(null);
 
-  // Keep ref in sync so polling callback can read latest value
   activeTaskIdRef.current = activeTaskId;
 
   const activeTask = tasks.find((t) => t.id === activeTaskId) || null;
 
-  // SSE for active task only
+  // SSE for active task
   useSSE(activeTaskId, {
     enabled: !!activeTaskId,
     onEvent: useCallback(
@@ -104,12 +102,12 @@ export default function AgentPage() {
         setTasks((prev) =>
           prev.map((t) => {
             if (t.id !== currentId) return t;
+            const now = new Date().toISOString();
             const updated = {
               ...t,
               events: [...t.events, event],
-              lastViewedEventCount: t.events.length + 1,
-              lastSeenUpdatedAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
+              lastSeenUpdatedAt: now,
+              updatedAt: now,
             };
             if (event.type === 'status_change') updated.status = event.data.status as TaskStatus;
             if (event.type === 'interaction_request') {
@@ -129,7 +127,7 @@ export default function AgentPage() {
     ),
   });
 
-  // Task list polling — 5s interval for real-time task inbox
+  // Task list polling — 5s
   useEffect(() => {
     function pollTasks() {
       fetch('/api/tasks')
@@ -149,10 +147,7 @@ export default function AgentPage() {
               const existing = prevMap.get(id);
 
               if (existing) {
-                // For activeTask: only update summary-level fields, preserve events
                 const isActive = id === currentActiveId;
-                const hasServerUpdate = serverUpdatedAt > existing.updatedAt;
-
                 merged.push({
                   ...existing,
                   type: (t.type as TaskType) || existing.type,
@@ -161,13 +156,11 @@ export default function AgentPage() {
                   source: (t.source as TaskSource) || existing.source,
                   updatedAt: serverUpdatedAt || existing.updatedAt,
                   result: isActive ? existing.result : ((t.result as Record<string, unknown>) || existing.result),
-                  // Mark unread if server updated and not currently viewing
                   lastSeenUpdatedAt: isActive
                     ? serverUpdatedAt || existing.lastSeenUpdatedAt
                     : existing.lastSeenUpdatedAt,
                 });
               } else {
-                // Brand new task (external or from another session)
                 const now = new Date().toISOString();
                 merged.push({
                   id,
@@ -182,21 +175,16 @@ export default function AgentPage() {
                   eventsLoaded: false,
                   currentInteraction: null,
                   result: (t.result as Record<string, unknown>) || null,
-                  lastViewedEventCount: 0,
-                  // New tasks start as "unread"
                   lastSeenUpdatedAt: '',
                 });
               }
             }
 
-            // Auto-select if no active task and new tasks appeared
             if (!currentActiveId && merged.length > 0) {
-              const firstActive = merged.find(
+              const firstWaiting = merged.find(
                 (t) => t.status === 'interacting' || t.status === 'structuring'
               );
-              if (firstActive) {
-                setActiveTaskId(firstActive.id);
-              }
+              if (firstWaiting) setActiveTaskId(firstWaiting.id);
             }
 
             return merged;
@@ -231,9 +219,7 @@ export default function AgentPage() {
     if (!activeTaskId) return;
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === activeTaskId
-          ? { ...t, lastViewedEventCount: t.events.length, lastSeenUpdatedAt: t.updatedAt }
-          : t
+        t.id === activeTaskId ? { ...t, lastSeenUpdatedAt: t.updatedAt } : t
       )
     );
   }, [activeTaskId]);
@@ -269,7 +255,7 @@ export default function AgentPage() {
             title: input.slice(0, 50), input, source: 'agent',
             createdAt: now, updatedAt: now,
             events: [], eventsLoaded: false, currentInteraction: null, result: null,
-            lastViewedEventCount: 0, lastSeenUpdatedAt: now,
+            lastSeenUpdatedAt: now,
           };
         }
 
@@ -294,17 +280,24 @@ export default function AgentPage() {
     } catch (error) { console.error('交互提交失败:', error); }
   }
 
-  async function handleApproveStructure() {
+  // Unified approve handler
+  async function handleApprove(approvalType: ApprovalType) {
     if (!activeTaskId) return;
+    setActionLoadingTaskId(activeTaskId);
     try {
-      await fetch(`/api/tasks/${activeTaskId}/approve-structure`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const res = await fetch(`/api/tasks/${activeTaskId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approvalType }),
       });
-    } catch (error) { console.error('结构审批失败:', error); }
+      if (!res.ok) console.error('审批失败:', await res.text());
+    } catch (error) { console.error('审批失败:', error); }
+    finally { setActionLoadingTaskId(null); }
   }
 
   async function handleAdjustStructure() {
     if (!activeTaskId) return;
+    setTasks((prev) => prev.map((t) => t.id === activeTaskId ? { ...t, currentInteraction: null } : t));
     try {
       await fetch(`/api/tasks/${activeTaskId}/interact`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -313,16 +306,15 @@ export default function AgentPage() {
     } catch (error) { console.error('调整结构失败:', error); }
   }
 
-  async function handleSendEmail() {
+  async function handleReviseEmail() {
     if (!activeTaskId) return;
-    setActionLoadingTaskId(activeTaskId);
+    setTasks((prev) => prev.map((t) => t.id === activeTaskId ? { ...t, currentInteraction: null } : t));
     try {
-      const res = await fetch(`/api/tasks/${activeTaskId}/send-email`, {
+      await fetch(`/api/tasks/${activeTaskId}/interact`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interactionId: '', stepId: 'revise_email_request', value: '' }),
       });
-      if (!res.ok) console.error('发送邮件失败:', await res.text());
-    } catch (error) { console.error('发送邮件失败:', error); }
-    finally { setActionLoadingTaskId(null); }
+    } catch (error) { console.error('修改邮件失败:', error); }
   }
 
   function handleCardSelect(prompt: string, type: string) { handleSubmit(prompt, type); }
@@ -364,9 +356,9 @@ export default function AgentPage() {
                   status={activeTask.status} events={activeTask.events}
                   currentInteraction={activeTask.currentInteraction}
                   onInteractionSubmit={handleInteractionSubmit}
-                  onApproveStructure={handleApproveStructure}
+                  onApprove={handleApprove}
                   onAdjustStructure={handleAdjustStructure}
-                  onSendEmail={handleSendEmail}
+                  onReviseEmail={handleReviseEmail}
                   actionLoading={actionLoadingTaskId === activeTask.id}
                   result={activeTask.result}
                 />

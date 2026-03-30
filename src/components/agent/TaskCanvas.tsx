@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { InteractionPanel } from './InteractionPanel';
-import { Interaction, ConfirmInteraction } from '@/types/interaction';
+import { Interaction, ConfirmInteraction, ApprovalType } from '@/types/interaction';
 import { TaskStatus } from '@/types/task';
 
 interface TaskEvent {
@@ -21,45 +21,40 @@ interface TaskCanvasProps {
   events: TaskEvent[];
   currentInteraction: Interaction | null;
   onInteractionSubmit: (stepId: string, value: unknown) => void;
-  onApproveStructure: () => void;
+  onApprove: (approvalType: ApprovalType) => void;
   onAdjustStructure: () => void;
-  onSendEmail: () => void;
+  onReviseEmail: () => void;
   actionLoading: boolean;
   result: Record<string, unknown> | null;
 }
 
+function getApprovalType(interaction: Interaction | null): ApprovalType | null {
+  if (!interaction) return null;
+  if (interaction.type !== 'confirm') return null;
+  if (interaction.stepId !== 'approval_gate') return null;
+  const dd = (interaction as ConfirmInteraction).detailData;
+  return (dd?.approvalType as ApprovalType) || null;
+}
+
 export function TaskCanvas({
-  taskId,
-  title,
-  type,
-  status,
-  events,
-  currentInteraction,
-  onInteractionSubmit,
-  onApproveStructure,
-  onAdjustStructure,
-  onSendEmail,
-  actionLoading,
-  result,
+  taskId, title, type, status, events, currentInteraction,
+  onInteractionSubmit, onApprove, onAdjustStructure, onReviseEmail,
+  actionLoading, result,
 }: TaskCanvasProps) {
   const logs = events.filter((e) => e.type === 'log');
   const stepUpdates = events.filter((e) => e.type === 'step_update');
   const structureEvent = events.findLast((e) => e.type === 'structure_generated');
   const isActive = !['completed', 'failed'].includes(status);
 
-  const isEmailConfirm =
-    type === 'email' &&
-    currentInteraction !== null &&
-    currentInteraction.type === 'confirm' &&
-    currentInteraction.stepId === 'confirm_send';
+  const approvalType = getApprovalType(currentInteraction);
+  const isApprovalGate = approvalType !== null && status === 'interacting';
+  const isGenericInteraction = currentInteraction !== null && status === 'interacting' && !isApprovalGate;
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-3">
-          <h3 className="text-sm font-medium text-content-primary">
-            {title || '任务执行中'}
-          </h3>
+          <h3 className="text-sm font-medium text-content-primary">{title || '任务执行中'}</h3>
           <Badge status={status} />
         </div>
         <span className="text-xs text-content-tertiary">{type}</span>
@@ -70,15 +65,11 @@ export function TaskCanvas({
           <LogEntry key={`log-${i}`} message={String(event.data.message || '')} />
         ))}
 
-        {structureEvent && status === 'structuring' ? (
-          <StructureCard
-            structure={structureEvent.data.structure as string[]}
-            onApprove={onApproveStructure}
-            onAdjust={onAdjustStructure}
-          />
+        {/* Structure completed badge (when past structuring) */}
+        {structureEvent && !isActive ? (
+          <StructureCardCompleted structure={structureEvent.data.structure as string[]} />
         ) : null}
-
-        {structureEvent && status !== 'structuring' && status !== 'understanding' && status !== 'pending' ? (
+        {structureEvent && isActive && status === 'executing' ? (
           <StructureCardCompleted structure={structureEvent.data.structure as string[]} />
         ) : null}
 
@@ -88,39 +79,43 @@ export function TaskCanvas({
 
         {isActive && status === 'executing' ? (
           <div className="flex items-center gap-2 text-content-secondary text-sm">
-            <Spinner size="sm" />
-            <span>正在生成内容...</span>
+            <Spinner size="sm" /><span>正在生成内容...</span>
           </div>
         ) : null}
 
         {status === 'understanding' ? (
           <div className="flex items-center gap-2 text-content-secondary text-sm">
-            <Spinner size="sm" />
-            <span>正在理解需求...</span>
+            <Spinner size="sm" /><span>正在理解需求...</span>
           </div>
         ) : null}
 
-        {isEmailConfirm && status === 'interacting' ? (
-          <EmailConfirmCard
+        {/* Unified approval gate cards */}
+        {isApprovalGate && approvalType === 'send_email' ? (
+          <EmailApprovalCard
             interaction={currentInteraction as ConfirmInteraction}
-            onSend={onSendEmail}
-            onRevise={() => onInteractionSubmit('revise_email_request', '')}
+            onApprove={() => onApprove('send_email')}
+            onRevise={onReviseEmail}
             loading={actionLoading}
           />
         ) : null}
 
-        {currentInteraction !== null && status === 'interacting' && !isEmailConfirm ? (
+        {isApprovalGate && approvalType === 'use_structure' ? (
+          <StructureApprovalCard
+            interaction={currentInteraction as ConfirmInteraction}
+            onApprove={() => onApprove('use_structure')}
+            onAdjust={onAdjustStructure}
+            loading={actionLoading}
+          />
+        ) : null}
+
+        {/* Generic interaction (non-approval) */}
+        {isGenericInteraction ? (
           <div className="mt-4 p-4 rounded-xl border border-accent/20 bg-accent/5">
-            <InteractionPanel
-              interaction={currentInteraction}
-              onSubmit={onInteractionSubmit}
-            />
+            <InteractionPanel interaction={currentInteraction!} onSubmit={onInteractionSubmit} />
           </div>
         ) : null}
 
-        {status === 'completed' && result !== null ? (
-          <ResultView result={result} />
-        ) : null}
+        {status === 'completed' && result !== null ? <ResultView result={result} /> : null}
 
         {status === 'failed' ? (
           <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
@@ -133,6 +128,8 @@ export function TaskCanvas({
     </div>
   );
 }
+
+// ---- Sub-components ----
 
 function LogEntry({ message }: { message: string }) {
   return (
@@ -158,56 +155,37 @@ function StepUpdateEntry({ data }: { data: Record<string, unknown> }) {
   );
 }
 
-function EmailConfirmCard({
-  interaction,
-  onSend,
-  onRevise,
-  loading,
+function EmailApprovalCard({
+  interaction, onApprove, onRevise, loading,
 }: {
   interaction: ConfirmInteraction;
-  onSend: () => void;
+  onApprove: () => void;
   onRevise: () => void;
   loading: boolean;
 }) {
-  // Prefer structured detailData; fall back to parsing detail string
-  const detailData = interaction.detailData as { subject?: string; body?: string } | undefined;
-  let subject = detailData?.subject || '';
-  let body = detailData?.body || '';
-
-  if (!subject && !body && interaction.detail) {
-    const lines = interaction.detail.split('\n');
-    const subjectLine = lines.find((l) => l.startsWith('主题：'));
-    if (subjectLine) {
-      subject = subjectLine.replace('主题：', '').trim();
-      const idx = lines.indexOf(subjectLine);
-      body = lines.slice(idx + 1).join('\n').trim();
-    } else {
-      body = interaction.detail;
-    }
-  }
+  const dd = interaction.detailData as { subject?: string; body?: string } | undefined;
+  const subject = dd?.subject || '';
+  const body = dd?.body || interaction.detail || '';
 
   return (
     <div className="rounded-xl border border-accent/30 bg-accent/5 p-5 space-y-4">
       <div className="flex items-center gap-2">
         <span className="text-accent text-sm font-medium">邮件预览</span>
       </div>
-
       {subject ? (
         <div className="space-y-1">
           <p className="text-xs text-content-tertiary">主题</p>
           <p className="text-sm font-medium text-content-primary">{subject}</p>
         </div>
       ) : null}
-
       <div className="space-y-1">
         <p className="text-xs text-content-tertiary">正文</p>
         <div className="rounded-lg bg-surface-secondary border border-border p-4">
           <p className="text-sm text-content-secondary whitespace-pre-wrap leading-relaxed">{body}</p>
         </div>
       </div>
-
       <div className="flex gap-3 pt-2">
-        <Button onClick={onSend} size="sm" disabled={loading}>
+        <Button onClick={onApprove} size="sm" disabled={loading}>
           {loading ? '发送中...' : '确认发送'}
         </Button>
         <Button onClick={onRevise} variant="secondary" size="sm" disabled={loading}>
@@ -218,7 +196,17 @@ function EmailConfirmCard({
   );
 }
 
-function StructureCard({ structure, onApprove, onAdjust }: { structure: string[]; onApprove: () => void; onAdjust: () => void }) {
+function StructureApprovalCard({
+  interaction, onApprove, onAdjust, loading,
+}: {
+  interaction: ConfirmInteraction;
+  onApprove: () => void;
+  onAdjust: () => void;
+  loading: boolean;
+}) {
+  const dd = interaction.detailData as { structure?: string[] } | undefined;
+  const structure = dd?.structure || [];
+
   return (
     <div className="rounded-xl border border-accent/30 bg-accent/5 p-5 space-y-4">
       <div className="flex items-center gap-2">
@@ -234,8 +222,8 @@ function StructureCard({ structure, onApprove, onAdjust }: { structure: string[]
         ))}
       </div>
       <div className="flex gap-3 pt-2">
-        <Button onClick={onApprove} size="sm">继续生成</Button>
-        <Button onClick={onAdjust} variant="secondary" size="sm">调整结构</Button>
+        <Button onClick={onApprove} size="sm" disabled={loading}>继续生成</Button>
+        <Button onClick={onAdjust} variant="secondary" size="sm" disabled={loading}>调整结构</Button>
       </div>
     </div>
   );

@@ -86,6 +86,21 @@ const pptWorkflow: BaseWorkflow = {
       await emitLog(taskId, '结构已生成，等待确认...');
 
       await emitEvent(taskId, 'structure_generated', { structure });
+
+      // Unified approval gate for structure confirmation
+      await requestInteraction(taskId, {
+        id: generateId(),
+        taskId,
+        stepId: 'approval_gate',
+        type: 'confirm',
+        question: '请确认演示文稿结构',
+        detail: structure.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+        detailData: {
+          approvalType: 'use_structure',
+          title: '确认结构',
+          structure,
+        },
+      });
     } catch (error) {
       const msg = error instanceof Error ? error.message : '启动失败';
       await failTask(taskId, msg);
@@ -152,6 +167,21 @@ const pptWorkflow: BaseWorkflow = {
         await emitLog(taskId, '结构已重新生成，等待确认...');
 
         await emitEvent(taskId, 'structure_generated', { structure });
+
+        // Re-issue approval gate
+        await requestInteraction(taskId, {
+          id: generateId(),
+          taskId,
+          stepId: 'approval_gate',
+          type: 'confirm',
+          question: '请确认演示文稿结构',
+          detail: structure.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+          detailData: {
+            approvalType: 'use_structure',
+            title: '确认结构',
+            structure,
+          },
+        });
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : '处理交互失败';
@@ -164,7 +194,7 @@ registerWorkflow(pptWorkflow);
 
 export { pptWorkflow };
 
-// Called by approve-structure after user confirms
+// Called by unified approve endpoint after user confirms structure
 export async function executePPTGeneration(taskId: string, input: string) {
   const taskContext = await getTaskContext(taskId);
   const pptCtx = (taskContext.ppt as PPTContext) || defaultPPTContext;
@@ -257,8 +287,6 @@ export async function executePPTGeneration(taskId: string, input: string) {
   };
   await updateTaskContext(taskId, { ppt: updatedCtx });
 
-  // 通过 task-manager.completeTask 统一完成
-  // 内部处理 result 序列化 + task_completed / status_change / artifact 事件
   await completeTask(
     taskId,
     finalResult,

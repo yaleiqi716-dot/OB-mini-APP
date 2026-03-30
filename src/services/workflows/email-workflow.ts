@@ -6,7 +6,6 @@ import {
   updateTaskContext,
   updateTaskStep,
   requestInteraction,
-  completeTask,
   emitEvent,
   emitLog,
   getTaskContext,
@@ -167,15 +166,19 @@ async function generateEmailDraft(
 
   await emitLog(taskId, '邮件草稿已生成，等待确认发送...');
 
-  // Use detailData for structured email data (no string parsing needed on frontend)
+  // Unified approval gate
   await requestInteraction(taskId, {
     id: generateId(),
     taskId,
-    stepId: 'confirm_send',
+    stepId: 'approval_gate',
     type: 'confirm',
     question: '邮件草稿已就绪，请确认发送',
     detail: `主题：${draft.subject}\n\n${draft.body}`,
-    detailData: { subject: draft.subject, body: draft.body },
+    detailData: {
+      approvalType: 'send_email',
+      subject: draft.subject,
+      body: draft.body,
+    },
   });
 }
 
