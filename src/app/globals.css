@@ -37,6 +37,8 @@ html:not(.dark) {
 body {
   background: var(--surface-primary);
   color: var(--content-primary);
+  /* Prevent iOS bounce/overscroll */
+  overscroll-behavior: none;
 }
 
 .scrollbar-hide {
@@ -72,17 +74,10 @@ button, a, input, textarea {
   transition-duration: 150ms;
 }
 
-/* ---- Execution flow animations ---- */
-
+/* Execution flow animations */
 @keyframes fadeSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes progressPulse {
@@ -98,7 +93,32 @@ button, a, input, textarea {
   animation: progressPulse 2s ease-in-out infinite;
 }
 
-/* Progress bar smooth fill */
 .progress-bar-fill {
   transition: width 0.5s ease-out;
+}
+
+/* Mobile safe area */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Mobile sidebar overlay */
+@media (max-width: 768px) {
+  .mobile-sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0, 0, 0, 0.4);
+  }
+  .mobile-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 50;
+    width: 280px;
+    background: var(--surface-primary);
+    border-right: 1px solid var(--border-color);
+    overflow-y: auto;
+  }
 }

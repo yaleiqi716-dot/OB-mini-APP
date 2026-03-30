@@ -258,7 +258,7 @@ export function TaskCanvas({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-5 py-3.5 border-b border-border">
+      <div className="px-4 md:px-5 py-3 md:py-3.5 border-b border-border">
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-base flex-shrink-0">{typeInfo?.icon || '📎'}</span>
           <div className="flex-1 min-w-0">
@@ -287,7 +287,7 @@ export function TaskCanvas({
       </div>
 
       {/* Execution flow */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4">
 
         {/* User input */}
         {input ? (
@@ -464,14 +464,14 @@ function ApprovalCard({
         <span className="text-accent text-sm font-medium">{label}</span>
       </div>
       {children}
-      <div className="flex items-center gap-3 pt-1">
+      <div className="flex flex-wrap items-center gap-2 md:gap-3 pt-1">
         <Button onClick={onApprove} size="sm" disabled={loading}>
           {loading ? (loadingLabel || '处理中...') : approveLabel}
         </Button>
         {onSecondary && secondaryLabel ? (
           <Button onClick={onSecondary} variant="secondary" size="sm" disabled={loading}>{secondaryLabel}</Button>
         ) : null}
-        <button onClick={onReject} disabled={loading} className="text-xs text-content-tertiary hover:text-content-secondary transition-colors disabled:opacity-50 ml-auto">
+        <button onClick={onReject} disabled={loading} className="text-xs text-content-tertiary hover:text-content-secondary transition-colors disabled:opacity-50 md:ml-auto">
           重新生成
         </button>
       </div>

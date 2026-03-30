@@ -39,15 +39,15 @@ export function AgentInput({ onSubmit, disabled, placeholder }: AgentInputProps)
           onSubmit={handleSubmit}
           placeholder={placeholder || '描述你想完成的工作...'}
           disabled={disabled}
-          className="flex-1 min-h-[24px]"
+          className="flex-1 min-h-[24px] text-[15px]"
         />
         <button
           onClick={handleSubmit}
           disabled={!value.trim() || disabled}
           className={cn(
-            'flex-shrink-0 rounded-xl p-2.5 transition-all',
+            'flex-shrink-0 rounded-xl p-2.5 transition-all touch-manipulation',
             value.trim() && !disabled
-              ? 'bg-accent text-white hover:bg-accent-hover'
+              ? 'bg-accent text-white hover:bg-accent-hover active:scale-95'
               : 'bg-surface-tertiary text-content-tertiary'
           )}
         >
