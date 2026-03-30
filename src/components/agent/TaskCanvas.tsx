@@ -47,35 +47,6 @@ const TYPE_LABELS: Record<string, string> = {
   website: '网页', video: '视频', unknown: '任务',
 };
 
-function getCurrentPhaseText(status: TaskStatus, events: TaskEvent[]): string | null {
-  if (status === 'completed' || status === 'failed') return null;
-
-  for (let i = events.length - 1; i >= 0; i--) {
-    const e = events[i];
-    if (e.type === 'step_update' && e.data.current && e.data.total) {
-      return `${e.data.text || '生成中'} (${e.data.current}/${e.data.total})`;
-    }
-  }
-
-  for (let i = events.length - 1; i >= 0; i--) {
-    if (events[i].type === 'log') return String(events[i].data.message || '');
-  }
-
-  if (status === 'understanding') return '正在理解需求...';
-  if (status === 'executing') return '正在执行...';
-  if (status === 'interacting') return '等待确认';
-  if (status === 'structuring') return '等待确认';
-  return null;
-}
-
-function getLatestStepUpdates(events: TaskEvent[]): TaskEvent[] {
-  const map = new Map<string, TaskEvent>();
-  for (const e of events) {
-    if (e.type === 'step_update') map.set(String(e.data.step || ''), e);
-  }
-  return Array.from(map.values());
-}
-
 function getProgress(events: TaskEvent[]): { current: number; total: number } | null {
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
@@ -93,12 +64,60 @@ function getLatestThinking(events: TaskEvent[]): string | null {
   return null;
 }
 
+// Status bar text — only for working phases
+function getStatusBarText(status: TaskStatus, events: TaskEvent[]): string | null {
+  if (status !== 'understanding' && status !== 'executing' && status !== 'structuring') return null;
+
+  for (let i = events.length - 1; i >= 0; i--) {
+    const e = events[i];
+    if (e.type === 'step_update' && e.data.current && e.data.total) {
+      return `${e.data.text || '生成中'} (${e.data.current}/${e.data.total})`;
+    }
+  }
+
+  for (let i = events.length - 1; i >= 0; i--) {
+    if (events[i].type === 'log') return String(events[i].data.message || '');
+  }
+
+  if (status === 'understanding') return '正在理解需求...';
+  if (status === 'executing') return '正在执行...';
+  return null;
+}
+
+// Completed steps (deduplicated, only "已生成"/"已完成")
+function getCompletedSteps(events: TaskEvent[]): TaskEvent[] {
+  const map = new Map<string, TaskEvent>();
+  for (const e of events) {
+    if (e.type === 'step_update') map.set(String(e.data.step || ''), e);
+  }
+  return Array.from(map.values()).filter((e) => {
+    const t = String(e.data.text || '');
+    return t.includes('已生成') || t.includes('已完成');
+  });
+}
+
+// ---- Narrative layer priority ----
+// interacting/approval → only show interaction (hide thinking + most logs)
+// executing             → step_update primary, thinking hidden, 1 log max
+// understanding/structuring → thinking primary, 1 log
+// completed/failed      → result/error only, no thinking/logs in flow
+
+type NarrativeMode = 'interaction' | 'executing' | 'thinking' | 'result' | 'error' | 'idle';
+
+function getNarrativeMode(status: TaskStatus, isApproval: boolean, isGenericInteraction: boolean): NarrativeMode {
+  if (status === 'completed') return 'result';
+  if (status === 'failed') return 'error';
+  if (isApproval || isGenericInteraction) return 'interaction';
+  if (status === 'executing') return 'executing';
+  if (status === 'understanding' || status === 'structuring') return 'thinking';
+  return 'idle';
+}
+
 export function TaskCanvas({
   taskId, title, type, status, input, events, currentInteraction,
   onInteractionSubmit, onApprove, onReject, onAdjustStructure, onAdjustProposal, onReviseEmail,
   actionLoading, result, loading,
 }: TaskCanvasProps) {
-  // Loading skeleton
   if (loading) {
     return (
       <div className="flex flex-col h-full">
@@ -118,36 +137,31 @@ export function TaskCanvas({
   const structureEvent = events.findLast((e) => e.type === 'structure_generated');
   const isActive = !['completed', 'failed'].includes(status);
   const isExecuting = isActive && status === 'executing';
-  const isWorking = status === 'understanding' || status === 'executing' || status === 'structuring';
 
   const approvalType = getApprovalType(currentInteraction);
   const isApprovalGate = approvalType !== null && status === 'interacting';
   const isGenericInteraction = currentInteraction !== null && status === 'interacting' && !isApprovalGate;
 
+  const mode = getNarrativeMode(status, isApprovalGate, isGenericInteraction);
   const typeInfo = TASK_TYPES.find((t) => t.value === type);
-  const phaseText = getCurrentPhaseText(status, events);
+  const statusBarText = getStatusBarText(status, events);
   const progress = isExecuting ? getProgress(events) : null;
-  const deduplicatedSteps = getLatestStepUpdates(events);
+  const completedSteps = getCompletedSteps(events);
+  const thinkingText = mode === 'thinking' ? getLatestThinking(events) : null;
 
-  const completedSteps = deduplicatedSteps.filter((e) => {
-    const text = String(e.data.text || '');
-    return text.includes('已生成') || text.includes('已完成');
-  });
-
-  // Thinking: only show during active working phases, never during approval/completed/failed
-  const thinkingText = isWorking ? getLatestThinking(events) : null;
-
-  // Logs: show fewer when thinking is visible
+  // Logs: visibility depends on narrative mode
   const allLogs = events.filter((e) => e.type === 'log');
   const visibleLogs = (() => {
-    if (!isActive || isApprovalGate) return allLogs; // Full logs when done or in approval
-    if (thinkingText) return allLogs.slice(-1); // Only last 1 when thinking
-    return allLogs.slice(-2); // Last 2 otherwise
+    if (mode === 'result' || mode === 'error') return allLogs; // Full history for review
+    if (mode === 'interaction') return []; // Interaction is the focus
+    if (mode === 'executing') return allLogs.slice(-1); // 1 context line
+    if (mode === 'thinking') return thinkingText ? [] : allLogs.slice(-1); // Thinking replaces logs
+    return allLogs.slice(-2);
   })();
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header with live status */}
+      {/* Header */}
       <div className="px-5 py-3.5 border-b border-border">
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-base flex-shrink-0">{typeInfo?.icon || '📎'}</span>
@@ -160,19 +174,17 @@ export function TaskCanvas({
           </div>
         </div>
 
-        {/* Live status bar — only during active phases */}
-        {phaseText && isWorking ? (
+        {/* Status bar — only during working phases */}
+        {statusBarText && (mode === 'executing' || mode === 'thinking') ? (
           <div className="mt-3 animate-flow-in">
             <div className="flex items-center gap-2 text-xs text-content-secondary">
               <Spinner size="sm" />
-              <span className="animate-progress-pulse">{phaseText}</span>
+              <span className="animate-progress-pulse">{statusBarText}</span>
             </div>
             {progress ? (
               <div className="mt-2 h-1 rounded-full bg-surface-tertiary overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-accent progress-bar-fill"
-                  style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }}
-                />
+                <div className="h-full rounded-full bg-accent progress-bar-fill"
+                  style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} />
               </div>
             ) : null}
           </div>
@@ -184,7 +196,7 @@ export function TaskCanvas({
 
         {/* User input */}
         {input ? (
-          <div className="flex gap-3 animate-flow-in">
+          <div className="flex gap-3">
             <div className="h-7 w-7 rounded-full bg-accent/15 flex items-center justify-center flex-shrink-0">
               <span className="text-xs text-accent font-medium">你</span>
             </div>
@@ -194,7 +206,7 @@ export function TaskCanvas({
           </div>
         ) : null}
 
-        {/* AI response section */}
+        {/* AI response */}
         {(events.length > 0 || isActive) ? (
           <div className="flex gap-3">
             <div className="h-7 w-7 rounded-full bg-surface-tertiary flex items-center justify-center flex-shrink-0">
@@ -202,14 +214,14 @@ export function TaskCanvas({
             </div>
             <div className="flex-1 min-w-0 space-y-3 pt-1">
 
-              {/* Activity log */}
+              {/* Logs */}
               {visibleLogs.map((event, i) => (
-                <div key={`log-${i}`} className={`animate-flow-in text-sm leading-relaxed ${thinkingText ? 'text-content-tertiary' : 'text-content-secondary'}`}>
+                <div key={`log-${i}`} className="animate-flow-in text-sm text-content-tertiary leading-relaxed">
                   {String(event.data.message || '')}
                 </div>
               ))}
 
-              {/* Thinking layer */}
+              {/* Thinking — only in thinking mode */}
               {thinkingText ? (
                 <div className="animate-flow-in py-1.5 px-3 rounded-lg bg-surface-tertiary/50 border-l-2 border-accent/30">
                   <p className="text-xs text-content-secondary italic">
@@ -219,13 +231,13 @@ export function TaskCanvas({
               ) : null}
 
               {/* Completed structure */}
-              {structureEvent && (isExecuting || !isActive) ? (
+              {structureEvent && (isExecuting || mode === 'result' || mode === 'error') ? (
                 <div className="animate-flow-in">
                   <CompletedStructure structure={structureEvent.data.structure as string[]} />
                 </div>
               ) : null}
 
-              {/* Step progress */}
+              {/* Completed steps */}
               {completedSteps.length > 0 ? (
                 <div className="space-y-1 animate-flow-in">
                   {completedSteps.map((event, i) => (
@@ -274,20 +286,17 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {/* Generic interaction */}
               {isGenericInteraction ? (
                 <div className="animate-flow-in p-4 rounded-xl border border-accent/20 bg-accent/5">
                   <InteractionPanel interaction={currentInteraction!} onSubmit={onInteractionSubmit} />
                 </div>
               ) : null}
 
-              {/* Result */}
-              {status === 'completed' && result !== null ? (
+              {mode === 'result' && result !== null ? (
                 <div className="animate-flow-in"><ResultView result={result} /></div>
               ) : null}
 
-              {/* Error */}
-              {status === 'failed' ? (
+              {mode === 'error' ? (
                 <div className="animate-flow-in p-4 rounded-xl bg-red-500/10 border border-red-500/20">
                   <p className="text-sm text-red-400">
                     {events.find((e) => e.type === 'error')

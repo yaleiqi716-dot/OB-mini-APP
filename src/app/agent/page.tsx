@@ -79,7 +79,24 @@ function getTaskSummary(task: TaskState): string {
   return '';
 }
 
-// Status priority for determining if polling should NOT overwrite
+// Only important events count for unread — not logs/step_updates/thinking
+const UNREAD_EVENT_TYPES = new Set(['interaction_request', 'task_completed', 'error', 'approval_requested']);
+
+function hasImportantUpdate(task: TaskState): boolean {
+  // If never seen, it's unread
+  if (!task.lastSeenUpdatedAt) return true;
+  // Check if any important event happened after lastSeen
+  for (let i = task.events.length - 1; i >= 0; i--) {
+    const e = task.events[i];
+    if (UNREAD_EVENT_TYPES.has(e.type) && e.createdAt > task.lastSeenUpdatedAt) return true;
+    // Stop scanning once we pass lastSeen
+    if (e.createdAt <= task.lastSeenUpdatedAt) break;
+  }
+  // For tasks without loaded events, use updatedAt comparison
+  if (!task.eventsLoaded && task.updatedAt > task.lastSeenUpdatedAt) return true;
+  return false;
+}
+
 const TERMINAL_STATUSES = new Set(['completed', 'failed']);
 
 export default function AgentPage() {
@@ -345,7 +362,7 @@ export default function AgentPage() {
               tasks={tasks.map((t) => ({
                 id: t.id, type: t.type, status: t.status, title: t.title,
                 createdAt: t.createdAt, summary: getTaskSummary(t),
-                hasUnread: t.updatedAt > t.lastSeenUpdatedAt,
+                hasUnread: hasImportantUpdate(t),
                 source: t.source,
               }))}
               activeTaskId={activeTaskId}

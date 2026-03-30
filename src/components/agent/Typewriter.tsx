@@ -8,46 +8,52 @@ interface TypewriterProps {
   className?: string;
 }
 
-// Memoized to prevent parent re-renders from resetting the animation.
-// Only re-runs when `text` actually changes.
-export const Typewriter = memo(function Typewriter({ text, speed = 30, className }: TypewriterProps) {
-  const [displayed, setDisplayed] = useState('');
-  const indexRef = useRef(0);
-  const completedTextRef = useRef('');
+export const Typewriter = memo(
+  function Typewriter({ text, speed = 30, className }: TypewriterProps) {
+    const [displayed, setDisplayed] = useState(text);
+    const prevTextRef = useRef(text);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    // If this text was already fully displayed, show it instantly
-    if (text === completedTextRef.current) {
-      setDisplayed(text);
-      return;
-    }
+    useEffect(() => {
+      // Same text — no action needed (handles parent re-renders)
+      if (text === prevTextRef.current && displayed === text) return;
 
-    // New text — start typing from scratch
-    indexRef.current = 0;
-    setDisplayed('');
+      // Text actually changed — start typing
+      prevTextRef.current = text;
+      let idx = 0;
+      setDisplayed('');
 
-    const interval = setInterval(() => {
-      indexRef.current++;
-      if (indexRef.current >= text.length) {
-        setDisplayed(text);
-        completedTextRef.current = text;
-        clearInterval(interval);
-      } else {
-        setDisplayed(text.slice(0, indexRef.current));
-      }
-    }, speed);
+      if (timerRef.current) clearInterval(timerRef.current);
 
-    return () => clearInterval(interval);
-  }, [text, speed]);
+      timerRef.current = setInterval(() => {
+        idx++;
+        if (idx >= text.length) {
+          setDisplayed(text);
+          if (timerRef.current) clearInterval(timerRef.current);
+          timerRef.current = null;
+        } else {
+          setDisplayed(text.slice(0, idx));
+        }
+      }, speed);
 
-  const isTyping = displayed.length < text.length;
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      };
+    }, [text, speed]); // displayed intentionally excluded
 
-  return (
-    <span className={className}>
-      {displayed}
-      {isTyping ? (
-        <span className="inline-block w-0.5 h-3.5 bg-accent/60 ml-0.5 animate-pulse align-middle" />
-      ) : null}
-    </span>
-  );
-});
+    const isTyping = displayed.length < text.length;
+
+    return (
+      <span className={className}>
+        {displayed}
+        {isTyping ? (
+          <span className="inline-block w-0.5 h-3.5 bg-accent/60 ml-0.5 animate-pulse align-middle" />
+        ) : null}
+      </span>
+    );
+  },
+  (prev, next) => prev.text === next.text && prev.speed === next.speed
+);
