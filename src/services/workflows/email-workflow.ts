@@ -16,7 +16,7 @@ import { generateId } from '@/lib/utils';
 
 interface EmailContext {
   tone: string | null;
-  draft: { subject: string; body: string; summary?: string } | null;
+  draft: { subject: string; body: string } | null;
 }
 
 const emailWorkflow: BaseWorkflow = {
@@ -36,7 +36,6 @@ const emailWorkflow: BaseWorkflow = {
       await updateTaskStatus(taskId, 'understanding');
       await emitLog(taskId, '正在理解邮件需求...');
 
-      // Ask AI whether enough info to draft directly
       const analysis = await chatCompletion(
         [
           {
@@ -63,7 +62,6 @@ const emailWorkflow: BaseWorkflow = {
       const parsed = JSON.parse(analysis.content);
 
       if (parsed.ready === false && parsed.question) {
-        // Need one clarification
         await updateTaskContext(taskId, { email: { tone: null, draft: null } });
         await requestInteraction(taskId, {
           id: generateId(),
@@ -74,7 +72,6 @@ const emailWorkflow: BaseWorkflow = {
           options: (parsed.options || []).map((o: string) => ({ label: o, value: o })),
         });
       } else {
-        // Enough info, draft directly
         await generateEmailDraft(taskId, input, null);
       }
     } catch (error) {
@@ -87,16 +84,10 @@ const emailWorkflow: BaseWorkflow = {
 
     try {
       if (stepId === 'clarify_tone') {
-        // User answered the clarification question
         await updateTaskContext(taskId, { email: { tone: String(value), draft: null } });
         await generateEmailDraft(taskId, input, String(value));
 
-      } else if (stepId === 'confirm_send') {
-        // User confirmed send — handled by /api/tasks/:id/send-email, not here
-        // This branch shouldn't normally be reached
-
       } else if (stepId === 'revise_email_request') {
-        // User clicked "继续修改" — show text input for revision instructions
         await requestInteraction(taskId, {
           id: generateId(),
           taskId,
@@ -107,7 +98,6 @@ const emailWorkflow: BaseWorkflow = {
         });
 
       } else if (stepId === 'revise_email') {
-        // User submitted revision text — re-generate draft
         const hint = String(value || '');
         const context = await getTaskContext(taskId);
         const emailCtx = context.email as EmailContext | undefined;
@@ -175,9 +165,9 @@ async function generateEmailDraft(
     text: '邮件草稿已生成',
   });
 
-  // Enter "待确认发送" state via confirm interaction
   await emitLog(taskId, '邮件草稿已生成，等待确认发送...');
 
+  // Use detailData for structured email data (no string parsing needed on frontend)
   await requestInteraction(taskId, {
     id: generateId(),
     taskId,
@@ -185,6 +175,7 @@ async function generateEmailDraft(
     type: 'confirm',
     question: '邮件草稿已就绪，请确认发送',
     detail: `主题：${draft.subject}\n\n${draft.body}`,
+    detailData: { subject: draft.subject, body: draft.body },
   });
 }
 

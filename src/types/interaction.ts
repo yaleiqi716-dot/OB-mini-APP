@@ -26,6 +26,7 @@ export interface FileUploadInteraction extends BaseInteraction {
 export interface ConfirmInteraction extends BaseInteraction {
   type: 'confirm';
   detail: string;
+  detailData?: Record<string, unknown>;
 }
 
 export interface TextInputInteraction extends BaseInteraction {

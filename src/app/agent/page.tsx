@@ -28,6 +28,7 @@ interface TaskState {
   eventsLoaded: boolean;
   currentInteraction: Interaction | null;
   result: Record<string, unknown> | null;
+  lastViewedEventCount: number;
 }
 
 function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
@@ -42,9 +43,7 @@ function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
   let currentInteraction: Interaction | null = null;
   if (data.status === 'interacting') {
     const lastIR = [...events].reverse().find((e) => e.type === 'interaction_request');
-    if (lastIR) {
-      currentInteraction = lastIR.data as unknown as Interaction;
-    }
+    if (lastIR) currentInteraction = lastIR.data as unknown as Interaction;
   }
 
   return {
@@ -58,18 +57,32 @@ function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
     eventsLoaded: true,
     currentInteraction,
     result: (data.result as Record<string, unknown>) || null,
+    lastViewedEventCount: events.length,
   };
+}
+
+function getTaskSummary(task: TaskState): string {
+  const evts = task.events;
+  for (let i = evts.length - 1; i >= 0; i--) {
+    const e = evts[i];
+    if (e.type === 'interaction_request') return String(e.data.question || '');
+    if (e.type === 'log') return String(e.data.message || '');
+    if (e.type === 'step_update') return String(e.data.text || '');
+  }
+  return '';
 }
 
 export default function AgentPage() {
   const [tasks, setTasks] = useState<TaskState[]>([]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [actionLoadingTaskId, setActionLoadingTaskId] = useState<string | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const canvasEndRef = useRef<HTMLDivElement>(null);
 
   const activeTask = tasks.find((t) => t.id === activeTaskId) || null;
 
+  // SSE for active task
   useSSE(activeTaskId, {
     enabled: !!activeTaskId,
     onEvent: useCallback(
@@ -78,17 +91,13 @@ export default function AgentPage() {
         setTasks((prev) =>
           prev.map((t) => {
             if (t.id !== activeTaskId) return t;
-            const updated = { ...t, events: [...t.events, event] };
-            if (event.type === 'status_change') {
-              updated.status = event.data.status as TaskStatus;
-            }
+            const updated = { ...t, events: [...t.events, event], lastViewedEventCount: t.events.length + 1 };
+            if (event.type === 'status_change') updated.status = event.data.status as TaskStatus;
             if (event.type === 'interaction_request') {
               updated.currentInteraction = event.data as unknown as Interaction;
               updated.status = 'interacting';
             }
-            if (event.type === 'artifact' && event.data.result) {
-              updated.result = event.data.result as Record<string, unknown>;
-            }
+            if (event.type === 'artifact' && event.data.result) updated.result = event.data.result as Record<string, unknown>;
             if (event.type === 'task_completed' && event.data.result) {
               updated.result = event.data.result as Record<string, unknown>;
               updated.status = 'completed';
@@ -101,6 +110,7 @@ export default function AgentPage() {
     ),
   });
 
+  // Load tasks on mount
   useEffect(() => {
     fetch('/api/tasks')
       .then((r) => r.json())
@@ -117,6 +127,7 @@ export default function AgentPage() {
             eventsLoaded: false,
             currentInteraction: null,
             result: (t.result as Record<string, unknown>) || null,
+            lastViewedEventCount: 0,
           }));
           setTasks(loaded);
           setShowWelcome(false);
@@ -125,6 +136,7 @@ export default function AgentPage() {
       .catch(() => {});
   }, []);
 
+  // Fetch full events on task switch
   useEffect(() => {
     if (!activeTaskId) return;
     const task = tasks.find((t) => t.id === activeTaskId);
@@ -135,13 +147,22 @@ export default function AgentPage() {
       .then((data) => {
         if (!data || data.error) return;
         const fullTask = parseTaskFromAPI(data);
-        setTasks((prev) =>
-          prev.map((t) => (t.id !== activeTaskId ? t : fullTask))
-        );
+        setTasks((prev) => prev.map((t) => (t.id !== activeTaskId ? t : fullTask)));
       })
       .catch(() => {});
   }, [activeTaskId, tasks]);
 
+  // Mark current task as "viewed" (clear unread)
+  useEffect(() => {
+    if (!activeTaskId) return;
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === activeTaskId ? { ...t, lastViewedEventCount: t.events.length } : t
+      )
+    );
+  }, [activeTaskId]);
+
+  // Auto scroll
   useEffect(() => {
     canvasEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeTask?.events.length]);
@@ -156,7 +177,6 @@ export default function AgentPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input, type: type || undefined, source: 'agent' }),
       });
-
       const data = await res.json();
 
       if (data.taskId) {
@@ -168,16 +188,10 @@ export default function AgentPage() {
           newTask = parseTaskFromAPI(detailData);
         } else {
           newTask = {
-            id: data.taskId,
-            type: data.type || 'unknown',
-            status: 'pending',
-            title: input.slice(0, 50),
-            input,
-            createdAt: new Date().toISOString(),
-            events: [],
-            eventsLoaded: false,
-            currentInteraction: null,
-            result: null,
+            id: data.taskId, type: data.type || 'unknown', status: 'pending',
+            title: input.slice(0, 50), input, createdAt: new Date().toISOString(),
+            events: [], eventsLoaded: false, currentInteraction: null, result: null,
+            lastViewedEventCount: 0,
           };
         }
 
@@ -194,9 +208,7 @@ export default function AgentPage() {
   async function handleInteractionSubmit(stepId: string, value: unknown) {
     if (!activeTaskId) return;
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === activeTaskId ? { ...t, currentInteraction: null } : t
-      )
+      prev.map((t) => t.id === activeTaskId ? { ...t, currentInteraction: null } : t)
     );
     try {
       await fetch(`/api/tasks/${activeTaskId}/interact`, {
@@ -213,8 +225,7 @@ export default function AgentPage() {
     if (!activeTaskId) return;
     try {
       await fetch(`/api/tasks/${activeTaskId}/approve-structure`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
       console.error('结构审批失败:', error);
@@ -236,19 +247,20 @@ export default function AgentPage() {
 
   async function handleSendEmail() {
     if (!activeTaskId) return;
-    // Clear interaction immediately for responsive UI
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === activeTaskId ? { ...t, currentInteraction: null } : t
-      )
-    );
+    setActionLoadingTaskId(activeTaskId);
     try {
-      await fetch(`/api/tasks/${activeTaskId}/send-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch(`/api/tasks/${activeTaskId}/send-email`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
       });
+      if (!res.ok) {
+        console.error('发送邮件失败:', await res.text());
+        // Keep interaction card visible on failure
+      }
+      // On success, SSE will deliver status_change + task_completed to update UI
     } catch (error) {
       console.error('发送邮件失败:', error);
+    } finally {
+      setActionLoadingTaskId(null);
     }
   }
 
@@ -273,7 +285,13 @@ export default function AgentPage() {
           <aside className="w-72 border-r border-border p-3 overflow-y-auto custom-scrollbar flex-shrink-0">
             <TaskList
               tasks={tasks.map((t) => ({
-                id: t.id, type: t.type, status: t.status, title: t.title, createdAt: t.createdAt,
+                id: t.id,
+                type: t.type,
+                status: t.status,
+                title: t.title,
+                createdAt: t.createdAt,
+                summary: getTaskSummary(t),
+                hasUnread: t.events.length > t.lastViewedEventCount,
               }))}
               activeTaskId={activeTaskId}
               onSelect={setActiveTaskId}
@@ -296,6 +314,7 @@ export default function AgentPage() {
                   onApproveStructure={handleApproveStructure}
                   onAdjustStructure={handleAdjustStructure}
                   onSendEmail={handleSendEmail}
+                  actionLoading={actionLoadingTaskId === activeTask.id}
                   result={activeTask.result}
                 />
                 <div ref={canvasEndRef} />
