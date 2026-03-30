@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
@@ -58,34 +58,22 @@ function getProgress(events: TaskEvent[]): { current: number; total: number } | 
   return null;
 }
 
-function getLatestThinking(events: TaskEvent[]): string | null {
-  for (let i = events.length - 1; i >= 0; i--) {
-    if (events[i].type === 'thinking') return String(events[i].data.text || '');
-  }
-  return null;
-}
-
-// Status bar text — only for working phases
 function getStatusBarText(status: TaskStatus, events: TaskEvent[]): string | null {
   if (status !== 'understanding' && status !== 'executing' && status !== 'structuring') return null;
-
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
     if (e.type === 'step_update' && e.data.current && e.data.total) {
       return `${e.data.text || '生成中'} (${e.data.current}/${e.data.total})`;
     }
   }
-
   for (let i = events.length - 1; i >= 0; i--) {
     if (events[i].type === 'log') return String(events[i].data.message || '');
   }
-
   if (status === 'understanding') return '正在理解需求...';
   if (status === 'executing') return '正在执行...';
   return null;
 }
 
-// Completed steps (deduplicated, only "已生成"/"已完成")
 function getCompletedSteps(events: TaskEvent[]): TaskEvent[] {
   const map = new Map<string, TaskEvent>();
   for (const e of events) {
@@ -97,11 +85,32 @@ function getCompletedSteps(events: TaskEvent[]): TaskEvent[] {
   });
 }
 
-// ---- Narrative layer priority ----
-// interacting/approval → only show interaction (hide thinking + most logs)
-// executing             → step_update primary, thinking hidden, 1 log max
-// understanding/structuring → thinking primary, 1 log
-// completed/failed      → result/error only, no thinking/logs in flow
+// ---- Phase-based thinking ----
+// Each thinking event = one phase. Current phase uses Typewriter.
+// Past phases shown as completed trail (static text).
+interface ThinkingPhase {
+  text: string;
+  completed: boolean;
+}
+
+function buildThinkingPhases(events: TaskEvent[]): ThinkingPhase[] {
+  const phases: ThinkingPhase[] = [];
+  const seen = new Set<string>();
+  for (const e of events) {
+    if (e.type === 'thinking') {
+      const text = String(e.data.text || '');
+      if (text && !seen.has(text)) {
+        seen.add(text);
+        phases.push({ text, completed: false });
+      }
+    }
+  }
+  // All but last are completed
+  for (let i = 0; i < phases.length - 1; i++) {
+    phases[i].completed = true;
+  }
+  return phases;
+}
 
 type NarrativeMode = 'interaction' | 'executing' | 'thinking' | 'result' | 'error' | 'idle';
 
@@ -119,6 +128,12 @@ export function TaskCanvas({
   onInteractionSubmit, onApprove, onReject, onAdjustStructure, onAdjustProposal, onReviseEmail,
   actionLoading, result, loading,
 }: TaskCanvasProps) {
+  // Track task switch for phase reset
+  const prevTaskIdRef = useRef(taskId);
+  if (taskId !== prevTaskIdRef.current) {
+    prevTaskIdRef.current = taskId;
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col h-full">
@@ -149,41 +164,15 @@ export function TaskCanvas({
   const progress = isExecuting ? getProgress(events) : null;
   const completedSteps = getCompletedSteps(events);
 
-  // ---- Evolving thinking stream ----
-  // Accumulates thinking fragments into a continuous narrative.
-  // New thinking appends (joined by separator) rather than replacing.
-  // Resets on task switch.
-  const thinkingStreamRef = useRef<string>('');
-  const thinkingSeenRef = useRef<Set<string>>(new Set());
-  const prevTaskIdRef = useRef(taskId);
-
-  if (taskId !== prevTaskIdRef.current) {
-    prevTaskIdRef.current = taskId;
-    thinkingStreamRef.current = '';
-    thinkingSeenRef.current = new Set();
-  }
-
-  // Accumulate all thinking events (deduplicated by text)
-  for (const e of events) {
-    if (e.type === 'thinking') {
-      const text = String(e.data.text || '');
-      if (text && !thinkingSeenRef.current.has(text)) {
-        thinkingSeenRef.current.add(text);
-        thinkingStreamRef.current = thinkingStreamRef.current
-          ? thinkingStreamRef.current + '  ' + text
-          : text;
-      }
-    }
-  }
-
+  // Phase-based thinking
   const showThinking = mode === 'thinking' || mode === 'executing';
-  const thinkingText = showThinking && thinkingStreamRef.current ? thinkingStreamRef.current : null;
+  const thinkingPhases = showThinking ? buildThinkingPhases(events) : [];
+  const hasThinking = thinkingPhases.length > 0;
 
-  // Logs: filter to phase-transition messages, not noisy detail
+  // Logs
   const allLogs = events.filter((e) => e.type === 'log');
   const phaseLogs = allLogs.filter((e) => {
     const msg = String(e.data.message || '');
-    // Keep phase transitions and key milestones
     return msg.includes('正在理解') || msg.includes('正在识别') ||
            msg.includes('结构已') || msg.includes('正在生成') ||
            msg.includes('正在撰写') || msg.includes('已生成') ||
@@ -193,8 +182,7 @@ export function TaskCanvas({
   const visibleLogs = (() => {
     if (mode === 'result' || mode === 'error') return phaseLogs;
     if (mode === 'interaction') return [];
-    // When thinking is active, it carries the narrative — hide logs
-    if (thinkingText) return [];
+    if (hasThinking) return [];
     if (mode === 'executing') return phaseLogs.slice(-1);
     if (mode === 'thinking') return phaseLogs.slice(-1);
     return phaseLogs.slice(-2);
@@ -215,7 +203,6 @@ export function TaskCanvas({
           </div>
         </div>
 
-        {/* Status bar — only during working phases */}
         {statusBarText && (mode === 'executing' || mode === 'thinking') ? (
           <div className="mt-3 animate-flow-in">
             <div className="flex items-center gap-2 text-xs text-content-secondary">
@@ -255,7 +242,7 @@ export function TaskCanvas({
             </div>
             <div className="flex-1 min-w-0 space-y-3 pt-1">
 
-              {/* Logs — phase transitions only */}
+              {/* Logs */}
               {visibleLogs.map((event, i) => (
                 <div key={`log-${i}`} className="animate-flow-in text-sm text-content-tertiary leading-relaxed">
                   {String(event.data.message || '')}
@@ -269,7 +256,7 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {/* Completed steps — milestones above thinking */}
+              {/* Completed steps */}
               {completedSteps.length > 0 ? (
                 <div className="space-y-1 animate-flow-in">
                   {completedSteps.map((event, i) => (
@@ -284,12 +271,20 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {/* Thinking — evolving background stream, below milestones */}
-              {thinkingText ? (
-                <div className="py-2 px-3 rounded-lg bg-surface-tertiary/50 border-l-2 border-accent/30">
-                  <p className="text-xs text-content-secondary/80 italic leading-relaxed">
-                    <Typewriter text={thinkingText} speed={20} />
-                  </p>
+              {/* Phase-based thinking */}
+              {hasThinking ? (
+                <div className="rounded-lg bg-surface-tertiary/50 border-l-2 border-accent/30 py-2 px-3 space-y-1">
+                  {thinkingPhases.map((phase, i) =>
+                    phase.completed ? (
+                      <p key={i} className="text-xs text-content-tertiary/60 italic leading-relaxed">
+                        {phase.text}
+                      </p>
+                    ) : (
+                      <p key={i} className="text-xs text-content-secondary/80 italic leading-relaxed">
+                        <Typewriter text={phase.text} speed={20} />
+                      </p>
+                    )
+                  )}
                 </div>
               ) : null}
 
@@ -408,12 +403,9 @@ function EmailPreview({ interaction, events }: { interaction: ConfirmInteraction
   const dd = interaction.detailData;
   const subject = (dd?.subject as string) || '';
   const body = (dd?.body as string) || interaction.detail || '';
-
-  // Check if this is a revision (look for prior revise_email interaction_response)
   const hasRevision = events?.some((e) =>
     e.type === 'interaction_response' && (e.data.stepId === 'revise_email')
   );
-
   return (
     <div className="space-y-3">
       {hasRevision ? (
