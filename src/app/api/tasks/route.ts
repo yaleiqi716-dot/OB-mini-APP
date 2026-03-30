@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createTask, listTasks, formatTask, updateTaskType, updateTaskStatus, emitLog } from '@/services/task-manager';
 import { routeTask } from '@/services/task-router';
 import { getWorkflow } from '@/services/workflows';
+import { checkQuota, consumeQuota } from '@/services/billing';
 import { CreateTaskRequest } from '@/types/api';
 import { TaskType } from '@/types/task';
 import { prisma } from '@/lib/prisma';
@@ -43,6 +44,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '请输入任务内容' }, { status: 400 });
     }
 
+    // Quota check
+    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value || 'default-user';
+    const quotaCheck = await checkQuota(userId);
+    if (!quotaCheck.allowed) {
+      return NextResponse.json({ error: quotaCheck.reason }, { status: 403 });
+    }
+
     // Concurrency limit: max active tasks
     const activeTasks = await prisma.task.count({
       where: { status: { in: ACTIVE_STATUSES } },
@@ -56,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     const task = await createTask(body.input.trim(), body.source || 'agent');
 
-    processTask(task.id, body.input.trim(), body.type).catch((err) => {
+    processTask(task.id, body.input.trim(), body.type, userId).catch((err) => {
       console.error('[TASK_PROCESS_ERROR]', task.id, err);
     });
 
@@ -85,7 +93,7 @@ export async function GET() {
   }
 }
 
-async function processTask(taskId: string, input: string, presetType?: TaskType) {
+async function processTask(taskId: string, input: string, presetType?: TaskType, userId?: string) {
   try {
     await updateTaskStatus(taskId, 'understanding');
     await emitLog(taskId, '正在识别任务类型...');
@@ -114,6 +122,13 @@ async function processTask(taskId: string, input: string, presetType?: TaskType)
     }
 
     await workflow.start({ taskId, input, context: {} });
+
+    // Consume credits after successful workflow start
+    if (userId) {
+      await consumeQuota(userId, taskType).catch((err) =>
+        console.error('[BILLING_ERROR]', err)
+      );
+    }
   } catch (error) {
     console.error('[WORKFLOW_ERROR]', taskId, error);
     const { failTask } = await import('@/services/task-manager');

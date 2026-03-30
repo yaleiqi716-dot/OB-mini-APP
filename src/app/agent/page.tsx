@@ -117,6 +117,7 @@ export default function AgentPage() {
   const [interactingTaskId, setInteractingTaskId] = useState<string | null>(null);
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [quota, setQuota] = useState<{ credits: number; dailyTaskCount: number; dailyLimit: number } | null>(null);
   const canvasEndRef = useRef<HTMLDivElement>(null);
   const activeTaskIdRef = useRef<string | null>(null);
 
@@ -250,6 +251,14 @@ export default function AgentPage() {
     setTimeout(() => setErrorToast(null), 3000);
   }
 
+  function fetchQuota() {
+    fetch('/api/billing/status').then((r) => r.json()).then((d) => {
+      if (d.credits !== undefined) setQuota(d);
+    }).catch(() => {});
+  }
+
+  useEffect(() => { fetchQuota(); }, []);
+
   // ---- Handlers ----
 
   async function handleSubmit(input: string, type?: string) {
@@ -261,6 +270,10 @@ export default function AgentPage() {
         body: JSON.stringify({ input, type: type || undefined, source: 'agent' }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || '创建任务失败');
+        return;
+      }
       if (data.taskId) {
         const now = new Date().toISOString();
 
@@ -292,6 +305,7 @@ export default function AgentPage() {
         }
         setTasks((prev) => [newTask, ...prev]);
         setActiveTaskId(data.taskId);
+        fetchQuota(); // Refresh quota after task creation
       }
     } catch (error) { console.error('提交失败:', error); }
     finally { setIsSubmitting(false); }
@@ -428,7 +442,17 @@ export default function AgentPage() {
             <span className="text-content-primary font-semibold text-sm">BENCH</span>
           </div>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-3">
+          {quota ? (
+            <div className="hidden sm:flex items-center gap-2 text-xs text-content-tertiary">
+              <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium">{quota.credits}</span>
+              <span>额度</span>
+              <span className="text-content-tertiary/50">|</span>
+              <span>{quota.dailyTaskCount}/{quota.dailyLimit} 今日</span>
+            </div>
+          ) : null}
+          <ThemeToggle />
+        </div>
       </header>
 
       {/* Connection indicator */}
