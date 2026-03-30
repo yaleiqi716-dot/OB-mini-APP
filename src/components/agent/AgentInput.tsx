@@ -41,7 +41,7 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent }: Agent
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onSubmit={handleSubmit}
-          placeholder={placeholder || '描述你的任务，我来帮你执行'}
+          placeholder={placeholder || '说一句话，我来帮你完成'}
           disabled={disabled}
           className="flex-1 min-h-[24px] text-[15px]"
         />

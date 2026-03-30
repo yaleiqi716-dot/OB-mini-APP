@@ -556,7 +556,7 @@ export default function AgentPage() {
                 <AgentInput
                   onSubmit={(input) => handleSubmit(input)}
                   disabled={isSubmitting}
-                  placeholder="告诉我下一个任务..."
+                  placeholder="继续说，我帮你接着做..."
                 />
                 {isSubmitting ? (
                   <div className="flex items-center justify-center gap-2 mt-2 text-content-tertiary text-sm">
@@ -571,10 +571,10 @@ export default function AgentPage() {
               <div className="w-full max-w-2xl space-y-8 md:space-y-10">
                 <div className="text-center space-y-2 md:space-y-3">
                   <h1 className="text-2xl md:text-3xl font-semibold text-content-primary">
-                    你好，有什么可以帮你完成的？
+                    我可以帮你自动完成工作，你只需要说一次
                   </h1>
                   <p className="text-content-secondary text-sm md:text-base">
-                    描述你的任务，我来帮你执行
+                    写邮件 / 做演示文稿 / 整理方案 / 持续执行任务
                   </p>
                 </div>
 
@@ -582,7 +582,7 @@ export default function AgentPage() {
                 <AgentInput
                   onSubmit={(input) => handleSubmit(input)}
                   disabled={isSubmitting}
-                  placeholder="描述你的任务，我来帮你执行"
+                  placeholder="例如：帮我每周自动总结客户沟通并生成邮件"
                   prominent
                 />
 

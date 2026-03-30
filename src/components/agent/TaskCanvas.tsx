@@ -312,11 +312,6 @@ export function TaskCanvas({
             <div className="flex items-center gap-2 mt-0.5">
               <Badge status={status} />
               <span className="text-xs text-content-tertiary">{TYPE_LABELS[type] || type}</span>
-              {executionStrategy || modelName ? (
-                <span className="text-[10px] text-content-tertiary/50 ml-auto hidden md:inline">
-                  {executionStrategy || ''}{modelName ? ` · ${modelName}` : ''}
-                </span>
-              ) : null}
             </div>
           </div>
         </div>
