@@ -57,6 +57,13 @@ export async function checkCredits(
 }
 
 export async function deductCredits(userId: string, taskId: string, taskType: TaskType | string) {
+  // Idempotency: check if already charged
+  const task = await prisma.task.findUnique({ where: { id: taskId } });
+  if (task && task.actualCost > 0) {
+    console.log(`[BILLING_IDEMPOTENT] Credits already deducted for task ${taskId} (cost: ${task.actualCost})`);
+    return task.actualCost;
+  }
+
   const user = await getOrCreateUser(userId);
   const cost = estimateCost(taskType);
   const actualCost = Math.min(cost, user.credits);
@@ -69,7 +76,6 @@ export async function deductCredits(userId: string, taskId: string, taskType: Ta
     },
   });
 
-  // Record actual cost on task
   await prisma.task.update({
     where: { id: taskId },
     data: { actualCost },

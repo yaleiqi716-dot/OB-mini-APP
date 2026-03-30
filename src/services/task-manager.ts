@@ -134,6 +134,12 @@ export async function updateTaskStep(taskId: string, step: string) {
 export async function completeTask(taskId: string, result: Record<string, unknown>, message?: string) {
   const task = await prisma.task.findUnique({ where: { id: taskId } });
 
+  // Idempotency: skip if already completed or failed
+  if (task?.status === 'completed' || task?.status === 'failed') {
+    console.log(`[IDEMPOTENT] completeTask skipped for ${taskId} (status: ${task.status})`);
+    return;
+  }
+
   await prisma.task.update({
     where: { id: taskId },
     data: {
@@ -142,9 +148,9 @@ export async function completeTask(taskId: string, result: Record<string, unknow
     },
   });
 
-  // Deduct credits on completion
+  // Deduct credits — only if not already charged (actualCost === 0)
   let actualCost = 0;
-  if (task?.userId) {
+  if (task?.userId && (task.actualCost === 0 || task.actualCost === undefined)) {
     try {
       const { deductCredits } = await import('@/services/billing');
       actualCost = await deductCredits(task.userId, taskId, task.type);
@@ -163,6 +169,13 @@ export async function completeTask(taskId: string, result: Record<string, unknow
 }
 
 export async function failTask(taskId: string, errorMessage: string) {
+  // Idempotency: skip if already completed or failed
+  const existing = await prisma.task.findUnique({ where: { id: taskId } });
+  if (existing?.status === 'completed' || existing?.status === 'failed') {
+    console.log(`[IDEMPOTENT] failTask skipped for ${taskId} (status: ${existing.status})`);
+    return;
+  }
+
   await prisma.task.update({
     where: { id: taskId },
     data: {

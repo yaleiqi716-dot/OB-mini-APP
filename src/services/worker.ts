@@ -17,18 +17,24 @@ const TASK_TIMEOUT_MS = 120_000;
 let runningCount = 0;
 let workerInterval: ReturnType<typeof setInterval> | null = null;
 
-// ---- Execution lock ----
+// ---- Atomic execution lock via updateMany ----
 
 async function acquireLock(taskId: string): Promise<boolean> {
-  const task = await prisma.task.findUnique({ where: { id: taskId } });
-  if (!task || task.processing) return false;
-  await prisma.task.update({ where: { id: taskId }, data: { processing: true } });
+  // Atomic: only succeeds if isExecuting=false AND status=queued
+  const result = await prisma.task.updateMany({
+    where: { id: taskId, isExecuting: false, status: 'queued' },
+    data: { isExecuting: true },
+  });
+  if (result.count === 0) {
+    console.log(`[WORKER] Skipping task ${taskId} (already executing or not queued)`);
+    return false;
+  }
   return true;
 }
 
 async function releaseLock(taskId: string) {
   try {
-    await prisma.task.update({ where: { id: taskId }, data: { processing: false } });
+    await prisma.task.update({ where: { id: taskId }, data: { isExecuting: false } });
   } catch (err) {
     console.error(`[WORKER] Failed to release lock for ${taskId}:`, err);
   }
@@ -39,7 +45,7 @@ async function releaseLock(taskId: string) {
 async function fetchNextQueuedTask() {
   // Fetch highest priority first, then oldest
   const task = await prisma.task.findFirst({
-    where: { status: 'queued', processing: false },
+    where: { status: 'queued', isExecuting: false },
     orderBy: [
       { priority: 'desc' },
       { createdAt: 'asc' },
@@ -150,6 +156,10 @@ async function recoverOrphanedTasks() {
     await prisma.task.updateMany({
       where: { processing: true },
       data: { processing: false },
+    });
+    await prisma.task.updateMany({
+      where: { isExecuting: true },
+      data: { isExecuting: false },
     });
 
     const queuedCount = await prisma.task.count({ where: { status: 'queued' } });
