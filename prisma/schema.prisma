@@ -1,0 +1,35 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Task {
+  id           String      @id @default(cuid())
+  type         String      // ppt | website | video | email | proposal | unknown
+  status       String      @default("pending") // pending | routing | interacting | executing | completed | failed
+  title        String      @default("")
+  input        String      // Original user input
+  context      String      @default("{}") // JSON: accumulated workflow context
+  currentStep  String      @default("init") // Current workflow step
+  result       String?     // JSON: final output/artifact
+  errorMessage String?
+  source       String      @default("agent") // agent | zapier | api
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  events       TaskEvent[]
+}
+
+model TaskEvent {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  type      String   // status_change | ai_response | interaction_request | interaction_response | step_complete | artifact | error | log
+  data      String   // JSON payload
+  createdAt DateTime @default(now())
+
+  @@index([taskId, createdAt])
+}
