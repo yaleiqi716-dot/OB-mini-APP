@@ -10,7 +10,6 @@ import { Spinner } from '@/components/ui/Spinner';
 import { useSSE } from '@/hooks/useSSE';
 import { TaskStatus, TaskType } from '@/types/task';
 import { Interaction } from '@/types/interaction';
-import { parseJSON } from '@/lib/utils';
 
 interface TaskState {
   id: string;
@@ -34,7 +33,7 @@ export default function AgentPage() {
   const activeTask = tasks.find((t) => t.id === activeTaskId) || null;
 
   // SSE connection for active task
-  const { events: sseEvents } = useSSE(activeTaskId, {
+  useSSE(activeTaskId, {
     enabled: !!activeTaskId,
     onEvent: useCallback(
       (event: { type: string; data: Record<string, unknown>; createdAt: string }) => {
@@ -44,7 +43,7 @@ export default function AgentPage() {
           prev.map((t) => {
             if (t.id !== activeTaskId) return t;
 
-            let updated = { ...t, events: [...t.events, event] };
+            const updated = { ...t, events: [...t.events, event] };
 
             if (event.type === 'status_change') {
               updated.status = event.data.status as TaskStatus;
@@ -55,6 +54,10 @@ export default function AgentPage() {
             }
             if (event.type === 'artifact' && event.data.result) {
               updated.result = event.data.result as Record<string, unknown>;
+            }
+            if (event.type === 'task_completed' && event.data.result) {
+              updated.result = event.data.result as Record<string, unknown>;
+              updated.status = 'completed';
             }
 
             return updated;
@@ -137,7 +140,6 @@ export default function AgentPage() {
   async function handleInteractionSubmit(stepId: string, value: unknown) {
     if (!activeTaskId) return;
 
-    // Clear current interaction immediately
     setTasks((prev) =>
       prev.map((t) =>
         t.id === activeTaskId ? { ...t, currentInteraction: null } : t
@@ -156,6 +158,38 @@ export default function AgentPage() {
       });
     } catch (error) {
       console.error('交互提交失败:', error);
+    }
+  }
+
+  async function handleApproveStructure() {
+    if (!activeTaskId) return;
+
+    try {
+      await fetch(`/api/tasks/${activeTaskId}/approve-structure`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      console.error('结构审批失败:', error);
+    }
+  }
+
+  async function handleAdjustStructure() {
+    if (!activeTaskId) return;
+
+    // Submit an interaction to re-generate structure
+    try {
+      await fetch(`/api/tasks/${activeTaskId}/interact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          interactionId: '',
+          stepId: 'adjust_structure',
+          value: '请调整结构',
+        }),
+      });
+    } catch (error) {
+      console.error('调整结构失败:', error);
     }
   }
 
@@ -179,7 +213,7 @@ export default function AgentPage() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar - Task List */}
-        {hasTasks && (
+        {hasTasks ? (
           <aside className="w-72 border-r border-border p-3 overflow-y-auto custom-scrollbar flex-shrink-0">
             <TaskList
               tasks={tasks.map((t) => ({
@@ -193,7 +227,7 @@ export default function AgentPage() {
               onSelect={setActiveTaskId}
             />
           </aside>
-        )}
+        ) : null}
 
         {/* Main Area */}
         <main className="flex-1 flex flex-col overflow-hidden">
@@ -209,6 +243,8 @@ export default function AgentPage() {
                   events={activeTask.events}
                   currentInteraction={activeTask.currentInteraction}
                   onInteractionSubmit={handleInteractionSubmit}
+                  onApproveStructure={handleApproveStructure}
+                  onAdjustStructure={handleAdjustStructure}
                   result={activeTask.result}
                 />
                 <div ref={canvasEndRef} />
@@ -218,7 +254,7 @@ export default function AgentPage() {
             /* Welcome Screen */
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center space-y-6 max-w-xl px-4">
-                {showWelcome && (
+                {showWelcome ? (
                   <>
                     <div className="space-y-2">
                       <h1 className="text-2xl font-semibold text-content-primary">
@@ -230,18 +266,18 @@ export default function AgentPage() {
                     </div>
                     <WorkCardList onSelect={handleCardSelect} />
                   </>
-                )}
+                ) : null}
               </div>
             </div>
           )}
 
           {/* Input Area - Always visible */}
           <div className="border-t border-border p-4 bg-surface-primary">
-            {!activeTask && !showWelcome && (
+            {!activeTask && !showWelcome ? (
               <div className="max-w-3xl mx-auto mb-3">
                 <WorkCardList onSelect={handleCardSelect} />
               </div>
-            )}
+            ) : null}
             <AgentInput
               onSubmit={(input) => handleSubmit(input)}
               disabled={isSubmitting}
@@ -251,12 +287,12 @@ export default function AgentPage() {
                   : '描述你想完成的工作...'
               }
             />
-            {isSubmitting && (
+            {isSubmitting ? (
               <div className="flex items-center justify-center gap-2 mt-2 text-content-tertiary text-sm">
                 <Spinner size="sm" />
                 <span>正在处理...</span>
               </div>
-            )}
+            ) : null}
           </div>
         </main>
       </div>

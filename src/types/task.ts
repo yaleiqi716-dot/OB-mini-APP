@@ -1,6 +1,6 @@
 export type TaskType = 'ppt' | 'website' | 'video' | 'email' | 'proposal' | 'unknown';
 
-export type TaskStatus = 'pending' | 'routing' | 'interacting' | 'executing' | 'completed' | 'failed';
+export type TaskStatus = 'pending' | 'understanding' | 'structuring' | 'interacting' | 'executing' | 'completed' | 'failed';
 
 export type TaskSource = 'agent' | 'zapier' | 'api';
 
@@ -10,6 +10,10 @@ export type TaskEventType =
   | 'interaction_request'
   | 'interaction_response'
   | 'step_complete'
+  | 'step_update'
+  | 'structure_generated'
+  | 'execution_started'
+  | 'task_completed'
   | 'artifact'
   | 'error'
   | 'log';

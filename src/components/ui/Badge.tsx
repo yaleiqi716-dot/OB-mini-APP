@@ -6,7 +6,8 @@ import { TASK_STATUS_LABELS } from '@/lib/constants';
 
 const statusColors: Record<TaskStatus, string> = {
   pending: 'bg-gray-500/20 text-gray-400',
-  routing: 'bg-blue-500/20 text-blue-400',
+  understanding: 'bg-blue-500/20 text-blue-400',
+  structuring: 'bg-purple-500/20 text-purple-400',
   interacting: 'bg-amber-500/20 text-amber-400',
   executing: 'bg-accent/20 text-accent',
   completed: 'bg-green-500/20 text-green-400',
@@ -21,7 +22,7 @@ export function Badge({ status }: { status: TaskStatus }) {
         statusColors[status] || 'bg-gray-500/20 text-gray-400'
       )}
     >
-      {status === 'executing' && (
+      {(status === 'executing' || status === 'understanding' || status === 'structuring') && (
         <span className="mr-1 h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
       )}
       {TASK_STATUS_LABELS[status] || status}

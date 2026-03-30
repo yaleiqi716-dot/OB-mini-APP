@@ -10,7 +10,7 @@ generator client {
 model Task {
   id           String      @id @default(cuid())
   type         String      // ppt | website | video | email | proposal | unknown
-  status       String      @default("pending") // pending | routing | interacting | executing | completed | failed
+  status       String      @default("pending") // pending | understanding | structuring | interacting | executing | completed | failed
   title        String      @default("")
   input        String      // Original user input
   context      String      @default("{}") // JSON: accumulated workflow context
@@ -27,7 +27,7 @@ model TaskEvent {
   id        String   @id @default(cuid())
   taskId    String
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  type      String   // status_change | ai_response | interaction_request | interaction_response | step_complete | artifact | error | log
+  type      String   // status_change | ai_response | interaction_request | interaction_response | step_complete | step_update | structure_generated | execution_started | task_completed | artifact | error | log
   data      String   // JSON payload
   createdAt DateTime @default(now())
 

@@ -10,7 +10,8 @@ export const TASK_TYPES: { value: TaskType; label: string; icon: string }[] = [
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   pending: '等待中',
-  routing: '分析中',
+  understanding: '理解中',
+  structuring: '生成结构',
   interacting: '交互中',
   executing: '执行中',
   completed: '已完成',
@@ -18,9 +19,10 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
 };
 
 export const VALID_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
-  pending: ['routing', 'failed'],
-  routing: ['interacting', 'executing', 'failed'],
-  interacting: ['executing', 'interacting', 'failed'],
+  pending: ['understanding', 'structuring', 'executing', 'failed'],
+  understanding: ['structuring', 'interacting', 'executing', 'failed'],
+  structuring: ['interacting', 'executing', 'failed'],
+  interacting: ['structuring', 'executing', 'interacting', 'failed'],
   executing: ['completed', 'failed', 'interacting'],
   completed: [],
   failed: [],

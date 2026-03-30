@@ -2,6 +2,7 @@
 
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
+import { Button } from '@/components/ui/Button';
 import { InteractionPanel } from './InteractionPanel';
 import { Interaction } from '@/types/interaction';
 import { TaskStatus } from '@/types/task';
@@ -21,6 +22,8 @@ interface TaskCanvasProps {
   events: TaskEvent[];
   currentInteraction: Interaction | null;
   onInteractionSubmit: (stepId: string, value: unknown) => void;
+  onApproveStructure: () => void;
+  onAdjustStructure: () => void;
   result: Record<string, unknown> | null;
 }
 
@@ -32,10 +35,14 @@ export function TaskCanvas({
   events,
   currentInteraction,
   onInteractionSubmit,
+  onApproveStructure,
+  onAdjustStructure,
   result,
 }: TaskCanvasProps) {
   const logs = events.filter((e) => e.type === 'log');
-  const steps = events.filter((e) => e.type === 'step_complete');
+  const stepUpdates = events.filter((e) => e.type === 'step_update');
+  const structureEvent = events.findLast((e) => e.type === 'structure_generated');
+  const taskCompletedEvent = events.findLast((e) => e.type === 'task_completed');
   const isActive = !['completed', 'failed'].includes(status);
 
   return (
@@ -53,28 +60,47 @@ export function TaskCanvas({
 
       {/* Event Stream */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {/* Logs */}
         {logs.map((event, i) => (
-          <LogEntry key={i} message={String((event.data as Record<string, unknown>).message || '')} />
+          <LogEntry key={`log-${i}`} message={String((event.data).message || '')} />
         ))}
 
-        {steps.map((event, i) => {
-          const data = event.data as Record<string, unknown>;
-          const stepData = data.data as Record<string, unknown> | undefined;
-          return (
-            <StepEntry
-              key={i}
-              step={String(data.step || '')}
-              data={stepData}
-            />
-          );
-        })}
+        {/* Structure Card — shown when structuring */}
+        {structureEvent && status === 'structuring' ? (
+          <StructureCard
+            structure={(structureEvent.data).structure as string[]}
+            onApprove={onApproveStructure}
+            onAdjust={onAdjustStructure}
+          />
+        ) : null}
 
-        {isActive && status === 'executing' && (
+        {/* Structure Card — shown as completed when past structuring */}
+        {structureEvent && status !== 'structuring' && status !== 'understanding' ? (
+          <StructureCardCompleted
+            structure={(structureEvent.data).structure as string[]}
+          />
+        ) : null}
+
+        {/* Step updates during execution */}
+        {stepUpdates.map((event, i) => (
+          <StepUpdateEntry key={`step-${i}`} data={event.data} />
+        ))}
+
+        {/* Executing spinner */}
+        {isActive && status === 'executing' ? (
           <div className="flex items-center gap-2 text-content-secondary text-sm">
             <Spinner size="sm" />
-            <span>正在执行...</span>
+            <span>正在生成内容...</span>
           </div>
-        )}
+        ) : null}
+
+        {/* Understanding spinner */}
+        {status === 'understanding' ? (
+          <div className="flex items-center gap-2 text-content-secondary text-sm">
+            <Spinner size="sm" />
+            <span>正在理解需求...</span>
+          </div>
+        ) : null}
 
         {/* Interaction */}
         {currentInteraction !== null && status === 'interacting' ? (
@@ -92,13 +118,13 @@ export function TaskCanvas({
         ) : null}
 
         {/* Error */}
-        {status === 'failed' && (
+        {status === 'failed' ? (
           <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
             {events.find((e) => e.type === 'error')
-              ? String((events.find((e) => e.type === 'error')!.data as Record<string, unknown>).message || '任务执行失败')
+              ? String((events.find((e) => e.type === 'error')!.data).message || '任务执行失败')
               : '任务执行失败'}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -113,11 +139,78 @@ function LogEntry({ message }: { message: string }) {
   );
 }
 
-function StepEntry({ step, data }: { step: string; data?: Record<string, unknown> }) {
+function StepUpdateEntry({ data }: { data: Record<string, unknown> }) {
+  const text = String(data.text || data.step || '');
+  const current = data.current as number | undefined;
+  const total = data.total as number | undefined;
+
   return (
     <div className="flex items-start gap-2 text-sm">
       <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-      <span className="text-content-primary">{step}</span>
+      <span className="text-content-primary flex-1">{text}</span>
+      {current !== undefined && total !== undefined ? (
+        <span className="text-content-tertiary text-xs">{current}/{total}</span>
+      ) : null}
+    </div>
+  );
+}
+
+function StructureCard({
+  structure,
+  onApprove,
+  onAdjust,
+}: {
+  structure: string[];
+  onApprove: () => void;
+  onAdjust: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-accent/30 bg-accent/5 p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <span className="text-accent text-sm font-medium">结构预览</span>
+        <span className="text-xs text-content-tertiary">共 {structure.length} 页</span>
+      </div>
+      <div className="space-y-2">
+        {structure.map((item, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 px-3 py-2 rounded-lg bg-surface-secondary border border-border"
+          >
+            <span className="text-xs text-accent font-mono w-6 text-center">{i + 1}</span>
+            <span className="text-sm text-content-primary">{item}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-3 pt-2">
+        <Button onClick={onApprove} size="sm">
+          继续生成
+        </Button>
+        <Button onClick={onAdjust} variant="secondary" size="sm">
+          调整结构
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function StructureCardCompleted({ structure }: { structure: string[] }) {
+  return (
+    <div className="rounded-xl border border-border bg-surface-secondary p-4 space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="text-green-400 text-sm">✓</span>
+        <span className="text-sm text-content-secondary">结构已确认</span>
+        <span className="text-xs text-content-tertiary">共 {structure.length} 页</span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {structure.map((item, i) => (
+          <span
+            key={i}
+            className="text-xs px-2 py-1 rounded bg-surface-tertiary text-content-secondary border border-border"
+          >
+            {item}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -148,11 +241,11 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
                   </li>
                 ))}
               </ul>
-              {slide.notes && (
+              {slide.notes ? (
                 <p className="mt-2 text-xs text-content-tertiary italic">
                   备注：{slide.notes}
                 </p>
-              )}
+              ) : null}
             </div>
           ))}
         </div>

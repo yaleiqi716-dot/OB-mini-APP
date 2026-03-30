@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     // For now, log and mark as pending until Manus integration is complete
     (async () => {
       try {
-        await updateTaskStatus(task.id, 'routing');
+        await updateTaskStatus(task.id, 'understanding');
         await emitLog(task.id, '编排器已接收任务');
         await emitLog(task.id, `目标：${body.goal}`);
         if (body.constraints?.length) {

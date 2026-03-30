@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     // Process in background
     (async () => {
       try {
-        await updateTaskStatus(task.id, 'routing');
+        await updateTaskStatus(task.id, 'understanding');
         const routeResult = type && type !== 'unknown'
           ? { type: type as TaskType, title: input.slice(0, 50), confidence: 1 }
           : await routeTask(input);

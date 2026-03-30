@@ -21,7 +21,7 @@ export async function POST(
       return NextResponse.json({ error: '任务不存在' }, { status: 404 });
     }
 
-    if (task.status !== 'interacting') {
+    if (task.status !== 'interacting' && task.status !== 'structuring') {
       return NextResponse.json(
         { error: '任务当前不在交互状态' },
         { status: 400 }

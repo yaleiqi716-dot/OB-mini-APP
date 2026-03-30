@@ -58,7 +58,7 @@ export async function GET() {
 async function processTask(taskId: string, input: string, presetType?: TaskType) {
   try {
     // Route the task
-    await updateTaskStatus(taskId, 'routing');
+    await updateTaskStatus(taskId, 'understanding');
     await emitLog(taskId, '正在识别任务类型...');
 
     let taskType: TaskType;

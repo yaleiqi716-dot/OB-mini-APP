@@ -5,30 +5,21 @@ import {
   updateTaskStatus,
   updateTaskContext,
   updateTaskStep,
-  requestInteraction,
-  completeTask,
-  failTask,
   emitEvent,
   emitLog,
   getTaskContext,
+  failTask,
 } from '@/services/task-manager';
-import { generateId } from '@/lib/utils';
 
 interface PPTContext {
-  currentPhase: 'clarify' | 'outline' | 'execute';
-  clarifications: { question: string; answer: string }[];
-  pendingQuestions: { question: string; options: string[] }[];
-  questionIndex: number;
-  outline: { slideIndex: number; title: string; keyPoints: string[] }[];
+  currentPhase: 'understanding' | 'structuring' | 'executing' | 'completed';
+  structure: string[];
   slides: { index: number; title: string; content: string[]; notes: string }[];
 }
 
 const defaultPPTContext: PPTContext = {
-  currentPhase: 'clarify',
-  clarifications: [],
-  pendingQuestions: [],
-  questionIndex: 0,
-  outline: [],
+  currentPhase: 'understanding',
+  structure: [],
   slides: [],
 };
 
@@ -36,68 +27,70 @@ const pptWorkflow: BaseWorkflow = {
   type: 'ppt',
   name: '演示文稿',
   steps: [
-    { id: 'clarify', name: '需求确认', description: '了解演示文稿的具体需求' },
-    { id: 'outline', name: '生成大纲', description: '生成演示文稿结构' },
-    { id: 'execute', name: '生成内容', description: '生成每一页的详细内容' },
+    { id: 'understanding', name: '理解需求', description: '分析演示文稿需求' },
+    { id: 'structuring', name: '生成结构', description: '生成演示文稿结构' },
+    { id: 'executing', name: '生成内容', description: '生成每一页的详细内容' },
   ] as WorkflowStep[],
 
   async start(ctx: WorkflowContext) {
     const { taskId, input } = ctx;
 
     try {
-      await updateTaskStep(taskId, 'clarify');
-      await emitLog(taskId, '正在分析你的需求...');
+      // Step 1: Understanding
+      await updateTaskStep(taskId, 'understanding');
+      await updateTaskStatus(taskId, 'understanding');
+      await emitLog(taskId, '正在理解你的需求...');
 
-      // Generate clarification questions via AI
+      // Call AI to understand and generate structure
       const result = await chatCompletion(
         [
           {
             role: 'system',
-            content: `你是一个专业的演示文稿设计师。用户想要制作一份演示文稿。
-根据用户的描述，生成1-2个关键的确认问题，帮助你更好地理解需求。
+            content: `你是一个专业的演示文稿设计师。根据用户的描述，生成一份演示文稿的页面结构列表。
 
 请以 JSON 格式返回：
 {
-  "questions": [
-    {
-      "question": "问题内容",
-      "options": ["选项1", "选项2", "选项3"]
-    }
-  ]
+  "structure": ["封面", "市场问题", "解决方案", "商业模式", "竞争优势", "融资计划", "总结"]
 }
 
 规则：
-- 最多2个问题
-- 每个问题2-4个选项
-- 问题要具体、有针对性
-- 不要问过于宽泛的问题
+- 6-12页为宜
+- 结构清晰、逻辑连贯
+- 每一项是页面的标题
+- 包含封面和总结页
 - 只返回 JSON`,
           },
           { role: 'user', content: input },
         ],
-        { temperature: 0.3, jsonMode: true, maxTokens: 512 }
+        { temperature: 0.5, jsonMode: true, maxTokens: 1024 }
       );
 
       const parsed = JSON.parse(result.content);
-      const questions = parsed.questions || [];
+      const structure: string[] = parsed.structure || [];
 
-      if (questions.length === 0) {
-        // No questions needed, go directly to outline
-        const pptCtx: PPTContext = { ...defaultPPTContext, currentPhase: 'outline', clarifications: [] };
-        await updateTaskContext(taskId, { ppt: pptCtx });
-        await generateOutline(taskId, input, []);
+      if (structure.length === 0) {
+        await failTask(taskId, '无法生成演示文稿结构');
         return;
       }
 
+      // Save structure to context
       const pptCtx: PPTContext = {
         ...defaultPPTContext,
-        pendingQuestions: questions,
-        questionIndex: 0,
+        currentPhase: 'structuring',
+        structure,
       };
       await updateTaskContext(taskId, { ppt: pptCtx });
 
-      // Ask first question
-      await askQuestion(taskId, questions[0], 0);
+      // Step 2: Enter structuring — emit structure_generated and STOP
+      await updateTaskStep(taskId, 'structuring');
+      await updateTaskStatus(taskId, 'structuring');
+      await emitLog(taskId, '结构已生成，等待确认...');
+
+      await emitEvent(taskId, 'structure_generated', {
+        structure,
+      });
+
+      // DO NOT proceed to executing — wait for user approval via /approve-structure
     } catch (error) {
       const msg = error instanceof Error ? error.message : '启动失败';
       await failTask(taskId, msg);
@@ -105,55 +98,55 @@ const pptWorkflow: BaseWorkflow = {
   },
 
   async handleInteraction(ctx: WorkflowContext, stepId: string, value: unknown) {
+    // PPT workflow no longer uses interaction_request for structure confirmation
+    // Structure approval is handled via /api/tasks/:id/approve-structure
+    // This handler is kept for potential future use (e.g., adjust structure via text)
     const { taskId, input } = ctx;
-    const taskContext = await getTaskContext(taskId);
-    const pptCtx = (taskContext.ppt as PPTContext) || defaultPPTContext;
 
     try {
-      if (stepId.startsWith('question_')) {
-        // Handle clarification answer
-        const qIndex = pptCtx.questionIndex;
-        const currentQ = pptCtx.pendingQuestions[qIndex];
+      if (stepId === 'adjust_structure') {
+        // User wants to adjust structure — re-generate with hint
+        const hint = String(value || '');
+        await updateTaskStatus(taskId, 'understanding');
+        await emitLog(taskId, '正在根据反馈调整结构...');
 
-        const updatedClarifications = [
-          ...pptCtx.clarifications,
-          { question: currentQ.question, answer: String(value) },
-        ];
+        const result = await chatCompletion(
+          [
+            {
+              role: 'system',
+              content: `你是一个专业的演示文稿设计师。用户想要调整演示文稿的页面结构。
 
-        const nextIndex = qIndex + 1;
+请以 JSON 格式返回：
+{
+  "structure": ["封面", "页面标题1", "页面标题2", "...", "总结"]
+}
 
-        if (nextIndex < pptCtx.pendingQuestions.length) {
-          // Ask next question
-          const updated: PPTContext = {
-            ...pptCtx,
-            clarifications: updatedClarifications,
-            questionIndex: nextIndex,
-          };
-          await updateTaskContext(taskId, { ppt: updated });
-          await askQuestion(taskId, pptCtx.pendingQuestions[nextIndex], nextIndex);
-        } else {
-          // All questions answered, generate outline
-          const updated: PPTContext = {
-            ...pptCtx,
-            clarifications: updatedClarifications,
-            currentPhase: 'outline',
-          };
-          await updateTaskContext(taskId, { ppt: updated });
-          await emitLog(taskId, '需求确认完成，正在生成大纲...');
-          await generateOutline(taskId, input, updatedClarifications);
-        }
-      } else if (stepId === 'confirm_outline') {
-        if (value === true || value === 'yes') {
-          // Outline confirmed, start generating content
-          const updated: PPTContext = { ...pptCtx, currentPhase: 'execute' };
-          await updateTaskContext(taskId, { ppt: updated });
-          await emitLog(taskId, '大纲确认，开始生成内容...');
-          await generateSlides(taskId, input, pptCtx);
-        } else {
-          // User rejected, allow modification (for now restart outline)
-          await emitLog(taskId, '正在重新生成大纲...');
-          await generateOutline(taskId, input, pptCtx.clarifications);
-        }
+规则：
+- 6-12页为宜
+- 结构清晰、逻辑连贯
+- 只返回 JSON`,
+            },
+            {
+              role: 'user',
+              content: `原始需求：${input}\n\n调整要求：${hint}`,
+            },
+          ],
+          { temperature: 0.5, jsonMode: true, maxTokens: 1024 }
+        );
+
+        const parsed = JSON.parse(result.content);
+        const structure: string[] = parsed.structure || [];
+
+        const taskContext = await getTaskContext(taskId);
+        const pptCtx = (taskContext.ppt as PPTContext) || defaultPPTContext;
+        const updated: PPTContext = { ...pptCtx, currentPhase: 'structuring', structure };
+        await updateTaskContext(taskId, { ppt: updated });
+
+        await updateTaskStep(taskId, 'structuring');
+        await updateTaskStatus(taskId, 'structuring');
+        await emitLog(taskId, '结构已重新生成，等待确认...');
+
+        await emitEvent(taskId, 'structure_generated', { structure });
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : '处理交互失败';
@@ -162,112 +155,50 @@ const pptWorkflow: BaseWorkflow = {
   },
 };
 
-async function askQuestion(
-  taskId: string,
-  q: { question: string; options: string[] },
-  index: number
-) {
-  await updateTaskStatus(taskId, 'interacting');
-  await requestInteraction(taskId, {
-    id: generateId(),
-    taskId,
-    stepId: `question_${index}`,
-    type: 'single_choice',
-    question: q.question,
-    options: q.options.map((opt, i) => ({ label: opt, value: opt })),
-  });
-}
+// Register
+registerWorkflow(pptWorkflow);
 
-async function generateOutline(
-  taskId: string,
-  input: string,
-  clarifications: { question: string; answer: string }[]
-) {
-  await updateTaskStep(taskId, 'outline');
-  await updateTaskStatus(taskId, 'executing');
+export { pptWorkflow };
 
-  const clarificationText = clarifications.length > 0
-    ? '\n\n补充信息：\n' + clarifications.map(c => `问：${c.question}\n答：${c.answer}`).join('\n')
-    : '';
-
-  const result = await chatCompletion(
-    [
-      {
-        role: 'system',
-        content: `你是一个专业的演示文稿设计师。根据用户的需求生成演示文稿大纲。
-
-请以 JSON 格式返回：
-{
-  "outline": [
-    {
-      "slideIndex": 0,
-      "title": "页面标题",
-      "keyPoints": ["要点1", "要点2", "要点3"]
-    }
-  ]
-}
-
-规则：
-- 6-12页为宜
-- 结构清晰、逻辑连贯
-- 每页2-4个要点
-- 包含封面和总结页
-- 只返回 JSON`,
-      },
-      { role: 'user', content: input + clarificationText },
-    ],
-    { temperature: 0.5, jsonMode: true, maxTokens: 2048 }
-  );
-
-  const parsed = JSON.parse(result.content);
-  const outline = parsed.outline || [];
-
+// Exported for orchestrator to call after approval
+export async function executePPTGeneration(taskId: string, input: string) {
   const taskContext = await getTaskContext(taskId);
   const pptCtx = (taskContext.ppt as PPTContext) || defaultPPTContext;
-  const updated: PPTContext = { ...pptCtx, outline };
-  await updateTaskContext(taskId, { ppt: updated });
+  const structure = pptCtx.structure;
 
-  await emitEvent(taskId, 'step_complete', {
-    step: 'outline',
-    data: outline,
-  });
+  if (!structure || structure.length === 0) {
+    await failTask(taskId, '缺少演示文稿结构');
+    return;
+  }
 
-  // Ask user to confirm outline
-  const outlineText = outline
-    .map((s: { slideIndex: number; title: string; keyPoints: string[] }) =>
-      `第${s.slideIndex + 1}页：${s.title}\n${s.keyPoints.map((p: string) => `  · ${p}`).join('\n')}`
-    )
-    .join('\n\n');
-
-  await updateTaskStatus(taskId, 'interacting');
-  await requestInteraction(taskId, {
-    id: generateId(),
-    taskId,
-    stepId: 'confirm_outline',
-    type: 'confirm',
-    question: '请确认以下演示文稿大纲',
-    detail: outlineText,
-  });
-}
-
-async function generateSlides(
-  taskId: string,
-  input: string,
-  pptCtx: PPTContext
-) {
-  await updateTaskStep(taskId, 'execute');
+  // Update to executing
+  await updateTaskStep(taskId, 'executing');
   await updateTaskStatus(taskId, 'executing');
+
+  await emitEvent(taskId, 'execution_started', {
+    message: '开始生成演示文稿内容',
+    totalPages: structure.length,
+  });
+
+  await emitLog(taskId, '正在生成内容...');
 
   const slides: { index: number; title: string; content: string[]; notes: string }[] = [];
 
-  for (const page of pptCtx.outline) {
-    await emitLog(taskId, `正在生成第 ${page.slideIndex + 1} 页：${page.title}`);
+  for (let i = 0; i < structure.length; i++) {
+    const pageTitle = structure[i];
+
+    await emitEvent(taskId, 'step_update', {
+      step: `page_${i + 1}`,
+      text: `正在生成：${pageTitle}`,
+      current: i + 1,
+      total: structure.length,
+    });
 
     const result = await chatCompletion(
       [
         {
           role: 'system',
-          content: `你是一个专业的演示文稿内容撰写者。根据页面大纲生成详细内容。
+          content: `你是一个专业的演示文稿内容撰写者。根据页面标题生成详细内容。
 
 请以 JSON 格式返回：
 {
@@ -279,12 +210,13 @@ async function generateSlides(
 规则：
 - 内容要点简洁有力，适合展示
 - 每个要点一句话，不超过30字
+- 2-4个要点
 - 备注是给演讲者看的补充说明
 - 只返回 JSON`,
         },
         {
           role: 'user',
-          content: `演示文稿主题：${input}\n\n当前页面：\n标题：${page.title}\n要点：${page.keyPoints.join('、')}`,
+          content: `演示文稿主题：${input}\n整体结构：${structure.join(' → ')}\n\n当前页面标题：${pageTitle}`,
         },
       ],
       { temperature: 0.6, jsonMode: true, maxTokens: 1024 }
@@ -292,34 +224,55 @@ async function generateSlides(
 
     const parsed = JSON.parse(result.content);
     const slide = {
-      index: page.slideIndex,
-      title: parsed.title || page.title,
-      content: parsed.content || page.keyPoints,
+      index: i,
+      title: parsed.title || pageTitle,
+      content: parsed.content || [pageTitle],
       notes: parsed.notes || '',
     };
 
     slides.push(slide);
 
-    await emitEvent(taskId, 'step_complete', {
-      step: `slide_${page.slideIndex}`,
-      data: slide,
+    await emitEvent(taskId, 'step_update', {
+      step: `page_${i + 1}`,
+      text: `${pageTitle}已生成`,
+      current: i + 1,
+      total: structure.length,
     });
   }
 
-  // Complete the task
+  // Save result and complete
   const finalResult = {
     type: 'ppt',
-    title: pptCtx.outline[0]?.title || '演示文稿',
+    title: structure[0] || '演示文稿',
     slideCount: slides.length,
     slides,
-    outline: pptCtx.outline,
+    structure,
   };
 
-  await completeTask(taskId, finalResult);
+  const updatedCtx: PPTContext = {
+    ...pptCtx,
+    currentPhase: 'completed',
+    slides,
+  };
+  await updateTaskContext(taskId, { ppt: updatedCtx });
+
+  // Mark complete
+  const { prisma } = await import('@/lib/prisma');
+  await prisma.task.update({
+    where: { id: taskId },
+    data: {
+      status: 'completed',
+      result: JSON.stringify(finalResult),
+    },
+  });
+
+  await emitEvent(taskId, 'task_completed', {
+    message: `演示文稿生成完成，共 ${slides.length} 页`,
+    result: finalResult,
+  });
+
+  await emitEvent(taskId, 'status_change', { status: 'completed' });
+  await emitEvent(taskId, 'artifact', { result: finalResult });
+
   await emitLog(taskId, `演示文稿生成完成，共 ${slides.length} 页`);
 }
-
-// Register
-registerWorkflow(pptWorkflow);
-
-export { pptWorkflow };
