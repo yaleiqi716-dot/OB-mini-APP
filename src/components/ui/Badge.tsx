@@ -6,6 +6,7 @@ import { TASK_STATUS_LABELS } from '@/lib/constants';
 
 const statusColors: Record<TaskStatus, string> = {
   pending: 'bg-gray-500/20 text-gray-400',
+  queued: 'bg-gray-500/20 text-gray-400',
   understanding: 'bg-blue-500/20 text-blue-400',
   structuring: 'bg-purple-500/20 text-purple-400',
   interacting: 'bg-amber-500/20 text-amber-400',

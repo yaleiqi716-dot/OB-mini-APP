@@ -382,6 +382,13 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
+              {/* Queued hint */}
+              {status === 'queued' ? (
+                <p className="text-xs text-content-secondary/60 italic animate-progress-pulse">
+                  任务已提交，排队等待处理...
+                </p>
+              ) : null}
+
               {/* Idle hint — executing but nothing from backend yet */}
               {mode === 'executing' && completedSteps.length === 0 && !hasThinking ? (
                 <p className="text-xs text-content-secondary/50 italic animate-progress-pulse">

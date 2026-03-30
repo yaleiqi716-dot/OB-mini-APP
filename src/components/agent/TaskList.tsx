@@ -27,9 +27,10 @@ const STATUS_PRIORITY: Record<TaskStatus, number> = {
   structuring: 1,
   executing: 2,
   understanding: 3,
-  pending: 4,
-  completed: 5,
-  failed: 6,
+  queued: 4,
+  pending: 5,
+  completed: 6,
+  failed: 7,
 };
 
 const SOURCE_LABELS: Record<TaskSource, string> = {
@@ -49,7 +50,7 @@ export function TaskList({ tasks, activeTaskId, onSelect }: TaskListProps) {
   });
 
   const waiting = sorted.filter((t) => t.status === 'interacting' || t.status === 'structuring');
-  const active = sorted.filter((t) => t.status === 'executing' || t.status === 'understanding' || t.status === 'pending');
+  const active = sorted.filter((t) => t.status === 'executing' || t.status === 'understanding' || t.status === 'pending' || t.status === 'queued');
   const done = sorted.filter((t) => t.status === 'completed' || t.status === 'failed');
 
   return (
