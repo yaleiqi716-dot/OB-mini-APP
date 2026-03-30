@@ -51,3 +51,14 @@ model TaskEvent {
 
   @@index([taskId, createdAt])
 }
+
+model AutoTask {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // ppt | email | proposal | etc.
+  input     String
+  schedule  String   // cron expression (e.g. "0 9 * * *")
+  enabled   Boolean  @default(true)
+  lastRunAt DateTime?
+  createdAt DateTime @default(now())
+}

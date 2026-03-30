@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createTask, listTasks, formatTask, updateTaskStatus, emitLog } from '@/services/task-manager';
 import { checkCredits, getOrCreateUser, checkUserConcurrency } from '@/services/billing';
 import { startWorker } from '@/services/worker';
+import { startAutoTaskRunner } from '@/services/auto-task-runner';
 import { CreateTaskRequest } from '@/types/api';
 import { prisma } from '@/lib/prisma';
 
@@ -14,8 +15,9 @@ const PLAN_PRIORITY: Record<string, number> = {
   free: 0,
 };
 
-// Start worker on first import (server startup)
+// Start worker + auto-task runner on first import (server startup)
 startWorker(1000);
+startAutoTaskRunner(60_000);
 
 // ---- Rate limiting ----
 
