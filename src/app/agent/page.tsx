@@ -114,6 +114,8 @@ export default function AgentPage() {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionLoadingTaskId, setActionLoadingTaskId] = useState<string | null>(null);
+  const [interactingTaskId, setInteractingTaskId] = useState<string | null>(null);
+  const [errorToast, setErrorToast] = useState<string | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const canvasEndRef = useRef<HTMLDivElement>(null);
   const activeTaskIdRef = useRef<string | null>(null);
@@ -243,6 +245,11 @@ export default function AgentPage() {
 
   // Auto scroll — handled in render section via scrollContainerRef
 
+  function showError(msg: string) {
+    setErrorToast(msg);
+    setTimeout(() => setErrorToast(null), 3000);
+  }
+
   // ---- Handlers ----
 
   async function handleSubmit(input: string, type?: string) {
@@ -291,71 +298,83 @@ export default function AgentPage() {
   }
 
   async function handleInteractionSubmit(stepId: string, value: unknown) {
-    if (!activeTaskId) return;
+    if (!activeTaskId || interactingTaskId === activeTaskId) return;
+    setInteractingTaskId(activeTaskId);
     setTasks((prev) => prev.map((t) => t.id === activeTaskId ? { ...t, currentInteraction: null } : t));
     try {
-      await fetch(`/api/tasks/${activeTaskId}/interact`, {
+      const res = await fetch(`/api/tasks/${activeTaskId}/interact`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ interactionId: '', stepId, value }),
       });
-    } catch (error) { console.error('交互提交失败:', error); }
+      if (!res.ok) showError('提交失败，请重试');
+    } catch { showError('网络错误，请重试'); }
+    finally { setInteractingTaskId(null); }
   }
 
   async function handleApprove(approvalType: ApprovalType) {
-    if (!activeTaskId) return;
+    if (!activeTaskId || actionLoadingTaskId) return;
     setActionLoadingTaskId(activeTaskId);
     try {
       const res = await fetch(`/api/tasks/${activeTaskId}/approve`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approvalType, action: 'approve' }),
       });
-      if (!res.ok) console.error('确认失败:', await res.text());
-    } catch (error) { console.error('确认失败:', error); }
+      if (!res.ok) showError('确认失败，请重试');
+    } catch { showError('网络错误，请重试'); }
     finally { setActionLoadingTaskId(null); }
   }
 
   async function handleReject(approvalType: ApprovalType) {
-    if (!activeTaskId) return;
+    if (!activeTaskId || actionLoadingTaskId) return;
+    setActionLoadingTaskId(activeTaskId);
     setTasks((prev) => prev.map((t) => t.id === activeTaskId ? { ...t, currentInteraction: null } : t));
     try {
-      await fetch(`/api/tasks/${activeTaskId}/approve`, {
+      const res = await fetch(`/api/tasks/${activeTaskId}/approve`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approvalType, action: 'reject' }),
       });
-    } catch (error) { console.error('操作失败:', error); }
+      if (!res.ok) showError('操作失败，请重试');
+    } catch { showError('网络错误，请重试'); }
+    finally { setActionLoadingTaskId(null); }
   }
 
   async function handleAdjustStructure() {
-    if (!activeTaskId) return;
+    if (!activeTaskId || interactingTaskId === activeTaskId) return;
+    setInteractingTaskId(activeTaskId);
     setTasks((prev) => prev.map((t) => t.id === activeTaskId ? { ...t, currentInteraction: null } : t));
     try {
       await fetch(`/api/tasks/${activeTaskId}/interact`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ interactionId: '', stepId: 'request_adjust_structure', value: '' }),
       });
-    } catch (error) { console.error('调整结构失败:', error); }
+    } catch { showError('操作失败'); }
+    finally { setInteractingTaskId(null); }
   }
 
   async function handleAdjustProposal() {
-    if (!activeTaskId) return;
+    if (!activeTaskId || interactingTaskId === activeTaskId) return;
+    setInteractingTaskId(activeTaskId);
     setTasks((prev) => prev.map((t) => t.id === activeTaskId ? { ...t, currentInteraction: null } : t));
     try {
       await fetch(`/api/tasks/${activeTaskId}/interact`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ interactionId: '', stepId: 'request_adjust_proposal_structure', value: '' }),
       });
-    } catch (error) { console.error('调整方案结构失败:', error); }
+    } catch { showError('操作失败'); }
+    finally { setInteractingTaskId(null); }
   }
 
   async function handleReviseEmail() {
-    if (!activeTaskId) return;
+    if (!activeTaskId || interactingTaskId === activeTaskId) return;
+    setInteractingTaskId(activeTaskId);
     setTasks((prev) => prev.map((t) => t.id === activeTaskId ? { ...t, currentInteraction: null } : t));
     try {
       await fetch(`/api/tasks/${activeTaskId}/interact`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ interactionId: '', stepId: 'revise_email_request', value: '' }),
       });
-    } catch (error) { console.error('修改邮件失败:', error); }
+    } catch { showError('操作失败'); }
+    finally { setInteractingTaskId(null); }
   }
 
   function handleCardSelect(prompt: string, type: string) { handleSubmit(prompt, type); }
@@ -505,6 +524,14 @@ export default function AgentPage() {
           )}
         </main>
       </div>
+      {/* Error toast */}
+      {errorToast ? (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 animate-flow-in">
+          <div className="px-4 py-2 rounded-lg bg-red-500/90 text-white text-sm shadow-lg">
+            {errorToast}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -440,8 +440,19 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {mode === 'result' && result !== null ? (
-                <div className="animate-flow-in"><ResultView result={result} /></div>
+              {mode === 'result' ? (
+                <div className="animate-flow-in">
+                  {result !== null ? (
+                    <ResultView result={result} />
+                  ) : (
+                    <div className="space-y-2 pt-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-400 text-sm">✓</span>
+                        <span className="text-sm font-medium text-green-400">任务已完成</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : null}
 
               {mode === 'error' ? (
