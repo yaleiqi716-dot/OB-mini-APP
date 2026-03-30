@@ -9,6 +9,12 @@
 外部事件 ──→ events/ingest ──────→ event-to-task → 同上链路
 ```
 
+### 实时机制
+
+- **当前任务**：通过 SSE（Server-Sent Events）实时接收事件更新
+- **任务列表**：每 5 秒轮询 `/api/tasks`，自动发现新任务和状态变化
+- **未读标记**：非当前任务有更新时，侧栏显示橙色圆点提示
+
 ### 系统分层
 
 | 层 | 职责 | 文件 |
@@ -82,11 +88,12 @@ WEBHOOK_SECRET="your-webhook-secret"
 | POST | `/api/tasks/:id/interact` | 提交交互 |
 | POST | `/api/tasks/:id/approve-structure` | 确认 PPT 结构 |
 | POST | `/api/tasks/:id/send-email` | 确认发送邮件 |
-| POST | `/api/events/ingest` | 外部事件入口（Webhook） |
+| POST | `/api/events/ingest` | 外部事件入口（Webhook / Zapier） |
 | POST | `/api/router` | 任务类型识别 |
-| POST | `/api/webhooks/zapier` | Zapier 入口（旧版） |
 
 ## 外部事件接入（Webhook）
+
+所有外部事件统一通过 `/api/events/ingest` 接入。
 
 ### 配置
 
@@ -134,7 +141,7 @@ curl -X POST http://localhost:3000/api/events/ingest \
 }
 ```
 
-外部创建的任务会自动进入 AI 分类 → 工作流执行链路，在 AGENT 页面侧栏实时出现，标记为 Zapier 或 API 来源。
+外部创建的任务会自动进入 AI 分类 → 工作流执行链路。前端任务列表每 5 秒刷新，外部任务自动出现并带有来源标签（Zapier / API）。
 
 ## 验证流程
 
@@ -154,5 +161,12 @@ curl -X POST http://localhost:3000/api/events/ingest \
 
 ### Webhook 外部触发
 1. 用 curl 发送上面的测试请求
-2. 在 AGENT 页面侧栏看到新任务出现（带 Zapier 标签）
+2. 在 AGENT 页面侧栏自动看到新任务（带 Zapier 标签 + 未读圆点）
 3. 点击查看任务执行过程
+
+### 并行任务
+1. 创建 PPT 任务（进入 structuring）
+2. 不点确认，直接输入"帮我写封邮件给张总"
+3. 侧栏同时显示两个任务
+4. PPT 任务显示"等待中"高亮
+5. 切换回 PPT 任务，确认结构继续生成

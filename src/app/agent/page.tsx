@@ -25,11 +25,13 @@ interface TaskState {
   input: string;
   source: TaskSource;
   createdAt: string;
+  updatedAt: string;
   events: TaskEvent[];
   eventsLoaded: boolean;
   currentInteraction: Interaction | null;
   result: Record<string, unknown> | null;
   lastViewedEventCount: number;
+  lastSeenUpdatedAt: string;
 }
 
 function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
@@ -47,6 +49,8 @@ function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
     if (lastIR) currentInteraction = lastIR.data as unknown as Interaction;
   }
 
+  const now = new Date().toISOString();
+
   return {
     id: data.id as string,
     type: (data.type as TaskType) || 'unknown',
@@ -54,12 +58,14 @@ function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
     title: (data.title as string) || '',
     input: (data.input as string) || '',
     source: (data.source as TaskSource) || 'agent',
-    createdAt: (data.createdAt as string) || new Date().toISOString(),
+    createdAt: (data.createdAt as string) || now,
+    updatedAt: (data.updatedAt as string) || now,
     events,
     eventsLoaded: true,
     currentInteraction,
     result: (data.result as Record<string, unknown>) || null,
     lastViewedEventCount: events.length,
+    lastSeenUpdatedAt: (data.updatedAt as string) || now,
   };
 }
 
@@ -81,20 +87,30 @@ export default function AgentPage() {
   const [actionLoadingTaskId, setActionLoadingTaskId] = useState<string | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const canvasEndRef = useRef<HTMLDivElement>(null);
-  const knownTaskIdsRef = useRef<Set<string>>(new Set());
+  const activeTaskIdRef = useRef<string | null>(null);
+
+  // Keep ref in sync so polling callback can read latest value
+  activeTaskIdRef.current = activeTaskId;
 
   const activeTask = tasks.find((t) => t.id === activeTaskId) || null;
 
-  // SSE for active task
+  // SSE for active task only
   useSSE(activeTaskId, {
     enabled: !!activeTaskId,
     onEvent: useCallback(
       (event: TaskEvent) => {
-        if (!activeTaskId) return;
+        const currentId = activeTaskIdRef.current;
+        if (!currentId) return;
         setTasks((prev) =>
           prev.map((t) => {
-            if (t.id !== activeTaskId) return t;
-            const updated = { ...t, events: [...t.events, event], lastViewedEventCount: t.events.length + 1 };
+            if (t.id !== currentId) return t;
+            const updated = {
+              ...t,
+              events: [...t.events, event],
+              lastViewedEventCount: t.events.length + 1,
+              lastSeenUpdatedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
             if (event.type === 'status_change') updated.status = event.data.status as TaskStatus;
             if (event.type === 'interaction_request') {
               updated.currentInteraction = event.data as unknown as Interaction;
@@ -109,65 +125,88 @@ export default function AgentPage() {
           })
         );
       },
-      [activeTaskId]
+      []
     ),
   });
 
-  // Load tasks on mount
-  function loadTasks() {
-    fetch('/api/tasks')
-      .then((r) => r.json())
-      .then((data) => {
-        if (!Array.isArray(data)) return;
-        if (data.length > 0) setShowWelcome(false);
-
-        setTasks((prev) => {
-          const prevMap = new Map(prev.map((t) => [t.id, t]));
-          const merged: TaskState[] = [];
-
-          for (const t of data as Record<string, unknown>[]) {
-            const id = t.id as string;
-            const existing = prevMap.get(id);
-            if (existing) {
-              // Update status/title/type from server, keep local events if loaded
-              merged.push({
-                ...existing,
-                type: (t.type as TaskType) || existing.type,
-                status: (t.status as TaskStatus) || existing.status,
-                title: (t.title as string) || existing.title,
-                source: (t.source as TaskSource) || existing.source,
-                result: (t.result as Record<string, unknown>) || existing.result,
-              });
-            } else {
-              // New task from server (external or other tab)
-              merged.push({
-                id,
-                type: (t.type as TaskType) || 'unknown',
-                status: (t.status as TaskStatus) || 'pending',
-                title: (t.title as string) || '',
-                input: (t.input as string) || '',
-                source: (t.source as TaskSource) || 'agent',
-                createdAt: (t.createdAt as string) || new Date().toISOString(),
-                events: [],
-                eventsLoaded: false,
-                currentInteraction: null,
-                result: (t.result as Record<string, unknown>) || null,
-                lastViewedEventCount: 0,
-              });
-            }
-            knownTaskIdsRef.current.add(id);
-          }
-
-          return merged;
-        });
-      })
-      .catch(() => {});
-  }
-
+  // Task list polling — 5s interval for real-time task inbox
   useEffect(() => {
-    loadTasks();
-    // Poll for new external tasks every 10 seconds
-    const interval = setInterval(loadTasks, 10000);
+    function pollTasks() {
+      fetch('/api/tasks')
+        .then((r) => r.json())
+        .then((data) => {
+          if (!Array.isArray(data)) return;
+          if (data.length > 0) setShowWelcome(false);
+
+          setTasks((prev) => {
+            const prevMap = new Map(prev.map((t) => [t.id, t]));
+            const merged: TaskState[] = [];
+            const currentActiveId = activeTaskIdRef.current;
+
+            for (const t of data as Record<string, unknown>[]) {
+              const id = t.id as string;
+              const serverUpdatedAt = (t.updatedAt as string) || '';
+              const existing = prevMap.get(id);
+
+              if (existing) {
+                // For activeTask: only update summary-level fields, preserve events
+                const isActive = id === currentActiveId;
+                const hasServerUpdate = serverUpdatedAt > existing.updatedAt;
+
+                merged.push({
+                  ...existing,
+                  type: (t.type as TaskType) || existing.type,
+                  status: isActive ? existing.status : ((t.status as TaskStatus) || existing.status),
+                  title: (t.title as string) || existing.title,
+                  source: (t.source as TaskSource) || existing.source,
+                  updatedAt: serverUpdatedAt || existing.updatedAt,
+                  result: isActive ? existing.result : ((t.result as Record<string, unknown>) || existing.result),
+                  // Mark unread if server updated and not currently viewing
+                  lastSeenUpdatedAt: isActive
+                    ? serverUpdatedAt || existing.lastSeenUpdatedAt
+                    : existing.lastSeenUpdatedAt,
+                });
+              } else {
+                // Brand new task (external or from another session)
+                const now = new Date().toISOString();
+                merged.push({
+                  id,
+                  type: (t.type as TaskType) || 'unknown',
+                  status: (t.status as TaskStatus) || 'pending',
+                  title: (t.title as string) || '',
+                  input: (t.input as string) || '',
+                  source: (t.source as TaskSource) || 'agent',
+                  createdAt: (t.createdAt as string) || now,
+                  updatedAt: serverUpdatedAt || now,
+                  events: [],
+                  eventsLoaded: false,
+                  currentInteraction: null,
+                  result: (t.result as Record<string, unknown>) || null,
+                  lastViewedEventCount: 0,
+                  // New tasks start as "unread"
+                  lastSeenUpdatedAt: '',
+                });
+              }
+            }
+
+            // Auto-select if no active task and new tasks appeared
+            if (!currentActiveId && merged.length > 0) {
+              const firstActive = merged.find(
+                (t) => t.status === 'interacting' || t.status === 'structuring'
+              );
+              if (firstActive) {
+                setActiveTaskId(firstActive.id);
+              }
+            }
+
+            return merged;
+          });
+        })
+        .catch(() => {});
+    }
+
+    pollTasks();
+    const interval = setInterval(pollTasks, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -191,7 +230,11 @@ export default function AgentPage() {
   useEffect(() => {
     if (!activeTaskId) return;
     setTasks((prev) =>
-      prev.map((t) => t.id === activeTaskId ? { ...t, lastViewedEventCount: t.events.length } : t)
+      prev.map((t) =>
+        t.id === activeTaskId
+          ? { ...t, lastViewedEventCount: t.events.length, lastSeenUpdatedAt: t.updatedAt }
+          : t
+      )
     );
   }, [activeTaskId]);
 
@@ -220,16 +263,16 @@ export default function AgentPage() {
         if (detailData && !detailData.error) {
           newTask = parseTaskFromAPI(detailData);
         } else {
+          const now = new Date().toISOString();
           newTask = {
             id: data.taskId, type: data.type || 'unknown', status: 'pending',
             title: input.slice(0, 50), input, source: 'agent',
-            createdAt: new Date().toISOString(),
+            createdAt: now, updatedAt: now,
             events: [], eventsLoaded: false, currentInteraction: null, result: null,
-            lastViewedEventCount: 0,
+            lastViewedEventCount: 0, lastSeenUpdatedAt: now,
           };
         }
 
-        knownTaskIdsRef.current.add(data.taskId);
         setTasks((prev) => [newTask, ...prev]);
         setActiveTaskId(data.taskId);
       }
@@ -303,7 +346,7 @@ export default function AgentPage() {
               tasks={tasks.map((t) => ({
                 id: t.id, type: t.type, status: t.status, title: t.title,
                 createdAt: t.createdAt, summary: getTaskSummary(t),
-                hasUnread: t.events.length > t.lastViewedEventCount,
+                hasUnread: t.updatedAt > t.lastSeenUpdatedAt,
                 source: t.source,
               }))}
               activeTaskId={activeTaskId}
