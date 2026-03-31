@@ -456,8 +456,41 @@ export function TaskCanvas({
               ) : null}
 
               {isGenericInteraction ? (
-                <div className="animate-flow-in p-4 rounded-xl border border-accent/20 bg-accent/5">
-                  <InteractionPanel interaction={currentInteraction!} onSubmit={onInteractionSubmit} />
+                <div className="animate-flow-in space-y-3">
+                  {/* AI 质问—显示在聊天气泡里 */}
+                  <p className="text-sm text-content-primary leading-relaxed">
+                    {currentInteraction!.question}
+                  </p>
+                  {/* single_choice / yes_no — 行内 chip 选项，点击即提交 */}
+                  {(currentInteraction!.type === 'single_choice') && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {(currentInteraction as import('@/types/interaction').SingleChoiceInteraction).options.map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => onInteractionSubmit(currentInteraction!.stepId, opt.value)}
+                          className="px-4 py-1.5 rounded-full border border-border text-sm text-content-primary hover:bg-surface-tertiary hover:border-accent transition-colors"
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {(currentInteraction!.type === 'yes_no') && (
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={() => onInteractionSubmit(currentInteraction!.stepId, true)}
+                        className="px-5 py-1.5 rounded-full border border-border text-sm text-content-primary hover:bg-surface-tertiary hover:border-accent transition-colors"
+                      >是</button>
+                      <button
+                        onClick={() => onInteractionSubmit(currentInteraction!.stepId, false)}
+                        className="px-5 py-1.5 rounded-full border border-border text-sm text-content-primary hover:bg-surface-tertiary hover:border-accent transition-colors"
+                      >否</button>
+                    </div>
+                  )}
+                  {/* text_input — 提示用户用底部输入框回复 */}
+                  {(currentInteraction!.type === 'text_input' || currentInteraction!.type === 'confirm') && (
+                    <p className="text-xs text-content-tertiary mt-1">请在下方输入框回复↓</p>
+                  )}
                 </div>
               ) : null}
 
@@ -842,10 +875,62 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     );
   }
 
+  // Image result — Leonardo / any image tool
+  if (resultType === 'image' || data.imageUrl || data.image_url) {
+    const imgUrl = (data.imageUrl || data.image_url || data.url) as string;
+    const imgList = (data.images as string[]) || (imgUrl ? [imgUrl] : []);
+    return (
+      <ResultContainer title="图片已经生成好了，你看一下">
+        <div className="grid gap-3" style={{ gridTemplateColumns: imgList.length > 1 ? 'repeat(2, 1fr)' : '1fr' }}>
+          {imgList.map((url, i) => (
+            <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+              className="block rounded-xl overflow-hidden border border-border hover:opacity-90 transition-opacity">
+              <img src={url} alt={`生成图片 ${i + 1}`} className="w-full h-auto object-cover" loading="lazy" />
+            </a>
+          ))}
+          {imgList.length === 0 && (
+            <p className="text-sm text-content-tertiary">图片链接暂时不可用</p>
+          )}
+        </div>
+        {imgList.length > 0 && (
+          <a href={imgList[0]} target="_blank" rel="noopener noreferrer"
+            className="text-xs text-accent hover:underline mt-1 inline-block">在新标签页打开原图</a>
+        )}
+      </ResultContainer>
+    );
+  }
+  // Video result — Minimax / Akool / any video tool
+  if (resultType === 'video' || data.videoUrl || data.video_url) {
+    const vidUrl = (data.videoUrl || data.video_url || data.url) as string;
+    const coverUrl = (data.coverUrl || data.cover_url || data.thumbnail) as string | undefined;
+    return (
+      <ResultContainer title="视频已经生成好了，你看一下">
+        {vidUrl ? (
+          <div className="rounded-xl overflow-hidden border border-border bg-surface-tertiary">
+            <video src={vidUrl} poster={coverUrl} controls preload="metadata"
+              className="w-full max-h-[360px] object-contain" />
+            <div className="px-4 py-2 flex items-center justify-between">
+              <span className="text-xs text-content-tertiary">视频已生成</span>
+              <a href={vidUrl} target="_blank" rel="noopener noreferrer" download
+                className="text-xs text-accent hover:underline">下载视频</a>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 rounded-xl bg-surface-tertiary border border-border text-sm text-content-tertiary">
+            视频链接暂时不可用，请稍后刷新查看
+          </div>
+        )}
+      </ResultContainer>
+    );
+  }
+  // Fallback — friendly message, not raw JSON
+  const fallbackContent = (data.content || data.summary || data.text || data.message) as string | undefined;
   return (
     <ResultContainer title="已经帮你完成了，你看一下结果">
       <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
-        <pre className="text-xs text-content-secondary whitespace-pre-wrap font-sans">{JSON.stringify(data, null, 2)}</pre>
+        <p className="text-sm text-content-secondary whitespace-pre-wrap leading-relaxed">
+          {fallbackContent || '任务已完成，但结果格式暂不支持直接展示。'}
+        </p>
       </div>
     </ResultContainer>
   );

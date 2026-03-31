@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Spinner } from '@/components/ui/Spinner';
+import { NavHeader } from '@/components/NavHeader';
 
 interface Product {
   code: string;
@@ -104,16 +105,7 @@ export default function BillingPage() {
 
   return (
     <div className="min-h-[100dvh] bg-surface-primary">
-      <header className="flex items-center justify-between px-4 md:px-6 h-11 border-b border-border/50">
-        <div className="flex items-center gap-1">
-          <span className="text-accent font-semibold text-sm">ORANGE</span>
-          <span className="text-content-primary font-semibold text-sm">BENCH</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <a href="/tasks" className="text-xs text-content-tertiary hover:text-accent transition-colors">任务</a>
-          <a href="/dashboard" className="text-xs text-content-tertiary hover:text-accent transition-colors">决策台</a>
-        </div>
-      </header>
+      <NavHeader />
 
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 space-y-8">
         {/* Current status */}

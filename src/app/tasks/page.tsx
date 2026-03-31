@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Spinner } from '@/components/ui/Spinner';
+import { NavHeader } from '@/components/NavHeader';
 
 interface TaskItem {
   id: string;
@@ -40,17 +41,7 @@ export default function MyTasksPage() {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-surface-primary">
-      <header className="flex items-center justify-between px-4 md:px-6 h-11 border-b border-border/50 flex-shrink-0">
-        <div className="flex items-center gap-1">
-          <span className="text-accent font-semibold text-sm">ORANGE</span>
-          <span className="text-content-primary font-semibold text-sm">BENCH</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <a href="/billing" className="text-xs text-content-tertiary hover:text-accent transition-colors">充值</a>
-          <a href="/dashboard" className="text-xs text-content-tertiary hover:text-accent transition-colors">决策台</a>
-          <a href="/review" className="text-xs text-content-tertiary hover:text-accent transition-colors">审核</a>
-        </div>
-      </header>
+      <NavHeader />
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="max-w-3xl mx-auto px-4 md:px-0 py-6">

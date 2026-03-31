@@ -253,13 +253,19 @@ export default function AgentPage() {
           <span className="ob-header-brand-t">BENCH</span>
         </a>
         <div className="ob-header-right">
+          <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {[{href:'/dashboard',label:'决策台'},{href:'/tasks',label:'任务'},{href:'/review',label:'审核'}].map(({href,label}) => (
+              <a key={href} href={href} style={{ fontSize:12, color:'var(--text-faint)', textDecoration:'none', padding:'3px 8px', borderRadius:6, transition:'color 0.15s' }}
+                onMouseEnter={e=>(e.currentTarget.style.color='var(--accent)')} onMouseLeave={e=>(e.currentTarget.style.color='var(--text-faint)')}>{label}</a>
+            ))}
+          </nav>
           {quota && <span className="ob-header-plan">{quota.plan || 'Free'}</span>}
           {quota && (
             <span className={`ob-header-credits ${quota.credits < 20 ? 'ob-header-credits-low' : ''}`}>
               {quota.credits} credits
             </span>
           )}
-          <a href="/billing" className="ob-header-topup">充值</a>
+          <a href="/billing" className="ob-header-topup">充値</a>
           <div className="ob-header-avatar">U</div>
         </div>
       </header>
@@ -345,9 +351,24 @@ export default function AgentPage() {
               {/* Fixed bottom input */}
               <div className="ob-input-area agent-input-area">
                 <AgentInput
-                  onSubmit={input => handleSubmit(input)}
-                  disabled={isSubmitting}
-                  placeholder="继续说，我帮你接着做..."
+                  onSubmit={input => {
+                    // 如果当前任务处于文本输入交互态，底部输入框回复就是交互回复
+                    const ci = activeTask?.currentInteraction;
+                    if (ci && activeTask?.status === 'interacting' &&
+                      (ci.type === 'text_input' || ci.type === 'confirm')) {
+                      handleInteractionSubmit(ci.stepId, input);
+                    } else {
+                      handleSubmit(input);
+                    }
+                  }}
+                  disabled={isSubmitting || interactingTaskId === activeTask?.id}
+                  placeholder={
+                    activeTask?.currentInteraction &&
+                    activeTask?.status === 'interacting' &&
+                    (activeTask.currentInteraction.type === 'text_input' || activeTask.currentInteraction.type === 'confirm')
+                      ? '回复上面的问题...'
+                      : '继续说，我帮你接着做...'
+                  }
                 />
                 {isSubmitting && (
                   <div className="agent-submitting-hint">

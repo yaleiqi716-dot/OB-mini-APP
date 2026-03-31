@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { NavHeader } from '@/components/NavHeader';
 
 interface Summary {
   total: number;
@@ -26,34 +27,18 @@ export default function DashboardPage() {
 
   if (!data) {
     return (
-      <div className="h-screen bg-surface-primary flex items-center justify-center">
-        <p className="text-content-tertiary text-sm">加载中...</p>
+      <div className="h-screen bg-surface-primary flex flex-col">
+        <NavHeader />
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-content-tertiary text-sm">加载中...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-surface-primary">
-      <header className="flex items-center justify-between px-6 h-12 border-b border-border/50">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            <span className="text-accent font-semibold text-sm">ORANGE</span>
-            <span className="text-content-primary font-semibold text-sm">BENCH</span>
-          </div>
-          <span className="text-xs text-content-tertiary">决策台</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/tasks" className="text-xs text-content-tertiary hover:text-accent transition-colors">
-            任务
-          </Link>
-          <Link href="/billing" className="text-xs text-content-tertiary hover:text-accent transition-colors">
-            充值
-          </Link>
-          <Link href="/review" className="text-xs text-accent hover:text-accent-hover transition-colors">
-            审核
-          </Link>
-        </div>
-      </header>
+      <NavHeader />
 
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Stats */}
