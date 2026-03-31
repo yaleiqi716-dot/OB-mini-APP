@@ -15,16 +15,19 @@ export interface ManusTaskParams {
   context?: string;
 }
 
-export interface ManusResult {
+export interface ManusCreateResult {
   taskId: string;
-  status: string;
-  output: Record<string, unknown> | null;
 }
 
-export async function executeBrowserTask(params: ManusTaskParams): Promise<ManusResult> {
+export interface ManusPollResult {
+  status: 'processing' | 'complete' | 'failed';
+  output: Record<string, unknown> | null;
+  error?: string;
+}
+
+export async function createBrowserTask(params: ManusTaskParams): Promise<ManusCreateResult> {
   const { apiKey, apiUrl } = getConfig();
 
-  // Step 1: Create task
   const createRes = await fetch(`${apiUrl}/tasks`, {
     method: 'POST',
     headers: {
@@ -45,43 +48,46 @@ export async function executeBrowserTask(params: ManusTaskParams): Promise<Manus
     throw new Error(`Manus 任务创建失败 (${createRes.status})`);
   }
 
-  const createData = await createRes.json();
-  const taskId = createData.task_id || createData.id;
+  const data = await createRes.json();
+  const taskId = data.task_id || data.id;
   if (!taskId) {
     throw new Error('Manus 未返回 task_id');
   }
 
-  // Step 2: Poll for result (max 120s)
-  for (let i = 0; i < 24; i++) {
-    await new Promise(r => setTimeout(r, 5000));
+  return { taskId };
+}
 
-    const pollRes = await fetch(`${apiUrl}/tasks/${taskId}`, {
-      headers: {
-        'accept': 'application/json',
-        'API_KEY': apiKey,
-      },
-    });
+export async function pollBrowserTask(taskId: string): Promise<ManusPollResult> {
+  const { apiKey, apiUrl } = getConfig();
 
-    if (!pollRes.ok) continue;
-    const pollData = await pollRes.json();
-    const status = pollData.status || pollData.state;
+  const pollRes = await fetch(`${apiUrl}/tasks/${taskId}`, {
+    headers: {
+      'accept': 'application/json',
+      'API_KEY': apiKey,
+    },
+  });
 
-    if (status === 'completed' || status === 'done' || status === 'success') {
-      return {
-        taskId,
-        status: 'complete',
-        output: pollData.output || pollData.result || pollData,
-      };
-    }
-
-    if (status === 'failed' || status === 'error') {
-      throw new Error(pollData.error || pollData.message || 'Manus 任务执行失败');
-    }
+  if (!pollRes.ok) {
+    return { status: 'processing', output: null };
   }
 
-  return {
-    taskId,
-    status: 'processing',
-    output: null,
-  };
+  const data = await pollRes.json();
+  const status = data.status || data.state;
+
+  if (status === 'completed' || status === 'done' || status === 'success') {
+    return {
+      status: 'complete',
+      output: data.output || data.result || data,
+    };
+  }
+
+  if (status === 'failed' || status === 'error') {
+    return {
+      status: 'failed',
+      output: null,
+      error: data.error || data.message || 'Manus 任务执行失败',
+    };
+  }
+
+  return { status: 'processing', output: null };
 }

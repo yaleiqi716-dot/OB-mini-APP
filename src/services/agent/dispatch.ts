@@ -1,11 +1,20 @@
 import { RouterDecision, DispatchResult } from '@/types/agent';
 import { chatCompletion } from '@/lib/openrouter';
 import { braveSearch } from '@/services/tools/brave';
-import { generateImage } from '@/services/tools/leonardo';
-import { generateVideo } from '@/services/tools/minimax';
-import { generateAvatarVideo } from '@/services/tools/akool';
+import { createImage } from '@/services/tools/leonardo';
+import { createVideo } from '@/services/tools/minimax';
+import { createAvatarVideo } from '@/services/tools/akool';
 import { triggerAutomation } from '@/services/tools/zapier';
-import { executeBrowserTask } from '@/services/tools/manus';
+import { createBrowserTask } from '@/services/tools/manus';
+
+// Async intents: these only create a job and return immediately.
+// The media-job-poller picks up results later.
+export const ASYNC_INTENTS = new Set(['image', 'video', 'avatar_video', 'browser_task']);
+
+export interface AsyncJobInfo {
+  engine: string;
+  jobId: string;
+}
 
 export async function dispatch(decision: RouterDecision, originalInput: string): Promise<DispatchResult> {
   const { intent, toolPayload } = decision;
@@ -49,6 +58,8 @@ export async function dispatch(decision: RouterDecision, originalInput: string):
   }
 }
 
+// ---- Synchronous handlers (complete in worker) ----
+
 async function handleText(payload: Record<string, unknown>, originalInput: string): Promise<DispatchResult> {
   const prompt = String(payload.prompt || originalInput);
   const result = await chatCompletion(
@@ -70,7 +81,6 @@ async function handleText(payload: Record<string, unknown>, originalInput: strin
 
 async function handleSearch(payload: Record<string, unknown>, originalInput: string): Promise<DispatchResult> {
   const query = String(payload.query || originalInput);
-
   const searchResults = await braveSearch(query);
 
   const context = searchResults.map((r, i) => `[${i + 1}] ${r.title}\n${r.description}\n${r.url}`).join('\n\n');
@@ -91,49 +101,6 @@ async function handleSearch(payload: Record<string, unknown>, originalInput: str
   };
 }
 
-async function handleImage(payload: Record<string, unknown>): Promise<DispatchResult> {
-  const prompt = String(payload.prompt || '');
-  const style = String(payload.style || '');
-  const result = await generateImage(prompt, style);
-
-  return {
-    success: true,
-    intent: 'image',
-    engine: 'leonardo',
-    data: { type: 'image', ...result },
-    message: '图片生成完成',
-  };
-}
-
-async function handleVideo(payload: Record<string, unknown>): Promise<DispatchResult> {
-  const topic = String(payload.topic || payload.prompt || '');
-  const duration = Number(payload.duration) || 30;
-  const style = String(payload.style || '');
-  const result = await generateVideo(topic, duration, style);
-
-  return {
-    success: true,
-    intent: 'video',
-    engine: 'minimax',
-    data: { type: 'video', ...result },
-    message: result.videoUrl ? '视频已生成' : '视频正在生成中，请稍候查看',
-  };
-}
-
-async function handleAvatarVideo(payload: Record<string, unknown>): Promise<DispatchResult> {
-  const script = String(payload.script || payload.prompt || '');
-  const avatarStyle = String(payload.avatarStyle || 'professional');
-  const result = await generateAvatarVideo(script, avatarStyle);
-
-  return {
-    success: true,
-    intent: 'avatar_video',
-    engine: 'akool',
-    data: { type: 'avatar_video', ...result },
-    message: result.videoUrl ? '数字人视频已生成' : '数字人视频正在生成中',
-  };
-}
-
 async function handleAutomation(payload: Record<string, unknown>): Promise<DispatchResult> {
   const action = String(payload.action || '');
   const result = await triggerAutomation(action, payload);
@@ -147,18 +114,62 @@ async function handleAutomation(payload: Record<string, unknown>): Promise<Dispa
   };
 }
 
+// ---- Async handlers (create job only, return immediately) ----
+
+async function handleImage(payload: Record<string, unknown>): Promise<DispatchResult> {
+  const prompt = String(payload.prompt || '');
+  const style = String(payload.style || '');
+  const result = await createImage(prompt, style);
+
+  return {
+    success: true,
+    intent: 'image',
+    engine: 'leonardo',
+    data: { type: 'image', _async: true, jobId: result.generationId },
+    message: '图片正在生成中...',
+  };
+}
+
+async function handleVideo(payload: Record<string, unknown>): Promise<DispatchResult> {
+  const topic = String(payload.topic || payload.prompt || '');
+  const duration = Number(payload.duration) || 30;
+  const style = String(payload.style || '');
+  const result = await createVideo(topic, duration, style);
+
+  return {
+    success: true,
+    intent: 'video',
+    engine: 'minimax',
+    data: { type: 'video', _async: true, jobId: result.jobId },
+    message: '视频正在生成中...',
+  };
+}
+
+async function handleAvatarVideo(payload: Record<string, unknown>): Promise<DispatchResult> {
+  const script = String(payload.script || payload.prompt || '');
+  const avatarStyle = String(payload.avatarStyle || 'professional');
+  const result = await createAvatarVideo(script, avatarStyle);
+
+  return {
+    success: true,
+    intent: 'avatar_video',
+    engine: 'akool',
+    data: { type: 'avatar_video', _async: true, jobId: result.jobId },
+    message: '数字人视频正在生成中...',
+  };
+}
+
 async function handleBrowserTask(payload: Record<string, unknown>, originalInput: string): Promise<DispatchResult> {
   const prompt = String(payload.instruction || payload.task || payload.prompt || originalInput);
   const url = payload.url ? String(payload.url) : undefined;
   const context = payload.context ? String(payload.context) : undefined;
-
-  const result = await executeBrowserTask({ prompt, url, context });
+  const result = await createBrowserTask({ prompt, url, context });
 
   return {
     success: true,
     intent: 'browser_task',
     engine: 'manus',
-    data: { type: 'browser_task', taskId: result.taskId, status: result.status, output: result.output },
-    message: result.output ? '浏览器任务已完成' : '浏览器任务执行中，请稍候查看',
+    data: { type: 'browser_task', _async: true, jobId: result.taskId },
+    message: '浏览器任务已启动...',
   };
 }

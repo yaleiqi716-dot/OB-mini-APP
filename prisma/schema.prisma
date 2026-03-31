@@ -40,6 +40,8 @@ model Task {
   priority      Int         @default(0)
   assigneeId     String?
   businessStatus String  @default("assigned")
+  externalJobId  String?
+  externalEngine String?
   userId        String?
   user          User?       @relation(fields: [userId], references: [id])
   createdAt     DateTime    @default(now())

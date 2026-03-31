@@ -8,13 +8,17 @@ function getApiKey(): string {
   return key;
 }
 
-export interface VideoResult {
+export interface VideoCreateResult {
   jobId: string;
-  status: string;
-  videoUrl: string | null;
 }
 
-export async function generateVideo(topic: string, duration: number, style?: string): Promise<VideoResult> {
+export interface VideoPollResult {
+  status: 'processing' | 'complete' | 'failed';
+  videoUrl: string | null;
+  error?: string;
+}
+
+export async function createVideo(topic: string, duration: number, style?: string): Promise<VideoCreateResult> {
   const apiKey = getApiKey();
 
   const prompt = style
@@ -27,10 +31,7 @@ export async function generateVideo(topic: string, duration: number, style?: str
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model: 'video-01',
-      prompt,
-    }),
+    body: JSON.stringify({ model: 'video-01', prompt }),
   });
 
   if (!res.ok) {
@@ -45,39 +46,36 @@ export async function generateVideo(topic: string, duration: number, style?: str
     throw new Error('Minimax 未返回 task_id');
   }
 
-  // Poll for result (max 120s)
-  for (let i = 0; i < 24; i++) {
-    await new Promise(r => setTimeout(r, 5000));
+  return { jobId: taskId };
+}
 
-    const pollRes = await fetch(`${MINIMAX_API_URL}/query/video_generation?task_id=${taskId}`, {
-      headers: { 'Authorization': `Bearer ${apiKey}` },
-    });
+export async function pollVideo(jobId: string): Promise<VideoPollResult> {
+  const apiKey = getApiKey();
 
-    if (!pollRes.ok) continue;
-    const pollData = await pollRes.json();
+  const pollRes = await fetch(`${MINIMAX_API_URL}/query/video_generation?task_id=${jobId}`, {
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+  });
 
-    if (pollData.status === 'Success' && pollData.file_id) {
-      // Get download URL
-      const fileRes = await fetch(`${MINIMAX_API_URL}/files/retrieve?file_id=${pollData.file_id}`, {
-        headers: { 'Authorization': `Bearer ${apiKey}` },
-      });
-      const fileData = await fileRes.json();
-
-      return {
-        jobId: taskId,
-        status: 'complete',
-        videoUrl: fileData.file?.download_url || null,
-      };
-    }
-
-    if (pollData.status === 'Failed') {
-      throw new Error('视频生成失败');
-    }
+  if (!pollRes.ok) {
+    return { status: 'processing', videoUrl: null };
   }
 
-  return {
-    jobId: taskId,
-    status: 'processing',
-    videoUrl: null,
-  };
+  const data = await pollRes.json();
+
+  if (data.status === 'Success' && data.file_id) {
+    const fileRes = await fetch(`${MINIMAX_API_URL}/files/retrieve?file_id=${data.file_id}`, {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+    });
+    const fileData = await fileRes.json();
+    return {
+      status: 'complete',
+      videoUrl: fileData.file?.download_url || null,
+    };
+  }
+
+  if (data.status === 'Failed') {
+    return { status: 'failed', videoUrl: null, error: '视频生成失败' };
+  }
+
+  return { status: 'processing', videoUrl: null };
 }

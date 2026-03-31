@@ -8,16 +8,19 @@ function getApiKey(): string {
   return key;
 }
 
-export interface ImageResult {
+export interface ImageCreateResult {
   generationId: string;
-  imageUrl: string | null;
-  status: string;
 }
 
-export async function generateImage(prompt: string, style?: string): Promise<ImageResult> {
+export interface ImagePollResult {
+  status: 'processing' | 'complete' | 'failed';
+  imageUrl: string | null;
+  error?: string;
+}
+
+export async function createImage(prompt: string, style?: string): Promise<ImageCreateResult> {
   const apiKey = getApiKey();
 
-  // Step 1: Create generation
   const createRes = await fetch(`${LEONARDO_API_URL}/generations`, {
     method: 'POST',
     headers: {
@@ -29,7 +32,7 @@ export async function generateImage(prompt: string, style?: string): Promise<Ima
       num_images: 1,
       width: 1024,
       height: 1024,
-      modelId: 'b24e16ff-06e3-43eb-8d33-4c8c0f877eb3', // Leonardo Creative
+      modelId: 'b24e16ff-06e3-43eb-8d33-4c8c0f877eb3',
     }),
   });
 
@@ -39,37 +42,36 @@ export async function generateImage(prompt: string, style?: string): Promise<Ima
     throw new Error(`图片生成请求失败 (${createRes.status})`);
   }
 
-  const createData = await createRes.json();
-  const generationId = createData.sdGenerationJob?.generationId;
+  const data = await createRes.json();
+  const generationId = data.sdGenerationJob?.generationId;
   if (!generationId) {
     throw new Error('Leonardo 未返回 generationId');
   }
 
-  // Step 2: Poll for result (max 60s)
-  for (let i = 0; i < 12; i++) {
-    await new Promise(r => setTimeout(r, 5000));
+  return { generationId };
+}
 
-    const pollRes = await fetch(`${LEONARDO_API_URL}/generations/${generationId}`, {
-      headers: { 'Authorization': `Bearer ${apiKey}` },
-    });
+export async function pollImage(generationId: string): Promise<ImagePollResult> {
+  const apiKey = getApiKey();
 
-    if (!pollRes.ok) continue;
-    const pollData = await pollRes.json();
-    const gen = pollData.generations_by_pk;
+  const pollRes = await fetch(`${LEONARDO_API_URL}/generations/${generationId}`, {
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+  });
 
-    if (gen?.status === 'COMPLETE' && gen.generated_images?.length > 0) {
-      return {
-        generationId,
-        imageUrl: gen.generated_images[0].url,
-        status: 'complete',
-      };
-    }
+  if (!pollRes.ok) {
+    return { status: 'processing', imageUrl: null };
   }
 
-  // Return pending if not done in 60s
-  return {
-    generationId,
-    imageUrl: null,
-    status: 'pending',
-  };
+  const data = await pollRes.json();
+  const gen = data.generations_by_pk;
+
+  if (gen?.status === 'COMPLETE' && gen.generated_images?.length > 0) {
+    return { status: 'complete', imageUrl: gen.generated_images[0].url };
+  }
+
+  if (gen?.status === 'FAILED') {
+    return { status: 'failed', imageUrl: null, error: '图片生成失败' };
+  }
+
+  return { status: 'processing', imageUrl: null };
 }

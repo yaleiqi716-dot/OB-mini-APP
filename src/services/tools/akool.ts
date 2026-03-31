@@ -8,13 +8,17 @@ function getApiKey(): string {
   return key;
 }
 
-export interface AvatarVideoResult {
+export interface AvatarCreateResult {
   jobId: string;
-  status: string;
-  videoUrl: string | null;
 }
 
-export async function generateAvatarVideo(script: string, avatarStyle: string): Promise<AvatarVideoResult> {
+export interface AvatarPollResult {
+  status: 'processing' | 'complete' | 'failed';
+  videoUrl: string | null;
+  error?: string;
+}
+
+export async function createAvatarVideo(script: string, avatarStyle: string): Promise<AvatarCreateResult> {
   const apiKey = getApiKey();
 
   const res = await fetch(`${AKOOL_API_URL}/video/create`, {
@@ -42,33 +46,29 @@ export async function generateAvatarVideo(script: string, avatarStyle: string): 
     throw new Error('Akool 未返回 jobId');
   }
 
-  // Poll for result (max 120s)
-  for (let i = 0; i < 24; i++) {
-    await new Promise(r => setTimeout(r, 5000));
+  return { jobId };
+}
 
-    const pollRes = await fetch(`${AKOOL_API_URL}/video/detail?id=${jobId}`, {
-      headers: { 'Authorization': `Bearer ${apiKey}` },
-    });
+export async function pollAvatarVideo(jobId: string): Promise<AvatarPollResult> {
+  const apiKey = getApiKey();
 
-    if (!pollRes.ok) continue;
-    const pollData = await pollRes.json();
+  const pollRes = await fetch(`${AKOOL_API_URL}/video/detail?id=${jobId}`, {
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+  });
 
-    if (pollData.status === 3 && pollData.video_url) {
-      return {
-        jobId,
-        status: 'complete',
-        videoUrl: pollData.video_url,
-      };
-    }
-
-    if (pollData.status === 4) {
-      throw new Error('数字人视频生成失败');
-    }
+  if (!pollRes.ok) {
+    return { status: 'processing', videoUrl: null };
   }
 
-  return {
-    jobId,
-    status: 'processing',
-    videoUrl: null,
-  };
+  const data = await pollRes.json();
+
+  if (data.status === 3 && data.video_url) {
+    return { status: 'complete', videoUrl: data.video_url };
+  }
+
+  if (data.status === 4) {
+    return { status: 'failed', videoUrl: null, error: '数字人视频生成失败' };
+  }
+
+  return { status: 'processing', videoUrl: null };
 }

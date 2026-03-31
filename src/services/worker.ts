@@ -1,25 +1,20 @@
-import { createTask, updateTaskStatus, emitLog, emitThinking, emitEvent, updateTaskType, updateTaskContext, completeTask, requestInteraction } from './task-manager';
-import { routeAndPlan } from './agent-router';
-import { planTasks } from './agent-planner';
-import { getWorkflow } from './workflows';
+import { updateTaskStatus, emitLog, emitThinking, emitEvent, updateTaskType, updateTaskContext, completeTask, requestInteraction } from './task-manager';
 import { checkUserConcurrency, executeWithBilling, InsufficientCreditsError } from './billing';
 import { estimateCost } from '@/lib/cost';
 import { prisma } from '@/lib/prisma';
 import { TaskType } from '@/types/task';
 import { routeIntent } from './agent/router';
-import { dispatch } from './agent/dispatch';
-
-import './workflows';
+import { dispatch, ASYNC_INTENTS } from './agent/dispatch';
 
 // ---- Concurrency control ----
 
 const MAX_CONCURRENT = 3;
-const TASK_TIMEOUT_MS = 120_000;
+const TASK_TIMEOUT_MS = 30_000; // 30s — async tools return immediately, no need for 120s
 
 let runningCount = 0;
 let workerInterval: ReturnType<typeof setInterval> | null = null;
 
-// ---- Atomic execution lock via updateMany ----
+// ---- Atomic execution lock ----
 
 async function acquireLock(taskId: string): Promise<boolean> {
   const result = await prisma.task.updateMany({
@@ -41,27 +36,21 @@ async function releaseLock(taskId: string) {
   }
 }
 
-// ---- Fetch next task from DB by priority ----
-
 async function fetchNextQueuedTask() {
-  const task = await prisma.task.findFirst({
+  return prisma.task.findFirst({
     where: { status: 'queued', isExecuting: false },
-    orderBy: [
-      { priority: 'desc' },
-      { createdAt: 'asc' },
-    ],
+    orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
   });
-  return task;
 }
 
-// ---- Core execution: Router → Dispatch or Legacy Workflow ----
+// ---- Single execution chain: Router → Dispatch → Tool ----
 
-async function executeTask(taskId: string, input: string, presetType?: string, userId?: string) {
+async function executeTask(taskId: string, input: string) {
   await updateTaskStatus(taskId, 'understanding');
   await emitLog(taskId, '正在分析任务...');
   await emitThinking(taskId, '我先帮你拆解一下需求...');
 
-  // Step 1: Agent Router — let ChatGPT decide the intent
+  // Step 1: Router — ChatGPT decides intent
   const decision = await routeIntent(input);
 
   await updateTaskContext(taskId, {
@@ -71,7 +60,7 @@ async function executeTask(taskId: string, input: string, presetType?: string, u
 
   console.log(`[WORKER] Task ${taskId} routed: intent=${decision.intent}, needsClarification=${decision.needsClarification}`);
 
-  // Step 2: If clarification needed, ask user
+  // Step 2: Clarification needed → ask user
   if (decision.needsClarification && decision.questions.length > 0) {
     await requestInteraction(taskId, {
       id: `clarify_${Date.now()}`,
@@ -84,20 +73,13 @@ async function executeTask(taskId: string, input: string, presetType?: string, u
     return;
   }
 
-  // Step 3: For legacy workflow types (ppt/email/proposal), keep existing workflow
-  const legacyWorkflowTypes = ['ppt', 'email', 'proposal', 'website', 'video'];
-  if (presetType && legacyWorkflowTypes.includes(presetType) && decision.intent === 'text') {
-    await executeLegacyWorkflow(taskId, input, presetType, userId);
-    return;
-  }
-
-  // Step 4: Use Agent Dispatch for all intents
+  // Step 3: Dispatch — all intents go through dispatch, no exceptions
   const intentType = decision.intent;
   const cost = estimateCost(intentType);
   await prisma.task.update({ where: { id: taskId }, data: { estimatedCost: cost } });
 
   const title = input.slice(0, 50);
-  await updateTaskType(taskId, (intentType === 'text' ? (presetType || 'unknown') : 'unknown') as TaskType, title);
+  await updateTaskType(taskId, 'unknown' as TaskType, title);
   await updateTaskContext(taskId, { executionStrategy: 'agent_dispatch', engine: intentType });
   await emitLog(taskId, `执行方式：${intentType}`);
   await updateTaskStatus(taskId, 'executing');
@@ -105,90 +87,36 @@ async function executeTask(taskId: string, input: string, presetType?: string, u
 
   const result = await dispatch(decision, input);
 
-  if (result.success) {
-    await completeTask(taskId, result.data, result.message);
-  } else {
+  if (!result.success) {
     const { failTask } = await import('./task-manager');
     await failTask(taskId, result.message || '执行失败');
+    return;
   }
+
+  // Step 4: Check if async (image/video/avatar_video/browser_task)
+  const isAsync = ASYNC_INTENTS.has(intentType) && result.data._async;
+
+  if (isAsync) {
+    // Store jobId on task — media-job-poller will pick it up
+    const jobId = String(result.data.jobId || '');
+    await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        externalJobId: jobId,
+        externalEngine: result.engine,
+      },
+    });
+    await emitLog(taskId, result.message);
+    // Task stays in "executing" — poller will complete it
+    console.log(`[WORKER] Task ${taskId} async job created: ${result.engine}/${jobId}`);
+    return;
+  }
+
+  // Synchronous result — complete immediately
+  await completeTask(taskId, result.data, result.message);
 }
 
-// ---- Legacy workflow path (ppt/email/proposal etc.) ----
-
-async function executeLegacyWorkflow(taskId: string, input: string, presetType: string, userId?: string) {
-  // Use planner for open-ended input
-  if (!presetType || presetType === 'unknown') {
-    const agentPlan = await planTasks(input);
-
-    if (agentPlan.tasks.length > 1) {
-      await emitLog(taskId, `拆解为 ${agentPlan.tasks.length} 个子任务`);
-      await updateTaskContext(taskId, { subtasks: agentPlan.tasks.map((t) => t.type) });
-
-      const subTaskIds: string[] = [];
-      for (const sub of agentPlan.tasks) {
-        const subTask = await createTask(sub.input, 'api', {
-          userId: userId || undefined,
-          estimatedCost: estimateCost(sub.type),
-        });
-        await prisma.task.update({
-          where: { id: subTask.id },
-          data: { type: sub.type, title: sub.input.slice(0, 50), priority: 0 },
-        });
-        await updateTaskStatus(subTask.id, 'queued');
-        await emitLog(subTask.id, `子任务：${sub.type}`);
-        subTaskIds.push(subTask.id);
-      }
-
-      await completeTask(taskId, {
-        type: 'orchestrator',
-        subtasks: subTaskIds,
-        plan: agentPlan.tasks,
-      }, `已拆解为 ${subTaskIds.length} 个子任务并开始执行`);
-      return;
-    }
-
-    presetType = agentPlan.tasks[0].type;
-    if (agentPlan.tasks[0].input !== input) {
-      input = agentPlan.tasks[0].input;
-    }
-  }
-
-  const plan = await routeAndPlan(input, presetType as TaskType | undefined);
-  await updateTaskType(taskId, plan.taskType, plan.title);
-
-  const cost = estimateCost(plan.taskType);
-  await prisma.task.update({ where: { id: taskId }, data: { estimatedCost: cost } });
-  await updateTaskContext(taskId, {
-    executionStrategy: plan.strategy,
-    model: plan.model,
-  });
-
-  await emitLog(taskId, `任务类型：${plan.taskType}`);
-
-  if (plan.strategy === 'workflow') {
-    const workflow = getWorkflow(plan.taskType);
-    if (!workflow) {
-      const { failTask } = await import('./task-manager');
-      await failTask(taskId, `暂不支持 "${plan.taskType}" 类型的任务`);
-      return;
-    }
-    await workflow.start({ taskId, input, context: {} });
-  } else {
-    await updateTaskStatus(taskId, 'executing');
-    await emitThinking(taskId, '我来帮你处理这个请求...');
-    const { chatCompletion } = await import('@/lib/openrouter');
-    const result = await chatCompletion(
-      [
-        { role: 'system', content: '你是一个专业的工作助手。根据用户需求直接给出完整、实用的回答。内容完整、专业、简洁。' },
-        { role: 'user', content: input },
-      ],
-      { temperature: 0.6, maxTokens: 4096 }
-    );
-    await completeTask(taskId, { type: 'direct', content: result.content }, '已帮你完成');
-  }
-}
-
-// ---- Process one task with lock + timeout + concurrency + billing ----
+// ---- Process one task ----
 
 async function processTask(task: { id: string; input: string; type: string; userId: string | null }) {
   if (task.userId) {
@@ -213,7 +141,7 @@ async function processTask(task: { id: string; input: string; type: string; user
     }
 
     const executeFn = async () => {
-      await executeTask(task.id, task.input, task.type !== 'unknown' ? task.type : undefined, task.userId || undefined);
+      await executeTask(task.id, task.input);
     };
 
     try {
@@ -252,14 +180,12 @@ async function processTask(task: { id: string; input: string; type: string; user
   }
 }
 
-// ---- Worker loop: poll DB, respect concurrency limit ----
+// ---- Worker loop ----
 
 async function workerLoop() {
   if (runningCount >= MAX_CONCURRENT) return;
-
   const task = await fetchNextQueuedTask();
   if (!task) return;
-
   processTask(task).catch(() => {});
 }
 
@@ -267,15 +193,8 @@ async function workerLoop() {
 
 async function recoverOrphanedTasks() {
   try {
-    await prisma.task.updateMany({
-      where: { processing: true },
-      data: { processing: false },
-    });
-    await prisma.task.updateMany({
-      where: { isExecuting: true },
-      data: { isExecuting: false },
-    });
-
+    await prisma.task.updateMany({ where: { processing: true }, data: { processing: false } });
+    await prisma.task.updateMany({ where: { isExecuting: true }, data: { isExecuting: false } });
     const queuedCount = await prisma.task.count({ where: { status: 'queued' } });
     if (queuedCount > 0) {
       console.log(`[WORKER] ${queuedCount} queued tasks found, will be picked up by polling`);
@@ -290,7 +209,6 @@ async function recoverOrphanedTasks() {
 export function startWorker(intervalMs = 1000) {
   if (workerInterval) return;
   console.log(`[WORKER] Started (polling every ${intervalMs}ms, max concurrent: ${MAX_CONCURRENT})`);
-
   recoverOrphanedTasks().catch(() => {});
   workerInterval = setInterval(workerLoop, intervalMs);
 }
