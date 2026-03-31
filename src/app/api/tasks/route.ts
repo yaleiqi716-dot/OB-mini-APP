@@ -61,7 +61,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value || 'demo-user';
+    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
+    if (!userId) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 });
+    }
     const estimatedType = body.type || 'unknown';
     const creditCheck = await checkCredits(userId, estimatedType);
     if (!creditCheck.allowed) {

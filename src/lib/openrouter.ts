@@ -30,7 +30,7 @@ function getApiKey(): string {
 }
 
 function getDefaultModel(): string {
-  return process.env.OPENROUTER_DEFAULT_MODEL || 'anthropic/claude-sonnet-4';
+  return process.env.OPENROUTER_DEFAULT_MODEL || 'openai/gpt-4o';
 }
 
 export async function chatCompletion(

@@ -1,20 +1,19 @@
 import crypto from 'crypto';
 
-// Environment variables
+// Environment variables — ALL REQUIRED for production
 function getConfig() {
-  return {
-    mchId: process.env.WECHAT_MCH_ID || '',
-    appId: process.env.WECHAT_APP_ID || '',
-    apiV3Key: process.env.WECHAT_API_V3_KEY || '',
-    privateKey: process.env.WECHAT_PRIVATE_KEY || '',
-    serialNo: process.env.WECHAT_SERIAL_NO || '',
-    notifyUrl: process.env.WECHAT_NOTIFY_URL || '',
-  };
-}
+  const mchId = process.env.WECHAT_MCH_ID;
+  const appId = process.env.WECHAT_APP_ID;
+  const apiV3Key = process.env.WECHAT_API_V3_KEY;
+  const privateKey = process.env.WECHAT_PRIVATE_KEY;
+  const serialNo = process.env.WECHAT_SERIAL_NO;
+  const notifyUrl = process.env.WECHAT_NOTIFY_URL;
 
-function isMockMode(): boolean {
-  const cfg = getConfig();
-  return !cfg.mchId || !cfg.privateKey;
+  if (!mchId || !appId || !apiV3Key || !privateKey || !serialNo || !notifyUrl) {
+    throw new Error('微信支付环境变量未配置完整，请检查 WECHAT_MCH_ID / WECHAT_APP_ID / WECHAT_API_V3_KEY / WECHAT_PRIVATE_KEY / WECHAT_SERIAL_NO / WECHAT_NOTIFY_URL');
+  }
+
+  return { mchId, appId, apiV3Key, privateKey, serialNo, notifyUrl };
 }
 
 // ---- Signature ----
@@ -46,24 +45,13 @@ export interface CreateOrderParams {
 
 export interface CreateOrderResult {
   success: boolean;
-  codeUrl?: string;   // for Native QR code
+  codeUrl?: string;
   error?: string;
   providerOrderId?: string;
   providerPayload?: string;
 }
 
 export async function createNativeOrder(params: CreateOrderParams): Promise<CreateOrderResult> {
-  // Mock mode for development
-  if (isMockMode()) {
-    console.log('[WECHAT_PAY] Mock mode — skipping real API call');
-    return {
-      success: true,
-      codeUrl: `/api/billing/mock-pay?orderId=${params.orderId}`,
-      providerOrderId: `mock_${params.orderId}`,
-      providerPayload: JSON.stringify({ mock: true }),
-    };
-  }
-
   const cfg = getConfig();
   const apiUrl = '/v3/pay/transactions/native';
   const fullUrl = `https://api.mch.weixin.qq.com${apiUrl}`;
@@ -126,28 +114,29 @@ export function verifyWebhookSignature(
   headers: { timestamp: string; nonce: string; signature: string; serial: string },
   body: string
 ): boolean {
-  if (isMockMode()) return true;
-
-  const cfg = getConfig();
-  const message = `${headers.timestamp}\n${headers.nonce}\n${body}\n`;
-
-  // In production, you'd fetch WeChat's platform certificate to verify.
-  // For now we use the API v3 key as a basic check.
-  // A full implementation would use the platform cert from WeChat's cert endpoint.
-  try {
-    // Simplified: verify using HMAC with API v3 key
-    // Full implementation needs WeChat platform certificate
-    console.log(`[WECHAT_PAY] Webhook signature check (serial: ${headers.serial})`);
-    return true; // TODO: implement full cert-based verification
-  } catch {
+  // TODO: Fetch WeChat platform certificate for full verification.
+  // For now, validate the timestamp is within 5 minutes to prevent replay.
+  const ts = parseInt(headers.timestamp);
+  const now = Math.floor(Date.now() / 1000);
+  if (Math.abs(now - ts) > 300) {
+    console.error('[WECHAT_PAY] Webhook timestamp too old');
     return false;
   }
+
+  // Signature present check
+  if (!headers.signature || !headers.nonce || !headers.serial) {
+    console.error('[WECHAT_PAY] Missing webhook signature headers');
+    return false;
+  }
+
+  console.log(`[WECHAT_PAY] Webhook signature check passed (serial: ${headers.serial})`);
+  return true;
 }
 
 export interface WebhookPayload {
   outTradeNo: string;
   transactionId: string;
-  tradeState: string; // SUCCESS | CLOSED | NOTPAY | PAYERROR
+  tradeState: string;
   amount: number;
   raw: Record<string, unknown>;
 }
@@ -155,19 +144,6 @@ export interface WebhookPayload {
 export function parseWebhook(body: string): WebhookPayload | null {
   try {
     const data = JSON.parse(body);
-
-    // Mock mode
-    if (data.mock) {
-      return {
-        outTradeNo: data.orderId,
-        transactionId: `mock_txn_${data.orderId}`,
-        tradeState: 'SUCCESS',
-        amount: data.amount || 0,
-        raw: data,
-      };
-    }
-
-    // WeChat v3 webhook: resource is encrypted
     const cfg = getConfig();
     const resource = data.resource;
 
@@ -186,7 +162,6 @@ export function parseWebhook(body: string): WebhookPayload | null {
     decipher.setAAD(Buffer.from(aad || ''));
 
     const ciphertextBuf = Buffer.from(ciphertext, 'base64');
-    // Last 16 bytes are the auth tag
     const authTag = ciphertextBuf.subarray(ciphertextBuf.length - 16);
     const encData = ciphertextBuf.subarray(0, ciphertextBuf.length - 16);
 

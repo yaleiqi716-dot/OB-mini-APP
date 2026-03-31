@@ -68,7 +68,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { type, data, userId: bodyUserId, input: directInput } = body;
 
-    const userId = bodyUserId || 'demo-user';
+    if (!bodyUserId) {
+      return NextResponse.json({ error: '缺少 userId' }, { status: 400 });
+    }
+    const userId = bodyUserId;
 
     // Resolve task type and input from event mapping or direct fields
     let taskType: TaskType;

@@ -139,9 +139,13 @@ async function executeTask(taskId: string, input: string, presetType?: string, u
     }
   };
 
-  const billingUserId = userId || 'demo-user';
+  if (!userId) {
+    const { failTask } = await import('./task-manager');
+    await failTask(taskId, '任务缺少用户信息，无法执行');
+    return;
+  }
   try {
-    await executeWithBilling(billingUserId, taskId, plan.taskType, executeFn);
+    await executeWithBilling(userId, taskId, plan.taskType, executeFn);
   } catch (err) {
     if (err instanceof InsufficientCreditsError) {
       await prisma.task.update({

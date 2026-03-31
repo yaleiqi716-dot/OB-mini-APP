@@ -70,7 +70,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '缺少 type 和 payload' }, { status: 400 });
     }
 
-    const userId = bodyUserId || 'demo-user';
+    if (!bodyUserId) {
+      return NextResponse.json({ error: '缺少 userId' }, { status: 400 });
+    }
+    const userId = bodyUserId;
     const taskType = EVENT_TYPE_MAP[evtType] || 'unknown';
     const taskInput = buildTaskInput(evtType, payload as Record<string, unknown>, title);
 

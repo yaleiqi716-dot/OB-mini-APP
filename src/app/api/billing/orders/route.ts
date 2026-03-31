@@ -3,7 +3,10 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   try {
-    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value || 'demo-user';
+    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
+    if (!userId) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 });
+    }
 
     const orders = await prisma.order.findMany({
       where: { userId },

@@ -141,28 +141,20 @@ export default function BillingPage() {
           </div>
         ) : null}
 
-        {/* QR code modal */}
+        {/* QR code payment */}
         {qrUrl ? (
           <div className="rounded-xl border border-accent/30 bg-accent/5 p-6 text-center space-y-4">
-            <div className="text-sm text-content-primary font-medium">请扫码支付</div>
-            {qrUrl.startsWith('/') ? (
-              // Mock mode: show as link
-              <div className="space-y-3">
-                <p className="text-xs text-content-tertiary">开发模式：点击下方链接模拟支付</p>
-                <a
-                  href={qrUrl}
-                  className="inline-block px-4 py-2 rounded-lg bg-accent text-white text-sm hover:bg-accent-hover transition-colors"
-                >
-                  模拟支付
-                </a>
-              </div>
-            ) : (
-              // Real mode: show QR code URL (use a QR library in production)
-              <div className="space-y-3">
-                <p className="text-xs text-content-tertiary break-all">{qrUrl}</p>
-                <p className="text-xs text-content-tertiary">请使用微信扫描上方二维码完成支付</p>
-              </div>
-            )}
+            <div className="text-sm text-content-primary font-medium">请使用微信扫码支付</div>
+            <div className="py-4">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}`}
+                alt="支付二维码"
+                className="mx-auto rounded-lg"
+                width={200}
+                height={200}
+              />
+            </div>
+            <p className="text-xs text-content-tertiary">打开微信 → 扫一扫 → 完成支付</p>
             <div className="flex items-center justify-center gap-2 text-xs text-content-tertiary">
               <Spinner size="sm" />
               <span>等待支付结果...</span>

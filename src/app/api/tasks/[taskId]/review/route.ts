@@ -32,7 +32,10 @@ export async function POST(
     }
 
     if (action === 'ai_optimize') {
-      const userId = task.userId || req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value || 'demo-user';
+      const userId = task.userId || req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
+      if (!userId) {
+        return NextResponse.json({ error: '未登录' }, { status: 401 });
+      }
 
       try {
         const optimizeResult = await executeWithBilling(userId, taskId, 'unknown', async () => {
