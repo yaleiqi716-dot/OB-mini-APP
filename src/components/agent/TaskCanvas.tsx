@@ -478,7 +478,26 @@ export function TaskCanvas({
 
               {mode === 'result' ? (
                 <div className="animate-flow-in">
-                  {result !== null ? (
+                  {result !== null && typeof credits === 'number' && credits <= 0 ? (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <div className="max-h-32 overflow-hidden opacity-60">
+                          <ResultView result={result} />
+                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-surface-primary" />
+                      </div>
+                      <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">🔒</span>
+                          <p className="text-sm font-medium text-amber-400">内容已生成（预览）</p>
+                        </div>
+                        <p className="text-xs text-content-tertiary">解锁完整结果需要额度</p>
+                        <a href="/billing" className="inline-block text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors">
+                          立即解锁
+                        </a>
+                      </div>
+                    </div>
+                  ) : result !== null ? (
                     <ResultView result={result} />
                   ) : (
                     <div className="space-y-2 pt-2">
@@ -562,19 +581,25 @@ export function TaskCanvas({
               {mode === 'blocked' ? (() => {
                 const payEvent = events.findLast((e) => e.type === 'payment_required');
                 const required = payEvent ? (payEvent.data.required as number) : 0;
+                const current = payEvent ? (payEvent.data.current as number) : 0;
                 return (
                   <div className="animate-flow-in p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
                     <p className="text-sm font-medium text-amber-400">余额不足，任务已暂停</p>
                     {required > 0 ? (
-                      <p className="text-xs text-content-tertiary">此任务需要 {required} 额度</p>
+                      <div className="text-xs text-content-tertiary space-y-1">
+                        <p>需要 <span className="text-amber-400 font-medium">{required}</span> credits</p>
+                        <p>当前余额 <span className="text-red-400 font-medium">{current}</span></p>
+                      </div>
                     ) : null}
                     <p className="text-xs text-content-tertiary">充值后任务将自动恢复执行</p>
-                    <button
-                      onClick={() => window.location.href = '/api/billing/create-order'}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors"
-                    >
-                      立即充值
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors">
+                        充值 ¥19（100 credits）
+                      </a>
+                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg border border-accent text-accent hover:bg-accent/10 transition-colors">
+                        充值 ¥79（500 credits）
+                      </a>
+                    </div>
                   </div>
                 );
               })() : null}
@@ -590,14 +615,14 @@ export function TaskCanvas({
                   <div className="animate-flow-in p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
                     <p className="text-sm text-amber-400">余额不足，任务已暂停</p>
                     <p className="text-xs text-content-tertiary">充值后任务将自动恢复执行</p>
-                    {onNewTask ? (
-                      <button
-                        onClick={() => window.location.href = '/api/billing/webhook?orderId=mock&mock=true'}
-                        className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors"
-                      >
-                        立即充值
-                      </button>
-                    ) : null}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors">
+                        充值 ¥19（100 credits）
+                      </a>
+                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg border border-accent text-accent hover:bg-accent/10 transition-colors">
+                        充值 ¥79（500 credits）
+                      </a>
+                    </div>
                   </div>
                 ) : (
                   <div className="animate-flow-in p-4 rounded-xl bg-red-500/10 border border-red-500/20">

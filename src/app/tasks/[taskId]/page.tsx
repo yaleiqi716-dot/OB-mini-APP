@@ -72,7 +72,7 @@ export default function TaskDetailPage() {
       if (!res.ok) {
         const errMsg = data.error || '执行失败';
         if (res.status === 403 && errMsg.includes('额度')) {
-          setAgentResult(`${errMsg}。[去充值](/billing)`);
+          setAgentResult(`CREDITS_ERROR:${errMsg}`);
         } else {
           setAgentResult(`错误：${errMsg}`);
         }
@@ -168,7 +168,19 @@ export default function TaskDetailPage() {
           </div>
 
           {/* Agent result */}
-          {agentResult ? (
+          {agentResult && agentResult.startsWith('CREDITS_ERROR:') ? (
+            <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-4 space-y-3">
+              <p className="text-sm text-amber-400">{agentResult.replace('CREDITS_ERROR:', '')}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors">
+                  充值 ¥19（100 credits）
+                </a>
+                <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg border border-accent text-accent hover:bg-accent/10 transition-colors">
+                  充值 ¥79（500 credits）
+                </a>
+              </div>
+            </div>
+          ) : agentResult ? (
             <div className="rounded-xl bg-surface-secondary border border-border/50 p-4">
               <div className="text-xs font-medium text-content-tertiary mb-2">AI 执行结果</div>
               <p className="text-content-primary text-sm">{agentResult}</p>

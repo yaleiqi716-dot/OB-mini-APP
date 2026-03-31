@@ -60,7 +60,12 @@ export default function ReviewPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(data.error || '操作失败');
+        if (res.status === 403 && (data.error || '').includes('额度')) {
+          showToast('额度不足，请先充值');
+          window.open('/billing', '_blank');
+        } else {
+          showToast(data.error || '操作失败');
+        }
         return;
       }
       if (action === 'feedback') showToast('已退回给员工修改');
