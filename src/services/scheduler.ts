@@ -1,7 +1,9 @@
 import { prisma } from '@/lib/prisma';
 import { createTask, updateTaskStatus, emitLog, emitEvent } from './task-manager';
-import { executeWithBilling, InsufficientCreditsError } from './billing';
+import { executeWithBilling, InsufficientCreditsError, getOrCreateUser } from './billing';
 import { estimateCost } from '@/lib/cost';
+
+const FREE_AUTO_TASK_LIMIT = 3;
 
 let schedulerInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -31,6 +33,22 @@ async function tick() {
       try {
         console.log(`[SCHEDULER] Firing: ${st.id} (${st.cron})`);
 
+        // Free-tier auto-task limit: max 3 runs then stop
+        const user = await getOrCreateUser(st.userId);
+        if (user.plan === 'free') {
+          const autoTaskCount = await prisma.task.count({
+            where: { userId: st.userId, source: 'api' },
+          });
+          if (autoTaskCount >= FREE_AUTO_TASK_LIMIT) {
+            console.log(`[SCHEDULER] Free user ${st.userId} hit auto-task limit (${FREE_AUTO_TASK_LIMIT}), disabling ${st.id}`);
+            await prisma.scheduledTask.update({
+              where: { id: st.id },
+              data: { enabled: false },
+            });
+            continue;
+          }
+        }
+
         const cost = estimateCost(st.type);
         const task = await createTask(st.input, 'api', {
           userId: st.userId,
@@ -57,9 +75,7 @@ async function tick() {
       } catch (err) {
         if (err instanceof InsufficientCreditsError) {
           console.log(`[SCHEDULER] Blocked task from ${st.id}: insufficient credits`);
-          // Mark the task as blocked so it can resume after payment
           try {
-            // Find the task we just created (latest by this user from api source)
             const blockedTask = await prisma.task.findFirst({
               where: { userId: st.userId, source: 'api', status: 'pending' },
               orderBy: { createdAt: 'desc' },

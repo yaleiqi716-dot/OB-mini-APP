@@ -28,10 +28,20 @@ export function formatTask(t: {
   context: string; currentStep: string; result: string | null;
   errorMessage: string | null; source: string;
   estimatedCost?: number; actualCost?: number; userId?: string | null; assigneeId?: string | null;
-  businessStatus?: string;
+  businessStatus?: string; charged?: boolean; cost?: number;
   createdAt: Date; updatedAt: Date;
   events?: { id: string; taskId: string; type: string; data: string; createdAt: Date }[];
 }) {
+  // Result gating: if task completed but not charged, return preview only
+  const fullResult = fromJsonNullable(t.result);
+  let resultOutput = fullResult;
+  let preview = false;
+
+  if (fullResult && t.status === 'completed' && !t.charged) {
+    resultOutput = truncateResult(fullResult, t.estimatedCost || 10);
+    preview = true;
+  }
+
   return {
     id: t.id,
     type: t.type,
@@ -40,7 +50,9 @@ export function formatTask(t: {
     input: t.input,
     context: fromJson(t.context),
     currentStep: t.currentStep,
-    result: fromJsonNullable(t.result),
+    result: resultOutput,
+    preview,
+    unlockCost: preview ? (t.estimatedCost || 10) : 0,
     errorMessage: t.errorMessage,
     source: t.source,
     estimatedCost: t.estimatedCost || 0,
@@ -51,6 +63,32 @@ export function formatTask(t: {
     updatedAt: t.updatedAt.toISOString(),
     events: t.events?.map(formatEvent) ?? [],
   };
+}
+
+function truncateResult(result: Record<string, unknown>, unlockCost: number): Record<string, unknown> {
+  const truncated: Record<string, unknown> = { ...result, _preview: true, _unlockCost: unlockCost };
+  // Truncate text content to ~30%
+  if (typeof truncated.content === 'string') {
+    const full = truncated.content;
+    truncated.content = full.slice(0, Math.ceil(full.length * 0.3)) + '\n\n...';
+  }
+  if (typeof truncated.content === 'object' && truncated.content !== null) {
+    const c = truncated.content as Record<string, unknown>;
+    if (typeof c.body === 'string') {
+      truncated.content = { ...c, body: c.body.slice(0, Math.ceil(c.body.length * 0.3)) + '\n\n...' };
+    }
+  }
+  if (Array.isArray(truncated.slides)) {
+    truncated.slides = truncated.slides.slice(0, Math.ceil(truncated.slides.length * 0.3));
+  }
+  if (Array.isArray(truncated.sections)) {
+    truncated.sections = truncated.sections.slice(0, Math.ceil(truncated.sections.length * 0.3));
+  }
+  if (typeof truncated.optimizedContent === 'string') {
+    const full = truncated.optimizedContent;
+    truncated.optimizedContent = full.slice(0, Math.ceil(full.length * 0.3)) + '\n\n...';
+  }
+  return truncated;
 }
 
 export function formatEvent(e: { id: string; taskId: string; type: string; data: string; createdAt: Date }) {

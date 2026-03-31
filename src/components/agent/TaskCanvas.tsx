@@ -478,10 +478,10 @@ export function TaskCanvas({
 
               {mode === 'result' ? (
                 <div className="animate-flow-in">
-                  {result !== null && typeof credits === 'number' && credits <= 0 ? (
+                  {result !== null && (result as Record<string, unknown>)?._preview === true ? (
                     <div className="space-y-3">
                       <div className="relative">
-                        <div className="max-h-32 overflow-hidden opacity-60">
+                        <div className="max-h-36 overflow-hidden opacity-60">
                           <ResultView result={result} />
                         </div>
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-surface-primary" />
@@ -491,10 +491,17 @@ export function TaskCanvas({
                           <span className="text-sm">🔒</span>
                           <p className="text-sm font-medium text-amber-400">内容已生成（预览）</p>
                         </div>
-                        <p className="text-xs text-content-tertiary">解锁完整结果需要额度</p>
-                        <a href="/billing" className="inline-block text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors">
-                          立即解锁
-                        </a>
+                        <p className="text-xs text-content-tertiary">
+                          解锁完整内容需 {Number((result as Record<string, unknown>)?._unlockCost) || 10} credits
+                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors">
+                            充值 ¥19（100 credits）
+                          </a>
+                          <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg border border-accent text-accent hover:bg-accent/10 transition-colors">
+                            充值 ¥79（500 credits）
+                          </a>
+                        </div>
                       </div>
                     </div>
                   ) : result !== null ? (
