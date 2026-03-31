@@ -9,12 +9,15 @@ export async function GET(req: NextRequest) {
     }
 
     const tasks = await prisma.task.findMany({
-      where: { assigneeId: userId },
+      where: { OR: [{ assigneeId: userId }, { userId }] },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         title: true,
+        input: true,
         businessStatus: true,
+        status: true,
+        type: true,
         createdAt: true,
       },
       take: 50,
@@ -22,8 +25,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(tasks.map(t => ({
       id: t.id,
-      title: t.title,
-      businessStatus: t.businessStatus,
+      title: t.title || t.input?.slice(0, 40) || '无标题任务',
+      businessStatus: t.businessStatus || t.status,
+      type: t.type,
       createdAt: t.createdAt.toISOString(),
     })));
   } catch (error) {

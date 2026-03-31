@@ -1,25 +1,37 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { chatCompletion } from '@/lib/openrouter';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
+    // Filter by current user if available, otherwise show all
+    const userFilter = userId ? { userId } : {};
+
     const [total, assigned, submitted, completed] = await Promise.all([
-      prisma.task.count({ where: { assigneeId: { not: null } } }),
-      prisma.task.count({ where: { businessStatus: 'assigned' } }),
-      prisma.task.count({ where: { businessStatus: 'submitted' } }),
-      prisma.task.count({ where: { businessStatus: 'completed' } }),
+      prisma.task.count({ where: userFilter }),
+      prisma.task.count({ where: { ...userFilter, businessStatus: 'assigned' } }),
+      prisma.task.count({ where: { ...userFilter, businessStatus: 'submitted' } }),
+      prisma.task.count({ where: { ...userFilter, businessStatus: 'completed' } }),
     ]);
 
     // Highlights: last 3 completed task titles
     const recentCompleted = await prisma.task.findMany({
-      where: { businessStatus: 'completed' },
+      where: { ...userFilter, businessStatus: 'completed' },
       orderBy: { updatedAt: 'desc' },
       take: 3,
       select: { title: true, type: true },
     });
-    const highlights = recentCompleted.length > 0
-      ? recentCompleted.map(t => t.title || `${t.type} 任务`)
+    // Also include recently finished tasks (status=completed) if businessStatus hasn't been set
+    const recentFinished = await prisma.task.findMany({
+      where: { ...userFilter, status: 'completed' },
+      orderBy: { updatedAt: 'desc' },
+      take: 3,
+      select: { title: true, type: true },
+    });
+    const allRecent = [...recentCompleted, ...recentFinished];
+    const highlights = allRecent.length > 0
+      ? Array.from(new Set(allRecent.map(t => t.title || `${t.type} 任务`))).slice(0, 3)
       : ['暂无已完成任务'];
 
     // Risks: rule-based
@@ -54,7 +66,9 @@ export async function GET() {
     if (aiSuggestions.length === 0) {
       aiSuggestions = submitted > 0
         ? ['优先审核已提交的任务', '跟进长期未处理的指派']
-        : ['持续关注任务进度', '定期检查团队产出'];
+        : total > 0
+          ? ['持续关注任务进度', '定期检查团队产出']
+          : ['发送第一个任务，开始体验 AI 执行', '尝试让 AI 帮你写邮件或做 PPT'];
     }
 
     // Paused auto-tasks count

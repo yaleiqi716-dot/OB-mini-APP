@@ -27,7 +27,7 @@ export function Badge({ status }: { status: TaskStatus }) {
       {(status === 'executing' || status === 'understanding' || status === 'structuring') && (
         <span className="mr-1 h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
       )}
-      {TASK_STATUS_LABELS[status] || status}
+      {status === 'completed' ? null : (TASK_STATUS_LABELS[status] || status)}
     </span>
   );
 }

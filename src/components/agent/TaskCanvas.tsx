@@ -387,10 +387,10 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {/* Queued hint */}
-              {status === 'queued' ? (
+              {/* Queued / pending hint */}
+              {(status === 'queued' || status === 'pending') && events.length <= 1 ? (
                 <p className="text-xs text-content-secondary/60 italic animate-progress-pulse">
-                  任务已提交，排队等待处理...
+                  正在处理，请稍候...
                 </p>
               ) : null}
 
@@ -401,12 +401,7 @@ export function TaskCanvas({
                 </p>
               ) : null}
 
-              {/* Pending hint */}
-              {status === 'pending' && events.length <= 1 ? (
-                <p className="text-xs text-content-secondary/50 italic animate-progress-pulse">
-                  收到，我马上开始...
-                </p>
-              ) : null}
+
 
               {/* Transition line before approval — context-specific */}
               {isApprovalGate && approvalType === 'send_email' ? (
@@ -857,6 +852,16 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     );
   }
 
+  if (resultType === 'text' || (resultType === undefined && data.text)) {
+    const textContent = (data.text || data.content || data.message) as string;
+    return (
+      <ResultContainer title="已帮你完成，你看一下">
+        <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
+          <p className="text-sm text-content-secondary whitespace-pre-wrap leading-relaxed">{textContent}</p>
+        </div>
+      </ResultContainer>
+    );
+  }
   if (resultType === 'direct' && data.content) {
     return (
       <ResultContainer title="已经帮你完成了，你看一下结果">

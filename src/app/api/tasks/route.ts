@@ -88,11 +88,11 @@ export async function POST(req: NextRequest) {
     const user = await getOrCreateUser(userId);
     const priority = PLAN_PRIORITY[user.plan] || 0;
 
-    // Create task with priority
+    // Create task — always assign to current user so it appears in /tasks/mine and dashboard stats
     const task = await createTask(finalInput, body.source || 'agent', {
       userId,
       estimatedCost: creditCheck.estimatedCost,
-      assigneeId: body.assigneeId || undefined,
+      assigneeId: body.assigneeId || userId,
     });
 
     // Set priority + move to queued (worker polls DB by priority)
@@ -107,8 +107,23 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
+    if (userId) {
+      const tasks = await prisma.task.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        include: {
+          events: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
+      });
+      return NextResponse.json(tasks.map(formatTask));
+    }
     const tasks = await listTasks(50);
     return NextResponse.json(tasks.map(formatTask));
   } catch (error) {

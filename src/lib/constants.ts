@@ -11,15 +11,15 @@ export const TASK_TYPES: { value: TaskType; label: string; icon: string }[] = [
 
 // 与 TaskStatus 类型定义、prisma/schema.prisma 注释保持一致
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
-  pending: '等待中',
-  queued: '排队中',
-  understanding: '理解中',
-  structuring: '生成结构',
-  interacting: '交互中',
-  executing: '执行中',
+  pending: '正在处理',
+  queued: '正在处理',
+  understanding: 'AI正在执行',
+  structuring: 'AI正在执行',
+  interacting: 'AI正在执行',
+  executing: 'AI正在执行',
   blocked: '等待充值',
-  completed: '已完成',
-  failed: '失败',
+  completed: '',           // completed: show result directly, no status label
+  failed: '执行失败，请重试',
 };
 
 export const VALID_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
