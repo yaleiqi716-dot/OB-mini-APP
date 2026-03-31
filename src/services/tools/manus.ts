@@ -1,4 +1,4 @@
-const MANUS_DEFAULT_URL = 'https://api.manus.im/v1';
+const MANUS_DEFAULT_URL = 'https://api.manus.ai/v1';
 
 function getConfig() {
   const apiKey = process.env.MANUS_API_KEY;
@@ -10,7 +10,7 @@ function getConfig() {
 }
 
 export interface ManusTaskParams {
-  instruction: string;
+  prompt: string;
   url?: string;
   context?: string;
 }
@@ -28,11 +28,12 @@ export async function executeBrowserTask(params: ManusTaskParams): Promise<Manus
   const createRes = await fetch(`${apiUrl}/tasks`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      'accept': 'application/json',
+      'content-type': 'application/json',
+      'API_KEY': apiKey,
     },
     body: JSON.stringify({
-      instruction: params.instruction,
+      prompt: params.prompt,
       ...(params.url ? { url: params.url } : {}),
       ...(params.context ? { context: params.context } : {}),
     }),
@@ -55,7 +56,10 @@ export async function executeBrowserTask(params: ManusTaskParams): Promise<Manus
     await new Promise(r => setTimeout(r, 5000));
 
     const pollRes = await fetch(`${apiUrl}/tasks/${taskId}`, {
-      headers: { 'Authorization': `Bearer ${apiKey}` },
+      headers: {
+        'accept': 'application/json',
+        'API_KEY': apiKey,
+      },
     });
 
     if (!pollRes.ok) continue;
@@ -75,7 +79,6 @@ export async function executeBrowserTask(params: ManusTaskParams): Promise<Manus
     }
   }
 
-  // Still running after 120s — return pending
   return {
     taskId,
     status: 'processing',

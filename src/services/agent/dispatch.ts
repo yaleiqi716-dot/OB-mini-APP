@@ -148,11 +148,11 @@ async function handleAutomation(payload: Record<string, unknown>): Promise<Dispa
 }
 
 async function handleBrowserTask(payload: Record<string, unknown>, originalInput: string): Promise<DispatchResult> {
-  const instruction = String(payload.instruction || payload.task || originalInput);
+  const prompt = String(payload.instruction || payload.task || payload.prompt || originalInput);
   const url = payload.url ? String(payload.url) : undefined;
   const context = payload.context ? String(payload.context) : undefined;
 
-  const result = await executeBrowserTask({ instruction, url, context });
+  const result = await executeBrowserTask({ prompt, url, context });
 
   return {
     success: true,
