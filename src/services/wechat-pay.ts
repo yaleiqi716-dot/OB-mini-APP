@@ -1,5 +1,12 @@
 import crypto from 'crypto';
 
+// ---- Preview mode detection ----
+function isPreviewMode(): boolean {
+  return !process.env.WECHAT_MCH_ID || !process.env.WECHAT_APP_ID ||
+    !process.env.WECHAT_API_V3_KEY || !process.env.WECHAT_PRIVATE_KEY ||
+    !process.env.WECHAT_SERIAL_NO || !process.env.WECHAT_NOTIFY_URL;
+}
+
 // Environment variables — ALL REQUIRED for production
 function getConfig() {
   const mchId = process.env.WECHAT_MCH_ID;
@@ -52,6 +59,16 @@ export interface CreateOrderResult {
 }
 
 export async function createNativeOrder(params: CreateOrderParams): Promise<CreateOrderResult> {
+  // Preview mode: wechat pay keys not configured — return a mock QR code
+  if (isPreviewMode()) {
+    console.log('[WECHAT_PAY] Preview mode — returning mock order for', params.orderId);
+    return {
+      success: true,
+      codeUrl: `https://preview.orangebench.app/pay/mock?order=${params.orderId}&amount=${params.amount}`,
+      providerOrderId: `PREVIEW_${params.orderId}`,
+      providerPayload: JSON.stringify({ preview: true, orderId: params.orderId }),
+    };
+  }
   const cfg = getConfig();
   const apiUrl = '/v3/pay/transactions/native';
   const fullUrl = `https://api.mch.weixin.qq.com${apiUrl}`;
