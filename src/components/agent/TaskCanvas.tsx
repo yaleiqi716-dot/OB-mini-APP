@@ -497,6 +497,37 @@ export function TaskCanvas({
                     ) : null;
                   })()}
 
+                  {/* Review actions */}
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <button
+                      onClick={() => fetch(`/api/tasks/${taskId}/review`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'feedback' }),
+                      })}
+                      className="text-[11px] px-2.5 py-1 rounded-lg border border-border bg-surface-secondary hover:bg-surface-tertiary text-content-secondary transition-all"
+                    >
+                      让员工修改
+                    </button>
+                    <button
+                      onClick={() => fetch(`/api/tasks/${taskId}/review`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'ai_optimize' }),
+                      }).then(() => window.location.reload())}
+                      className="text-[11px] px-2.5 py-1 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 text-accent transition-all"
+                    >
+                      AI帮我优化
+                    </button>
+                    <button
+                      onClick={() => fetch(`/api/tasks/${taskId}/review`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'approve' }),
+                      })}
+                      className="text-[11px] px-2.5 py-1 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 transition-all"
+                    >
+                      通过
+                    </button>
+                  </div>
+
                   {/* Next-step suggestions — server-driven with static fallback */}
                   {onNewTask ? (() => {
                     // Prefer server-driven suggestions from event
