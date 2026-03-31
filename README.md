@@ -22,7 +22,7 @@ npm run dev
 ```
 DATABASE_URL="file:./dev.db"
 OPENROUTER_API_KEY="sk-or-v1-..."
-OPENROUTER_DEFAULT_MODEL="anthropic/claude-sonnet-4"
+OPENROUTER_DEFAULT_MODEL="openai/gpt-4o"
 WEBHOOK_SECRET="your-webhook-secret"
 ```
 
