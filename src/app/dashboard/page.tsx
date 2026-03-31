@@ -42,11 +42,11 @@ export default function DashboardPage() {
           <span className="text-xs text-content-tertiary">决策台</span>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/review" className="text-xs text-content-tertiary hover:text-accent transition-colors">
-            审核
+          <Link href="/tasks" className="text-xs text-content-tertiary hover:text-accent transition-colors">
+            任务
           </Link>
-          <Link href="/agent" className="text-xs text-accent hover:text-accent-hover transition-colors">
-            Agent
+          <Link href="/review" className="text-xs text-accent hover:text-accent-hover transition-colors">
+            审核
           </Link>
         </div>
       </header>

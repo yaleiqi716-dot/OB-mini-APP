@@ -45,7 +45,10 @@ export default function MyTasksPage() {
           <span className="text-accent font-semibold text-sm">ORANGE</span>
           <span className="text-content-primary font-semibold text-sm">BENCH</span>
         </div>
-        <span className="text-xs text-content-tertiary">我的任务</span>
+        <div className="flex items-center gap-3">
+          <a href="/dashboard" className="text-xs text-content-tertiary hover:text-accent transition-colors">决策台</a>
+          <a href="/review" className="text-xs text-content-tertiary hover:text-accent transition-colors">审核</a>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">

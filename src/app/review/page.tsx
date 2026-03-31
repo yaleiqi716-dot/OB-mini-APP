@@ -84,7 +84,10 @@ export default function ReviewPage() {
           <span className="text-accent font-semibold text-sm">ORANGE</span>
           <span className="text-content-primary font-semibold text-sm">BENCH</span>
         </div>
-        <span className="text-xs text-content-tertiary">老板审核</span>
+        <div className="flex items-center gap-3">
+          <a href="/dashboard" className="text-xs text-content-tertiary hover:text-accent transition-colors">决策台</a>
+          <a href="/tasks" className="text-xs text-content-tertiary hover:text-accent transition-colors">任务</a>
+        </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
