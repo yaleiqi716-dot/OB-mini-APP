@@ -11,44 +11,50 @@ export async function GET() {
       prisma.task.count({ where: { businessStatus: 'completed' } }),
     ]);
 
-    // Highlights: recently completed tasks
+    // Highlights: last 3 completed task titles
     const recentCompleted = await prisma.task.findMany({
       where: { businessStatus: 'completed' },
       orderBy: { updatedAt: 'desc' },
-      take: 5,
+      take: 3,
       select: { title: true, type: true },
     });
-    const highlights = recentCompleted.map(t => t.title || `${t.type} 任务`);
+    const highlights = recentCompleted.length > 0
+      ? recentCompleted.map(t => t.title || `${t.type} 任务`)
+      : ['暂无已完成任务'];
 
-    // Risks
+    // Risks: rule-based
     const risks: string[] = [];
-    if (assigned > 3) risks.push(`${assigned} 个任务仍未开始处理`);
-    if (submitted > 2) risks.push(`${submitted} 个任务等待审核，请及时处理`);
-    if (total > 0 && completed === 0) risks.push('暂无任务完成，请关注进度');
+    if (assigned > 3) risks.push('任务积压较多');
+    if (submitted > 0) risks.push('有任务待审核');
+    if (risks.length === 0) risks.push('当前无明显风险');
 
-    // AI suggestions based on businessStatus stats
+    // AI suggestions: feed stats + highlights + risks
     let aiSuggestions: string[] = [];
     try {
-      // Gather pending task titles for context
-      const pendingTasks = await prisma.task.findMany({
-        where: { businessStatus: { in: ['assigned', 'submitted'] } },
-        take: 10,
-        select: { title: true, businessStatus: true },
-      });
-      const pendingCtx = pendingTasks.map(t => `[${t.businessStatus}] ${t.title || '未命名'}`).join('；');
+      const ctx = [
+        `任务统计：共 ${total} 个，待处理 ${assigned}，待审核 ${submitted}，已完成 ${completed}。`,
+        `近期完成：${highlights.join('、')}。`,
+        `当前风险：${risks.join('、')}。`,
+      ].join('\n');
 
-      const ctx = `团队任务：共 ${total} 个，待处理 ${assigned}，已提交待审 ${submitted}，已完成 ${completed}。未完成任务：${pendingCtx}`;
       const result = await chatCompletion(
         [
-          { role: 'system', content: '你是企业管理顾问。根据任务数据给出 2-3 条简短建议（每条不超过15字）。只返回JSON：{"suggestions":["建议1","建议2"]}' },
+          { role: 'system', content: '你是企业管理顾问。根据以下团队任务数据，给出2-3条具体可操作的建议（每条不超过20字）。只返回JSON：{"suggestions":["建议1","建议2"]}' },
           { role: 'user', content: ctx },
         ],
         { temperature: 0.3, jsonMode: true, maxTokens: 256 }
       );
       const parsed = JSON.parse(result.content);
-      aiSuggestions = parsed.suggestions || [];
+      if (Array.isArray(parsed.suggestions) && parsed.suggestions.length > 0) {
+        aiSuggestions = parsed.suggestions;
+      }
     } catch {
-      aiSuggestions = ['建议及时审核已提交任务', '关注长期未处理的指派任务'];
+      // ignore
+    }
+    if (aiSuggestions.length === 0) {
+      aiSuggestions = submitted > 0
+        ? ['优先审核已提交的任务', '跟进长期未处理的指派']
+        : ['持续关注任务进度', '定期检查团队产出'];
     }
 
     return NextResponse.json({
