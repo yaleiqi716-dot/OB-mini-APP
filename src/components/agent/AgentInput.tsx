@@ -26,15 +26,14 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent }: Agent
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <div className="w-full" style={{ maxWidth: 720, margin: '0 auto' }}>
       <div
         className={cn(
-          'flex items-end gap-2 rounded-2xl border bg-surface-secondary p-3 transition-all',
-          'focus-within:border-accent/50 focus-within:bg-surface-tertiary focus-within:shadow-sm',
-          prominent
-            ? 'border-border/80 shadow-sm'
-            : 'border-border'
+          'flex items-end gap-2 rounded-[14px] border bg-surface-secondary transition-all',
+          'focus-within:border-accent/50 focus-within:shadow-sm',
+          prominent ? 'border-border/60' : 'border-border/40'
         )}
+        style={{ padding: '6px 6px 6px 16px', minHeight: 48 }}
       >
         <Input
           ref={inputRef}
@@ -43,19 +42,19 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent }: Agent
           onSubmit={handleSubmit}
           placeholder={placeholder || '说一句话，我来帮你完成'}
           disabled={disabled}
-          className="flex-1 min-h-[24px] text-[15px]"
+          className="flex-1 min-h-[24px] text-[15px] leading-[1.5]"
         />
         <button
           onClick={handleSubmit}
           disabled={!value.trim() || disabled}
           className={cn(
-            'flex-shrink-0 rounded-xl p-2.5 transition-all touch-manipulation',
+            'flex-shrink-0 rounded-[10px] p-2 transition-all touch-manipulation',
             value.trim() && !disabled
               ? 'bg-accent text-white hover:bg-accent-hover active:scale-95'
               : 'bg-surface-tertiary text-content-tertiary'
           )}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="22" y1="2" x2="11" y2="13" />
             <polygon points="22 2 15 22 11 13 2 9 22 2" />
           </svg>
