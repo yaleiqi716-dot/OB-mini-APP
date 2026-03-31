@@ -4,38 +4,43 @@ import { chatCompletion } from '@/lib/openrouter';
 
 export async function GET() {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const [completed, pending, failed, blocked] = await Promise.all([
-      prisma.task.count({ where: { status: 'completed', updatedAt: { gte: today } } }),
-      prisma.task.count({ where: { status: { in: ['queued', 'understanding', 'structuring', 'executing', 'interacting'] } } }),
-      prisma.task.count({ where: { status: 'failed', updatedAt: { gte: today } } }),
-      prisma.task.count({ where: { status: 'blocked' } }),
+    const [total, assigned, submitted, completed] = await Promise.all([
+      prisma.task.count({ where: { assigneeId: { not: null } } }),
+      prisma.task.count({ where: { businessStatus: 'assigned' } }),
+      prisma.task.count({ where: { businessStatus: 'submitted' } }),
+      prisma.task.count({ where: { businessStatus: 'completed' } }),
     ]);
 
-    // Get recent completed tasks for highlights
+    // Highlights: recently completed tasks
     const recentCompleted = await prisma.task.findMany({
-      where: { status: 'completed', updatedAt: { gte: today } },
+      where: { businessStatus: 'completed' },
       orderBy: { updatedAt: 'desc' },
       take: 5,
       select: { title: true, type: true },
     });
+    const highlights = recentCompleted.map(t => t.title || `${t.type} 任务`);
 
-    const highlights = recentCompleted.map((t) => t.title || `${t.type} 任务`);
+    // Risks
+    const risks: string[] = [];
+    if (assigned > 3) risks.push(`${assigned} 个任务仍未开始处理`);
+    if (submitted > 2) risks.push(`${submitted} 个任务等待审核，请及时处理`);
+    if (total > 0 && completed === 0) risks.push('暂无任务完成，请关注进度');
 
-    // Issues
-    const issues: string[] = [];
-    if (failed > 0) issues.push(`${failed} 个任务执行失败`);
-    if (blocked > 0) issues.push(`${blocked} 个任务因余额不足暂停`);
-
-    // AI suggestions (lightweight, cached-style)
+    // AI suggestions based on businessStatus stats
     let aiSuggestions: string[] = [];
     try {
-      const ctx = `今日完成 ${completed} 个任务，待处理 ${pending} 个，失败 ${failed} 个，暂停 ${blocked} 个。最近完成：${highlights.join('、')}`;
+      // Gather pending task titles for context
+      const pendingTasks = await prisma.task.findMany({
+        where: { businessStatus: { in: ['assigned', 'submitted'] } },
+        take: 10,
+        select: { title: true, businessStatus: true },
+      });
+      const pendingCtx = pendingTasks.map(t => `[${t.businessStatus}] ${t.title || '未命名'}`).join('；');
+
+      const ctx = `团队任务：共 ${total} 个，待处理 ${assigned}，已提交待审 ${submitted}，已完成 ${completed}。未完成任务：${pendingCtx}`;
       const result = await chatCompletion(
         [
-          { role: 'system', content: '你是企业工作效率顾问。根据今日数据给出 2-3 条简短建议（每条不超过15字）。只返回JSON：{"suggestions":["建议1","建议2"]}' },
+          { role: 'system', content: '你是企业管理顾问。根据任务数据给出 2-3 条简短建议（每条不超过15字）。只返回JSON：{"suggestions":["建议1","建议2"]}' },
           { role: 'user', content: ctx },
         ],
         { temperature: 0.3, jsonMode: true, maxTokens: 256 }
@@ -43,23 +48,16 @@ export async function GET() {
       const parsed = JSON.parse(result.content);
       aiSuggestions = parsed.suggestions || [];
     } catch {
-      aiSuggestions = ['建议关注失败任务', '可以尝试批量处理邮件'];
+      aiSuggestions = ['建议及时审核已提交任务', '关注长期未处理的指派任务'];
     }
 
-    // Revenue stats
-    const totalCost = await prisma.task.aggregate({
-      where: { updatedAt: { gte: today } },
-      _sum: { cost: true },
-    });
-
     return NextResponse.json({
-      tasksCompleted: completed,
-      tasksPending: pending,
-      tasksFailed: failed,
-      tasksBlocked: blocked,
-      creditsConsumed: totalCost._sum.cost || 0,
+      total,
+      assigned,
+      submitted,
+      completed,
       highlights,
-      issues,
+      risks,
       aiSuggestions,
     });
   } catch (error) {

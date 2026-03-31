@@ -4,13 +4,12 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 interface Summary {
-  tasksCompleted: number;
-  tasksPending: number;
-  tasksFailed: number;
-  tasksBlocked: number;
-  creditsConsumed: number;
+  total: number;
+  assigned: number;
+  submitted: number;
+  completed: number;
   highlights: string[];
-  issues: string[];
+  risks: string[];
   aiSuggestions: string[];
 }
 
@@ -40,36 +39,41 @@ export default function DashboardPage() {
             <span className="text-accent font-semibold text-sm">ORANGE</span>
             <span className="text-content-primary font-semibold text-sm">BENCH</span>
           </div>
-          <span className="text-xs text-content-tertiary">工作台</span>
+          <span className="text-xs text-content-tertiary">决策台</span>
         </div>
-        <Link href="/agent" className="text-xs text-accent hover:text-accent-hover transition-colors">
-          返回 Agent
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/review" className="text-xs text-content-tertiary hover:text-accent transition-colors">
+            审核
+          </Link>
+          <Link href="/agent" className="text-xs text-accent hover:text-accent-hover transition-colors">
+            Agent
+          </Link>
+        </div>
       </header>
 
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="今日完成" value={data.tasksCompleted} color="text-green-400" />
-          <StatCard label="进行中" value={data.tasksPending} color="text-accent" />
-          <StatCard label="失败" value={data.tasksFailed} color="text-red-400" />
-          <StatCard label="消耗额度" value={data.creditsConsumed} color="text-content-primary" />
+          <StatCard label="全部任务" value={data.total} color="text-content-primary" />
+          <StatCard label="待处理" value={data.assigned} color="text-amber-400" />
+          <StatCard label="待审核" value={data.submitted} color="text-blue-400" />
+          <StatCard label="已完成" value={data.completed} color="text-green-400" />
         </div>
 
         {/* Highlights */}
         {data.highlights.length > 0 ? (
-          <Section title="今日亮点" icon="✓">
+          <Section title="已完成" icon="✓">
             {data.highlights.map((h, i) => (
               <p key={i} className="text-sm text-content-secondary">{h}</p>
             ))}
           </Section>
         ) : null}
 
-        {/* Issues */}
-        {data.issues.length > 0 ? (
-          <Section title="需要关注" icon="⚠">
-            {data.issues.map((issue, i) => (
-              <p key={i} className="text-sm text-amber-400">{issue}</p>
+        {/* Risks */}
+        {data.risks.length > 0 ? (
+          <Section title="风险" icon="⚠">
+            {data.risks.map((r, i) => (
+              <p key={i} className="text-sm text-amber-400">{r}</p>
             ))}
           </Section>
         ) : null}
@@ -83,11 +87,11 @@ export default function DashboardPage() {
           </Section>
         ) : null}
 
-        {/* Blocked */}
-        {data.tasksBlocked > 0 ? (
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-            <p className="text-sm text-amber-400">{data.tasksBlocked} 个任务因余额不足暂停</p>
-            <Link href="/agent" className="text-xs text-accent mt-2 inline-block">去充值 →</Link>
+        {/* Quick actions */}
+        {data.submitted > 0 ? (
+          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+            <p className="text-sm text-blue-400">{data.submitted} 个任务等待你审核</p>
+            <Link href="/review" className="text-xs text-accent mt-2 inline-block">去审核 →</Link>
           </div>
         ) : null}
       </div>
