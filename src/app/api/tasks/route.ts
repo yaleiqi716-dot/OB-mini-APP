@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
     const task = await createTask(body.input.trim(), body.source || 'agent', {
       userId,
       estimatedCost: creditCheck.estimatedCost,
+      assigneeId: body.assigneeId || undefined,
     });
 
     // Set priority + move to queued (worker polls DB by priority)

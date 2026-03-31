@@ -36,6 +36,7 @@ model Task {
   processing    Boolean     @default(false)
   isExecuting   Boolean     @default(false)
   priority      Int         @default(0)
+  assigneeId    String?
   userId        String?
   user          User?       @relation(fields: [userId], references: [id])
   createdAt     DateTime    @default(now())

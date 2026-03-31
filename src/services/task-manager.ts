@@ -27,7 +27,7 @@ export function formatTask(t: {
   id: string; type: string; status: string; title: string; input: string;
   context: string; currentStep: string; result: string | null;
   errorMessage: string | null; source: string;
-  estimatedCost?: number; actualCost?: number; userId?: string | null;
+  estimatedCost?: number; actualCost?: number; userId?: string | null; assigneeId?: string | null;
   createdAt: Date; updatedAt: Date;
   events?: { id: string; taskId: string; type: string; data: string; createdAt: Date }[];
 }) {
@@ -44,6 +44,7 @@ export function formatTask(t: {
     source: t.source,
     estimatedCost: t.estimatedCost || 0,
     actualCost: t.actualCost || 0,
+    assigneeId: t.assigneeId || null,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
     events: t.events?.map(formatEvent) ?? [],
@@ -65,7 +66,7 @@ export function formatEvent(e: { id: string; taskId: string; type: string; data:
 export async function createTask(
   input: string,
   source: TaskSource = 'agent',
-  opts?: { userId?: string; estimatedCost?: number }
+  opts?: { userId?: string; estimatedCost?: number; assigneeId?: string }
 ) {
   const task = await prisma.task.create({
     data: {
@@ -75,6 +76,7 @@ export async function createTask(
       status: 'pending',
       userId: opts?.userId || null,
       estimatedCost: opts?.estimatedCost || 0,
+      assigneeId: opts?.assigneeId || null,
     },
   });
 

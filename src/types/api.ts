@@ -5,6 +5,7 @@ export interface CreateTaskRequest {
   type?: TaskType;
   source?: TaskSource;
   metadata?: Record<string, string>;
+  assigneeId?: string;
 }
 
 export interface CreateTaskResponse {
