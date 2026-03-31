@@ -86,8 +86,6 @@ export default function TaskDetailPage() {
     try {
       const res = await fetch(`/api/tasks/${taskId}/submit`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ result: agentResult || '' }),
       });
       const data = await res.json();
       if (!res.ok) {

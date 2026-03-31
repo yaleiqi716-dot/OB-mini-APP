@@ -24,13 +24,24 @@ export async function POST(
       return NextResponse.json({ error: '无权提交此任务' }, { status: 403 });
     }
 
-    // Read optional result from request body
+    // Extract result from the latest relevant TaskEvent (server-side, not from client)
+    const lastResultEvent = await prisma.taskEvent.findFirst({
+      where: {
+        taskId: params.taskId,
+        type: { in: ['result', 'step_update', 'task_completed', 'artifact'] },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { data: true },
+    });
+
     let resultText: string | null = null;
-    try {
-      const body = await req.json();
-      if (body.result) resultText = String(body.result);
-    } catch {
-      // No body is fine
+    if (lastResultEvent) {
+      try {
+        const parsed = JSON.parse(lastResultEvent.data);
+        resultText = JSON.stringify(parsed.content || parsed.result || parsed);
+      } catch {
+        resultText = lastResultEvent.data;
+      }
     }
 
     await prisma.task.update({
