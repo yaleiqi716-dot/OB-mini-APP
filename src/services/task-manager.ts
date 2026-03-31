@@ -66,29 +66,56 @@ export function formatTask(t: {
 }
 
 function truncateResult(result: Record<string, unknown>, unlockCost: number): Record<string, unknown> {
-  const truncated: Record<string, unknown> = { ...result, _preview: true, _unlockCost: unlockCost };
-  // Truncate text content to ~30%
-  if (typeof truncated.content === 'string') {
-    const full = truncated.content;
-    truncated.content = full.slice(0, Math.ceil(full.length * 0.3)) + '\n\n...';
-  }
-  if (typeof truncated.content === 'object' && truncated.content !== null) {
-    const c = truncated.content as Record<string, unknown>;
-    if (typeof c.body === 'string') {
-      truncated.content = { ...c, body: c.body.slice(0, Math.ceil(c.body.length * 0.3)) + '\n\n...' };
+  const preview: Record<string, unknown> = { type: result.type, _preview: true, _unlockCost: unlockCost };
+
+  // Email: show subject, first line of body only
+  if (typeof result.content === 'object' && result.content !== null) {
+    const c = result.content as Record<string, unknown>;
+    if (typeof c.subject === 'string') {
+      const bodyStr = typeof c.body === 'string' ? c.body : '';
+      const firstLine = bodyStr.split('\n').find(l => l.trim()) || '';
+      preview.content = {
+        subject: c.subject,
+        body: firstLine.slice(0, 60) + '...\n\n🔒 完整内容需解锁',
+      };
+      return preview;
     }
   }
-  if (Array.isArray(truncated.slides)) {
-    truncated.slides = truncated.slides.slice(0, Math.ceil(truncated.slides.length * 0.3));
+
+  // Direct text: show first 20% capped at 100 chars
+  if (typeof result.content === 'string') {
+    const cap = Math.min(Math.ceil(result.content.length * 0.2), 100);
+    preview.content = result.content.slice(0, cap) + '...\n\n🔒 完整内容需解锁';
+    return preview;
   }
-  if (Array.isArray(truncated.sections)) {
-    truncated.sections = truncated.sections.slice(0, Math.ceil(truncated.sections.length * 0.3));
+
+  // PPT slides: show titles only, no content
+  if (Array.isArray(result.slides)) {
+    const slides = result.slides as { title: string; content?: string[] }[];
+    preview.slides = slides.map(s => ({ title: s.title, content: ['🔒 ...'] }));
+    preview._totalSlides = slides.length;
+    return preview;
   }
-  if (typeof truncated.optimizedContent === 'string') {
-    const full = truncated.optimizedContent;
-    truncated.optimizedContent = full.slice(0, Math.ceil(full.length * 0.3)) + '\n\n...';
+
+  // Proposal sections: show headings only
+  if (Array.isArray(result.sections)) {
+    const sections = result.sections as { heading: string; content?: string }[];
+    preview.sections = sections.map(s => ({ heading: s.heading, content: '🔒 ...' }));
+    preview._totalSections = sections.length;
+    return preview;
   }
-  return truncated;
+
+  // Optimized content: first 20%
+  if (typeof result.optimizedContent === 'string') {
+    const cap = Math.min(Math.ceil(result.optimizedContent.length * 0.2), 100);
+    preview.optimizedContent = result.optimizedContent.slice(0, cap) + '...\n\n🔒 完整内容需解锁';
+    return preview;
+  }
+
+  // Fallback: stringify first 80 chars
+  const raw = JSON.stringify(result);
+  preview.content = raw.slice(0, 80) + '...\n\n🔒 完整内容需解锁';
+  return preview;
 }
 
 export function formatEvent(e: { id: string; taskId: string; type: string; data: string; createdAt: Date }) {

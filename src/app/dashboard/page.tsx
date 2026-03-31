@@ -8,6 +8,7 @@ interface Summary {
   assigned: number;
   submitted: number;
   completed: number;
+  pausedAutoTasks: number;
   highlights: string[];
   risks: string[];
   aiSuggestions: string[];
@@ -95,6 +96,14 @@ export default function DashboardPage() {
           <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
             <p className="text-sm text-blue-400">{data.submitted} 个任务等待你审核</p>
             <Link href="/review" className="text-xs text-accent mt-2 inline-block">去审核 →</Link>
+          </div>
+        ) : null}
+
+        {data.pausedAutoTasks > 0 ? (
+          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2">
+            <p className="text-sm text-amber-400">⚠ {data.pausedAutoTasks} 个自动任务已暂停</p>
+            <p className="text-xs text-content-tertiary">免费版自动任务限运行 3 次，开通 Basic 可无限运行</p>
+            <Link href="/billing" className="text-xs text-accent inline-block">开通 Basic（¥39/月）→</Link>
           </div>
         ) : null}
       </div>

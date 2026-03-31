@@ -57,11 +57,15 @@ export async function GET() {
         : ['持续关注任务进度', '定期检查团队产出'];
     }
 
+    // Paused auto-tasks count
+    const pausedAutoTasks = await prisma.scheduledTask.count({ where: { enabled: false } });
+
     return NextResponse.json({
       total,
       assigned,
       submitted,
       completed,
+      pausedAutoTasks,
       highlights,
       risks,
       aiSuggestions,
