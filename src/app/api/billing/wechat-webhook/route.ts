@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { addCredits, getOrCreateUser } from '@/services/billing';
-import { updateTaskStatus, emitLog } from '@/services/task-manager';
+import { getOrCreateUser } from '@/services/billing';
+import { emitLog } from '@/services/task-manager';
 import { verifyWebhookSignature, parseWebhook } from '@/services/wechat-pay';
 import { getProduct, SubscriptionProduct } from '@/lib/billing-config';
 
@@ -31,59 +31,72 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: 'SUCCESS', message: 'OK' });
     }
 
-    // Find local order
-    const order = await prisma.order.findUnique({ where: { id: payload.outTradeNo } });
+    // Find local order by outTradeNo (which is our order.id used as out_trade_no)
+    // Also try providerOrderId for callbacks that come with transactionId
+    let order = await prisma.order.findFirst({
+      where: { providerOrderId: payload.transactionId },
+    });
     if (!order) {
-      console.error(`[WECHAT_WEBHOOK] Order not found: ${payload.outTradeNo}`);
+      // Fallback: outTradeNo is our local order ID (set during createNativeOrder)
+      order = await prisma.order.findUnique({ where: { id: payload.outTradeNo } });
+    }
+    if (!order) {
+      console.error(`[WECHAT_WEBHOOK] Order not found: outTradeNo=${payload.outTradeNo}, txnId=${payload.transactionId}`);
       return NextResponse.json({ code: 'FAIL', message: '订单不存在' }, { status: 404 });
     }
 
-    // Idempotent: already paid
+    // Idempotent: already paid — do NOT process again
     if (order.status === 'paid') {
       return NextResponse.json({ code: 'SUCCESS', message: 'OK' });
     }
 
-    // Update order
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        status: 'paid',
-        paidAt: new Date(),
-        providerOrderId: payload.transactionId,
-        providerPayload: JSON.stringify(payload.raw),
-      },
-    });
-
-    // Fulfill based on product type
+    // Atomic transaction: update order + fulfill in one go
     const product = getProduct(order.productCode);
 
-    if (order.productType === 'subscription' && product && product.type === 'subscription') {
-      const subProduct = product as SubscriptionProduct;
-      const now = new Date();
-      const user = await getOrCreateUser(order.userId);
-
-      // Extend from current expiry or from now
-      const baseDate = user.expireAt && user.expireAt > now ? user.expireAt : now;
-      const expireAt = new Date(baseDate);
-      expireAt.setDate(expireAt.getDate() + subProduct.durationDays);
-
-      await prisma.user.update({
-        where: { id: order.userId },
+    await prisma.$transaction(async (tx) => {
+      // 1. Mark order as paid
+      await tx.order.update({
+        where: { id: order!.id },
         data: {
-          plan: subProduct.plan,
-          expireAt,
-          credits: user.credits + subProduct.credits,
+          status: 'paid',
+          paidAt: new Date(),
+          providerOrderId: payload.transactionId,
+          providerPayload: JSON.stringify(payload.raw),
         },
       });
 
-      console.log(`[WECHAT_WEBHOOK] Subscription activated: ${order.userId} → ${subProduct.plan}, +${subProduct.credits} credits, expires ${expireAt.toISOString()}`);
-    } else {
-      // Credits purchase
-      await addCredits(order.userId, order.credits);
-      console.log(`[WECHAT_WEBHOOK] Credits added: ${order.userId} +${order.credits}`);
-    }
+      // 2. Fulfill: update user credits/plan/expireAt
+      const user = await getOrCreateUser(order!.userId);
 
-    // Requeue blocked tasks
+      if (order!.productType === 'subscription' && product && product.type === 'subscription') {
+        const subProduct = product as SubscriptionProduct;
+        const now = new Date();
+        const baseDate = user.expireAt && user.expireAt > now ? user.expireAt : now;
+        const expireAt = new Date(baseDate);
+        expireAt.setDate(expireAt.getDate() + subProduct.durationDays);
+
+        await tx.user.update({
+          where: { id: order!.userId },
+          data: {
+            plan: subProduct.plan,
+            expireAt,
+            credits: user.credits + subProduct.credits,
+          },
+        });
+
+        console.log(`[WECHAT_WEBHOOK] Subscription: ${order!.userId} → ${subProduct.plan}, +${subProduct.credits}cr, expires ${expireAt.toISOString()}`);
+      } else {
+        // Credits purchase
+        await tx.user.update({
+          where: { id: order!.userId },
+          data: { credits: user.credits + order!.credits },
+        });
+
+        console.log(`[WECHAT_WEBHOOK] Credits: ${order!.userId} +${order!.credits}`);
+      }
+    });
+
+    // Requeue blocked tasks (outside transaction — best effort)
     await requeueBlockedTasks(order.userId);
 
     return NextResponse.json({ code: 'SUCCESS', message: 'OK' });

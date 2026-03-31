@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { createTask, updateTaskStatus, emitLog } from './task-manager';
+import { createTask, updateTaskStatus, emitLog, emitEvent } from './task-manager';
 import { executeWithBilling, InsufficientCreditsError } from './billing';
 import { estimateCost } from '@/lib/cost';
 
@@ -56,7 +56,26 @@ async function tick() {
         console.log(`[SCHEDULER] Created task ${task.id} from scheduled ${st.id}`);
       } catch (err) {
         if (err instanceof InsufficientCreditsError) {
-          console.log(`[SCHEDULER] Skipped ${st.id}: insufficient credits`);
+          console.log(`[SCHEDULER] Blocked task from ${st.id}: insufficient credits`);
+          // Mark the task as blocked so it can resume after payment
+          try {
+            // Find the task we just created (latest by this user from api source)
+            const blockedTask = await prisma.task.findFirst({
+              where: { userId: st.userId, source: 'api', status: 'pending' },
+              orderBy: { createdAt: 'desc' },
+            });
+            if (blockedTask) {
+              await prisma.task.update({
+                where: { id: blockedTask.id },
+                data: { status: 'blocked', errorMessage: err.message },
+              });
+              await emitEvent(blockedTask.id, 'payment_required', {
+                required: err.required,
+                current: err.current,
+              });
+              await emitEvent(blockedTask.id, 'status_change', { status: 'blocked' });
+            }
+          } catch {}
         } else {
           console.error(`[SCHEDULER] Failed for ${st.id}:`, err);
         }
