@@ -32,13 +32,14 @@ export async function POST(
 
     if (action === 'ai_optimize') {
       const content = extractContent(resultRaw);
+      const fullContext = `【任务要求】\n${task.input}\n\n【员工提交】\n${content}`;
       const aiResult = await chatCompletion(
         [
           {
             role: 'system',
             content: '你是高级内容专家。请将以下内容优化为老板级品质：更专业、更精炼、更有说服力。保持原有格式和结构，只提升质量。直接输出优化后的内容。',
           },
-          { role: 'user', content: content },
+          { role: 'user', content: fullContext },
         ],
         { temperature: 0.5, maxTokens: 4096 }
       );
