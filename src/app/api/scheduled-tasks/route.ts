@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-function computeNextRun(cron: string): Date {
+function nextRunFromNow(cron: string): Date {
   const now = new Date();
-  if (cron === 'weekly') {
-    const next = new Date(now);
-    next.setDate(next.getDate() + 7);
-    next.setHours(9, 0, 0, 0);
-    return next;
-  }
-  // default: daily
   const next = new Date(now);
-  next.setDate(next.getDate() + 1);
-  next.setHours(9, 0, 0, 0);
+  if (cron === 'weekly') {
+    next.setDate(next.getDate() + 7);
+  } else {
+    next.setDate(next.getDate() + 1);
+  }
   return next;
 }
 
@@ -31,7 +27,7 @@ export async function POST(req: NextRequest) {
     }
 
     const schedule = cron === 'weekly' ? 'weekly' : 'daily';
-    const nextRunAt = computeNextRun(schedule);
+    const nextRunAt = nextRunFromNow(schedule);
 
     const task = await prisma.scheduledTask.create({
       data: {

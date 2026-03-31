@@ -5,18 +5,13 @@ import { estimateCost } from '@/lib/cost';
 
 let schedulerInterval: ReturnType<typeof setInterval> | null = null;
 
-function computeNextRun(cron: string): Date {
-  const now = new Date();
+function advanceNextRun(from: Date, cron: string): Date {
+  const next = new Date(from);
   if (cron === 'weekly') {
-    const next = new Date(now);
     next.setDate(next.getDate() + 7);
-    next.setHours(9, 0, 0, 0);
-    return next;
+  } else {
+    next.setDate(next.getDate() + 1);
   }
-  // daily
-  const next = new Date(now);
-  next.setDate(next.getDate() + 1);
-  next.setHours(9, 0, 0, 0);
   return next;
 }
 
@@ -42,7 +37,7 @@ async function tick() {
           // Still advance nextRunAt so it doesn't retry every minute
           await prisma.scheduledTask.update({
             where: { id: st.id },
-            data: { nextRunAt: computeNextRun(st.cron) },
+            data: { nextRunAt: advanceNextRun(st.nextRunAt, st.cron) },
           });
           continue;
         }
@@ -64,7 +59,7 @@ async function tick() {
         // Advance nextRunAt
         await prisma.scheduledTask.update({
           where: { id: st.id },
-          data: { nextRunAt: computeNextRun(st.cron) },
+          data: { nextRunAt: advanceNextRun(st.nextRunAt, st.cron) },
         });
 
         console.log(`[SCHEDULER] Created task ${task.id} from scheduled ${st.id}`);
@@ -80,6 +75,8 @@ async function tick() {
 export function startScheduler(intervalMs = 60_000) {
   if (schedulerInterval) return;
   console.log(`[SCHEDULER] Started (checking every ${intervalMs / 1000}s)`);
+  // Run immediately on startup to catch any overdue tasks
+  tick();
   schedulerInterval = setInterval(tick, intervalMs);
 }
 
