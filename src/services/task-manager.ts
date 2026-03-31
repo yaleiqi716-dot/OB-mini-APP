@@ -28,6 +28,7 @@ export function formatTask(t: {
   context: string; currentStep: string; result: string | null;
   errorMessage: string | null; source: string;
   estimatedCost?: number; actualCost?: number; userId?: string | null; assigneeId?: string | null;
+  businessStatus?: string;
   createdAt: Date; updatedAt: Date;
   events?: { id: string; taskId: string; type: string; data: string; createdAt: Date }[];
 }) {
@@ -45,6 +46,7 @@ export function formatTask(t: {
     estimatedCost: t.estimatedCost || 0,
     actualCost: t.actualCost || 0,
     assigneeId: t.assigneeId || null,
+    businessStatus: t.businessStatus || 'assigned',
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
     events: t.events?.map(formatEvent) ?? [],
@@ -77,6 +79,7 @@ export async function createTask(
       userId: opts?.userId || null,
       estimatedCost: opts?.estimatedCost || 0,
       assigneeId: opts?.assigneeId || null,
+      businessStatus: opts?.assigneeId ? 'assigned' : 'assigned',
     },
   });
 

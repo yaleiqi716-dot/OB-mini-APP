@@ -14,16 +14,16 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         title: true,
-        status: true,
-        type: true,
-        input: true,
+        businessStatus: true,
         createdAt: true,
       },
       take: 50,
     });
 
     return NextResponse.json(tasks.map(t => ({
-      ...t,
+      id: t.id,
+      title: t.title,
+      businessStatus: t.businessStatus,
       createdAt: t.createdAt.toISOString(),
     })));
   } catch (error) {
