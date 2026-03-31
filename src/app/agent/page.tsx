@@ -284,20 +284,7 @@ export default function AgentPage() {
   }
 
   async function handleAddCredits() {
-    try {
-      const res = await fetch('/api/billing/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tierId: 'tier_100', provider: 'mock' }),
-      });
-      const data = await res.json();
-      if (data.payUrl) {
-        // Mock: directly complete payment via GET
-        window.location.href = data.payUrl;
-      } else {
-        showError('创建订单失败');
-      }
-    } catch { showError('充值失败'); }
+    window.location.href = '/billing';
   }
 
   useEffect(() => { fetchQuota(); }, []);
