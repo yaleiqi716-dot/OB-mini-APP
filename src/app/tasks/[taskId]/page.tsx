@@ -70,7 +70,12 @@ export default function TaskDetailPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setAgentResult(`错误：${data.error || '执行失败'}`);
+        const errMsg = data.error || '执行失败';
+        if (res.status === 403 && errMsg.includes('额度')) {
+          setAgentResult(`${errMsg}。[去充值](/billing)`);
+        } else {
+          setAgentResult(`错误：${errMsg}`);
+        }
         return;
       }
       setAgentResult(`任务已创建（ID: ${data.taskId}），正在执行中...`);

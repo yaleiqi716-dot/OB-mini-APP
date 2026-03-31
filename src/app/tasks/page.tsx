@@ -46,6 +46,7 @@ export default function MyTasksPage() {
           <span className="text-content-primary font-semibold text-sm">BENCH</span>
         </div>
         <div className="flex items-center gap-3">
+          <a href="/billing" className="text-xs text-content-tertiary hover:text-accent transition-colors">充值</a>
           <a href="/dashboard" className="text-xs text-content-tertiary hover:text-accent transition-colors">决策台</a>
           <a href="/review" className="text-xs text-content-tertiary hover:text-accent transition-colors">审核</a>
         </div>

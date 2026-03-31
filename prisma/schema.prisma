@@ -8,14 +8,16 @@ generator client {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  credits   Int      @default(100)
-  plan      String   @default("free") // free | basic | pro | team
-  dailyTaskCount Int @default(0)
-  dailyResetDate String @default("")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tasks     Task[]
+  id             String   @id @default(cuid())
+  credits        Int      @default(100)
+  plan           String   @default("free") // free | basic | pro | team
+  expireAt       DateTime?
+  dailyTaskCount Int      @default(0)
+  dailyResetDate String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  tasks          Task[]
+  orders         Order[]
 }
 
 model Task {
@@ -79,12 +81,22 @@ model ScheduledTask {
 }
 
 model Order {
-  id        String   @id @default(cuid())
-  userId    String
-  amount    Int      // price in cents (e.g. 500 = $5)
-  credits   Int      // credits to add on payment
-  status    String   @default("pending") // pending | paid | failed
-  provider  String   @default("") // wechat | alipay | paypal | mock
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  productType     String    // subscription | credits
+  productCode     String    // basic_monthly | pro_monthly | team_monthly | credits_100 | credits_500 | credits_2000
+  amount          Int       // price in fen (cents CNY)
+  currency        String    @default("CNY")
+  credits         Int       @default(0) // credits to add
+  status          String    @default("pending") // pending | paid | failed | cancelled
+  provider        String    @default("wechat")
+  providerOrderId String?
+  providerPayload String?
+  paidAt          DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([providerOrderId])
+  @@index([userId, status])
 }

@@ -45,6 +45,9 @@ export default function DashboardPage() {
           <Link href="/tasks" className="text-xs text-content-tertiary hover:text-accent transition-colors">
             任务
           </Link>
+          <Link href="/billing" className="text-xs text-content-tertiary hover:text-accent transition-colors">
+            充值
+          </Link>
           <Link href="/review" className="text-xs text-accent hover:text-accent-hover transition-colors">
             审核
           </Link>

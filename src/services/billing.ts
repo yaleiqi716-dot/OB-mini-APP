@@ -66,6 +66,14 @@ export async function getOrCreateUser(userId: string) {
     });
   }
 
+  // Check subscription expiry: downgrade to free if expired
+  if (user.plan !== 'free' && user.expireAt && user.expireAt < new Date()) {
+    user = await prisma.user.update({
+      where: { id: userId },
+      data: { plan: 'free', expireAt: null },
+    });
+  }
+
   // Daily reset for free plan
   if (user.plan === 'free' && user.dailyResetDate !== today()) {
     const config = getPlanConfig('free');
@@ -237,6 +245,7 @@ export async function getUserStatus(userId: string) {
     id: user.id,
     credits: user.credits,
     plan: user.plan,
+    expireAt: user.expireAt?.toISOString() || null,
     limits: {
       maxConcurrent: config.maxConcurrent,
       allowedTypes: config.allowedTypes,
