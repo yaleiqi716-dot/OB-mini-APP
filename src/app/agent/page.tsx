@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { AgentInput } from '@/components/agent/AgentInput';
@@ -11,7 +10,6 @@ import { TaskStatus, TaskType, TaskSource } from '@/types/task';
 import { Interaction, ApprovalType } from '@/types/interaction';
 
 interface TaskEvent { type: string; data: Record<string, unknown>; createdAt: string; }
-
 interface TaskState {
   id: string; type: TaskType; status: TaskStatus; title: string; input: string;
   source: TaskSource; createdAt: string; updatedAt: string; events: TaskEvent[];
@@ -63,6 +61,7 @@ function hasUnread(task: TaskState): boolean {
 }
 
 const TERMINAL = new Set(['completed', 'failed']);
+
 const EXAMPLES = [
   { label: '帮我写一封客户跟进邮件', type: 'email' },
   { label: '帮我做一份融资PPT结构', type: 'ppt' },
@@ -148,16 +147,17 @@ export default function AgentPage() {
   useEffect(() => { fetchQuota(); }, []);
 
   useEffect(() => {
-    const el = scrollRef.current; if (!el) return;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 150) canvasEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeTask?.events.length]);
+    if (!canvasEndRef.current || !activeTaskId) return;
+    canvasEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  });
 
   async function handleSubmit(input: string, type?: string) {
+    if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input, type: type || undefined, source: 'agent' }) });
-      const data = await res.json();
-      if (!res.ok) { showError(data.error || '创建任务失败'); return; }
+      const r = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input, type }) });
+      if (!r.ok) { showError('提交失败，请重试'); return; }
+      const data = await r.json();
       if (data.taskId) {
         const now = new Date().toISOString();
         const think: TaskEvent = { type: 'thinking', data: { text: '好，我来帮你处理这个任务，我先把整体思路理一下' }, createdAt: now };
@@ -175,6 +175,7 @@ export default function AgentPage() {
     setInteractingTaskId(activeTaskId); setTasks(prev => prev.map(t => t.id === activeTaskId ? { ...t, currentInteraction: null } : t));
     try { const r = await fetch(`/api/tasks/${activeTaskId}/interact`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ interactionId: '', stepId, value }) }); if (!r.ok) showError('提交失败'); } catch { showError('网络错误'); } finally { setInteractingTaskId(null); }
   }
+
   async function handleApprove(at: ApprovalType) { if (!activeTaskId || actionLoadingTaskId) return; setActionLoadingTaskId(activeTaskId); try { const r = await fetch(`/api/tasks/${activeTaskId}/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ approvalType: at, action: 'approve' }) }); if (!r.ok) showError('确认失败'); } catch { showError('网络错误'); } finally { setActionLoadingTaskId(null); } }
   async function handleReject(at: ApprovalType) { if (!activeTaskId || actionLoadingTaskId) return; setActionLoadingTaskId(activeTaskId); setTasks(prev => prev.map(t => t.id === activeTaskId ? { ...t, currentInteraction: null } : t)); try { const r = await fetch(`/api/tasks/${activeTaskId}/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ approvalType: at, action: 'reject' }) }); if (!r.ok) showError('操作失败'); } catch { showError('网络错误'); } finally { setActionLoadingTaskId(null); } }
   async function handleAdjustStructure() { if (!activeTaskId || interactingTaskId === activeTaskId) return; setInteractingTaskId(activeTaskId); setTasks(prev => prev.map(t => t.id === activeTaskId ? { ...t, currentInteraction: null } : t)); try { await fetch(`/api/tasks/${activeTaskId}/interact`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ interactionId: '', stepId: 'request_adjust_structure', value: '' }) }); } catch { showError('操作失败'); } finally { setInteractingTaskId(null); } }
@@ -190,141 +191,190 @@ export default function AgentPage() {
   // ---- Sidebar content (shared desktop/mobile) ----
   const sidebarContent = (
     <>
-      <div style={{ padding: 12 }}>
+      {/* Sidebar header */}
+      <div className="sidebar-header">
+        <div className="sidebar-brand">
+          <span className="sidebar-brand-orange">ORANGE</span>
+          <span className="sidebar-brand-text">BENCH</span>
+        </div>
         <button
           onClick={() => { setActiveTaskId(null); setSidebarOpen(false); }}
-          style={{ width: '100%', height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 12, fontSize: 13 }}
-          className="text-content-secondary hover:bg-surface-tertiary transition-colors"
+          className="sidebar-new-btn"
+          title="新对话"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          新任务
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ padding: '0 12px 12px' }}>
+
+      {/* Task list */}
+      <div className="sidebar-scroll custom-scrollbar">
         {tasks.length > 0 ? (
           <TaskList tasks={listItems} activeTaskId={activeTaskId} onSelect={selectTask} />
         ) : (
-          <p style={{ fontSize: 12, textAlign: 'center', padding: '32px 0' }} className="text-content-tertiary">暂无任务</p>
+          <p className="sidebar-empty-hint">暂无对话</p>
         )}
       </div>
+
+      {/* Sidebar footer: credits */}
+      {quota && (
+        <div className="sidebar-footer">
+          <div className="sidebar-credits">
+            <span className="sidebar-credits-label">Credits</span>
+            <span className={`sidebar-credits-value ${quota.credits < 20 ? 'sidebar-credits-value--low' : ''}`}>
+              {quota.credits}
+            </span>
+          </div>
+          <a href="/billing" className="sidebar-topup-btn">充值</a>
+        </div>
+      )}
     </>
   );
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-surface-primary">
-      {/* ---- HEADER 56px ---- */}
-      <header className="flex items-center justify-between flex-shrink-0 border-b border-border/30" style={{ height: 56, padding: '0 24px' }}>
-        <div className="flex items-center" style={{ gap: 12 }}>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden p-1.5 rounded-lg hover:bg-surface-tertiary text-content-tertiary">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
-          </button>
-          <span style={{ fontSize: 14, fontWeight: 600 }} className="text-content-primary">
-            <span className="text-accent">ORANGE</span>BENCH
-          </span>
-        </div>
-        {quota ? (
-          <div className="flex items-center" style={{ gap: 12, fontSize: 12 }}>
-            <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-medium bg-surface-tertiary text-content-tertiary hidden sm:inline">{quota.plan}</span>
-            <span className={`px-1.5 py-0.5 rounded font-medium tabular-nums ${quota.credits < 20 ? 'bg-red-500/10 text-red-400' : 'bg-accent/10 text-accent'}`}>{quota.credits}</span>
-            <a href="/billing" className="px-2.5 py-1 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors text-[11px] font-medium">充值</a>
-          </div>
-        ) : null}
-      </header>
+    <div className="agent-root">
+      {/* ---- Reconnecting banner ---- */}
+      {reconnecting && (
+        <div className="agent-reconnect-banner">连接中断，正在重连...</div>
+      )}
 
-      {reconnecting ? (
-        <div className="bg-amber-500/10 border-b border-amber-500/20 text-center text-xs text-amber-400 flex-shrink-0" style={{ padding: '6px 16px' }}>连接中断，正在重连...</div>
-      ) : null}
-
-      <div className="flex-1 flex overflow-hidden">
-        {/* ---- LEFT SIDEBAR 280px (desktop) ---- */}
-        <aside className="hidden md:flex flex-col flex-shrink-0 border-r border-border/20" style={{ width: 280 }}>
+      <div className="agent-layout">
+        {/* ---- LEFT SIDEBAR (desktop) ---- */}
+        <aside className="agent-sidebar hidden md:flex">
           {sidebarContent}
         </aside>
 
-        {/* ---- Mobile sidebar ---- */}
-        {sidebarOpen ? (
+        {/* ---- Mobile sidebar overlay ---- */}
+        {sidebarOpen && (
           <>
-            <div className="fixed inset-0 bg-black/30 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
-            <aside className="fixed left-0 bottom-0 bg-surface-primary border-r border-border/20 z-50 md:hidden flex flex-col" style={{ top: 56, width: 280 }}>
+            <div className="agent-sidebar-overlay md:hidden" onClick={() => setSidebarOpen(false)} />
+            <aside className="agent-sidebar agent-sidebar--mobile md:hidden">
               {sidebarContent}
             </aside>
           </>
-        ) : null}
+        )}
 
         {/* ---- MAIN AREA ---- */}
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="agent-main">
+          {/* Mobile top bar */}
+          <div className="agent-mobile-topbar md:hidden">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="agent-mobile-menu-btn"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+            <span className="agent-mobile-title">
+              <span className="text-accent">ORANGE</span>BENCH
+            </span>
+            <div style={{ width: 36 }} />
+          </div>
+
           {activeTask ? (
             <>
-              {/* Scrollable canvas */}
-              <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar" key={activeTask.id}>
-                <div style={{ maxWidth: 860, margin: '0 auto', padding: 24 }}>
-                  <TaskCanvas
-                    taskId={activeTask.id} title={activeTask.title} type={activeTask.type}
-                    status={activeTask.status} input={activeTask.input} events={activeTask.events}
-                    currentInteraction={activeTask.currentInteraction}
-                    onInteractionSubmit={handleInteractionSubmit}
-                    onApprove={handleApprove} onReject={handleReject}
-                    onAdjustStructure={handleAdjustStructure}
-                    onAdjustProposal={handleAdjustProposal}
-                    onReviseEmail={handleReviseEmail}
-                    actionLoading={actionLoadingTaskId === activeTask.id}
-                    result={activeTask.result}
-                    loading={!!(activeTask && !activeTask.eventsLoaded)}
-                    credits={quota?.credits ?? null}
-                    executionStrategy={(activeTask.context.executionStrategy as string) || undefined}
-                    modelName={(activeTask.context.model as string) || undefined}
-                    onNewTask={handleSubmit}
-                  />
-                  <div ref={canvasEndRef} />
+              {/* Scrollable conversation */}
+              <div ref={scrollRef} className="agent-scroll custom-scrollbar" key={activeTask.id}>
+                <div className="agent-content-wrap">
+                  {/* User message bubble at top */}
+                  <div className="chat-user-bubble-row">
+                    <div className="chat-user-bubble">
+                      {activeTask.input}
+                    </div>
+                  </div>
+
+                  {/* AI response area */}
+                  <div className="chat-ai-area">
+                    <TaskCanvas
+                      taskId={activeTask.id} title={activeTask.title} type={activeTask.type}
+                      status={activeTask.status} input={activeTask.input} events={activeTask.events}
+                      currentInteraction={activeTask.currentInteraction}
+                      onInteractionSubmit={handleInteractionSubmit}
+                      onApprove={handleApprove} onReject={handleReject}
+                      onAdjustStructure={handleAdjustStructure}
+                      onAdjustProposal={handleAdjustProposal}
+                      onReviseEmail={handleReviseEmail}
+                      actionLoading={actionLoadingTaskId === activeTask.id}
+                      result={activeTask.result}
+                      loading={!!(activeTask && !activeTask.eventsLoaded)}
+                      credits={quota?.credits ?? null}
+                      executionStrategy={(activeTask.context.executionStrategy as string) || undefined}
+                      modelName={(activeTask.context.model as string) || undefined}
+                      onNewTask={handleSubmit}
+                    />
+                    <div ref={canvasEndRef} />
+                  </div>
                 </div>
               </div>
 
-              {/* Fixed input */}
-              <div className="flex-shrink-0 border-t border-border/20" style={{ padding: '12px 24px 16px' }}>
-                <AgentInput onSubmit={input => handleSubmit(input)} disabled={isSubmitting} placeholder="继续说，我帮你接着做..." />
-                {isSubmitting ? <div className="flex items-center justify-center gap-2 text-content-tertiary text-xs" style={{ marginTop: 8 }}><Spinner size="sm" /><span>正在处理...</span></div> : null}
+              {/* Fixed bottom input */}
+              <div className="agent-input-area">
+                <AgentInput
+                  onSubmit={input => handleSubmit(input)}
+                  disabled={isSubmitting}
+                  placeholder="继续说，我帮你接着做..."
+                />
+                {isSubmitting && (
+                  <div className="agent-submitting-hint">
+                    <Spinner size="sm" />
+                    <span>正在处理...</span>
+                  </div>
+                )}
               </div>
             </>
           ) : (
             /* ---- WELCOME / EMPTY STATE ---- */
-            <div className="flex-1 flex flex-col">
-              <div className="flex-1 flex items-center justify-center" style={{ padding: 24 }}>
-                <div style={{ width: '100%', maxWidth: 720 }}>
-                  <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 16, textAlign: 'center' }} className="text-content-primary">
-                    我可以帮你自动完成工作
-                  </h1>
-                  <p style={{ fontSize: 14, textAlign: 'center', marginBottom: 32 }} className="text-content-tertiary">
-                    输入任务，或点击下方示例开始
-                  </p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    {EXAMPLES.map((ex, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleSubmit(ex.label, ex.type)}
-                        disabled={isSubmitting}
-                        style={{ height: 36, paddingLeft: 16, paddingRight: 16, borderRadius: 8, fontSize: 13, textAlign: 'left' }}
-                        className="border border-border/30 text-content-secondary hover:bg-surface-tertiary hover:border-accent/20 transition-all disabled:opacity-50"
-                      >
-                        {ex.label}
-                      </button>
-                    ))}
-                  </div>
+            <div className="agent-welcome">
+              <div className="agent-welcome-body">
+                <h1 className="agent-welcome-title">我可以帮你自动完成工作</h1>
+                <p className="agent-welcome-subtitle">输入任务，或选择下方示例开始</p>
+
+                {/* Example prompts — horizontal row like ChatGPT */}
+                <div className="agent-examples">
+                  {EXAMPLES.map((ex, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSubmit(ex.label, ex.type)}
+                      disabled={isSubmitting}
+                      className="agent-example-btn"
+                    >
+                      {ex.label}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="flex-shrink-0 border-t border-border/20" style={{ padding: '12px 24px 16px' }}>
-                <AgentInput onSubmit={input => handleSubmit(input)} disabled={isSubmitting} placeholder="我可以帮你自动完成工作" prominent />
-                {isSubmitting ? <div className="flex items-center justify-center gap-2 text-content-tertiary text-xs" style={{ marginTop: 8 }}><Spinner size="sm" /><span>正在处理...</span></div> : null}
+
+              {/* Input at bottom of welcome */}
+              <div className="agent-input-area">
+                <AgentInput
+                  onSubmit={input => handleSubmit(input)}
+                  disabled={isSubmitting}
+                  placeholder="说一句话，我来帮你完成"
+                  prominent
+                />
+                {isSubmitting && (
+                  <div className="agent-submitting-hint">
+                    <Spinner size="sm" />
+                    <span>正在处理...</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
         </main>
       </div>
 
-      {errorToast ? (
-        <div className="fixed left-1/2 -translate-x-1/2 z-50 animate-flow-in" style={{ bottom: 80 }}>
-          <div className="px-4 py-2 rounded-lg bg-red-500/90 text-white text-sm shadow-lg">{errorToast}</div>
+      {/* Error toast */}
+      {errorToast && (
+        <div className="agent-error-toast animate-flow-in">
+          {errorToast}
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

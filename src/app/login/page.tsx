@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -16,23 +17,26 @@ export default function LoginPage() {
 
   function handleLogin() {
     const trimmed = username.trim();
-    if (!trimmed) return;
+    if (!trimmed || loading) return;
+    setLoading(true);
     document.cookie = `ob-user-id=${trimmed}; path=/; max-age=31536000`;
     router.replace('/agent');
   }
 
   return (
-    <div className="h-[100dvh] flex flex-col items-center justify-center bg-surface-primary px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-1">
-            <span className="text-accent font-semibold text-lg">ORANGE</span>
-            <span className="text-content-primary font-semibold text-lg">BENCH</span>
-          </div>
-          <p className="text-content-tertiary text-sm">输入用户名开始使用</p>
+    <div className="login-root">
+      <div className="login-card">
+        {/* Brand */}
+        <div className="login-brand">
+          <span className="login-brand-orange">ORANGE</span>
+          <span className="login-brand-text">BENCH</span>
         </div>
 
-        <div className="space-y-3">
+        <h1 className="login-title">欢迎回来</h1>
+        <p className="login-subtitle">输入用户名继续使用</p>
+
+        {/* Form */}
+        <div className="login-form">
           <input
             type="text"
             value={username}
@@ -40,14 +44,15 @@ export default function LoginPage() {
             onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
             placeholder="用户名"
             autoFocus
-            className="w-full px-4 py-3 rounded-xl border border-border bg-surface-secondary text-content-primary text-sm placeholder:text-content-tertiary focus:outline-none focus:border-accent/50 focus:bg-surface-tertiary transition-all"
+            autoComplete="off"
+            className="login-input"
           />
           <button
             onClick={handleLogin}
-            disabled={!username.trim()}
-            className="w-full py-3 rounded-xl bg-accent text-white text-sm font-medium hover:bg-accent-hover active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!username.trim() || loading}
+            className="login-btn"
           >
-            进入
+            {loading ? '跳转中...' : '继续'}
           </button>
         </div>
       </div>

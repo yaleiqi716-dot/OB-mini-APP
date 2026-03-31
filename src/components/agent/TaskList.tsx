@@ -1,9 +1,7 @@
 'use client';
 
-import { Badge } from '@/components/ui/Badge';
 import { TaskStatus, TaskType, TaskSource } from '@/types/task';
-import { TASK_TYPES } from '@/lib/constants';
-import { cn, formatTime } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface TaskItem {
   id: string;
@@ -34,11 +32,16 @@ const STATUS_PRIORITY: Record<TaskStatus, number> = {
   failed: 8,
 };
 
-const SOURCE_LABELS: Record<TaskSource, string> = {
-  agent: '',
-  zapier: '外部',
-  api: '接口',
-};
+function StatusDot({ status }: { status: TaskStatus }) {
+  const isActive = ['executing', 'understanding', 'structuring', 'pending', 'queued'].includes(status);
+  const isWaiting = ['interacting', 'blocked'].includes(status);
+  const isFailed = status === 'failed';
+
+  if (isActive) return <span className="sidebar-status-dot sidebar-status-dot--active" />;
+  if (isWaiting) return <span className="sidebar-status-dot sidebar-status-dot--waiting" />;
+  if (isFailed) return <span className="sidebar-status-dot sidebar-status-dot--failed" />;
+  return null;
+}
 
 export function TaskList({ tasks, activeTaskId, onSelect }: TaskListProps) {
   if (tasks.length === 0) return null;
@@ -50,89 +53,87 @@ export function TaskList({ tasks, activeTaskId, onSelect }: TaskListProps) {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
-  const waiting = sorted.filter((t) => t.status === 'interacting' || t.status === 'structuring' || t.status === 'blocked');
-  const active = sorted.filter((t) => t.status === 'executing' || t.status === 'understanding' || t.status === 'pending' || t.status === 'queued');
+  const waiting = sorted.filter(
+    (t) => t.status === 'interacting' || t.status === 'structuring' || t.status === 'blocked'
+  );
+  const active = sorted.filter(
+    (t) =>
+      t.status === 'executing' ||
+      t.status === 'understanding' ||
+      t.status === 'pending' ||
+      t.status === 'queued'
+  );
   const done = sorted.filter((t) => t.status === 'completed' || t.status === 'failed');
 
   return (
-    <div className="space-y-4">
-      {waiting.length > 0 ? (
-        <Section title="等待处理" count={waiting.length}>
+    <div className="sidebar-task-list">
+      {waiting.length > 0 && (
+        <Section title="等待处理">
           {waiting.map((t) => (
             <TaskRow key={t.id} task={t} active={activeTaskId === t.id} onSelect={onSelect} />
           ))}
         </Section>
-      ) : null}
-
-      {active.length > 0 ? (
+      )}
+      {active.length > 0 && (
         <Section title="进行中">
           {active.map((t) => (
             <TaskRow key={t.id} task={t} active={activeTaskId === t.id} onSelect={onSelect} />
           ))}
         </Section>
-      ) : null}
-
-      {done.length > 0 ? (
+      )}
+      {done.length > 0 && (
         <Section title="已结束">
           {done.map((t) => (
             <TaskRow key={t.id} task={t} active={activeTaskId === t.id} onSelect={onSelect} />
           ))}
         </Section>
-      ) : null}
+      )}
     </div>
   );
 }
 
-function Section({ title, count, children }: { title: string; count?: number; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div>
-      <div className="flex items-center gap-2 px-2 mb-1.5">
-        <p className="text-[11px] font-medium text-content-tertiary uppercase tracking-wider">{title}</p>
-        {count ? (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-medium">{count}</span>
-        ) : null}
-      </div>
-      <div className="space-y-0.5">{children}</div>
+    <div className="sidebar-section">
+      <p className="sidebar-section-title">{title}</p>
+      <div>{children}</div>
     </div>
   );
 }
 
-function TaskRow({ task, active, onSelect }: { task: TaskItem; active: boolean; onSelect: (id: string) => void }) {
-  const typeInfo = TASK_TYPES.find((t) => t.value === task.type);
-  const isWaiting = task.status === 'interacting' || task.status === 'structuring';
-  const sourceLabel = SOURCE_LABELS[task.source];
+function TaskRow({
+  task,
+  active,
+  onSelect,
+}: {
+  task: TaskItem;
+  active: boolean;
+  onSelect: (id: string) => void;
+}) {
+  const isWaiting = task.status === 'interacting' || task.status === 'blocked';
 
   return (
     <button
       onClick={() => onSelect(task.id)}
       className={cn(
-        'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors',
-        active
-          ? 'bg-accent/8 border border-accent/15'
-          : 'hover:bg-surface-tertiary/70 border border-transparent',
-        isWaiting && !active && 'bg-amber-500/5'
+        'sidebar-task-row',
+        active ? 'sidebar-task-row--active' : 'sidebar-task-row--idle',
+        isWaiting && !active && 'sidebar-task-row--waiting'
       )}
     >
-      <span className="text-sm flex-shrink-0">{typeInfo?.icon || '📎'}</span>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <p className={cn('text-[13px] truncate flex-1', active ? 'text-content-primary font-medium' : 'text-content-primary')}>
+      <div className="sidebar-task-row-inner">
+        <div className="sidebar-task-title-row">
+          <span className={cn('sidebar-task-title', active && 'sidebar-task-title--active')}>
             {task.title || '新任务'}
-          </p>
-          {task.hasUnread && !active ? (
-            <span className="h-1.5 w-1.5 rounded-full bg-accent flex-shrink-0" />
-          ) : null}
+          </span>
+          <div className="sidebar-task-meta">
+            <StatusDot status={task.status} />
+            {task.hasUnread && !active && <span className="sidebar-unread-dot" />}
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 mt-0.5">
-          <Badge status={task.status} />
-          {sourceLabel ? (
-            <span className="text-[10px] px-1 py-0.5 rounded bg-blue-500/10 text-blue-400">{sourceLabel}</span>
-          ) : null}
-          <span className="text-[11px] text-content-tertiary ml-auto">{formatTime(task.createdAt)}</span>
-        </div>
-        {task.summary ? (
-          <p className="text-[11px] text-content-tertiary truncate mt-0.5 leading-tight">{task.summary}</p>
-        ) : null}
+        {task.summary && (
+          <p className="sidebar-task-preview">{task.summary}</p>
+        )}
       </div>
     </button>
   );
