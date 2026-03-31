@@ -19,15 +19,11 @@ interface TaskListProps {
   onSelect: (taskId: string) => void;
 }
 
-// ─── Status dot ───────────────────────────────────────────────────────────────
-function StatusDot({ status }: { status: TaskStatus }) {
+// ─── Status dot (running only) ────────────────────────────────────────────────
+function RunningDot({ status }: { status: TaskStatus }) {
   const isRunning = ['executing', 'understanding', 'structuring', 'pending', 'queued'].includes(status);
-  const isWaiting = ['interacting', 'blocked'].includes(status);
-  const isFailed  = status === 'failed';
-  if (isRunning) return <span className="ob-status-dot ob-status-dot--running" />;
-  if (isWaiting) return <span className="ob-status-dot ob-status-dot--waiting" />;
-  if (isFailed)  return <span className="ob-status-dot ob-status-dot--failed" />;
-  return null;
+  if (!isRunning) return null;
+  return <span style={{ width:6, height:6, borderRadius:'50%', background:'#22c55e', flexShrink:0, animation:'pulse 1.5s ease-in-out infinite' }} />;
 }
 
 // ─── Time grouping ─────────────────────────────────────────────────────────────
@@ -147,10 +143,7 @@ function SessionRow({
           {/* Use user's first message as title, fall back to task title */}
           {(task.input && task.input.trim()) ? task.input.trim() : (task.title || '新对话')}
         </span>
-        {/* Only show running indicator, no status labels */}
-        {['executing', 'understanding', 'structuring', 'pending', 'queued'].includes(task.status) ? (
-          <span className="ob-status-dot ob-status-dot--running" style={{ flexShrink: 0 }} />
-        ) : null}
+        <RunningDot status={task.status} />
       </div>
     </button>
   );

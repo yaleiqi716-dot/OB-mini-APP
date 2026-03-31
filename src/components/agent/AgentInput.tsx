@@ -58,7 +58,7 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent }: Agent
             autoResize();
           }}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder || '请输入任务，然后交给 ORANGEBENCH Agent'}
+          placeholder={placeholder || '输入你的需求，我来帮你完成'}
           disabled={disabled}
           className="ob-textarea agent-input-textarea w-full"
           style={{ fontFamily: 'inherit' }}

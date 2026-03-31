@@ -359,13 +359,12 @@ export function TaskCanvas({
               {completedSteps.length > 0 ? (
                 <div className="space-y-2 animate-flow-in">
                   {completedSteps.map((step, i) => (
-                    <div key={`step-${i}`} className="flex items-start gap-2 text-[13px] text-content-primary leading-relaxed">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginTop:2,flexShrink:0}}><polyline points="20 6 9 17 4 12"/></svg>
-                      <span className="flex-1">{step.text}</span>
+                    <p key={`step-${i}`} className="text-[13px] text-content-secondary leading-relaxed">
+                      {step.text}
                       {step.current !== undefined && step.total !== undefined ? (
-                        <span className="text-content-tertiary text-xs tabular-nums flex-shrink-0 mt-0.5">{step.current}/{step.total}</span>
+                        <span className="text-content-tertiary text-xs tabular-nums ml-2">{step.current}/{step.total}</span>
                       ) : null}
-                    </div>
+                    </p>
                   ))}
                 </div>
               ) : null}
@@ -534,14 +533,7 @@ export function TaskCanvas({
                     </div>
                   ) : result !== null ? (
                     <ResultView result={result} />
-                  ) : (
-                    <div className="space-y-2 pt-2">
-                      <div className="flex items-center gap-2">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        <span className="text-sm font-medium text-green-400">任务已完成</span>
-                      </div>
-                    </div>
-                  )}
+                  ) : null}
                   {/* Cost display */}
                   {(() => {
                     const costEvent = events.findLast((e) => e.type === 'task_completed' && typeof e.data.cost === 'number');
@@ -880,7 +872,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     const imgUrl = (data.imageUrl || data.image_url || data.url) as string;
     const imgList = (data.images as string[]) || (imgUrl ? [imgUrl] : []);
     return (
-      <ResultContainer title="图片已经生成好了，你看一下">
+      <ResultContainer title="我帮你生成了这张图，你可以直接使用或告诉我调整方向">
         <div className="grid gap-3" style={{ gridTemplateColumns: imgList.length > 1 ? 'repeat(2, 1fr)' : '1fr' }}>
           {imgList.map((url, i) => (
             <a key={i} href={url} target="_blank" rel="noopener noreferrer"
@@ -904,7 +896,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     const vidUrl = (data.videoUrl || data.video_url || data.url) as string;
     const coverUrl = (data.coverUrl || data.cover_url || data.thumbnail) as string | undefined;
     return (
-      <ResultContainer title="视频已经生成好了，你看一下">
+      <ResultContainer title="视频已经生成好了，适合直接用于内容发布或演示，你看一下效果">
         {vidUrl ? (
           <div className="rounded-xl overflow-hidden border border-border bg-surface-tertiary">
             <video src={vidUrl} poster={coverUrl} controls preload="metadata"
@@ -939,11 +931,9 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
 function ResultContainer({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-3 pt-2">
-      <div className="flex items-center gap-2">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        <span className="text-sm font-medium text-green-400">{title}</span>
-        {subtitle ? <span className="text-xs text-content-tertiary">{subtitle}</span> : null}
-      </div>
+      <p className="text-sm text-content-primary leading-relaxed">
+        {title}{subtitle ? <span className="text-content-tertiary text-xs ml-2">{subtitle}</span> : null}
+      </p>
       <div className="space-y-3">{children}</div>
     </div>
   );

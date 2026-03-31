@@ -63,10 +63,10 @@ function hasUnread(task: TaskState): boolean {
 const TERMINAL = new Set(['completed', 'failed']);
 
 const EXAMPLES = [
-  { label: '写一封客户跟进邮件', type: 'email',   icon: 'mail' },
-  { label: '做一份融资 PPT 结构', type: 'ppt',    icon: 'chart' },
-  { label: '分析行业趋势',        type: 'unknown', icon: 'search' },
-  { label: '生成产品介绍视频',    type: 'video',   icon: 'video' },
+  { label: '帮我写一封客户跟进邮件', type: 'email',   icon: 'mail' },
+  { label: '帮我做一份融资 PPT 结构', type: 'ppt',    icon: 'chart' },
+  { label: '帮我分析一个行业趋势',  type: 'unknown', icon: 'search' },
+  { label: '帮我生成一条产品视频',  type: 'video',   icon: 'video' },
 ];
 
 // SVG icon map — no emoji
@@ -383,9 +383,9 @@ export default function AgentPage() {
             <div className="ob-welcome agent-welcome">
               <div className="ob-welcome-body agent-welcome-body">
                 <h1 className="ob-welcome-title agent-welcome-title">
-                  今天想完成什么？
+                  有什么我可以帮你？
                 </h1>
-                <p className="agent-welcome-subtitle">说一句话，ORANGEBENCH Agent 帮你搞定</p>
+                <p className="agent-welcome-subtitle">告诉我你的需求，我来帮你完成</p>
 
                 {/* Example chips — MiniMax 横排单行 */}
                 <div className="ob-chips agent-examples">
