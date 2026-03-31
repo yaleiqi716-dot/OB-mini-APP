@@ -33,20 +33,15 @@ async function tick() {
       try {
         console.log(`[SCHEDULER] Firing: ${st.id} (${st.cron})`);
 
-        // Free-tier auto-task limit: max 3 runs then stop
+        // Free-tier auto-task limit: max 3 runs per scheduled task
         const user = await getOrCreateUser(st.userId);
-        if (user.plan === 'free') {
-          const autoTaskCount = await prisma.task.count({
-            where: { userId: st.userId, source: 'api' },
+        if (user.plan === 'free' && st.autoRunCount >= FREE_AUTO_TASK_LIMIT) {
+          console.log(`[SCHEDULER] Free user ${st.userId} hit auto-task limit (${st.autoRunCount}/${FREE_AUTO_TASK_LIMIT}), pausing ${st.id}`);
+          await prisma.scheduledTask.update({
+            where: { id: st.id },
+            data: { enabled: false },
           });
-          if (autoTaskCount >= FREE_AUTO_TASK_LIMIT) {
-            console.log(`[SCHEDULER] Free user ${st.userId} hit auto-task limit (${FREE_AUTO_TASK_LIMIT}), disabling ${st.id}`);
-            await prisma.scheduledTask.update({
-              where: { id: st.id },
-              data: { enabled: false },
-            });
-            continue;
-          }
+          continue;
         }
 
         const cost = estimateCost(st.type);
@@ -65,10 +60,13 @@ async function tick() {
           await emitLog(task.id, '定时任务已自动触发');
         });
 
-        // Advance nextRunAt
+        // Advance nextRunAt + increment run count
         await prisma.scheduledTask.update({
           where: { id: st.id },
-          data: { nextRunAt: advanceNextRun(st.nextRunAt, st.cron) },
+          data: {
+            nextRunAt: advanceNextRun(st.nextRunAt, st.cron),
+            autoRunCount: st.autoRunCount + 1,
+          },
         });
 
         console.log(`[SCHEDULER] Created task ${task.id} from scheduled ${st.id}`);

@@ -495,11 +495,21 @@ export function TaskCanvas({
                           解锁完整内容需 {Number((result as Record<string, unknown>)?._unlockCost) || 10} credits
                         </p>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors">
-                            充值 ¥19（100 credits）
-                          </a>
+                          <button
+                            onClick={() => {
+                              fetch(`/api/tasks/${taskId}/unlock`, { method: 'POST' })
+                                .then(r => r.json())
+                                .then(d => {
+                                  if (d.success) window.location.reload();
+                                  else if (d.required) window.location.href = '/billing';
+                                });
+                            }}
+                            className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors"
+                          >
+                            立即解锁（{Number((result as Record<string, unknown>)?._unlockCost) || 10} credits）
+                          </button>
                           <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg border border-accent text-accent hover:bg-accent/10 transition-colors">
-                            充值 ¥79（500 credits）
+                            去充值
                           </a>
                         </div>
                       </div>

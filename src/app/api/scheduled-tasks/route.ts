@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
     }
 
     const tasks = await prisma.scheduledTask.findMany({
-      where: { userId, enabled: true },
+      where: { userId },
       orderBy: { nextRunAt: 'asc' },
       take: 50,
     });
@@ -69,6 +69,9 @@ export async function GET(req: NextRequest) {
       type: t.type,
       input: t.input,
       cron: t.cron,
+      enabled: t.enabled,
+      autoRunCount: t.autoRunCount,
+      paused: !t.enabled,
       nextRunAt: t.nextRunAt.toISOString(),
     })));
   } catch (error) {
