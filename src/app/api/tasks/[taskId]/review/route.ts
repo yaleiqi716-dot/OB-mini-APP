@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { chatCompletion } from '@/lib/openrouter';
+import { executeWithBilling, InsufficientCreditsError } from '@/services/billing';
 
 export async function POST(
   req: NextRequest,
@@ -31,32 +32,45 @@ export async function POST(
     }
 
     if (action === 'ai_optimize') {
-      const content = extractContent(resultRaw);
-      const fullContext = `【任务要求】\n${task.input}\n\n【员工提交】\n${content}`;
-      const aiResult = await chatCompletion(
-        [
-          {
-            role: 'system',
-            content: '你是高级内容专家。请将以下内容优化为老板级品质：更专业、更精炼、更有说服力。保持原有格式和结构，只提升质量。直接输出优化后的内容。',
-          },
-          { role: 'user', content: fullContext },
-        ],
-        { temperature: 0.5, maxTokens: 4096 }
-      );
+      const userId = task.userId || req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value || 'demo-user';
 
-      const optimizedResult = typeof resultRaw === 'object' && resultRaw !== null
-        ? { ...resultRaw as Record<string, unknown>, optimized: true, optimizedContent: aiResult.content }
-        : { original: resultRaw, optimized: true, optimizedContent: aiResult.content };
+      try {
+        const optimizeResult = await executeWithBilling(userId, taskId, 'unknown', async () => {
+          const content = extractContent(resultRaw);
+          const fullContext = `【任务要求】\n${task.input}\n\n【员工提交】\n${content}`;
+          const aiResult = await chatCompletion(
+            [
+              {
+                role: 'system',
+                content: '你是高级内容专家。请将以下内容优化为老板级品质：更专业、更精炼、更有说服力。保持原有格式和结构，只提升质量。直接输出优化后的内容。',
+              },
+              { role: 'user', content: fullContext },
+            ],
+            { temperature: 0.5, maxTokens: 4096 }
+          );
 
-      await prisma.task.update({
-        where: { id: taskId },
-        data: {
-          result: JSON.stringify(optimizedResult),
-          businessStatus: 'completed',
-        },
-      });
+          const optimizedResult = typeof resultRaw === 'object' && resultRaw !== null
+            ? { ...resultRaw as Record<string, unknown>, optimized: true, optimizedContent: aiResult.content }
+            : { original: resultRaw, optimized: true, optimizedContent: aiResult.content };
 
-      return NextResponse.json({ success: true, businessStatus: 'completed', optimizedContent: aiResult.content });
+          await prisma.task.update({
+            where: { id: taskId },
+            data: {
+              result: JSON.stringify(optimizedResult),
+              businessStatus: 'completed',
+            },
+          });
+
+          return aiResult.content;
+        });
+
+        return NextResponse.json({ success: true, businessStatus: 'completed', optimizedContent: optimizeResult });
+      } catch (err) {
+        if (err instanceof InsufficientCreditsError) {
+          return NextResponse.json({ error: err.message }, { status: 403 });
+        }
+        throw err;
+      }
     }
 
     if (action === 'approve') {

@@ -139,26 +139,23 @@ async function executeTask(taskId: string, input: string, presetType?: string, u
     }
   };
 
-  if (userId) {
-    try {
-      await executeWithBilling(userId, taskId, plan.taskType, executeFn);
-    } catch (err) {
-      if (err instanceof InsufficientCreditsError) {
-        await prisma.task.update({
-          where: { id: taskId },
-          data: { status: 'blocked', errorMessage: err.message },
-        });
-        await emitEvent(taskId, 'payment_required', {
-          required: err.required,
-          current: err.current,
-        });
-        await emitEvent(taskId, 'status_change', { status: 'blocked' });
-        return;
-      }
-      throw err;
+  const billingUserId = userId || 'demo-user';
+  try {
+    await executeWithBilling(billingUserId, taskId, plan.taskType, executeFn);
+  } catch (err) {
+    if (err instanceof InsufficientCreditsError) {
+      await prisma.task.update({
+        where: { id: taskId },
+        data: { status: 'blocked', errorMessage: err.message },
+      });
+      await emitEvent(taskId, 'payment_required', {
+        required: err.required,
+        current: err.current,
+      });
+      await emitEvent(taskId, 'status_change', { status: 'blocked' });
+      return;
     }
-  } else {
-    await executeFn();
+    throw err;
   }
 }
 

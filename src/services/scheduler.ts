@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { createTask, updateTaskStatus, emitLog } from './task-manager';
-import { checkCredits } from './billing';
+import { executeWithBilling, InsufficientCreditsError } from './billing';
 import { estimateCost } from '@/lib/cost';
 
 let schedulerInterval: ReturnType<typeof setInterval> | null = null;
@@ -31,30 +31,21 @@ async function tick() {
       try {
         console.log(`[SCHEDULER] Firing: ${st.id} (${st.cron})`);
 
-        const creditCheck = await checkCredits(st.userId, st.type);
-        if (!creditCheck.allowed) {
-          console.log(`[SCHEDULER] Skipped ${st.id}: ${creditCheck.reason}`);
-          // Still advance nextRunAt so it doesn't retry every minute
-          await prisma.scheduledTask.update({
-            where: { id: st.id },
-            data: { nextRunAt: advanceNextRun(st.nextRunAt, st.cron) },
-          });
-          continue;
-        }
-
         const cost = estimateCost(st.type);
         const task = await createTask(st.input, 'api', {
           userId: st.userId,
           estimatedCost: cost,
         });
 
-        await prisma.task.update({
-          where: { id: task.id },
-          data: { priority: 0 },
+        // All execution goes through executeWithBilling — no bypass
+        await executeWithBilling(st.userId, task.id, st.type, async () => {
+          await prisma.task.update({
+            where: { id: task.id },
+            data: { priority: 0 },
+          });
+          await updateTaskStatus(task.id, 'queued');
+          await emitLog(task.id, '定时任务已自动触发');
         });
-
-        await updateTaskStatus(task.id, 'queued');
-        await emitLog(task.id, '定时任务已自动触发');
 
         // Advance nextRunAt
         await prisma.scheduledTask.update({
@@ -64,7 +55,16 @@ async function tick() {
 
         console.log(`[SCHEDULER] Created task ${task.id} from scheduled ${st.id}`);
       } catch (err) {
-        console.error(`[SCHEDULER] Failed for ${st.id}:`, err);
+        if (err instanceof InsufficientCreditsError) {
+          console.log(`[SCHEDULER] Skipped ${st.id}: insufficient credits`);
+        } else {
+          console.error(`[SCHEDULER] Failed for ${st.id}:`, err);
+        }
+        // Always advance nextRunAt so it doesn't retry every minute
+        await prisma.scheduledTask.update({
+          where: { id: st.id },
+          data: { nextRunAt: advanceNextRun(st.nextRunAt, st.cron) },
+        }).catch(() => {});
       }
     }
   } catch (err) {
@@ -75,7 +75,6 @@ async function tick() {
 export function startScheduler(intervalMs = 60_000) {
   if (schedulerInterval) return;
   console.log(`[SCHEDULER] Started (checking every ${intervalMs / 1000}s)`);
-  // Run immediately on startup to catch any overdue tasks
   tick();
   schedulerInterval = setInterval(tick, intervalMs);
 }
