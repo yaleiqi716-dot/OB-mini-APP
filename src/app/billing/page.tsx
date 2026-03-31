@@ -20,32 +20,76 @@ interface UserStatus {
   expireAt: string | null;
 }
 
-function QRModal({ qrUrl, amountLabel, onSuccess, onCancel }: {
-  qrUrl: string; amountLabel: string; onSuccess: () => void; onCancel: () => void;
-}) {
-  const [countdown, setCountdown] = useState(3);
-  const [done, setDone] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+type PayState = 'pending' | 'polling' | 'success' | 'failed';
 
+function QRModal({
+  qrUrl, amountLabel, orderId, onDone, onCancel,
+}: {
+  qrUrl: string;
+  amountLabel: string;
+  orderId: string;
+  onDone: (success: boolean) => void;
+  onCancel: () => void;
+}) {
+  const [payState, setPayState] = useState<PayState>('pending');
+  const [countdown, setCountdown] = useState(3);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const maxWait = 30; // seconds
+  const elapsed = useRef(0);
+
+  // Countdown for preview UX
   useEffect(() => {
-    timerRef.current = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) {
-          clearInterval(timerRef.current!);
-          setDone(true);
-          setTimeout(onSuccess, 800);
-          return 0;
-        }
-        return c - 1;
-      });
+    countRef.current = setInterval(() => {
+      setCountdown((c) => Math.max(0, c - 1));
     }, 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [onSuccess]);
+    return () => { if (countRef.current) clearInterval(countRef.current); };
+  }, []);
+
+  // Start polling after 3s (preview mode: backend auto-completes in ~2s)
+  useEffect(() => {
+    const startPoll = setTimeout(() => {
+      setPayState('polling');
+      pollRef.current = setInterval(async () => {
+        elapsed.current += 1;
+        try {
+          const res = await fetch(`/api/billing/order/${orderId}`);
+          const data = await res.json();
+          if (data.status === 'paid') {
+            clearInterval(pollRef.current!);
+            setPayState('success');
+            setTimeout(() => onDone(true), 900);
+            return;
+          }
+          if (data.status === 'failed' || data.status === 'cancelled') {
+            clearInterval(pollRef.current!);
+            setPayState('failed');
+            setTimeout(() => onDone(false), 1200);
+            return;
+          }
+        } catch { /* network error, keep polling */ }
+        // Timeout after maxWait seconds
+        if (elapsed.current >= maxWait) {
+          clearInterval(pollRef.current!);
+          setPayState('failed');
+          setTimeout(() => onDone(false), 1200);
+        }
+      }, 1000);
+    }, 3000);
+
+    return () => {
+      clearTimeout(startPoll);
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-[340px] flex flex-col items-center gap-5 animate-flow-in">
-        {done ? (
+
+        {/* Success state */}
+        {payState === 'success' ? (
           <div className="flex flex-col items-center gap-4 py-4">
             <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -55,12 +99,30 @@ function QRModal({ qrUrl, amountLabel, onSuccess, onCancel }: {
             <p className="text-lg font-semibold" style={{color:'#111'}}>支付成功</p>
             <p className="text-sm" style={{color:'#888'}}>额度已到账，正在刷新...</p>
           </div>
+        ) : payState === 'failed' ? (
+          /* Failed state */
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </div>
+            <p className="text-lg font-semibold" style={{color:'#111'}}>支付失败</p>
+            <p className="text-sm text-center" style={{color:'#888'}}>支付未完成或已超时，请重试</p>
+            <button onClick={onCancel}
+              className="mt-2 px-6 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+              关闭
+            </button>
+          </div>
         ) : (
+          /* Pending / Polling state */
           <>
             <div className="text-center">
               <p className="text-base font-semibold mb-1" style={{color:'#111'}}>微信扫码支付</p>
               <p className="text-2xl font-bold" style={{color:'#f97316'}}>{amountLabel}</p>
             </div>
+
+            {/* QR code */}
             <div className="relative p-2 rounded-xl border-2 border-gray-200 bg-white">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrUrl)}`}
@@ -72,16 +134,36 @@ function QRModal({ qrUrl, amountLabel, onSuccess, onCancel }: {
                 </div>
               </div>
             </div>
+
+            {/* Status row */}
             <div className="flex flex-col items-center gap-2 w-full">
-              <div className="flex items-center gap-2 text-sm" style={{color:'#444'}}>
-                <Spinner size="sm" />
-                <span>模拟支付中... {countdown}s 后自动完成</span>
-              </div>
+              {payState === 'polling' ? (
+                <div className="flex items-center gap-2 text-sm" style={{color:'#444'}}>
+                  <Spinner size="sm" />
+                  <span>正在确认支付状态...</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm" style={{color:'#444'}}>
+                  <Spinner size="sm" />
+                  <span>等待扫码... {countdown}s 后自动完成</span>
+                </div>
+              )}
+              {/* Progress bar */}
               <div className="w-48 h-1.5 rounded-full overflow-hidden" style={{background:'#eee'}}>
-                <div className="h-full rounded-full transition-all duration-1000" style={{width:`${((3-countdown)/3)*100}%`,background:'#f97316'}} />
+                {payState === 'polling' ? (
+                  <div className="h-full rounded-full bg-orange-400 animate-progress-pulse" style={{width:'80%'}} />
+                ) : (
+                  <div className="h-full rounded-full transition-all duration-1000" style={{
+                    width:`${((3-countdown)/3)*100}%`,
+                    background:'#f97316'
+                  }} />
+                )}
               </div>
             </div>
-            <p className="text-xs text-center" style={{color:'#aaa'}}>Preview 模式：{countdown}s 后自动模拟支付成功</p>
+
+            <p className="text-xs text-center" style={{color:'#aaa'}}>
+              {payState === 'polling' ? '正在验证支付结果，请稍候...' : `Preview 模式：${countdown}s 后自动模拟支付成功`}
+            </p>
             <button onClick={onCancel} className="text-xs transition-colors" style={{color:'#aaa'}}>取消支付</button>
           </>
         )}
@@ -98,7 +180,10 @@ export default function BillingPage() {
   const [qrModal, setQrModal] = useState<{qrUrl:string;orderId:string;amountLabel:string}|null>(null);
   const [toast, setToast] = useState<{text:string;ok:boolean}|null>(null);
 
-  const showToast = (text: string, ok = true) => { setToast({text,ok}); setTimeout(()=>setToast(null),3500); };
+  const showToast = (text: string, ok = true) => {
+    setToast({text, ok});
+    setTimeout(() => setToast(null), 3500);
+  };
 
   const fetchUser = useCallback(() => {
     fetch('/api/user').then(r=>r.json()).then(d=>{ if(d.credits!==undefined) setUser(d); }).catch(()=>{});
@@ -108,19 +193,21 @@ export default function BillingPage() {
     Promise.all([
       fetch('/api/billing/create-order').then(r=>r.json()),
       fetch('/api/user').then(r=>r.json()),
-    ]).then(([prod,usr])=>{
-      if(prod.products) setProducts(prod.products);
-      if(usr.credits!==undefined) setUser(usr);
-    }).catch(()=>{}).finally(()=>setLoading(false));
+    ]).then(([prod, usr]) => {
+      if (prod.products) setProducts(prod.products);
+      if (usr.credits !== undefined) setUser(usr);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  async function handlePaymentSuccess(orderId: string) {
-    try {
-      const res = await fetch(`/api/billing/order/${orderId}`);
-      const data = await res.json();
-      if (data.status === 'paid') { setQrModal(null); setBuying(null); showToast('支付成功！额度已到账'); fetchUser(); return; }
-    } catch { /* ignore */ }
-    setQrModal(null); setBuying(null); showToast('支付成功！额度已到账'); fetchUser();
+  function handlePayDone(success: boolean) {
+    setQrModal(null);
+    setBuying(null);
+    if (success) {
+      showToast('支付成功！额度已到账', true);
+      fetchUser();
+    } else {
+      showToast('支付未完成，请重试', false);
+    }
   }
 
   async function handleBuy(code: string) {
@@ -128,19 +215,36 @@ export default function BillingPage() {
     setBuying(code);
     try {
       const res = await fetch('/api/billing/create-order', {
-        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({productCode:code}),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productCode: code }),
       });
       const data = await res.json();
-      if (!res.ok) { showToast(data.error||'创建订单失败',false); setBuying(null); return; }
-      const product = products.find(p=>p.code===code);
-      setQrModal({ qrUrl: data.codeUrl||'https://orangebench.tech/pay/preview', orderId:data.orderId, amountLabel:product?.amountLabel||data.amountLabel||'¥19' });
-    } catch { showToast('网络错误，请重试',false); setBuying(null); }
+      if (!res.ok) {
+        showToast(data.error || '创建订单失败，请重试', false);
+        setBuying(null);
+        return;
+      }
+      const product = products.find(p => p.code === code);
+      setQrModal({
+        qrUrl: data.codeUrl || 'https://orangebench.tech/pay/preview',
+        orderId: data.orderId,
+        amountLabel: product?.amountLabel || data.amountLabel || '¥19',
+      });
+    } catch {
+      showToast('网络错误，请重试', false);
+      setBuying(null);
+    }
   }
 
-  const subs = products.filter(p=>p.type==='subscription');
-  const creds = products.filter(p=>p.type==='credits');
+  const subs = products.filter(p => p.type === 'subscription');
+  const creds = products.filter(p => p.type === 'credits');
 
-  if (loading) return <div className="h-[100dvh] flex items-center justify-center bg-surface-primary"><Spinner size="md"/></div>;
+  if (loading) return (
+    <div className="h-[100dvh] flex items-center justify-center bg-surface-primary">
+      <Spinner size="md"/>
+    </div>
+  );
 
   return (
     <div className="min-h-[100dvh] bg-surface-primary">
@@ -153,78 +257,119 @@ export default function BillingPage() {
               <div>
                 <div className="text-xs text-content-tertiary mb-1">当前套餐</div>
                 <span className="text-xl font-bold text-content-primary uppercase">{user.plan}</span>
-                {user.expireAt ? <span className="text-xs text-content-tertiary ml-2">到期：{new Date(user.expireAt).toLocaleDateString('zh-CN')}</span> : null}
+                {user.expireAt ? (
+                  <span className="text-xs text-content-tertiary ml-2">
+                    到期：{new Date(user.expireAt).toLocaleDateString('zh-CN')}
+                  </span>
+                ) : null}
               </div>
               <div className="text-right">
                 <div className="text-xs text-content-tertiary mb-1">剩余额度</div>
-                <div className={`text-3xl font-bold tabular-nums ${user.credits<20?'text-red-400':'text-accent'}`}>{user.credits}</div>
+                <div className={`text-3xl font-bold tabular-nums ${user.credits < 20 ? 'text-red-400' : 'text-accent'}`}>
+                  {user.credits}
+                </div>
               </div>
             </div>
           </div>
         ) : null}
 
-        <div>
-          <h2 className="text-sm font-semibold text-content-primary mb-4">订阅套餐</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {subs.map(p=>(
-              <div key={p.code} className="rounded-2xl border border-border bg-surface-secondary p-5 flex flex-col hover:border-accent/40 transition-colors">
-                <div className="text-sm font-semibold text-content-primary">{p.label}</div>
-                <div className="text-3xl font-bold text-accent mt-2">{p.amountLabel}<span className="text-xs text-content-tertiary font-normal">/月</span></div>
-                <div className="text-xs text-content-tertiary mt-2">{p.credits} 额度 · {p.durationDays} 天</div>
-                <div className="mt-auto pt-5">
-                  <button onClick={()=>handleBuy(p.code)} disabled={!!buying}
-                    className="w-full py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50">
-                    {buying===p.code?<span className="flex items-center justify-center gap-2"><Spinner size="sm"/>创建订单...</span>:user?.plan===p.plan?'续费':'订阅'}
-                  </button>
+        {/* Subscription plans */}
+        {subs.length > 0 ? (
+          <div>
+            <h2 className="text-sm font-semibold text-content-primary mb-4">订阅套餐</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {subs.map(p => (
+                <div key={p.code} className="rounded-2xl border border-border bg-surface-secondary p-5 flex flex-col hover:border-accent/40 transition-colors">
+                  <div className="text-sm font-semibold text-content-primary">{p.label}</div>
+                  <div className="text-3xl font-bold text-accent mt-2">
+                    {p.amountLabel}
+                    <span className="text-xs text-content-tertiary font-normal">/月</span>
+                  </div>
+                  <div className="text-xs text-content-tertiary mt-2">{p.credits} 额度 · {p.durationDays} 天</div>
+                  <div className="mt-auto pt-5">
+                    <button
+                      onClick={() => handleBuy(p.code)}
+                      disabled={!!buying}
+                      className="w-full py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50"
+                    >
+                      {buying === p.code ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Spinner size="sm"/>创建订单...
+                        </span>
+                      ) : user?.plan === p.plan ? '续费' : '订阅'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
 
-        <div>
-          <h2 className="text-sm font-semibold text-content-primary mb-4">额度充值</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {creds.map(p=>(
-              <div key={p.code} className="rounded-2xl border border-border bg-surface-secondary p-5 flex flex-col hover:border-accent/40 transition-colors">
-                <div className="text-sm font-semibold text-content-primary">{p.label}</div>
-                <div className="text-3xl font-bold text-content-primary mt-2">{p.amountLabel}</div>
-                <div className="text-xs text-content-tertiary mt-2">+{p.credits} 额度</div>
-                <div className="mt-auto pt-5">
-                  <button onClick={()=>handleBuy(p.code)} disabled={!!buying}
-                    className="w-full py-2.5 rounded-xl border-2 border-accent text-accent text-sm font-semibold hover:bg-accent/10 transition-colors disabled:opacity-50">
-                    {buying===p.code?<span className="flex items-center justify-center gap-2"><Spinner size="sm"/>创建订单...</span>:'购买'}
-                  </button>
+        {/* Credits packs */}
+        {creds.length > 0 ? (
+          <div>
+            <h2 className="text-sm font-semibold text-content-primary mb-4">额度充值</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {creds.map(p => (
+                <div key={p.code} className="rounded-2xl border border-border bg-surface-secondary p-5 flex flex-col hover:border-accent/40 transition-colors">
+                  <div className="text-sm font-semibold text-content-primary">{p.label}</div>
+                  <div className="text-3xl font-bold text-content-primary mt-2">{p.amountLabel}</div>
+                  <div className="text-xs text-content-tertiary mt-2">+{p.credits} 额度</div>
+                  <div className="mt-auto pt-5">
+                    <button
+                      onClick={() => handleBuy(p.code)}
+                      disabled={!!buying}
+                      className="w-full py-2.5 rounded-xl border-2 border-accent text-accent text-sm font-semibold hover:bg-accent/10 transition-colors disabled:opacity-50"
+                    >
+                      {buying === p.code ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Spinner size="sm"/>创建订单...
+                        </span>
+                      ) : '购买'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="rounded-xl border border-border bg-surface-secondary/50 p-4 text-xs text-content-tertiary text-center">
           Preview 模式：点击订阅/购买后显示模拟二维码，3秒后自动完成支付，额度实时更新。不影响未来真实支付接入。
         </div>
       </div>
 
+      {/* QR Modal */}
       {qrModal ? (
         <QRModal
           qrUrl={qrModal.qrUrl}
           amountLabel={qrModal.amountLabel}
-          onSuccess={()=>handlePaymentSuccess(qrModal.orderId)}
-          onCancel={()=>{setQrModal(null);setBuying(null);}}
+          orderId={qrModal.orderId}
+          onDone={handlePayDone}
+          onCancel={() => { setQrModal(null); setBuying(null); }}
         />
       ) : null}
 
+      {/* Toast */}
       {toast ? (
-        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-flow-in px-5 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${toast.ok?'bg-green-500/90':'bg-red-500/90'}`}>
-          {toast.ok?(
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-flow-in px-5 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${toast.ok ? 'bg-green-500/90' : 'bg-red-500/90'}`}>
+          {toast.ok ? (
             <span className="flex items-center gap-2">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
               {toast.text}
             </span>
-          ):toast.text}
+          ) : (
+            <span className="flex items-center gap-2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              {toast.text}
+            </span>
+          )}
         </div>
-      ):null}
+      ) : null}
     </div>
   );
 }

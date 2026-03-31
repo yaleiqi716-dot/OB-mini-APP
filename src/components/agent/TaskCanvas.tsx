@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
@@ -217,6 +217,65 @@ function buildThinkingPhases(events: TaskEvent[]): ThinkingPhase[] {
   return phases;
 }
 
+// ---- Execution Timeline (time-based, instant feedback) ----
+
+const EXEC_PHASES = [
+  { label: '思考中...', delay: 0 },
+  { label: '正在调用 AI 模型...', delay: 1800 },
+  { label: '生成中...', delay: 4000 },
+];
+
+function ExecutionTimeline({ status, events }: { status: TaskStatus; events: TaskEvent[] }) {
+  const [phaseIdx, setPhaseIdx] = useState(0);
+  const [completedPhases, setCompletedPhases] = useState<number[]>([]);
+  const startRef = useRef(Date.now());
+
+  useEffect(() => {
+    // Reset when task starts
+    startRef.current = Date.now();
+    setPhaseIdx(0);
+    setCompletedPhases([]);
+
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    EXEC_PHASES.forEach((phase, i) => {
+      if (i === 0) return;
+      timers.push(setTimeout(() => {
+        setCompletedPhases(prev => [...prev, i - 1]);
+        setPhaseIdx(i);
+      }, phase.delay));
+    });
+    return () => timers.forEach(clearTimeout);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Don't show if we already have real thinking events
+  const hasRealThinking = events.some(e => e.type === 'thinking' || e.type === 'step_update' || e.type === 'log');
+  if (hasRealThinking) return null;
+  if (status === 'completed' || status === 'failed') return null;
+
+  return (
+    <div className="space-y-2">
+      {EXEC_PHASES.map((phase, i) => {
+        const isDone = completedPhases.includes(i);
+        const isCurrent = phaseIdx === i;
+        if (i > phaseIdx) return null; // not yet shown
+        return (
+          <div key={i} className={`flex items-center gap-2 text-xs transition-all duration-500 ${isDone ? 'text-content-tertiary/50' : 'text-content-secondary'}`}>
+            {isDone ? (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-green-500/60 flex-shrink-0">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            ) : isCurrent ? (
+              <span className="w-2.5 h-2.5 rounded-full bg-accent/60 animate-pulse flex-shrink-0" />
+            ) : null}
+            <span className={isDone ? 'line-through' : isCurrent ? 'animate-progress-pulse' : ''}>{phase.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ---- Narrative mode ----
 
 type NarrativeMode = 'interaction' | 'executing' | 'thinking' | 'result' | 'error' | 'blocked' | 'idle';
@@ -238,6 +297,8 @@ export function TaskCanvas({
   onInteractionSubmit, onApprove, onReject, onAdjustStructure, onAdjustProposal, onReviseEmail,
   actionLoading, result, loading, credits, executionStrategy, modelName, onNewTask,
 }: TaskCanvasProps) {
+  // Expose taskId to ResultContainer via context
+  const taskIdRef = taskId;
   const prevTaskIdRef = useRef(taskId);
   if (taskId !== prevTaskIdRef.current) {
     prevTaskIdRef.current = taskId;
@@ -380,7 +441,12 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {/* Queued / pending hint */}
+              {/* Execution Timeline — instant feedback before real events arrive */}
+              {(status === 'queued' || status === 'pending' || status === 'executing' || status === 'understanding') && (
+                <ExecutionTimeline status={status} events={events} />
+              )}
+
+              {/* Queued / pending hint — only if no real events yet */}
               {(status === 'queued' || status === 'pending') && events.length <= 1 ? (
                 <p className="text-xs text-content-secondary/60 italic animate-progress-pulse">
                   正在处理，请稍候...
@@ -517,7 +583,7 @@ export function TaskCanvas({
                       </div>
                     </div>
                   ) : result !== null ? (
-                    <ResultView result={result} />
+                    <ResultView result={result} taskId={taskIdRef} />
                   ) : null}
                   {/* Cost display */}
                   {(() => {
@@ -753,14 +819,14 @@ function StructureList({ structure }: { structure: string[] }) {
   );
 }
 
-function ResultView({ result }: { result: Record<string, unknown> }) {
+function ResultView({ result, taskId: rvTaskId }: { result: Record<string, unknown>; taskId?: string }) {
   const data = result;
   const resultType = data.type as string;
 
   if (resultType === 'ppt' && data.slides) {
     const slides = data.slides as { index: number; title: string; content: string[]; notes: string }[];
     return (
-      <ResultContainer title="演示文稿已经帮你整理好了，你看一下" subtitle={`共 ${slides.length} 页`}>
+      <ResultContainer title="演示文稿已经帮你整理好了，你看一下" subtitle={`共 ${slides.length} 页`} taskId={rvTaskId}>
         {slides.map((slide) => (
           <div key={slide.index} className="p-4 rounded-lg bg-surface-tertiary border border-border">
             <p className="text-sm font-medium text-content-primary mb-2">第 {slide.index + 1} 页：{slide.title}</p>
@@ -779,7 +845,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   if (resultType === 'email' && data.content) {
     const email = data.content as { subject: string; body: string };
     return (
-      <ResultContainer title="邮件已经帮你准备好了，随时可以发送">
+      <ResultContainer title="邮件已经帮你准备好了，随时可以发送" taskId={rvTaskId}>
         <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
           <p className="text-sm font-medium text-content-primary mb-3">主题：{email.subject}</p>
           <p className="text-sm text-content-secondary whitespace-pre-wrap leading-relaxed">{email.body}</p>
@@ -793,7 +859,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     const proposalTitle = (data.title as string) || '策划方案';
     const summary = data.summary as string | undefined;
     return (
-      <ResultContainer title="方案已经帮你写好了，你看看内容" subtitle={summary}>
+      <ResultContainer title="方案已经帮你写好了，你看看内容" subtitle={summary} taskId={rvTaskId}>
         <p className="text-sm font-medium text-content-primary px-1">{proposalTitle}</p>
         {sections?.map((s, i) => (
           <div key={i} className="p-4 rounded-lg bg-surface-tertiary border border-border">
@@ -809,7 +875,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     const history = data.history as { action: string; result: string }[] | undefined;
     const summary = data.summary as string || '已完成';
     return (
-      <ResultContainer title={summary} subtitle={`${data.iterations || 0} 轮推进`}>
+      <ResultContainer title={summary} subtitle={`${data.iterations || 0} 轮推进`} taskId={rvTaskId}>
         {history && history.length > 0 ? (
           <div className="space-y-1.5">
             {history.map((h, i) => (
@@ -827,7 +893,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   if (resultType === 'orchestrator' && data.plan) {
     const plan = data.plan as { type: string; input: string }[];
     return (
-      <ResultContainer title="已帮你拆解并分发任务" subtitle={`共 ${plan.length} 个子任务`}>
+      <ResultContainer title="已帮你拆解并分发任务" subtitle={`共 ${plan.length} 个子任务`} taskId={rvTaskId}>
         <div className="space-y-2">
           {plan.map((t, i) => (
             <div key={i} className="flex items-center gap-2 text-xs text-content-secondary">
@@ -845,7 +911,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   if (resultType === 'text' || (resultType === undefined && data.text)) {
     const textContent = (data.text || data.content || data.message) as string;
     return (
-      <ResultContainer title="已帮你完成，你看一下">
+      <ResultContainer title="已帮你完成，你看一下" taskId={rvTaskId}>
         <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
           <p className="text-sm text-content-secondary whitespace-pre-wrap leading-relaxed">{textContent}</p>
         </div>
@@ -854,7 +920,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   }
   if (resultType === 'direct' && data.content) {
     return (
-      <ResultContainer title="已经帮你完成了，你看一下结果">
+      <ResultContainer title="已经帮你完成了，你看一下结果" taskId={rvTaskId}>
         <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
           <p className="text-sm text-content-secondary whitespace-pre-wrap leading-relaxed">{data.content as string}</p>
         </div>
@@ -867,7 +933,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     const imgUrl = (data.imageUrl || data.image_url || data.url) as string;
     const imgList = (data.images as string[]) || (imgUrl ? [imgUrl] : []);
     return (
-      <ResultContainer title="我帮你生成了这张图，你可以直接使用或告诉我调整方向">
+      <ResultContainer title="我帮你生成了这张图，你可以直接使用或告诉我调整方向" taskId={rvTaskId}>
         <div className="grid gap-3" style={{ gridTemplateColumns: imgList.length > 1 ? 'repeat(2, 1fr)' : '1fr' }}>
           {imgList.map((url, i) => (
             <a key={i} href={url} target="_blank" rel="noopener noreferrer"
@@ -891,7 +957,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     const vidUrl = (data.videoUrl || data.video_url || data.url) as string;
     const coverUrl = (data.coverUrl || data.cover_url || data.thumbnail) as string | undefined;
     return (
-      <ResultContainer title="视频已经生成好了，适合直接用于内容发布或演示，你看一下效果">
+      <ResultContainer title="视频已经生成好了，适合直接用于内容发布或演示，你看一下效果" taskId={rvTaskId}>
         {vidUrl ? (
           <div className="rounded-xl overflow-hidden border border-border bg-surface-tertiary">
             <video src={vidUrl} poster={coverUrl} controls preload="metadata"
@@ -913,7 +979,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   // Fallback — friendly message, not raw JSON
   const fallbackContent = (data.content || data.summary || data.text || data.message) as string | undefined;
   return (
-    <ResultContainer title="已经帮你完成了，你看一下结果">
+    <ResultContainer title="已经帮你完成了，你看一下结果" taskId={rvTaskId}>
       <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
         <p className="text-sm text-content-secondary whitespace-pre-wrap leading-relaxed">
           {fallbackContent || '任务已完成，但结果格式暂不支持直接展示。'}
@@ -923,13 +989,33 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   );
 }
 
-function ResultContainer({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { title: string; subtitle?: string; children: React.ReactNode; taskId?: string }) {
   return (
     <div className="space-y-3 pt-2">
       <p className="text-sm text-content-primary leading-relaxed">
         {title}{subtitle ? <span className="text-content-tertiary text-xs ml-2">{subtitle}</span> : null}
       </p>
       <div className="space-y-3">{children}</div>
+      {/* Chat → Tasks navigation links */}
+      {rcTaskId && (
+        <div className="flex items-center gap-3 pt-2 border-t border-border/50">
+          <a
+            href={`/tasks/${rcTaskId}`}
+            className="text-xs text-accent hover:underline flex items-center gap-1"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            查看任务详情
+          </a>
+          <span className="text-content-tertiary text-xs">·</span>
+          <a
+            href="/tasks"
+            className="text-xs text-content-secondary hover:text-accent hover:underline flex items-center gap-1"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            查看我的任务
+          </a>
+        </div>
+      )}
     </div>
   );
 }
