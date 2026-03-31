@@ -304,57 +304,29 @@ export function TaskCanvas({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header — light, not system-like */}
-      <div className="px-4 md:px-5 py-3 md:py-3.5 border-b border-border/40">
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="text-base flex-shrink-0">{typeInfo?.icon || '📎'}</span>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-medium text-content-primary truncate">{title || '新任务'}</h3>
-            <div className="flex items-center gap-2 mt-0.5">
-              <Badge status={status} />
-              <span className="text-xs text-content-tertiary">{TYPE_LABELS[type] || type}</span>
-            </div>
-          </div>
-        </div>
+      {/* Pure chat flow — no header card */}
+      <div className="flex-1 overflow-y-auto px-0 py-0">
+        <div className="ob-messages agent-content-wrap" style={{ paddingBottom: 0 }}>
 
-        {statusBarText && (mode === 'executing' || mode === 'thinking') ? (
-          <div className="mt-3 animate-flow-in">
-            <div className="flex items-center gap-2 text-xs text-content-secondary">
-              <Spinner size="sm" />
-              <span className="animate-progress-pulse">{statusBarText}</span>
-            </div>
-            {progress ? (
-              <div className="mt-2 h-1 rounded-full bg-surface-tertiary overflow-hidden">
-                <div className="h-full rounded-full bg-accent progress-bar-fill"
-                  style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} />
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      {/* Execution flow */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4">
-
-        {/* User input */}
+        {/* User message bubble — right aligned */}
         {input ? (
-          <div className="flex gap-3">
-            <div className="h-7 w-7 rounded-full bg-accent/15 flex items-center justify-center flex-shrink-0">
-              <span className="text-xs text-accent font-medium">你</span>
-            </div>
-            <div className="pt-1">
-              <p className="text-sm text-content-primary leading-relaxed">{input}</p>
-            </div>
+          <div className="ob-msg-user chat-user-bubble-row">
+            <div className="ob-msg-user-bubble chat-user-bubble">{input}</div>
           </div>
         ) : null}
 
-        {/* AI response */}
+        {/* AI response area */}
         {(events.length > 0 || isActive) ? (
-          <div className="flex gap-3">
-            <div className="h-7 w-7 rounded-full bg-surface-tertiary flex items-center justify-center flex-shrink-0">
-              <span className="text-xs text-content-tertiary font-medium">{typeInfo?.icon || 'AI'}</span>
+          <div className="ob-msg-ai chat-ai-area">
+            {/* AI avatar row */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-full bg-[#f97316]/10 flex items-center justify-center flex-shrink-0">
+                <span className="text-sm">{typeInfo?.icon || '🤖'}</span>
+              </div>
+              <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>ORANGEBENCH</span>
+              {isActive ? <Spinner size="sm" /> : null}
             </div>
-            <div className="flex-1 min-w-0 space-y-3 pt-1">
+            <div className="flex-1 min-w-0 space-y-3 pl-9">
 
               {/* Logs — only during review */}
               {visibleLogs.map((event, i) => (
@@ -627,32 +599,41 @@ export function TaskCanvas({
                   : '';
                 const hasInsufficientEvent = events.some((e) => e.type === 'insufficient_credits');
                 const isCreditsError = hasInsufficientEvent || errMsg.includes('余额不足') || errMsg.includes('额度不足');
+                // Detect config errors (API key missing etc.) and convert to friendly message
+                const isConfigError = errMsg.includes('API_KEY') || errMsg.includes('api_key') ||
+                  errMsg.includes('OPENROUTER') || errMsg.includes('not configured') ||
+                  errMsg.includes('未配置') || errMsg.includes('401') || errMsg.includes('403');
 
                 return isCreditsError ? (
-                  <div className="animate-flow-in p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
-                    <p className="text-sm text-amber-400">余额不足，任务已暂停</p>
-                    <p className="text-xs text-content-tertiary">充值后任务将自动恢复执行</p>
+                  <div className="animate-flow-in space-y-3">
+                    <p className="text-sm" style={{ color: 'var(--text-primary)' }}>我现在暂时无法继续执行，你的额度不足了。充値后任务会自动恢复。</p>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors">
-                        充值 ¥19（100 credits）
+                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg bg-[#111] text-white hover:bg-[#333] transition-colors">
+                        充値 ¥19（100 credits）
                       </a>
-                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg border border-accent text-accent hover:bg-accent/10 transition-colors">
-                        充值 ¥79（500 credits）
+                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg border border-[#e5e5e5] hover:bg-[#f5f5f5] transition-colors" style={{ color: 'var(--text-secondary)' }}>
+                        充値 ¥79（500 credits）
                       </a>
                     </div>
                   </div>
+                ) : isConfigError ? (
+                  <p className="text-sm animate-flow-in" style={{ color: 'var(--text-secondary)' }}>
+                    我现在无法连接模型，请稍后再试。
+                  </p>
                 ) : (
-                  <div className="animate-flow-in p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-                    <p className="text-sm text-red-400">
-                      {errMsg || '遇到了一些问题，如果需要我可以重新试一下'}
-                    </p>
-                  </div>
+                  <p className="text-sm animate-flow-in" style={{ color: 'var(--text-secondary)' }}>
+                    {errMsg && !errMsg.includes('Error') && !errMsg.includes('error')
+                      ? errMsg
+                      : '遇到了一些问题，请稍后再试。'}
+                  </p>
                 );
               })() : null}
             </div>
           </div>
         ) : null}
-      </div>
+
+        </div>{/* end ob-messages */}
+      </div>{/* end scroll area */}
     </div>
   );
 }

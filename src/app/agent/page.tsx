@@ -184,7 +184,7 @@ export default function AgentPage() {
 
   function selectTask(id: string) { setActiveTaskId(id); setSidebarOpen(false); }
 
-  const listItems = tasks.map(t => ({ id: t.id, type: t.type, status: t.status, title: t.title, createdAt: t.createdAt, summary: getTaskSummary(t), hasUnread: hasUnread(t), source: t.source }));
+  const listItems = tasks.map(t => ({ id: t.id, type: t.type, status: t.status, title: t.title, input: t.input, createdAt: t.createdAt, summary: getTaskSummary(t), hasUnread: hasUnread(t), source: t.source }));
 
   if (!authChecked) return <div style={{ height: '100dvh', background: 'var(--bg)' }} />;
 

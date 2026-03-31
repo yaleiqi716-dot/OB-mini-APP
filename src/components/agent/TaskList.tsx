@@ -7,6 +7,7 @@ interface TaskItem {
   type: TaskType;
   status: TaskStatus;
   title: string;
+  input?: string;  // user's first message — used as conversation title
   createdAt: string;
   summary: string;
   hasUnread: boolean;
@@ -143,12 +144,13 @@ function SessionRow({
             lineHeight: 1.4,
           }}
         >
-          {task.title || '新任务'}
+          {/* Use user's first message as title, fall back to task title */}
+          {(task.input && task.input.trim()) ? task.input.trim() : (task.title || '新对话')}
         </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <StatusDot status={task.status} />
-          {task.hasUnread && !active && <span className="ob-unread-dot" />}
-        </span>
+        {/* Only show running indicator, no status labels */}
+        {['executing', 'understanding', 'structuring', 'pending', 'queued'].includes(task.status) ? (
+          <span className="ob-status-dot ob-status-dot--running" style={{ flexShrink: 0 }} />
+        ) : null}
       </div>
     </button>
   );
