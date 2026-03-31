@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { AgentInput } from '@/components/agent/AgentInput';
 import { WorkCardList } from '@/components/agent/WorkCardList';
 import { TaskCanvas } from '@/components/agent/TaskCanvas';
@@ -111,7 +112,26 @@ function hasImportantUpdate(task: TaskState): boolean {
 
 const TERMINAL_STATUSES = new Set(['completed', 'failed']);
 
+const WELCOME_EXAMPLES = [
+  { label: '帮我写一封客户跟进邮件', type: 'email' },
+  { label: '帮我做一份融资PPT结构', type: 'ppt' },
+  { label: '帮我分析行业趋势', type: 'unknown' },
+  { label: '帮我生成一个产品介绍视频', type: 'video' },
+];
+
 export default function AgentPage() {
+  const router = useRouter();
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const match = document.cookie.match(/ob-user-id=([^;]+)/);
+    if (!match || !match[1]) {
+      router.replace('/login');
+      return;
+    }
+    setAuthChecked(true);
+  }, [router]);
+
   const [tasks, setTasks] = useState<TaskState[]>([]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -452,6 +472,10 @@ export default function AgentPage() {
 
   // ---- Render ----
 
+  if (!authChecked) {
+    return <div className="h-[100dvh] bg-surface-primary" />;
+  }
+
   return (
     <div className="h-[100dvh] flex flex-col bg-surface-primary">
       {/* Header — minimal, not system-like */}
@@ -561,23 +585,22 @@ export default function AgentPage() {
               </div>
             </>
           ) : (
-            /* Welcome — input centered like ChatGPT */
+            /* Welcome — empty state with examples */
             <div className="flex-1 flex flex-col items-center justify-center px-4">
               <div className="w-full max-w-2xl space-y-8 md:space-y-10">
                 <div className="text-center space-y-2 md:space-y-3">
                   <h1 className="text-2xl md:text-3xl font-semibold text-content-primary">
-                    我可以帮你自动完成工作，你只需要说一次
+                    我可以帮你自动完成工作
                   </h1>
                   <p className="text-content-secondary text-sm md:text-base">
-                    写邮件 / 做演示文稿 / 整理方案 / 持续执行任务
+                    输入任务，或点击下面的示例开始
                   </p>
                 </div>
 
-                {/* Input in center */}
                 <AgentInput
                   onSubmit={(input) => handleSubmit(input)}
                   disabled={isSubmitting}
-                  placeholder="例如：帮我每周自动总结客户沟通并生成邮件"
+                  placeholder="输入你想让我帮你做的事..."
                   prominent
                 />
 
@@ -587,10 +610,18 @@ export default function AgentPage() {
                   </div>
                 ) : null}
 
-                {/* Work cards below input */}
-                {showWelcome ? (
-                  <WorkCardList onSelect={handleCardSelect} />
-                ) : null}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {WELCOME_EXAMPLES.map((ex, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSubmit(ex.label, ex.type)}
+                      disabled={isSubmitting}
+                      className="text-left px-4 py-3 rounded-xl border border-border/50 bg-surface-secondary hover:bg-surface-tertiary hover:border-accent/30 text-sm text-content-primary transition-all disabled:opacity-50"
+                    >
+                      {ex.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
