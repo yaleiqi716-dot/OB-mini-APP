@@ -67,6 +67,17 @@ model AutoTask {
   createdAt DateTime @default(now())
 }
 
+model ScheduledTask {
+  id        String   @id @default(cuid())
+  type      String   // ppt | email | proposal | unknown
+  input     String
+  cron      String   // "daily" | "weekly"
+  nextRunAt DateTime
+  userId    String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
 model Order {
   id        String   @id @default(cuid())
   userId    String
