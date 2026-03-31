@@ -3,10 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { AgentInput } from '@/components/agent/AgentInput';
-import { WorkCardList } from '@/components/agent/WorkCardList';
 import { TaskCanvas } from '@/components/agent/TaskCanvas';
 import { TaskList } from '@/components/agent/TaskList';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Spinner } from '@/components/ui/Spinner';
 import { useSSE } from '@/hooks/useSSE';
 import { TaskStatus, TaskType, TaskSource } from '@/types/task';
@@ -73,8 +71,6 @@ function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
 
 function getTaskSummary(task: TaskState): string {
   const evts = task.events;
-  // Priority: interaction_request > step_update > log
-  // Scan from end for each type separately to avoid interleaving noise
   for (let i = evts.length - 1; i >= 0; i--) {
     if (evts[i].type === 'interaction_request') return String(evts[i].data.question || '');
   }
@@ -92,20 +88,15 @@ function getTaskSummary(task: TaskState): string {
   return '';
 }
 
-// Only important events count for unread — not logs/step_updates/thinking
 const UNREAD_EVENT_TYPES = new Set(['interaction_request', 'task_completed', 'error', 'approval_requested']);
 
 function hasImportantUpdate(task: TaskState): boolean {
-  // If never seen, it's unread
   if (!task.lastSeenUpdatedAt) return true;
-  // Check if any important event happened after lastSeen
   for (let i = task.events.length - 1; i >= 0; i--) {
     const e = task.events[i];
     if (UNREAD_EVENT_TYPES.has(e.type) && e.createdAt > task.lastSeenUpdatedAt) return true;
-    // Stop scanning once we pass lastSeen
     if (e.createdAt <= task.lastSeenUpdatedAt) break;
   }
-  // For tasks without loaded events, use updatedAt comparison
   if (!task.eventsLoaded && task.updatedAt > task.lastSeenUpdatedAt) return true;
   return false;
 }
@@ -138,18 +129,19 @@ export default function AgentPage() {
   const [actionLoadingTaskId, setActionLoadingTaskId] = useState<string | null>(null);
   const [interactingTaskId, setInteractingTaskId] = useState<string | null>(null);
   const [errorToast, setErrorToast] = useState<string | null>(null);
-  const [showWelcome, setShowWelcome] = useState(true);
   const [quota, setQuota] = useState<{
     credits: number; plan: string;
     limits: { maxConcurrent: number; allowedTypes: string[] };
   } | null>(null);
   const canvasEndRef = useRef<HTMLDivElement>(null);
   const activeTaskIdRef = useRef<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   activeTaskIdRef.current = activeTaskId;
   const activeTask = tasks.find((t) => t.id === activeTaskId) || null;
+  const hasTasks = tasks.length > 0;
 
-  // SSE for active task
+  // SSE
   const { reconnecting: sseReconnecting } = useSSE(activeTaskId, {
     enabled: !!activeTaskId,
     onEvent: useCallback((event: TaskEvent) => {
@@ -169,7 +161,6 @@ export default function AgentPage() {
           if (event.type === 'task_completed' && event.data.result) {
             updated.result = event.data.result as Record<string, unknown>;
             updated.status = 'completed';
-            // Refresh credits after task completion
             fetchQuota();
           }
           return updated;
@@ -178,14 +169,13 @@ export default function AgentPage() {
     }, []),
   });
 
-  // 5s task list polling — protected merge
+  // Poll tasks
   useEffect(() => {
     function pollTasks() {
       fetch('/api/tasks')
         .then((r) => r.json())
         .then((data) => {
           if (!Array.isArray(data)) return;
-          if (data.length > 0) setShowWelcome(false);
           setTasks((prev) => {
             const prevMap = new Map(prev.map((t) => [t.id, t]));
             const merged: TaskState[] = [];
@@ -197,9 +187,7 @@ export default function AgentPage() {
               const existing = prevMap.get(id);
               if (existing) {
                 const isActive = id === currentActiveId;
-                // PROTECT: never let poll regress active task or overwrite SSE-driven fields
                 if (isActive) {
-                  // Only update title (which may come from routing) and updatedAt
                   merged.push({
                     ...existing,
                     title: (t.title as string) || existing.title,
@@ -209,7 +197,6 @@ export default function AgentPage() {
                     lastSeenUpdatedAt: serverUpdatedAt > existing.lastSeenUpdatedAt ? serverUpdatedAt : existing.lastSeenUpdatedAt,
                   });
                 } else {
-                  // Non-active: update summary fields but never regress status
                   const shouldUpdateStatus = !TERMINAL_STATUSES.has(existing.status) || TERMINAL_STATUSES.has(serverStatus);
                   merged.push({
                     ...existing,
@@ -248,26 +235,7 @@ export default function AgentPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-create first task for new users
-  const firstTaskTriggered = useRef(false);
-  useEffect(() => {
-    if (firstTaskTriggered.current) return;
-    if (typeof window === 'undefined') return;
-    if (localStorage.getItem('ob_first_task_done')) return;
-
-    // Wait for initial poll to determine if user has tasks
-    const timer = setTimeout(() => {
-      if (tasks.length === 0 && !firstTaskTriggered.current) {
-        firstTaskTriggered.current = true;
-        localStorage.setItem('ob_first_task_done', '1');
-        handleSubmit('帮我生成一份今日工作总结邮件', 'email');
-      }
-    }, 2000); // 2s delay to let initial poll complete
-
-    return () => clearTimeout(timer);
-  }, [tasks.length]);
-
-  // Fetch full events on task switch
+  // Fetch events on task switch
   useEffect(() => {
     if (!activeTaskId) return;
     const task = tasks.find((t) => t.id === activeTaskId);
@@ -290,8 +258,6 @@ export default function AgentPage() {
     );
   }, [activeTaskId]);
 
-  // Auto scroll — handled in render section via scrollContainerRef
-
   function showError(msg: string) {
     setErrorToast(msg);
     setTimeout(() => setErrorToast(null), 3000);
@@ -303,17 +269,23 @@ export default function AgentPage() {
     }).catch(() => {});
   }
 
-  async function handleAddCredits() {
-    window.location.href = '/billing';
-  }
-
   useEffect(() => { fetchQuota(); }, []);
+
+  // Auto scroll
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+    if (isNearBottom) {
+      canvasEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [activeTask?.events.length]);
 
   // ---- Handlers ----
 
   async function handleSubmit(input: string, type?: string) {
     setIsSubmitting(true);
-    setShowWelcome(false);
     try {
       const res = await fetch('/api/tasks', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -326,8 +298,6 @@ export default function AgentPage() {
       }
       if (data.taskId) {
         const now = new Date().toISOString();
-
-        // Instant feedback: inject a synthetic thinking event so canvas is never blank
         const instantThinking: TaskEvent = {
           type: 'thinking',
           data: { text: '好，我来帮你处理这个任务，我先把整体思路理一下' },
@@ -339,7 +309,6 @@ export default function AgentPage() {
         let newTask: TaskState;
         if (detailData && !detailData.error) {
           newTask = parseTaskFromAPI(detailData);
-          // Prepend instant thinking if no events yet
           if (newTask.events.length === 0) {
             newTask.events = [instantThinking];
           }
@@ -355,7 +324,7 @@ export default function AgentPage() {
         }
         setTasks((prev) => [newTask, ...prev]);
         setActiveTaskId(data.taskId);
-        fetchQuota(); // Refresh quota after task creation
+        fetchQuota();
       }
     } catch (error) { console.error('提交失败:', error); }
     finally { setIsSubmitting(false); }
@@ -441,15 +410,9 @@ export default function AgentPage() {
     finally { setInteractingTaskId(null); }
   }
 
-  function handleCardSelect(prompt: string, type: string) { handleSubmit(prompt, type); }
-
-  const hasTasks = tasks.length > 0;
-  const isActiveTaskLoading = activeTask && !activeTask.eventsLoaded;
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
   function handleTaskSelect(id: string) {
     setActiveTaskId(id);
-    setSidebarOpen(false); // Close mobile sidebar on select
+    setSidebarOpen(false);
   }
 
   const taskListItems = tasks.map((t) => ({
@@ -459,16 +422,7 @@ export default function AgentPage() {
     source: t.source,
   }));
 
-  // Smart auto-scroll: only if user is near bottom
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
-    if (isNearBottom) {
-      canvasEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [activeTask?.events.length]);
+  const isActiveTaskLoading = activeTask && !activeTask.eventsLoaded;
 
   // ---- Render ----
 
@@ -478,45 +432,38 @@ export default function AgentPage() {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-surface-primary">
-      {/* Header — minimal, not system-like */}
-      <header className="flex items-center justify-between px-4 md:px-6 h-11 border-b border-border/50 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          {hasTasks ? (
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden p-1.5 -ml-1 rounded-lg hover:bg-surface-tertiary text-content-tertiary"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            </button>
-          ) : null}
+      {/* Header */}
+      <header className="flex items-center justify-between px-4 md:px-6 h-12 border-b border-border/40 flex-shrink-0 bg-surface-primary">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="md:hidden p-1.5 -ml-1 rounded-lg hover:bg-surface-tertiary text-content-tertiary"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
           <div className="flex items-center gap-1">
             <span className="text-accent font-semibold text-sm">ORANGE</span>
             <span className="text-content-primary font-semibold text-sm">BENCH</span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {quota ? (
-            <div className="hidden sm:flex items-center gap-2 text-xs text-content-tertiary">
-              <span className="px-1 py-0.5 rounded bg-surface-tertiary text-content-tertiary text-[10px] uppercase">{quota.plan}</span>
-              <span className={`px-1.5 py-0.5 rounded font-medium ${quota.credits < 20 ? 'bg-red-500/10 text-red-400' : 'bg-accent/10 text-accent'}`}>
+            <div className="flex items-center gap-2 text-xs text-content-tertiary">
+              <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-surface-tertiary text-[10px] uppercase font-medium">{quota.plan}</span>
+              <span className={`px-1.5 py-0.5 rounded font-medium tabular-nums ${quota.credits < 20 ? 'bg-red-500/10 text-red-400' : 'bg-accent/10 text-accent'}`}>
                 {quota.credits}
               </span>
-              <span>额度</span>
-              {quota.credits < 20 ? (
-                <span className="text-red-400 text-[10px]">余额不足</span>
-              ) : null}
-              <button onClick={handleAddCredits} className="px-2 py-0.5 rounded bg-accent/10 text-accent hover:bg-accent/20 transition-colors font-medium">
+              <a href="/billing" className="px-2 py-1 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors text-[11px] font-medium">
                 充值
-              </button>
+              </a>
             </div>
           ) : null}
-          <ThemeToggle />
         </div>
       </header>
 
-      {/* Connection indicator */}
+      {/* SSE reconnect banner */}
       {sseReconnecting ? (
         <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-1.5 text-center text-xs text-amber-400 flex-shrink-0">
           连接中断，正在重连...
@@ -524,19 +471,47 @@ export default function AgentPage() {
       ) : null}
 
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Desktop sidebar — softer, like history panel */}
-        {hasTasks ? (
-          <aside className="hidden md:block w-64 border-r border-border/40 p-2 overflow-y-auto custom-scrollbar flex-shrink-0 bg-surface-primary">
-            <TaskList tasks={taskListItems} activeTaskId={activeTaskId} onSelect={handleTaskSelect} />
-          </aside>
-        ) : null}
+        {/* Desktop sidebar — always visible */}
+        <aside className="hidden md:flex flex-col w-64 border-r border-border/30 flex-shrink-0 bg-surface-primary">
+          <div className="px-3 py-2.5 border-b border-border/20">
+            <button
+              onClick={() => { setActiveTaskId(null); }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-content-secondary hover:bg-surface-tertiary transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              新任务
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+            {hasTasks ? (
+              <TaskList tasks={taskListItems} activeTaskId={activeTaskId} onSelect={handleTaskSelect} />
+            ) : (
+              <p className="text-xs text-content-tertiary text-center py-8">暂无任务</p>
+            )}
+          </div>
+        </aside>
 
         {/* Mobile sidebar */}
-        {sidebarOpen && hasTasks ? (
+        {sidebarOpen ? (
           <>
-            <div className="mobile-sidebar-overlay md:hidden" onClick={() => setSidebarOpen(false)} />
-            <aside className="mobile-sidebar md:hidden p-2 custom-scrollbar">
-              <TaskList tasks={taskListItems} activeTaskId={activeTaskId} onSelect={handleTaskSelect} />
+            <div className="fixed inset-0 bg-black/30 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+            <aside className="fixed left-0 top-12 bottom-0 w-72 bg-surface-primary border-r border-border/30 z-50 md:hidden flex flex-col">
+              <div className="px-3 py-2.5 border-b border-border/20">
+                <button
+                  onClick={() => { setActiveTaskId(null); setSidebarOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-content-secondary hover:bg-surface-tertiary transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                  新任务
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+                {hasTasks ? (
+                  <TaskList tasks={taskListItems} activeTaskId={activeTaskId} onSelect={handleTaskSelect} />
+                ) : (
+                  <p className="text-xs text-content-tertiary text-center py-8">暂无任务</p>
+                )}
+              </div>
             </aside>
           </>
         ) : null}
@@ -545,9 +520,9 @@ export default function AgentPage() {
         <main className="flex-1 flex flex-col overflow-hidden">
           {activeTask ? (
             <>
-              {/* Task execution area — with transition */}
-              <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar animate-flow-in" key={activeTask.id}>
-                <div className="max-w-3xl mx-auto pb-4 px-2 md:px-0">
+              {/* Task canvas */}
+              <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar" key={activeTask.id}>
+                <div className="max-w-3xl mx-auto pb-4 px-3 md:px-0">
                   <TaskCanvas
                     taskId={activeTask.id} title={activeTask.title} type={activeTask.type}
                     status={activeTask.status} input={activeTask.input} events={activeTask.events}
@@ -570,63 +545,68 @@ export default function AgentPage() {
                 </div>
               </div>
 
-              {/* Input — bottom bar */}
-              <div className="border-t border-border/40 px-3 md:px-4 py-2.5 bg-surface-primary flex-shrink-0 pb-safe">
+              {/* Fixed input bar */}
+              <div className="border-t border-border/30 px-3 md:px-4 py-2.5 bg-surface-primary flex-shrink-0 pb-safe">
                 <AgentInput
                   onSubmit={(input) => handleSubmit(input)}
                   disabled={isSubmitting}
                   placeholder="继续说，我帮你接着做..."
                 />
                 {isSubmitting ? (
-                  <div className="flex items-center justify-center gap-2 mt-2 text-content-tertiary text-sm">
+                  <div className="flex items-center justify-center gap-2 mt-2 text-content-tertiary text-xs">
                     <Spinner size="sm" /><span>正在处理...</span>
                   </div>
                 ) : null}
               </div>
             </>
           ) : (
-            /* Welcome — empty state with examples */
-            <div className="flex-1 flex flex-col items-center justify-center px-4">
-              <div className="w-full max-w-2xl space-y-8 md:space-y-10">
-                <div className="text-center space-y-2 md:space-y-3">
-                  <h1 className="text-2xl md:text-3xl font-semibold text-content-primary">
-                    我可以帮你自动完成工作
-                  </h1>
-                  <p className="text-content-secondary text-sm md:text-base">
-                    输入任务，或点击下面的示例开始
-                  </p>
-                </div>
+            /* Welcome — centered with input + examples */
+            <div className="flex-1 flex flex-col">
+              <div className="flex-1 flex items-center justify-center px-4">
+                <div className="w-full max-w-2xl space-y-8">
+                  <div className="text-center space-y-2">
+                    <h1 className="text-2xl md:text-3xl font-semibold text-content-primary">
+                      我可以帮你自动完成工作
+                    </h1>
+                    <p className="text-content-tertiary text-sm">
+                      输入任务，或点击下方示例开始
+                    </p>
+                  </div>
 
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {WELCOME_EXAMPLES.map((ex, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleSubmit(ex.label, ex.type)}
+                        disabled={isSubmitting}
+                        className="text-left px-4 py-3 rounded-xl border border-border/40 hover:bg-surface-tertiary hover:border-accent/20 text-[13px] text-content-secondary transition-all disabled:opacity-50"
+                      >
+                        {ex.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Input pinned at bottom even in welcome */}
+              <div className="border-t border-border/30 px-3 md:px-4 py-2.5 bg-surface-primary flex-shrink-0 pb-safe">
                 <AgentInput
                   onSubmit={(input) => handleSubmit(input)}
                   disabled={isSubmitting}
                   placeholder="输入你想让我帮你做的事..."
                   prominent
                 />
-
                 {isSubmitting ? (
-                  <div className="flex items-center justify-center gap-2 text-content-tertiary text-sm">
+                  <div className="flex items-center justify-center gap-2 mt-2 text-content-tertiary text-xs">
                     <Spinner size="sm" /><span>正在处理...</span>
                   </div>
                 ) : null}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {WELCOME_EXAMPLES.map((ex, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleSubmit(ex.label, ex.type)}
-                      disabled={isSubmitting}
-                      className="text-left px-4 py-3 rounded-xl border border-border/50 bg-surface-secondary hover:bg-surface-tertiary hover:border-accent/30 text-sm text-content-primary transition-all disabled:opacity-50"
-                    >
-                      {ex.label}
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
           )}
         </main>
       </div>
+
       {/* Error toast */}
       {errorToast ? (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 animate-flow-in">
