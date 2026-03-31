@@ -15,8 +15,7 @@ export async function GET(req: NextRequest) {
         id: true,
         title: true,
         input: true,
-        businessStatus: true,
-        status: true,
+        status: true,   // 唯一真实状态源
         type: true,
         createdAt: true,
       },
@@ -26,7 +25,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(tasks.map(t => ({
       id: t.id,
       title: t.title || t.input?.slice(0, 40) || '无标题任务',
-      businessStatus: t.businessStatus || t.status,
+      status: t.status,
       type: t.type,
       createdAt: t.createdAt.toISOString(),
     })));

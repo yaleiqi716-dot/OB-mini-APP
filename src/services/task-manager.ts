@@ -58,7 +58,6 @@ export function formatTask(t: {
     estimatedCost: t.estimatedCost || 0,
     actualCost: t.actualCost || 0,
     assigneeId: t.assigneeId || null,
-    businessStatus: t.businessStatus || 'assigned',
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
     events: t.events?.map(formatEvent) ?? [],

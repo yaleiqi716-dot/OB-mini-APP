@@ -6,9 +6,9 @@ import { NavHeader } from '@/components/NavHeader';
 
 interface Summary {
   total: number;
-  assigned: number;
-  submitted: number;
-  completed: number;
+  running: number;    // 执行中（queued+running+interacting）
+  completed: number;  // 已完成
+  failed: number;     // 失败
   pausedAutoTasks: number;
   highlights: string[];
   risks: string[];
@@ -44,9 +44,9 @@ export default function DashboardPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard label="全部任务" value={data.total} color="text-content-primary" />
-          <StatCard label="待处理" value={data.assigned} color="text-amber-400" />
-          <StatCard label="待审核" value={data.submitted} color="text-blue-400" />
+          <StatCard label="执行中" value={data.running} color="text-amber-400" />
           <StatCard label="已完成" value={data.completed} color="text-green-400" />
+          <StatCard label="失败" value={data.failed} color="text-red-400" />
         </div>
 
         {/* Highlights */}
@@ -77,9 +77,9 @@ export default function DashboardPage() {
         ) : null}
 
         {/* Quick actions */}
-        {data.submitted > 0 ? (
-          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-            <p className="text-sm text-blue-400">{data.submitted} 个任务等待你审核</p>
+        {data.completed > 0 ? (
+          <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+            <p className="text-sm text-green-400">{data.completed} 个任务已完成，可前往审核</p>
             <Link href="/review" className="text-xs text-accent mt-2 inline-block">去审核</Link>
           </div>
         ) : null}

@@ -6,15 +6,11 @@ export async function GET(req: NextRequest) {
     const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
     const userFilter = userId ? { userId } : {};
 
-    // Preview mode: return submitted + completed tasks so review page is never empty
+    // 唯一真实状态源：status 字段（废弃 businessStatus）
     const tasks = await prisma.task.findMany({
       where: {
         ...userFilter,
-        OR: [
-          { businessStatus: 'submitted' },
-          { businessStatus: 'completed' },
-          { status: 'completed' },
-        ],
+        status: 'completed',
       },
       orderBy: { updatedAt: 'desc' },
       select: {
@@ -22,7 +18,6 @@ export async function GET(req: NextRequest) {
         title: true,
         input: true,
         result: true,
-        businessStatus: true,
         status: true,
         assigneeId: true,
         createdAt: true,
@@ -36,7 +31,6 @@ export async function GET(req: NextRequest) {
       title: t.title,
       input: t.input,
       result: t.result ? safeParseJson(t.result) : null,
-      businessStatus: t.status === 'completed' ? 'completed' : (t.businessStatus || t.status),
       status: t.status,
       assigneeId: t.assigneeId,
       createdAt: t.createdAt.toISOString(),

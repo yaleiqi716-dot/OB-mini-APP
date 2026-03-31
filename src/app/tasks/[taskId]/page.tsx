@@ -9,15 +9,24 @@ interface TaskDetail {
   id: string;
   title: string;
   input: string;
-  businessStatus: string;
+  status: string;   // 唯一真实状态源
   assigneeId: string | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  assigned: '待处理',
-  in_progress: '进行中',
-  submitted: '已提交',
+  queued: '正在处理',
+  running: 'AI执行中',
+  interacting: 'AI执行中',
   completed: '已完成',
+  failed: '执行失败',
+};
+
+const STATUS_COLOR: Record<string, string> = {
+  queued: 'bg-amber-500/10 text-amber-400',
+  running: 'bg-blue-500/10 text-blue-400',
+  interacting: 'bg-blue-500/10 text-blue-400',
+  completed: 'bg-green-500/10 text-green-400',
+  failed: 'bg-red-500/10 text-red-400',
 };
 
 export default function TaskDetailPage() {
@@ -29,15 +38,11 @@ export default function TaskDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [agentResult, setAgentResult] = useState<string | null>(null);
-  const [submitLoading, setSubmitLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     async function fetchTask() {
       try {
-        const res = await fetch(`/api/tasks/${taskId}`, {
-          headers: { 'x-check-assignee': '1' },
-        });
+        const res = await fetch(`/api/tasks/${taskId}`);
         const data = await res.json();
         if (!res.ok) {
           setError(data.error || '获取任务失败');
@@ -47,7 +52,7 @@ export default function TaskDetailPage() {
           id: data.id,
           title: data.title,
           input: data.input,
-          businessStatus: data.businessStatus || 'assigned',
+          status: data.status || 'queued',
           assigneeId: data.assigneeId,
         });
       } catch {
@@ -86,28 +91,6 @@ export default function TaskDetailPage() {
     }
   }, [taskId]);
 
-  const handleSubmitTask = useCallback(async () => {
-    setSubmitLoading(true);
-    try {
-      const res = await fetch(`/api/tasks/${taskId}/submit`, {
-        method: 'POST',
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setAgentResult(`提交失败：${data.error || '未知错误'}`);
-        return;
-      }
-      setSubmitted(true);
-      if (task) {
-        setTask({ ...task, businessStatus: 'submitted' });
-      }
-    } catch {
-      setAgentResult('网络错误，请重试');
-    } finally {
-      setSubmitLoading(false);
-    }
-  }, [taskId, agentResult, task]);
-
   if (loading) {
     return (
       <div className="h-[100dvh] flex items-center justify-center bg-surface-primary">
@@ -144,22 +127,20 @@ export default function TaskDetailPage() {
             <span className="text-content-primary font-semibold text-sm">BENCH</span>
           </div>
         </div>
-        <span className="text-xs px-2 py-0.5 rounded-full bg-surface-tertiary text-content-tertiary">
-          {STATUS_LABEL[task.businessStatus] || task.businessStatus}
+        <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLOR[task.status] || 'bg-surface-tertiary text-content-tertiary'}`}>
+          {STATUS_LABEL[task.status] || task.status}
         </span>
       </header>
 
       {/* Task content */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="max-w-3xl mx-auto px-4 md:px-0 py-6 space-y-6">
-          {/* Title */}
           <div>
             <h1 className="text-xl md:text-2xl font-semibold text-content-primary">
               {task.title || '未命名任务'}
             </h1>
           </div>
 
-          {/* Task requirement */}
           <div className="space-y-2">
             <div className="text-xs font-medium text-content-tertiary uppercase tracking-wide">任务要求</div>
             <div className="rounded-xl bg-surface-secondary border border-border/50 p-4">
@@ -167,16 +148,12 @@ export default function TaskDetailPage() {
             </div>
           </div>
 
-          {/* Agent result */}
           {agentResult && agentResult.startsWith('CREDITS_ERROR:') ? (
             <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-4 space-y-3">
               <p className="text-sm text-amber-400">{agentResult.replace('CREDITS_ERROR:', '')}</p>
               <div className="flex items-center gap-2 flex-wrap">
                 <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors">
                   充值 ¥19（100 credits）
-                </a>
-                <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg border border-accent text-accent hover:bg-accent/10 transition-colors">
-                  充值 ¥79（500 credits）
                 </a>
               </div>
             </div>
@@ -187,21 +164,10 @@ export default function TaskDetailPage() {
             </div>
           ) : null}
 
-          {/* Submit button */}
-          {task.businessStatus !== 'submitted' && task.businessStatus !== 'completed' ? (
-            <div className="flex justify-end">
-              <button
-                onClick={handleSubmitTask}
-                disabled={submitLoading || submitted}
-                className="px-5 py-2.5 rounded-xl bg-accent text-white text-sm font-medium hover:bg-accent-hover active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitLoading ? '提交中...' : '提交任务'}
-              </button>
-            </div>
-          ) : (
+          {task.status === 'completed' && (
             <div className="flex justify-end">
               <span className="px-4 py-2 rounded-xl bg-green-500/10 text-green-400 text-sm font-medium">
-                已提交
+                已完成
               </span>
             </div>
           )}

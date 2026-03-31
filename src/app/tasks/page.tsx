@@ -7,22 +7,24 @@ import { NavHeader } from '@/components/NavHeader';
 interface TaskItem {
   id: string;
   title: string;
-  businessStatus: string;
+  status: string;   // 唯一真实状态源
   createdAt: string;
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  assigned: '待处理',
-  in_progress: '进行中',
-  submitted: '已提交',
+  queued: '正在处理',
+  running: 'AI执行中',
+  interacting: 'AI执行中',
   completed: '已完成',
+  failed: '执行失败',
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  assigned: 'bg-amber-500/10 text-amber-400',
-  in_progress: 'bg-blue-500/10 text-blue-400',
-  submitted: 'bg-purple-500/10 text-purple-400',
+  queued: 'bg-amber-500/10 text-amber-400',
+  running: 'bg-blue-500/10 text-blue-400',
+  interacting: 'bg-blue-500/10 text-blue-400',
   completed: 'bg-green-500/10 text-green-400',
+  failed: 'bg-red-500/10 text-red-400',
 };
 
 export default function MyTasksPage() {
@@ -48,7 +50,7 @@ export default function MyTasksPage() {
           {loading ? (
             <div className="flex justify-center py-12"><Spinner size="md" /></div>
           ) : tasks.length === 0 ? (
-            <div className="text-center py-12 text-content-tertiary text-sm">暂无指派给你的任务</div>
+            <div className="text-center py-12 text-content-tertiary text-sm">暂无任务记录</div>
           ) : (
             <div className="space-y-2">
               {tasks.map((t) => (
@@ -66,8 +68,8 @@ export default function MyTasksPage() {
                         {new Date(t.createdAt).toLocaleString('zh-CN')}
                       </div>
                     </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 ${STATUS_COLOR[t.businessStatus] || 'bg-surface-tertiary text-content-tertiary'}`}>
-                      {STATUS_LABEL[t.businessStatus] || t.businessStatus}
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 ${STATUS_COLOR[t.status] || 'bg-surface-tertiary text-content-tertiary'}`}>
+                      {STATUS_LABEL[t.status] || t.status}
                     </span>
                   </div>
                 </a>

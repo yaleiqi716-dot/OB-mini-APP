@@ -9,7 +9,7 @@ interface ReviewTask {
   title: string;
   input: string;
   result: unknown;
-  businessStatus: string;
+  status: string;   // 唯一真实状态源
   assigneeId: string | null;
   updatedAt: string;
 }
