@@ -63,11 +63,21 @@ function hasUnread(task: TaskState): boolean {
 const TERMINAL = new Set(['completed', 'failed']);
 
 const EXAMPLES = [
-  { label: '✉️  写一封客户跟进邮件', type: 'email' },
-  { label: '📊  做一份融资 PPT 结构', type: 'ppt' },
-  { label: '🔍  分析行业趋势', type: 'unknown' },
-  { label: '🎬  生成产品介绍视频', type: 'video' },
+  { label: '写一封客户跟进邮件', type: 'email',   icon: 'mail' },
+  { label: '做一份融资 PPT 结构', type: 'ppt',    icon: 'chart' },
+  { label: '分析行业趋势',        type: 'unknown', icon: 'search' },
+  { label: '生成产品介绍视频',    type: 'video',   icon: 'video' },
 ];
+
+// SVG icon map — no emoji
+function ChipIcon({ name }: { name: string }) {
+  const s = { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, flexShrink: 0 as const };
+  if (name === 'mail')   return <svg {...s}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>;
+  if (name === 'chart')  return <svg {...s}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
+  if (name === 'search') return <svg {...s}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>;
+  if (name === 'video')  return <svg {...s}><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>;
+  return null;
+}
 
 export default function AgentPage() {
   const router = useRouter();
@@ -364,7 +374,9 @@ export default function AgentPage() {
                       onClick={() => handleSubmit(ex.label, ex.type)}
                       disabled={isSubmitting}
                       className="ob-chip agent-example-btn"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
+                      <ChipIcon name={ex.icon} />
                       {ex.label}
                     </button>
                   ))}

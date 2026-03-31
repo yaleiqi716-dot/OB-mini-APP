@@ -10,6 +10,15 @@ import { Interaction, ConfirmInteraction, ApprovalType } from '@/types/interacti
 import { TaskStatus } from '@/types/task';
 import { TASK_TYPES } from '@/lib/constants';
 
+// SVG icon renderer for ApprovalCard — no emoji
+function ApprovalIcon({ name }: { name: string }) {
+  const s = { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (name === 'mail')  return <svg {...s}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>;
+  if (name === 'chart') return <svg {...s}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
+  if (name === 'file')  return <svg {...s}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>;
+  return <svg {...s}><rect x="3" y="3" width="18" height="18" rx="2"/></svg>;
+}
+
 interface TaskEvent {
   type: string;
   data: Record<string, unknown>;
@@ -321,7 +330,11 @@ export function TaskCanvas({
             {/* AI avatar row */}
             <div className="flex items-center gap-2 mb-3">
               <div className="w-7 h-7 rounded-full bg-[#f97316]/10 flex items-center justify-center flex-shrink-0">
-                <span className="text-sm">{typeInfo?.icon || '🤖'}</span>
+                {/* AI avatar icon — SVG, no emoji */}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="8" r="4"/>
+                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
               </div>
               <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>ORANGEBENCH</span>
               {isActive ? <Spinner size="sm" /> : null}
@@ -347,7 +360,7 @@ export function TaskCanvas({
                 <div className="space-y-2 animate-flow-in">
                   {completedSteps.map((step, i) => (
                     <div key={`step-${i}`} className="flex items-start gap-2 text-[13px] text-content-primary leading-relaxed">
-                      <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginTop:2,flexShrink:0}}><polyline points="20 6 9 17 4 12"/></svg>
                       <span className="flex-1">{step.text}</span>
                       {step.current !== undefined && step.total !== undefined ? (
                         <span className="text-content-tertiary text-xs tabular-nums flex-shrink-0 mt-0.5">{step.current}/{step.total}</span>
@@ -411,7 +424,7 @@ export function TaskCanvas({
               {/* Approval cards */}
               {isApprovalGate && approvalType === 'send_email' ? (
                 <div className="animate-flow-in">
-                  <ApprovalCard icon="✉️" label="邮件预览" loading={actionLoading}
+                  <ApprovalCard icon="mail" label="邮件预览" loading={actionLoading}
                     onApprove={() => onApprove('send_email')} approveLabel="确认发送" loadingLabel="发送中..."
                     onSecondary={onReviseEmail} secondaryLabel="继续修改"
                     onReject={() => onReject('send_email')}>
@@ -422,7 +435,7 @@ export function TaskCanvas({
 
               {isApprovalGate && approvalType === 'use_structure' ? (
                 <div className="animate-flow-in">
-                  <ApprovalCard icon="📊" label="演示文稿结构" loading={actionLoading}
+                  <ApprovalCard icon="chart" label="演示文稿结构" loading={actionLoading}
                     onApprove={() => onApprove('use_structure')} approveLabel="继续生成"
                     onSecondary={onAdjustStructure} secondaryLabel="调整结构"
                     onReject={() => onReject('use_structure')}>
@@ -433,7 +446,7 @@ export function TaskCanvas({
 
               {isApprovalGate && approvalType === 'use_proposal_structure' ? (
                 <div className="animate-flow-in">
-                  <ApprovalCard icon="📋" label="方案结构" loading={actionLoading}
+                  <ApprovalCard icon="file" label="方案结构" loading={actionLoading}
                     onApprove={() => onApprove('use_proposal_structure')} approveLabel="继续生成"
                     onSecondary={onAdjustProposal} secondaryLabel="调整结构"
                     onReject={() => onReject('use_proposal_structure')}>
@@ -460,7 +473,7 @@ export function TaskCanvas({
                       </div>
                       <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm">🔒</span>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                           <p className="text-sm font-medium text-amber-400">内容已生成（预览）</p>
                         </div>
                         <p className="text-xs text-content-tertiary">
@@ -491,7 +504,7 @@ export function TaskCanvas({
                   ) : (
                     <div className="space-y-2 pt-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-green-400 text-sm">✓</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                         <span className="text-sm font-medium text-green-400">任务已完成</span>
                       </div>
                     </div>
@@ -644,7 +657,7 @@ function CompletedStructure({ structure }: { structure: string[] }) {
   return (
     <div className="pl-3 border-l-2 border-green-400/20 py-1">
       <div className="flex items-center gap-2 mb-1.5">
-        <span className="text-green-400 text-xs">✓</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         <span className="text-xs text-content-tertiary">结构已确认 · {structure.length} 项</span>
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -668,7 +681,8 @@ function ApprovalCard({
   return (
     <div className="rounded-xl border border-accent/25 bg-accent/[0.03] p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <span className="text-sm">{icon}</span>
+        {/* icon key → SVG, no emoji */}
+        <ApprovalIcon name={icon} />
         <span className="text-accent text-sm font-medium">{label}</span>
       </div>
       {children}
@@ -841,7 +855,7 @@ function ResultContainer({ title, subtitle, children }: { title: string; subtitl
   return (
     <div className="space-y-3 pt-2">
       <div className="flex items-center gap-2">
-        <span className="text-green-400 text-sm">✓</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         <span className="text-sm font-medium text-green-400">{title}</span>
         {subtitle ? <span className="text-xs text-content-tertiary">{subtitle}</span> : null}
       </div>

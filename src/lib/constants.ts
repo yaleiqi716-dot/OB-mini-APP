@@ -1,11 +1,12 @@
 import { TaskType, TaskStatus } from '@/types/task';
 
+// icon field is now a key string (no emoji), used by WorkCardList SVG renderer
 export const TASK_TYPES: { value: TaskType; label: string; icon: string }[] = [
-  { value: 'ppt', label: '演示文稿', icon: '📊' },
-  { value: 'website', label: '网站页面', icon: '🌐' },
-  { value: 'video', label: '视频脚本', icon: '🎬' },
-  { value: 'email', label: '邮件撰写', icon: '✉️' },
-  { value: 'proposal', label: '方案策划', icon: '📋' },
+  { value: 'ppt',      label: '演示文稿', icon: 'chart' },
+  { value: 'website',  label: '网站页面', icon: 'globe' },
+  { value: 'video',    label: '视频脚本', icon: 'video' },
+  { value: 'email',    label: '邮件撰写', icon: 'mail' },
+  { value: 'proposal', label: '方案策划', icon: 'file' },
 ];
 
 // 与 TaskStatus 类型定义、prisma/schema.prisma 注释保持一致

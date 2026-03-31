@@ -76,7 +76,7 @@ function truncateResult(result: Record<string, unknown>, unlockCost: number): Re
       const firstLine = bodyStr.split('\n').find(l => l.trim()) || '';
       preview.content = {
         subject: c.subject,
-        body: firstLine.slice(0, 60) + '...\n\n🔒 完整内容需解锁',
+        body: firstLine.slice(0, 60) + '...\n\n[已锁定] 完整内容需解锁',
       };
       return preview;
     }
@@ -85,14 +85,14 @@ function truncateResult(result: Record<string, unknown>, unlockCost: number): Re
   // Direct text: show first 20% capped at 100 chars
   if (typeof result.content === 'string') {
     const cap = Math.min(Math.ceil(result.content.length * 0.2), 100);
-    preview.content = result.content.slice(0, cap) + '...\n\n🔒 完整内容需解锁';
+    preview.content = result.content.slice(0, cap) + '...\n\n[已锁定] 完整内容需解锁';
     return preview;
   }
 
   // PPT slides: show titles only, no content
   if (Array.isArray(result.slides)) {
     const slides = result.slides as { title: string; content?: string[] }[];
-    preview.slides = slides.map(s => ({ title: s.title, content: ['🔒 ...'] }));
+    preview.slides = slides.map(s => ({ title: s.title, content: ['[已锁定]'] }));
     preview._totalSlides = slides.length;
     return preview;
   }
@@ -100,7 +100,7 @@ function truncateResult(result: Record<string, unknown>, unlockCost: number): Re
   // Proposal sections: show headings only
   if (Array.isArray(result.sections)) {
     const sections = result.sections as { heading: string; content?: string }[];
-    preview.sections = sections.map(s => ({ heading: s.heading, content: '🔒 ...' }));
+    preview.sections = sections.map(s => ({ heading: s.heading, content: '[已锁定]' }));
     preview._totalSections = sections.length;
     return preview;
   }
@@ -108,13 +108,13 @@ function truncateResult(result: Record<string, unknown>, unlockCost: number): Re
   // Optimized content: first 20%
   if (typeof result.optimizedContent === 'string') {
     const cap = Math.min(Math.ceil(result.optimizedContent.length * 0.2), 100);
-    preview.optimizedContent = result.optimizedContent.slice(0, cap) + '...\n\n🔒 完整内容需解锁';
+    preview.optimizedContent = result.optimizedContent.slice(0, cap) + '...\n\n[已锁定] 完整内容需解锁';
     return preview;
   }
 
   // Fallback: stringify first 80 chars
   const raw = JSON.stringify(result);
-  preview.content = raw.slice(0, 80) + '...\n\n🔒 完整内容需解锁';
+  preview.content = raw.slice(0, 80) + '...\n\n[已锁定] 完整内容需解锁';
   return preview;
 }
 
