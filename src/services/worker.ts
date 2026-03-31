@@ -1,12 +1,13 @@
-import { createTask, updateTaskStatus, emitLog, emitThinking, emitEvent, updateTaskType, updateTaskContext, completeTask } from './task-manager';
+import { createTask, updateTaskStatus, emitLog, emitThinking, emitEvent, updateTaskType, updateTaskContext, completeTask, requestInteraction } from './task-manager';
 import { routeAndPlan } from './agent-router';
 import { planTasks } from './agent-planner';
 import { getWorkflow } from './workflows';
-import { checkCredits, checkUserConcurrency, executeWithBilling, InsufficientCreditsError } from './billing';
+import { checkUserConcurrency, executeWithBilling, InsufficientCreditsError } from './billing';
 import { estimateCost } from '@/lib/cost';
-import { chatCompletion } from '@/lib/openrouter';
 import { prisma } from '@/lib/prisma';
 import { TaskType } from '@/types/task';
+import { routeIntent } from './agent/router';
+import { dispatch } from './agent/dispatch';
 
 import './workflows';
 
@@ -21,7 +22,6 @@ let workerInterval: ReturnType<typeof setInterval> | null = null;
 // ---- Atomic execution lock via updateMany ----
 
 async function acquireLock(taskId: string): Promise<boolean> {
-  // Atomic: only succeeds if isExecuting=false AND status=queued
   const result = await prisma.task.updateMany({
     where: { id: taskId, isExecuting: false, status: 'queued' },
     data: { isExecuting: true },
@@ -44,7 +44,6 @@ async function releaseLock(taskId: string) {
 // ---- Fetch next task from DB by priority ----
 
 async function fetchNextQueuedTask() {
-  // Fetch highest priority first, then oldest
   const task = await prisma.task.findFirst({
     where: { status: 'queued', isExecuting: false },
     orderBy: [
@@ -55,19 +54,73 @@ async function fetchNextQueuedTask() {
   return task;
 }
 
-// ---- Core execution ----
+// ---- Core execution: Router → Dispatch or Legacy Workflow ----
 
 async function executeTask(taskId: string, input: string, presetType?: string, userId?: string) {
   await updateTaskStatus(taskId, 'understanding');
   await emitLog(taskId, '正在分析任务...');
   await emitThinking(taskId, '我先帮你拆解一下需求...');
 
-  // Use planner for open-ended input, routeAndPlan for preset types
+  // Step 1: Agent Router — let ChatGPT decide the intent
+  const decision = await routeIntent(input);
+
+  await updateTaskContext(taskId, {
+    agentIntent: decision.intent,
+    agentReason: decision.reason,
+  });
+
+  console.log(`[WORKER] Task ${taskId} routed: intent=${decision.intent}, needsClarification=${decision.needsClarification}`);
+
+  // Step 2: If clarification needed, ask user
+  if (decision.needsClarification && decision.questions.length > 0) {
+    await requestInteraction(taskId, {
+      id: `clarify_${Date.now()}`,
+      taskId,
+      stepId: 'agent_clarification',
+      type: 'text_input',
+      question: decision.questions.join('\n'),
+      placeholder: '请补充以上信息',
+    });
+    return;
+  }
+
+  // Step 3: For legacy workflow types (ppt/email/proposal), keep existing workflow
+  const legacyWorkflowTypes = ['ppt', 'email', 'proposal', 'website', 'video'];
+  if (presetType && legacyWorkflowTypes.includes(presetType) && decision.intent === 'text') {
+    await executeLegacyWorkflow(taskId, input, presetType, userId);
+    return;
+  }
+
+  // Step 4: Use Agent Dispatch for all intents
+  const intentType = decision.intent;
+  const cost = estimateCost(intentType);
+  await prisma.task.update({ where: { id: taskId }, data: { estimatedCost: cost } });
+
+  const title = input.slice(0, 50);
+  await updateTaskType(taskId, (intentType === 'text' ? (presetType || 'unknown') : 'unknown') as TaskType, title);
+  await updateTaskContext(taskId, { executionStrategy: 'agent_dispatch', engine: intentType });
+  await emitLog(taskId, `执行方式：${intentType}`);
+  await updateTaskStatus(taskId, 'executing');
+  await emitThinking(taskId, '正在执行任务...');
+
+  const result = await dispatch(decision, input);
+
+  if (result.success) {
+    await completeTask(taskId, result.data, result.message);
+  } else {
+    const { failTask } = await import('./task-manager');
+    await failTask(taskId, result.message || '执行失败');
+  }
+}
+
+// ---- Legacy workflow path (ppt/email/proposal etc.) ----
+
+async function executeLegacyWorkflow(taskId: string, input: string, presetType: string, userId?: string) {
+  // Use planner for open-ended input
   if (!presetType || presetType === 'unknown') {
     const agentPlan = await planTasks(input);
 
     if (agentPlan.tasks.length > 1) {
-      // Two tasks — create sub-tasks directly
       await emitLog(taskId, `拆解为 ${agentPlan.tasks.length} 个子任务`);
       await updateTaskContext(taskId, { subtasks: agentPlan.tasks.map((t) => t.type) });
 
@@ -94,15 +147,12 @@ async function executeTask(taskId: string, input: string, presetType?: string, u
       return;
     }
 
-    // Single task from planner — route it
     presetType = agentPlan.tasks[0].type;
-    // Use planner's refined input if different
     if (agentPlan.tasks[0].input !== input) {
       input = agentPlan.tasks[0].input;
     }
   }
 
-  // Single task execution (existing flow)
   const plan = await routeAndPlan(input, presetType as TaskType | undefined);
   await updateTaskType(taskId, plan.taskType, plan.title);
 
@@ -115,80 +165,80 @@ async function executeTask(taskId: string, input: string, presetType?: string, u
 
   await emitLog(taskId, `任务类型：${plan.taskType}`);
 
-  // ---- Unified billing gateway: charge first, then execute ----
-  const executeFn = async () => {
-    if (plan.strategy === 'workflow') {
-      const workflow = getWorkflow(plan.taskType);
-      if (!workflow) {
-        const { failTask } = await import('./task-manager');
-        await failTask(taskId, `暂不支持 "${plan.taskType}" 类型的任务`);
-        return;
-      }
-      await workflow.start({ taskId, input, context: {} });
-    } else {
-      await updateTaskStatus(taskId, 'executing');
-      await emitThinking(taskId, '我来帮你处理这个请求...');
-      const result = await chatCompletion(
-        [
-          { role: 'system', content: '你是一个专业的工作助手。根据用户需求直接给出完整、实用的回答。内容完整、专业、简洁。' },
-          { role: 'user', content: input },
-        ],
-        { temperature: 0.6, maxTokens: 4096 }
-      );
-      await completeTask(taskId, { type: 'direct', content: result.content }, '已帮你完成');
-    }
-  };
-
-  if (!userId) {
-    const { failTask } = await import('./task-manager');
-    await failTask(taskId, '任务缺少用户信息，无法执行');
-    return;
-  }
-  try {
-    await executeWithBilling(userId, taskId, plan.taskType, executeFn);
-  } catch (err) {
-    if (err instanceof InsufficientCreditsError) {
-      await prisma.task.update({
-        where: { id: taskId },
-        data: { status: 'blocked', errorMessage: err.message },
-      });
-      await emitEvent(taskId, 'payment_required', {
-        required: err.required,
-        current: err.current,
-      });
-      await emitEvent(taskId, 'status_change', { status: 'blocked' });
+  if (plan.strategy === 'workflow') {
+    const workflow = getWorkflow(plan.taskType);
+    if (!workflow) {
+      const { failTask } = await import('./task-manager');
+      await failTask(taskId, `暂不支持 "${plan.taskType}" 类型的任务`);
       return;
     }
-    throw err;
+    await workflow.start({ taskId, input, context: {} });
+  } else {
+    await updateTaskStatus(taskId, 'executing');
+    await emitThinking(taskId, '我来帮你处理这个请求...');
+    const { chatCompletion } = await import('@/lib/openrouter');
+    const result = await chatCompletion(
+      [
+        { role: 'system', content: '你是一个专业的工作助手。根据用户需求直接给出完整、实用的回答。内容完整、专业、简洁。' },
+        { role: 'user', content: input },
+      ],
+      { temperature: 0.6, maxTokens: 4096 }
+    );
+    await completeTask(taskId, { type: 'direct', content: result.content }, '已帮你完成');
   }
 }
 
-// ---- Process one task with lock + timeout + concurrency slot ----
+// ---- Process one task with lock + timeout + concurrency + billing ----
 
 async function processTask(task: { id: string; input: string; type: string; userId: string | null }) {
-  // Per-user concurrency check
   if (task.userId) {
     const canRun = await checkUserConcurrency(task.userId);
     if (!canRun) {
       console.log(`[WORKER] Skipping task ${task.id} (user ${task.userId} at concurrency limit)`);
-      return; // Will be retried next poll
+      return;
     }
   }
 
   const locked = await acquireLock(task.id);
   if (!locked) return;
 
-  // Credits charged inside executeWithBilling (within executeTask)
   runningCount++;
   console.log(`[WORKER] Processing task ${task.id} (running: ${runningCount}/${MAX_CONCURRENT})`);
 
   try {
-    await Promise.race([
-      executeTask(task.id, task.input, task.type !== 'unknown' ? task.type : undefined, task.userId || undefined),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('任务执行超时，请重试')), TASK_TIMEOUT_MS)
-      ),
-    ]);
+    if (!task.userId) {
+      const { failTask } = await import('./task-manager');
+      await failTask(task.id, '任务缺少用户信息，无法执行');
+      return;
+    }
+
+    const executeFn = async () => {
+      await executeTask(task.id, task.input, task.type !== 'unknown' ? task.type : undefined, task.userId || undefined);
+    };
+
+    try {
+      await Promise.race([
+        executeWithBilling(task.userId, task.id, task.type, executeFn),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('任务执行超时，请重试')), TASK_TIMEOUT_MS)
+        ),
+      ]);
+    } catch (err) {
+      if (err instanceof InsufficientCreditsError) {
+        await prisma.task.update({
+          where: { id: task.id },
+          data: { status: 'blocked', errorMessage: err.message },
+        });
+        await emitEvent(task.id, 'payment_required', {
+          required: err.required,
+          current: err.current,
+        });
+        await emitEvent(task.id, 'status_change', { status: 'blocked' });
+        return;
+      }
+      throw err;
+    }
+
     console.log(`[WORKER] Completed task ${task.id}`);
   } catch (error) {
     console.error(`[WORKER] Failed task ${task.id}:`, error);
@@ -210,7 +260,6 @@ async function workerLoop() {
   const task = await fetchNextQueuedTask();
   if (!task) return;
 
-  // Fire and forget — don't await, so multiple tasks can run concurrently
   processTask(task).catch(() => {});
 }
 
