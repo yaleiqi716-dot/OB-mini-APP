@@ -29,6 +29,8 @@ export default function TaskDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [agentResult, setAgentResult] = useState<string | null>(null);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     async function fetchTask() {
@@ -77,7 +79,31 @@ export default function TaskDetailPage() {
     } finally {
       setSubmitting(false);
     }
-  }, []);
+  }, [taskId]);
+
+  const handleSubmitTask = useCallback(async () => {
+    setSubmitLoading(true);
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ result: agentResult || '' }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAgentResult(`提交失败：${data.error || '未知错误'}`);
+        return;
+      }
+      setSubmitted(true);
+      if (task) {
+        setTask({ ...task, businessStatus: 'submitted' });
+      }
+    } catch {
+      setAgentResult('网络错误，请重试');
+    } finally {
+      setSubmitLoading(false);
+    }
+  }, [taskId, agentResult, task]);
 
   if (loading) {
     return (
@@ -145,6 +171,25 @@ export default function TaskDetailPage() {
               <p className="text-content-primary text-sm">{agentResult}</p>
             </div>
           ) : null}
+
+          {/* Submit button */}
+          {task.businessStatus !== 'submitted' && task.businessStatus !== 'completed' ? (
+            <div className="flex justify-end">
+              <button
+                onClick={handleSubmitTask}
+                disabled={submitLoading || submitted}
+                className="px-5 py-2.5 rounded-xl bg-accent text-white text-sm font-medium hover:bg-accent-hover active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitLoading ? '提交中...' : '提交任务'}
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-end">
+              <span className="px-4 py-2 rounded-xl bg-green-500/10 text-green-400 text-sm font-medium">
+                已提交
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
