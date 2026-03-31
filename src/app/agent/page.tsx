@@ -122,7 +122,7 @@ export default function AgentPage() {
               else { const upd = !TERMINAL.has(ex.status) || TERMINAL.has(ss); merged.push({ ...ex, type: (t.type as TaskType) || ex.type, status: upd ? ss : ex.status, title: (t.title as string) || ex.title, source: (t.source as TaskSource) || ex.source, updatedAt: su || ex.updatedAt, result: (t.result as Record<string, unknown>) || ex.result, lastSeenUpdatedAt: ex.lastSeenUpdatedAt }); }
             } else { const now = new Date().toISOString(); merged.push({ id, type: (t.type as TaskType) || 'unknown', status: ss, title: (t.title as string) || '', input: (t.input as string) || '', source: (t.source as TaskSource) || 'agent', createdAt: (t.createdAt as string) || now, updatedAt: su || now, events: [], eventsLoaded: false, currentInteraction: null, result: (t.result as Record<string, unknown>) || null, lastSeenUpdatedAt: '', context: {} }); }
           }
-          if (!cid && merged.length > 0) { const w = merged.find(t => t.status === 'interacting' || t.status === 'structuring'); if (w) setActiveTaskId(w.id); }
+          // ChatGPT model: do NOT auto-open old tasks on load
           return merged;
         });
       }).catch(() => {});
@@ -186,44 +186,40 @@ export default function AgentPage() {
 
   const listItems = tasks.map(t => ({ id: t.id, type: t.type, status: t.status, title: t.title, createdAt: t.createdAt, summary: getTaskSummary(t), hasUnread: hasUnread(t), source: t.source }));
 
-  if (!authChecked) return <div className="h-[100dvh] bg-surface-primary" />;
+  if (!authChecked) return <div style={{ height: '100dvh', background: 'var(--bg)' }} />;
 
   // ---- Sidebar content (shared desktop/mobile) ----
   const sidebarContent = (
     <>
-      {/* Sidebar header */}
-      <div className="sidebar-header">
-        <div className="sidebar-brand">
-          <span className="sidebar-brand-orange">ORANGE</span>
-          <span className="sidebar-brand-text">BENCH</span>
-        </div>
+      {/* Top: New chat button */}
+      <div className="ob-sidebar-top">
         <button
           onClick={() => { setActiveTaskId(null); setSidebarOpen(false); }}
-          className="sidebar-new-btn"
-          title="新对话"
+          className="ob-new-chat-btn"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 20h9" />
             <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
           </svg>
+          新对话
         </button>
       </div>
 
       {/* Task list */}
-      <div className="sidebar-scroll custom-scrollbar">
+      <div className="ob-sidebar-scroll custom-scrollbar">
         {tasks.length > 0 ? (
           <TaskList tasks={listItems} activeTaskId={activeTaskId} onSelect={selectTask} />
         ) : (
-          <p className="sidebar-empty-hint">暂无对话</p>
+          <p className="ob-sidebar-empty">暂无对话<br />输入一句话开始</p>
         )}
       </div>
 
-      {/* Sidebar footer: credits */}
+      {/* Footer: credits */}
       {quota && (
-        <div className="sidebar-footer">
-          <div className="sidebar-credits">
-            <span className="sidebar-credits-label">Credits</span>
-            <span className={`sidebar-credits-value ${quota.credits < 20 ? 'sidebar-credits-value--low' : ''}`}>
+        <div className="ob-sidebar-footer">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Credits</span>
+            <span style={{ fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: quota.credits < 20 ? '#ef4444' : 'var(--accent)' }}>
               {quota.credits}
             </span>
           </div>
@@ -234,35 +230,59 @@ export default function AgentPage() {
   );
 
   return (
-    <div className="agent-root">
-      {/* ---- Reconnecting banner ---- */}
+    <div className="ob-shell agent-root">
+
+      {/* ── Header 56px ── */}
+      <header className="ob-header">
+        <a
+          href="/agent"
+          className="ob-header-brand"
+          onClick={(e) => { e.preventDefault(); setActiveTaskId(null); }}
+        >
+          <span className="ob-header-brand-o">ORANGE</span>
+          <span className="ob-header-brand-t">BENCH</span>
+        </a>
+        <div className="ob-header-right">
+          {quota && <span className="ob-header-plan">{quota.plan || 'Free'}</span>}
+          {quota && (
+            <span className={`ob-header-credits ${quota.credits < 20 ? 'ob-header-credits-low' : ''}`}>
+              {quota.credits} credits
+            </span>
+          )}
+          <a href="/billing" className="ob-header-topup">充值</a>
+          <div className="ob-header-avatar">U</div>
+        </div>
+      </header>
+
+      {/* ── Reconnect banner ── */}
       {reconnecting && (
-        <div className="agent-reconnect-banner">连接中断，正在重连...</div>
+        <div className="ob-reconnect agent-reconnect-banner">连接中断，正在重连...</div>
       )}
 
-      <div className="agent-layout">
-        {/* ---- LEFT SIDEBAR (desktop) ---- */}
-        <aside className="agent-sidebar hidden md:flex">
+      <div className="ob-body agent-layout">
+        {/* Left sidebar — desktop */}
+        <aside className="ob-sidebar agent-sidebar hidden md:flex">
           {sidebarContent}
         </aside>
 
-        {/* ---- Mobile sidebar overlay ---- */}
+        {/* Mobile sidebar overlay */}
         {sidebarOpen && (
           <>
-            <div className="agent-sidebar-overlay md:hidden" onClick={() => setSidebarOpen(false)} />
-            <aside className="agent-sidebar agent-sidebar--mobile md:hidden">
+            <div className="ob-sidebar-overlay agent-sidebar-overlay md:hidden" onClick={() => setSidebarOpen(false)} />
+            <aside className="ob-sidebar-drawer agent-sidebar--mobile md:hidden">
               {sidebarContent}
             </aside>
           </>
         )}
 
-        {/* ---- MAIN AREA ---- */}
-        <main className="agent-main">
-          {/* Mobile top bar */}
-          <div className="agent-mobile-topbar md:hidden">
+        {/* ── Main area ── */}
+        <main className="ob-main agent-main">
+          {/* Mobile topbar */}
+          <div className="ob-mobile-bar agent-mobile-topbar md:hidden">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="agent-mobile-menu-btn"
+              aria-label="菜单"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <line x1="3" y1="6" x2="21" y2="6" />
@@ -271,7 +291,7 @@ export default function AgentPage() {
               </svg>
             </button>
             <span className="agent-mobile-title">
-              <span className="text-accent">ORANGE</span>BENCH
+              <span style={{ color: 'var(--accent)' }}>ORANGE</span>BENCH
             </span>
             <div style={{ width: 36 }} />
           </div>
@@ -279,17 +299,17 @@ export default function AgentPage() {
           {activeTask ? (
             <>
               {/* Scrollable conversation */}
-              <div ref={scrollRef} className="agent-scroll custom-scrollbar" key={activeTask.id}>
-                <div className="agent-content-wrap">
-                  {/* User message bubble at top */}
-                  <div className="chat-user-bubble-row">
-                    <div className="chat-user-bubble">
+              <div ref={scrollRef} className="ob-scroll agent-scroll custom-scrollbar" key={activeTask.id}>
+                <div className="ob-messages agent-content-wrap">
+                  {/* User message — right-aligned bubble */}
+                  <div className="ob-msg-user chat-user-bubble-row">
+                    <div className="ob-msg-user-bubble chat-user-bubble">
                       {activeTask.input}
                     </div>
                   </div>
 
                   {/* AI response area */}
-                  <div className="chat-ai-area">
+                  <div className="ob-msg-ai chat-ai-area">
                     <TaskCanvas
                       taskId={activeTask.id} title={activeTask.title} type={activeTask.type}
                       status={activeTask.status} input={activeTask.input} events={activeTask.events}
@@ -313,7 +333,7 @@ export default function AgentPage() {
               </div>
 
               {/* Fixed bottom input */}
-              <div className="agent-input-area">
+              <div className="ob-input-area agent-input-area">
                 <AgentInput
                   onSubmit={input => handleSubmit(input)}
                   disabled={isSubmitting}
@@ -328,20 +348,19 @@ export default function AgentPage() {
               </div>
             </>
           ) : (
-            /* ---- WELCOME / EMPTY STATE ---- */
-            <div className="agent-welcome">
-              <div className="agent-welcome-body">
-                <h1 className="agent-welcome-title">我可以帮你自动完成工作</h1>
-                <p className="agent-welcome-subtitle">输入任务，或选择下方示例开始</p>
+            /* ── Welcome / empty state — ChatGPT new-chat ── */
+            <div className="ob-welcome agent-welcome">
+              <div className="ob-welcome-body agent-welcome-body">
+                <h1 className="ob-welcome-title agent-welcome-title">今天想完成什么？</h1>
 
-                {/* Example prompts — horizontal row like ChatGPT */}
-                <div className="agent-examples">
+                {/* Example chips */}
+                <div className="ob-chips agent-examples">
                   {EXAMPLES.map((ex, i) => (
                     <button
                       key={i}
                       onClick={() => handleSubmit(ex.label, ex.type)}
                       disabled={isSubmitting}
-                      className="agent-example-btn"
+                      className="ob-chip agent-example-btn"
                     >
                       {ex.label}
                     </button>
@@ -350,7 +369,7 @@ export default function AgentPage() {
               </div>
 
               {/* Input at bottom of welcome */}
-              <div className="agent-input-area">
+              <div className="ob-input-area agent-input-area">
                 <AgentInput
                   onSubmit={input => handleSubmit(input)}
                   disabled={isSubmitting}
@@ -371,7 +390,7 @@ export default function AgentPage() {
 
       {/* Error toast */}
       {errorToast && (
-        <div className="agent-error-toast animate-flow-in">
+        <div className="ob-toast agent-error-toast animate-flow-in">
           {errorToast}
         </div>
       )}

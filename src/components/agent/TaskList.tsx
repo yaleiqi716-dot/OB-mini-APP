@@ -1,5 +1,4 @@
 'use client';
-
 import { TaskStatus, TaskType, TaskSource } from '@/types/task';
 import { cn } from '@/lib/utils';
 
@@ -13,95 +12,88 @@ interface TaskItem {
   hasUnread: boolean;
   source: TaskSource;
 }
-
 interface TaskListProps {
   tasks: TaskItem[];
   activeTaskId: string | null;
   onSelect: (taskId: string) => void;
 }
 
-const STATUS_PRIORITY: Record<TaskStatus, number> = {
-  blocked: 0,
-  interacting: 1,
-  structuring: 2,
-  executing: 3,
-  understanding: 4,
-  queued: 5,
-  pending: 6,
-  completed: 7,
-  failed: 8,
-};
-
+// ─── Status dot ───────────────────────────────────────────────────────────────
 function StatusDot({ status }: { status: TaskStatus }) {
-  const isActive = ['executing', 'understanding', 'structuring', 'pending', 'queued'].includes(status);
+  const isRunning = ['executing', 'understanding', 'structuring', 'pending', 'queued'].includes(status);
   const isWaiting = ['interacting', 'blocked'].includes(status);
-  const isFailed = status === 'failed';
-
-  if (isActive) return <span className="sidebar-status-dot sidebar-status-dot--active" />;
-  if (isWaiting) return <span className="sidebar-status-dot sidebar-status-dot--waiting" />;
-  if (isFailed) return <span className="sidebar-status-dot sidebar-status-dot--failed" />;
+  const isFailed  = status === 'failed';
+  if (isRunning) return <span className="ob-status-dot ob-status-dot--running" />;
+  if (isWaiting) return <span className="ob-status-dot ob-status-dot--waiting" />;
+  if (isFailed)  return <span className="ob-status-dot ob-status-dot--failed" />;
   return null;
 }
 
+// ─── Time grouping ─────────────────────────────────────────────────────────────
+function getGroup(dateStr: string): 'today' | 'yesterday' | 'week' | 'older' {
+  const now  = new Date();
+  const date = new Date(dateStr);
+  const diffMs   = now.getTime() - date.getTime();
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  if (diffDays < 1)  return 'today';
+  if (diffDays < 2)  return 'yesterday';
+  if (diffDays < 7)  return 'week';
+  return 'older';
+}
+const GROUP_LABEL: Record<string, string> = {
+  today:     '今天',
+  yesterday: '昨天',
+  week:      '最近 7 天',
+  older:     '更早',
+};
+
+// ─── TaskList ─────────────────────────────────────────────────────────────────
 export function TaskList({ tasks, activeTaskId, onSelect }: TaskListProps) {
   if (tasks.length === 0) return null;
 
+  // Running tasks first, then newest first
   const sorted = [...tasks].sort((a, b) => {
-    const pa = STATUS_PRIORITY[a.status] ?? 9;
-    const pb = STATUS_PRIORITY[b.status] ?? 9;
-    if (pa !== pb) return pa - pb;
+    const aRunning = !['completed', 'failed'].includes(a.status);
+    const bRunning = !['completed', 'failed'].includes(b.status);
+    if (aRunning !== bRunning) return aRunning ? -1 : 1;
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
-  const waiting = sorted.filter(
-    (t) => t.status === 'interacting' || t.status === 'structuring' || t.status === 'blocked'
-  );
-  const active = sorted.filter(
-    (t) =>
-      t.status === 'executing' ||
-      t.status === 'understanding' ||
-      t.status === 'pending' ||
-      t.status === 'queued'
-  );
-  const done = sorted.filter((t) => t.status === 'completed' || t.status === 'failed');
+  // Group by time
+  const groups: Record<string, TaskItem[]> = {};
+  for (const t of sorted) {
+    const g = getGroup(t.createdAt);
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(t);
+  }
+
+  const groupOrder = ['today', 'yesterday', 'week', 'older'];
 
   return (
     <div className="sidebar-task-list">
-      {waiting.length > 0 && (
-        <Section title="等待处理">
-          {waiting.map((t) => (
-            <TaskRow key={t.id} task={t} active={activeTaskId === t.id} onSelect={onSelect} />
-          ))}
-        </Section>
-      )}
-      {active.length > 0 && (
-        <Section title="进行中">
-          {active.map((t) => (
-            <TaskRow key={t.id} task={t} active={activeTaskId === t.id} onSelect={onSelect} />
-          ))}
-        </Section>
-      )}
-      {done.length > 0 && (
-        <Section title="已结束">
-          {done.map((t) => (
-            <TaskRow key={t.id} task={t} active={activeTaskId === t.id} onSelect={onSelect} />
-          ))}
-        </Section>
-      )}
+      {groupOrder.map((g) => {
+        const items = groups[g];
+        if (!items?.length) return null;
+        return (
+          <div key={g} className="sidebar-section">
+            <p className="ob-section-label">{GROUP_LABEL[g]}</p>
+            {items.map((t) => (
+              <SessionRow
+                key={t.id}
+                task={t}
+                active={activeTaskId === t.id}
+                onSelect={onSelect}
+              />
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="sidebar-section">
-      <p className="sidebar-section-title">{title}</p>
-      <div>{children}</div>
-    </div>
-  );
-}
-
-function TaskRow({
+// ─── Session row ───────────────────────────────────────────────────────────────
+function SessionRow({
   task,
   active,
   onSelect,
@@ -110,30 +102,29 @@ function TaskRow({
   active: boolean;
   onSelect: (id: string) => void;
 }) {
-  const isWaiting = task.status === 'interacting' || task.status === 'blocked';
-
   return (
     <button
       onClick={() => onSelect(task.id)}
       className={cn(
-        'sidebar-task-row',
-        active ? 'sidebar-task-row--active' : 'sidebar-task-row--idle',
-        isWaiting && !active && 'sidebar-task-row--waiting'
+        'ob-session-row sidebar-task-row',
+        active ? 'ob-session-row--active sidebar-task-row--active' : 'sidebar-task-row--idle'
       )}
     >
-      <div className="sidebar-task-row-inner">
-        <div className="sidebar-task-title-row">
-          <span className={cn('sidebar-task-title', active && 'sidebar-task-title--active')}>
+      <div className="ob-session-inner" style={{ flexDirection: 'row' }}>
+        {/* Text block */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className={cn('ob-session-title', active && 'ob-session-row--active')}>
             {task.title || '新任务'}
-          </span>
-          <div className="sidebar-task-meta">
-            <StatusDot status={task.status} />
-            {task.hasUnread && !active && <span className="sidebar-unread-dot" />}
           </div>
+          {task.summary && (
+            <div className="ob-session-preview">{task.summary}</div>
+          )}
         </div>
-        {task.summary && (
-          <p className="sidebar-task-preview">{task.summary}</p>
-        )}
+        {/* Meta: status dot + unread */}
+        <div className="ob-session-meta">
+          <StatusDot status={task.status} />
+          {task.hasUnread && !active && <span className="ob-unread-dot" />}
+        </div>
       </div>
     </button>
   );
