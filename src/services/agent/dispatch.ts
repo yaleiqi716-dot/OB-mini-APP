@@ -5,6 +5,7 @@ import { generateImage } from '@/services/tools/leonardo';
 import { generateVideo } from '@/services/tools/minimax';
 import { generateAvatarVideo } from '@/services/tools/akool';
 import { triggerAutomation } from '@/services/tools/zapier';
+import { executeBrowserTask } from '@/services/tools/manus';
 
 export async function dispatch(decision: RouterDecision, originalInput: string): Promise<DispatchResult> {
   const { intent, toolPayload } = decision;
@@ -30,13 +31,7 @@ export async function dispatch(decision: RouterDecision, originalInput: string):
         return await handleAutomation(toolPayload);
 
       case 'browser_task':
-        return {
-          success: false,
-          intent,
-          engine: 'manus',
-          data: {},
-          message: '浏览器任务执行功能即将上线',
-        };
+        return await handleBrowserTask(toolPayload, originalInput);
 
       default:
         return await handleText(toolPayload, originalInput);
@@ -76,10 +71,8 @@ async function handleText(payload: Record<string, unknown>, originalInput: strin
 async function handleSearch(payload: Record<string, unknown>, originalInput: string): Promise<DispatchResult> {
   const query = String(payload.query || originalInput);
 
-  // Step 1: Brave search
   const searchResults = await braveSearch(query);
 
-  // Step 2: ChatGPT summarize
   const context = searchResults.map((r, i) => `[${i + 1}] ${r.title}\n${r.description}\n${r.url}`).join('\n\n');
   const summary = await chatCompletion(
     [
@@ -151,5 +144,21 @@ async function handleAutomation(payload: Record<string, unknown>): Promise<Dispa
     engine: 'zapier',
     data: { type: 'automation', ...result },
     message: '自动化操作已触发',
+  };
+}
+
+async function handleBrowserTask(payload: Record<string, unknown>, originalInput: string): Promise<DispatchResult> {
+  const instruction = String(payload.instruction || payload.task || originalInput);
+  const url = payload.url ? String(payload.url) : undefined;
+  const context = payload.context ? String(payload.context) : undefined;
+
+  const result = await executeBrowserTask({ instruction, url, context });
+
+  return {
+    success: true,
+    intent: 'browser_task',
+    engine: 'manus',
+    data: { type: 'browser_task', taskId: result.taskId, status: result.status, output: result.output },
+    message: result.output ? '浏览器任务已完成' : '浏览器任务执行中，请稍候查看',
   };
 }
