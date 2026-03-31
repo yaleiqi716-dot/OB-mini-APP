@@ -150,6 +150,25 @@ export default function AgentPage() {
     }).catch(() => {});
   }, [activeTaskId, tasks]);
 
+  // Re-fetch active task every 2s while it's in a non-terminal state
+  // This catches interaction_request and other events that arrive before SSE connects
+  useEffect(() => {
+    if (!activeTaskId) return;
+    let stopped = false;
+    const iv = setInterval(() => {
+      if (stopped) return;
+      fetch(`/api/tasks/${activeTaskId}`).then(r => r.json()).then(d => {
+        if (!d || d.error || stopped) return;
+        setTasks(prev => {
+          const cur = prev.find(t => t.id === activeTaskId);
+          if (!cur || TERMINAL.has(cur.status)) { stopped = true; return prev; }
+          return prev.map(t => t.id !== activeTaskId ? t : parseTaskFromAPI(d));
+        });
+      }).catch(() => {});
+    }, 2000);
+    return () => { stopped = true; clearInterval(iv); };
+  }, [activeTaskId]);
+
   useEffect(() => { if (activeTaskId) setTasks(prev => prev.map(t => t.id === activeTaskId ? { ...t, lastSeenUpdatedAt: t.updatedAt } : t)); }, [activeTaskId]);
 
   function showError(m: string) { setErrorToast(m); setTimeout(() => setErrorToast(null), 3000); }
@@ -166,7 +185,12 @@ export default function AgentPage() {
     setIsSubmitting(true);
     try {
       const r = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input, type }) });
-      if (!r.ok) { showError('提交失败，请重试'); return; }
+      if (!r.ok) {
+        const errData = await r.json().catch(() => ({}));
+        const errMsg = errData.error || '提交失败，请重试';
+        showError(errMsg);
+        return;
+      }
       const data = await r.json();
       if (data.taskId) {
         const now = new Date().toISOString();
@@ -233,7 +257,9 @@ export default function AgentPage() {
               {quota.credits}
             </span>
           </div>
-          <a href="/billing" className="sidebar-topup-btn">充值</a>
+          {quota.credits < 30 && (
+            <a href="/billing" className="sidebar-topup-btn">充值</a>
+          )}
         </div>
       )}
     </>
@@ -254,7 +280,7 @@ export default function AgentPage() {
         </a>
         <div className="ob-header-right">
           <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {[{href:'/dashboard',label:'决策台'},{href:'/tasks',label:'任务'},{href:'/review',label:'审核'}].map(({href,label}) => (
+            {[{href:'/dashboard',label:'决策台'},{href:'/tasks',label:'我的任务'},{href:'/review',label:'审核'},{href:'/billing',label:'充值'}].map(({href,label}) => (
               <a key={href} href={href} style={{ fontSize:12, color:'var(--text-faint)', textDecoration:'none', padding:'3px 8px', borderRadius:6, transition:'color 0.15s' }}
                 onMouseEnter={e=>(e.currentTarget.style.color='var(--accent)')} onMouseLeave={e=>(e.currentTarget.style.color='var(--text-faint)')}>{label}</a>
             ))}
@@ -265,7 +291,6 @@ export default function AgentPage() {
               {quota.credits} credits
             </span>
           )}
-          <a href="/billing" className="ob-header-topup">充値</a>
           <div className="ob-header-avatar">U</div>
         </div>
       </header>

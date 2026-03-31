@@ -60,18 +60,11 @@ async function executeTask(taskId: string, input: string) {
 
   console.log(`[WORKER] Task ${taskId} routed: intent=${decision.intent}, needsClarification=${decision.needsClarification}`);
 
-  // Step 2: Clarification needed → ask user
-  if (decision.needsClarification && decision.questions.length > 0) {
-    await requestInteraction(taskId, {
-      id: `clarify_${Date.now()}`,
-      taskId,
-      stepId: 'agent_clarification',
-      type: 'text_input',
-      question: decision.questions.join('\n'),
-      placeholder: '请补充以上信息',
-    });
-    return;
-  }
+  // Step 2: Clarification — DISABLED in preview mode
+  // Always proceed directly to execution. The router prompt already instructs
+  // the LLM to only ask when completely unclear, but we skip it entirely here
+  // to ensure users see the full execution flow without getting stuck.
+  // if (decision.needsClarification && decision.questions.length > 0) { ... }
 
   // Step 3: Dispatch — all intents go through dispatch, no exceptions
   const intentType = decision.intent;

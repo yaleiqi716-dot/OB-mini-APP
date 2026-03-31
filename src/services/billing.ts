@@ -15,9 +15,9 @@ const ALL_TYPES: TaskType[] = ['ppt', 'email', 'proposal', 'website', 'video', '
 
 export const PLAN_CONFIG: Record<string, PlanLimits> = {
   free: {
-    maxConcurrent: 1,
-    allowedTypes: ['ppt', 'email', 'proposal', 'unknown'],
-    dailyCredits: 20,
+    maxConcurrent: 3,  // preview: relaxed for testing
+    allowedTypes: ALL_TYPES,  // preview: allow all types
+    dailyCredits: 200,  // preview: generous daily credits
     monthlyCredits: 0,
   },
   basic: {
@@ -74,15 +74,15 @@ export async function getOrCreateUser(userId: string) {
     });
   }
 
-  // Daily reset for free plan
+  // Daily reset for free plan — only reset task count, NOT credits
+  // Credits are managed separately (purchases persist across days)
   if (user.plan === 'free' && user.dailyResetDate !== today()) {
-    const config = getPlanConfig('free');
     user = await prisma.user.update({
       where: { id: userId },
       data: {
         dailyTaskCount: 0,
         dailyResetDate: today(),
-        credits: config.dailyCredits,
+        // Do NOT reset credits here — credits persist
       },
     });
   }

@@ -28,7 +28,7 @@ startMediaJobPoller(10_000);
 const lastSubmitByIp = new Map<string, number>();
 const RATE_LIMIT_MS = 2000;
 const ACTIVE_STATUSES = ['pending', 'queued', 'understanding', 'structuring', 'interacting', 'executing'];
-const MAX_ACTIVE_TASKS = 5;
+const MAX_ACTIVE_TASKS = 20; // Preview mode: higher limit per user
 
 function getClientIp(req: NextRequest): string {
   return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -73,9 +73,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: creditCheck.reason }, { status: 403 });
     }
 
-    const activeTasks = await prisma.task.count({ where: { status: { in: ACTIVE_STATUSES } } });
-    if (activeTasks >= MAX_ACTIVE_TASKS) {
-      return NextResponse.json({ error: '系统繁忙，请稍后再试' }, { status: 429 });
+    // Per-user active task limit (not global)
+    const userActiveTasks = await prisma.task.count({ where: { userId, status: { in: ACTIVE_STATUSES } } });
+    if (userActiveTasks >= MAX_ACTIVE_TASKS) {
+      return NextResponse.json({ error: '你有太多任务正在运行，请等待完成后再提交' }, { status: 429 });
     }
 
     // Per-user concurrency

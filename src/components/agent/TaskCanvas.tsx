@@ -317,14 +317,7 @@ export function TaskCanvas({
       <div className="flex-1 overflow-y-auto px-0 py-0">
         <div className="ob-messages agent-content-wrap" style={{ paddingBottom: 0 }}>
 
-        {/* User message bubble — right aligned */}
-        {input ? (
-          <div className="ob-msg-user chat-user-bubble-row">
-            <div className="ob-msg-user-bubble chat-user-bubble">{input}</div>
-          </div>
-        ) : null}
-
-        {/* AI response area */}
+        {/* AI response area — user bubble is rendered by parent page */}
         {(events.length > 0 || isActive) ? (
           <div className="ob-msg-ai chat-ai-area">
             {/* AI avatar row */}
@@ -481,10 +474,7 @@ export function TaskCanvas({
                       >否</button>
                     </div>
                   )}
-                  {/* text_input — 提示用户用底部输入框回复 */}
-                  {(currentInteraction!.type === 'text_input' || currentInteraction!.type === 'confirm') && (
-                    <p className="text-xs text-content-tertiary mt-1">请在下方输入框回复↓</p>
-                  )}
+                  {/* text_input — 底部输入框会自动进入回复模式，无需额外提示 */}
                 </div>
               ) : null}
 
