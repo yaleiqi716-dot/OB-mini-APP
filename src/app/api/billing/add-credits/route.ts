@@ -3,7 +3,10 @@ import { addCredits, getUserStatus } from '@/services/billing';
 
 export async function POST(req: NextRequest) {
   try {
-    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value || 'default-user';
+    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
+    if (!userId) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 });
+    }
     const body = await req.json().catch(() => ({}));
     const amount = typeof body.amount === 'number' ? body.amount : 100;
 
