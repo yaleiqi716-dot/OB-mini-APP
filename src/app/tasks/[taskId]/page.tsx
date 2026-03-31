@@ -64,7 +64,7 @@ export default function TaskDetailPage() {
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input, source: 'agent' }),
+        body: JSON.stringify({ input, source: 'agent', parentTaskId: taskId }),
       });
       const data = await res.json();
       if (!res.ok) {

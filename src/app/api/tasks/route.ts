@@ -47,6 +47,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '请输入任务内容' }, { status: 400 });
     }
 
+    // If parentTaskId is provided, prepend original task's input as context
+    let finalInput = body.input.trim();
+    if (body.parentTaskId) {
+      const parentTask = await prisma.task.findUnique({
+        where: { id: body.parentTaskId },
+        select: { input: true, title: true },
+      });
+      if (parentTask) {
+        finalInput = `【原始任务】${parentTask.title || ''}\n${parentTask.input}\n\n【当前指令】${finalInput}`;
+      }
+    }
+
     const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value || 'demo-user';
     const estimatedType = body.type || 'unknown';
     const creditCheck = await checkCredits(userId, estimatedType);
@@ -70,7 +82,7 @@ export async function POST(req: NextRequest) {
     const priority = PLAN_PRIORITY[user.plan] || 0;
 
     // Create task with priority
-    const task = await createTask(body.input.trim(), body.source || 'agent', {
+    const task = await createTask(finalInput, body.source || 'agent', {
       userId,
       estimatedCost: creditCheck.estimatedCost,
       assigneeId: body.assigneeId || undefined,
