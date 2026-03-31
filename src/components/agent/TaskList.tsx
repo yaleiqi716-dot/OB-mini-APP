@@ -92,7 +92,7 @@ export function TaskList({ tasks, activeTaskId, onSelect }: TaskListProps) {
   );
 }
 
-// ─── Session row ───────────────────────────────────────────────────────────────
+// ─── Session row — MiniMax style ───────────────────────────────────────────────
 function SessionRow({
   task,
   active,
@@ -109,22 +109,46 @@ function SessionRow({
         'ob-session-row sidebar-task-row',
         active ? 'ob-session-row--active sidebar-task-row--active' : 'sidebar-task-row--idle'
       )}
+      style={{
+        display: 'block',
+        width: '100%',
+        border: 'none',
+        padding: 0,
+        background: active ? 'var(--bg-hover)' : 'transparent',
+        cursor: 'pointer',
+        borderRadius: 6,
+        marginBottom: 1,
+        textAlign: 'left',
+      }}
     >
-      <div className="ob-session-inner" style={{ flexDirection: 'row' }}>
-        {/* Text block */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className={cn('ob-session-title', active && 'ob-session-row--active')}>
-            {task.title || '新任务'}
-          </div>
-          {task.summary && (
-            <div className="ob-session-preview">{task.summary}</div>
-          )}
-        </div>
-        {/* Meta: status dot + unread */}
-        <div className="ob-session-meta">
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '7px 10px',
+          minHeight: 36,
+        }}
+      >
+        <span
+          style={{
+            flex: 1,
+            minWidth: 0,
+            fontSize: 13,
+            fontWeight: active ? 500 : 400,
+            color: 'var(--text-primary)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            lineHeight: 1.4,
+          }}
+        >
+          {task.title || '新任务'}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
           <StatusDot status={task.status} />
           {task.hasUnread && !active && <span className="ob-unread-dot" />}
-        </div>
+        </span>
       </div>
     </button>
   );

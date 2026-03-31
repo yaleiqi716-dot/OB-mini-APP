@@ -63,10 +63,10 @@ function hasUnread(task: TaskState): boolean {
 const TERMINAL = new Set(['completed', 'failed']);
 
 const EXAMPLES = [
-  { label: '帮我写一封客户跟进邮件', type: 'email' },
-  { label: '帮我做一份融资PPT结构', type: 'ppt' },
-  { label: '帮我分析行业趋势', type: 'unknown' },
-  { label: '帮我生成一个产品介绍视频', type: 'video' },
+  { label: '✉️  写一封客户跟进邮件', type: 'email' },
+  { label: '📊  做一份融资 PPT 结构', type: 'ppt' },
+  { label: '🔍  分析行业趋势', type: 'unknown' },
+  { label: '🎬  生成产品介绍视频', type: 'video' },
 ];
 
 export default function AgentPage() {
@@ -348,12 +348,15 @@ export default function AgentPage() {
               </div>
             </>
           ) : (
-            /* ── Welcome / empty state — ChatGPT new-chat ── */
+            /* ── Welcome / empty state — MiniMax new-chat ── */
             <div className="ob-welcome agent-welcome">
               <div className="ob-welcome-body agent-welcome-body">
-                <h1 className="ob-welcome-title agent-welcome-title">今天想完成什么？</h1>
+                <h1 className="ob-welcome-title agent-welcome-title">
+                  今天想完成什么？
+                </h1>
+                <p className="agent-welcome-subtitle">说一句话，ORANGEBENCH Agent 帮你搞定</p>
 
-                {/* Example chips */}
+                {/* Example chips — MiniMax 横排单行 */}
                 <div className="ob-chips agent-examples">
                   {EXAMPLES.map((ex, i) => (
                     <button

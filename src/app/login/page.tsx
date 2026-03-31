@@ -46,13 +46,14 @@ export default function LoginPage() {
             autoFocus
             autoComplete="off"
             className="login-input"
+            disabled={loading}
           />
           <button
             onClick={handleLogin}
             disabled={!username.trim() || loading}
             className="login-btn"
           >
-            {loading ? '跳转中...' : '继续'}
+            {loading ? '跳转中…' : '进入'}
           </button>
         </div>
       </div>
