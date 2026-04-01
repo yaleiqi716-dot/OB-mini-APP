@@ -43,11 +43,17 @@ export default function DashboardPage() {
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="全部任务" value={data.total} color="text-content-primary" />
-          <StatCard label="执行中" value={data.running} color="text-amber-400" />
-          <StatCard label="已完成" value={data.completed} color="text-green-400" />
-          <StatCard label="失败" value={data.failed} color="text-red-400" />
+          <StatCard label="全部任务" value={data.total} color="text-content-primary" href="/tasks" />
+          <StatCard label="执行中" value={data.running} color="text-amber-400" href="/tasks" />
+          <StatCard label="已完成" value={data.completed} color="text-green-400" href="/review" />
+          <StatCard label="失败" value={data.failed} color="text-red-400" href="/tasks" />
         </div>
+        {data.total === 0 && (
+          <div className="text-center py-10 text-content-tertiary text-sm">
+            <p>暂无任务数据</p>
+            <a href="/agent" className="text-accent text-xs mt-2 inline-block hover:underline">去创建第一个任务</a>
+          </div>
+        )}
 
         {/* Highlights */}
         {data.highlights.length > 0 ? (
@@ -96,12 +102,22 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div className="p-4 rounded-xl border border-border bg-surface-secondary">
+function StatCard({ label, value, color, href }: { label: string; value: number; color: string; href?: string }) {
+  const inner = (
+    <>
       <p className="text-xs text-content-tertiary mb-1">{label}</p>
       <p className={`text-2xl font-semibold ${color}`}>{value}</p>
-    </div>
+    </>
+  );
+  if (href) {
+    return (
+      <Link href={href} className="block p-4 rounded-xl border border-border bg-surface-secondary hover:bg-surface-tertiary transition-colors">
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <div className="p-4 rounded-xl border border-border bg-surface-secondary">{inner}</div>
   );
 }
 
