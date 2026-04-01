@@ -78,6 +78,24 @@ export default function MyTasksPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
+  const [retrying, setRetrying] = useState<string | null>(null);
+
+  async function handleRetry(taskId: string) {
+    setRetrying(taskId);
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'queued' }),
+      });
+      if (!res.ok) throw new Error('重试失败');
+      fetchTasks();
+    } catch {
+      alert('重试失败，请稍后再试');
+    } finally {
+      setRetrying(null);
+    }
+  }
 
   const fetchTasks = useCallback(() => {
     setLoading(true);
@@ -195,10 +213,9 @@ export default function MyTasksPage() {
             /* Card grid */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {filtered.map((t) => (
-                <a
+                <div
                   key={t.id}
-                  href={`/tasks/${t.id}`}
-                  className="group block rounded-2xl border border-border/50 bg-surface-secondary p-4 hover:bg-surface-tertiary hover:border-accent/20 transition-all duration-150 space-y-3"
+                  className="group rounded-2xl border border-border/50 bg-surface-secondary p-4 hover:bg-surface-tertiary hover:border-accent/20 transition-all duration-150 space-y-3"
                 >
                   {/* Card top: type icon + status badge */}
                   <div className="flex items-center justify-between">
@@ -231,14 +248,28 @@ export default function MyTasksPage() {
                     {t.title || t.input?.slice(0, 60) || '未命名任务'}
                   </p>
 
-                  {/* Card footer: time + arrow */}
+                  {/* Card footer: time + actions */}
                   <div className="flex items-center justify-between pt-1 border-t border-border/30">
                     <span className="text-[11px] text-content-tertiary">{timeAgo(t.updatedAt || t.createdAt)}</span>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-content-tertiary/40 group-hover:text-accent/60 transition-colors">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
+                    <div className="flex items-center gap-1.5">
+                      {t.status === 'failed' && (
+                        <button
+                          onClick={() => handleRetry(t.id)}
+                          disabled={retrying === t.id}
+                          className="text-[11px] px-2 py-0.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                        >
+                          {retrying === t.id ? '重试中...' : '重试'}
+                        </button>
+                      )}
+                      {isRunning(t.status) && (
+                        <a href={`/agent?task=${t.id}`} className="text-[11px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors">
+                          继续
+                        </a>
+                      )}
+                      <a href={`/tasks/${t.id}`} className="text-[11px] text-accent hover:underline">查看</a>
+                    </div>
                   </div>
-                </a>
+                </div>
               ))}
             </div>
           )}
