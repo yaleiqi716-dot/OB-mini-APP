@@ -17,20 +17,32 @@ interface Summary {
 
 export default function DashboardPage() {
   const [data, setData] = useState<Summary | null>(null);
-
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     fetch('/api/summary')
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error('加载失败'); return r.json(); })
       .then(setData)
-      .catch(() => {});
+      .catch(() => setError('数据加载失败，请刷新重试'))
+      .finally(() => setLoading(false));
   }, []);
-
-  if (!data) {
+  if (loading) {
     return (
       <div className="h-screen bg-surface-primary flex flex-col">
         <NavHeader />
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-content-tertiary text-sm">加载中...</p>
+          <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+  if (error || !data) {
+    return (
+      <div className="h-screen bg-surface-primary flex flex-col">
+        <NavHeader />
+        <div className="flex-1 flex flex-col items-center justify-center gap-3">
+          <p className="text-content-tertiary text-sm">{error || '数据加载失败'}</p>
+          <button onClick={() => window.location.reload()} className="text-xs text-accent hover:underline">刷新页面</button>
         </div>
       </div>
     );
