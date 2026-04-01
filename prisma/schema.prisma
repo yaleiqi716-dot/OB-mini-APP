@@ -2,15 +2,20 @@ datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
-
 generator client {
   provider = "prisma-client-js"
 }
 
 model User {
   id             String   @id @default(cuid())
+  email          String?  @unique
+  emailVerified  Boolean  @default(false)
+  passwordHash   String?
+  googleId       String?  @unique
+  name           String?
+  avatarUrl      String?
   credits        Int      @default(100)
-  plan           String   @default("free") // free | basic | pro | team
+  plan           String   @default("free")
   expireAt       DateTime?
   dailyTaskCount Int      @default(0)
   dailyResetDate String   @default("")
@@ -18,11 +23,61 @@ model User {
   updatedAt      DateTime @updatedAt
   tasks          Task[]
   orders         Order[]
+  sessions       Session[]
+  verificationCodes VerificationCode[]
+  teamMemberships   TeamMember[]
+  ownedTeams        Team[]   @relation("TeamOwner")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique @default(cuid())
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([token])
+  @@index([userId])
+}
+
+model VerificationCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([email, code])
+}
+
+model Team {
+  id          String       @id @default(cuid())
+  name        String
+  ownerId     String
+  owner       User         @relation("TeamOwner", fields: [ownerId], references: [id])
+  inviteCode  String       @unique @default(cuid())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  members     TeamMember[]
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("member")
+  joinedAt  DateTime @default(now())
+  @@unique([teamId, userId])
+  @@index([userId])
 }
 
 model Task {
   id            String      @id @default(cuid())
-  type          String      // ppt | website | video | email | proposal | unknown
+  type          String
   status        String      @default("pending")
   title         String      @default("")
   input         String
@@ -38,12 +93,13 @@ model Task {
   processing    Boolean     @default(false)
   isExecuting   Boolean     @default(false)
   priority      Int         @default(0)
-  assigneeId     String?
-  businessStatus String  @default("assigned")
+  assigneeId    String?
+  businessStatus String     @default("assigned")
   externalJobId  String?
   externalEngine String?
   userId        String?
   user          User?       @relation(fields: [userId], references: [id])
+  teamId        String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   events        TaskEvent[]
@@ -56,16 +112,15 @@ model TaskEvent {
   type      String
   data      String
   createdAt DateTime @default(now())
-
   @@index([taskId, createdAt])
 }
 
 model AutoTask {
   id        String   @id @default(cuid())
   userId    String
-  type      String   // ppt | email | proposal | etc.
+  type      String
   input     String
-  schedule  String   // cron expression (e.g. "0 9 * * *")
+  schedule  String
   enabled   Boolean  @default(true)
   lastRunAt DateTime?
   createdAt DateTime @default(now())
@@ -73,9 +128,9 @@ model AutoTask {
 
 model ScheduledTask {
   id           String   @id @default(cuid())
-  type         String   // ppt | email | proposal | unknown
+  type         String
   input        String
-  cron         String   // "daily" | "weekly"
+  cron         String
   nextRunAt    DateTime
   userId       String
   enabled      Boolean  @default(true)
@@ -87,19 +142,18 @@ model Order {
   id              String    @id @default(cuid())
   userId          String
   user            User      @relation(fields: [userId], references: [id])
-  productType     String    // subscription | credits
-  productCode     String    // basic_monthly | pro_monthly | team_monthly | credits_100 | credits_500 | credits_2000
-  amount          Int       // price in fen (cents CNY)
+  productType     String
+  productCode     String
+  amount          Int
   currency        String    @default("CNY")
-  credits         Int       @default(0) // credits to add
-  status          String    @default("pending") // pending | paid | failed | cancelled
+  credits         Int       @default(0)
+  status          String    @default("pending")
   provider        String    @default("wechat")
   providerOrderId String?
   providerPayload String?
   paidAt          DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-
   @@index([providerOrderId])
   @@index([userId, status])
 }

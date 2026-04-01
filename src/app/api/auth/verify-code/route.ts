@@ -1,0 +1,86 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { createSession } from '@/lib/auth'
+
+export async function POST(req: NextRequest) {
+  try {
+    const { email, code } = await req.json()
+
+    if (!email || !code) {
+      return NextResponse.json({ error: '邮箱和验证码不能为空' }, { status: 400 })
+    }
+
+    // 查找有效验证码
+    const record = await prisma.verificationCode.findFirst({
+      where: {
+        email,
+        code,
+        used: false,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    if (!record) {
+      return NextResponse.json({ error: '验证码无效或已过期' }, { status: 401 })
+    }
+
+    // 标记为已使用
+    await prisma.verificationCode.update({
+      where: { id: record.id },
+      data: { used: true },
+    })
+
+    // 查找或创建用户
+    let user = await prisma.user.findUnique({ where: { email } })
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email,
+          emailVerified: true,
+          name: email.split('@')[0],
+        },
+      })
+    } else if (!user.emailVerified) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { emailVerified: true },
+      })
+    }
+
+    // 创建 session
+    const token = await createSession(user.id)
+
+    const response = NextResponse.json({
+      ok: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        credits: user.credits,
+        plan: user.plan,
+      },
+    })
+
+    // 设置 session cookie（30天）
+    response.cookies.set('ob-session', token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60,
+      path: '/',
+    })
+
+    // 同时设置 ob-user-id 兼容旧版 API
+    response.cookies.set('ob-user-id', user.id, {
+      httpOnly: false,
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60,
+      path: '/',
+    })
+
+    return response
+  } catch (err) {
+    console.error('[auth/verify-code]', err)
+    return NextResponse.json({ error: '服务器错误' }, { status: 500 })
+  }
+}
