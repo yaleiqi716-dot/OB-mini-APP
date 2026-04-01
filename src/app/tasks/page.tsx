@@ -176,10 +176,10 @@ export default function MyTasksPage() {
               </div>
               <div className="space-y-1">
                 <p className="text-content-secondary text-sm font-medium">
-                  {filter === 'all' ? '还没有任务' : `暂无${FILTER_OPTIONS.find(o => o.value === filter)?.label}任务`}
+                  {filter === 'all' ? '你现在没有任何任务' : `没有${FILTER_OPTIONS.find(o => o.value === filter)?.label}任务`}
                 </p>
                 <p className="text-content-tertiary text-xs">
-                  {filter === 'all' ? '告诉 AI 你的需求，它会帮你完成' : '换个筛选条件看看'}
+                  {filter === 'all' ? '把你的工作交给 AI，去创建第一个任务吧' : '换个筛选条件，或者去创建一个新任务'}
                 </p>
               </div>
               {filter === 'all' ? (

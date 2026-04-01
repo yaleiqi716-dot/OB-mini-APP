@@ -1,6 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { NavHeader } from '@/components/NavHeader';
 
 interface TaskRef {
@@ -54,14 +55,68 @@ export default function DashboardPage() {
   const [data, setData] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  useEffect(() => {
+  const showToast = useCallback((msg: string, ok: boolean) => {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  const loadData = useCallback(() => {
     fetch('/api/summary')
       .then((r) => { if (!r.ok) throw new Error('加载失败'); return r.json(); })
       .then(setData)
       .catch(() => setError('数据加载失败，请刷新重试'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  // Quick action: approve a waiting_review task
+  async function handleApprove(taskId: string) {
+    if (actionLoading) return;
+    setActionLoading(taskId + '_approve');
+    try {
+      const r = await fetch(`/api/tasks/${taskId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approvalType: 'result', action: 'approve' }),
+      });
+      if (r.ok) {
+        showToast('✓ 已通过审核', true);
+        setData(prev => prev ? {
+          ...prev,
+          waitingReviewTasks: prev.waitingReviewTasks?.filter(t => t.id !== taskId),
+        } : prev);
+      } else {
+        showToast('操作失败，请重试', false);
+      }
+    } catch {
+      showToast('网络错误', false);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  // Quick action: retry a failed task
+  async function handleRetry(taskId: string) {
+    if (actionLoading) return;
+    setActionLoading(taskId + '_retry');
+    try {
+      const r = await fetch(`/api/tasks/${taskId}/retry`, { method: 'POST' });
+      if (r.ok) {
+        showToast('✓ 已重新提交执行', true);
+        loadData();
+      } else {
+        showToast('重试失败，请稍后再试', false);
+      }
+    } catch {
+      showToast('网络错误', false);
+    } finally {
+      setActionLoading(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -99,8 +154,8 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-content-primary">指挥台</h1>
-            <p className="text-xs text-content-tertiary mt-0.5">
-              {needAction > 0 ? `有 ${needAction} 件事需要你处理` : '一切正常，继续推进'}
+            <p className="text-xs mt-0.5" style={{ color: needAction > 0 ? '#f59e0b' : 'var(--content-tertiary)' }}>
+              {needAction > 0 ? `⚡ 有 ${needAction} 件事需要你处理` : '✓ 一切正常，继续推进'}
             </p>
           </div>
           <Link
@@ -123,34 +178,59 @@ export default function DashboardPage() {
 
         {/* Empty state */}
         {data.total === 0 && (
-          <div className="rounded-2xl border border-border/50 bg-surface-secondary p-8 text-center space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent,#f97316)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <div className="rounded-2xl border border-border/50 bg-surface-secondary p-10 text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent,#f97316)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
               </svg>
             </div>
-            <p className="text-content-secondary text-sm font-medium">还没有任何任务</p>
-            <p className="text-content-tertiary text-xs">告诉 AI 你的需求，它会帮你完成</p>
-            <Link href="/agent" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium text-white hover:opacity-80 transition-opacity" style={{ background: 'var(--accent, #f97316)' }}>
-              创建第一个任务
+            <div>
+              <p className="text-content-primary text-sm font-semibold">你现在没有任何任务</p>
+              <p className="text-content-tertiary text-xs mt-1">告诉 AI 你的需求，它会帮你完成工作</p>
+            </div>
+            <Link href="/agent" className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-sm font-medium text-white hover:opacity-80 transition-opacity" style={{ background: 'var(--accent, #f97316)' }}>
+              去创建第一个任务 →
             </Link>
           </div>
         )}
 
-        {/* 需要你处理 */}
+        {/* 需要你处理 — BLOCKED / WAITING YOU */}
         {(waitingCount > 0 || data.failed > 0) && (
           <Section title="需要你处理" icon="alert" badge={needAction}>
             {(data.waitingReviewTasks ?? []).map(t => (
-              <TaskRow key={t.id} task={t} badge="待审核" badgeColor="bg-amber-500/10 text-amber-400 border-amber-500/20" href="/review" />
+              <ActionTaskRow
+                key={t.id}
+                task={t}
+                urgencyLabel="WAITING YOU"
+                urgencyColor="bg-amber-500/10 text-amber-400 border-amber-500/30"
+                urgencyDot="bg-amber-400 animate-pulse"
+                detailHref={`/tasks/${t.id}`}
+                actionHref="/review"
+                actionLabel="立即审核"
+                actionStyle="amber"
+                onQuickApprove={() => handleApprove(t.id)}
+                approveLoading={actionLoading === t.id + '_approve'}
+              />
             ))}
             {data.failed > 0 && (
-              <Link href="/tasks?filter=failed" className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-red-500/5 border border-red-500/20 hover:bg-red-500/10 transition-colors group">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-                  <span className="text-sm text-content-secondary">{data.failed} 个任务执行失败</span>
+              <div className="flex items-center justify-between px-3 py-3 rounded-xl bg-red-500/5 border border-red-500/20">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-content-secondary font-medium">{data.failed} 个任务执行失败</p>
+                    <p className="text-[11px] text-content-tertiary mt-0.5">需要重试或检查原因</p>
+                  </div>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">查看</span>
-              </Link>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-medium">BLOCKED</span>
+                  <Link
+                    href="/tasks?filter=failed"
+                    className="text-xs px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors font-medium"
+                  >
+                    立即处理
+                  </Link>
+                </div>
+              </div>
             )}
           </Section>
         )}
@@ -159,7 +239,19 @@ export default function DashboardPage() {
         {highPriorityCount > 0 && (
           <Section title="高优先级任务" icon="fire" badge={highPriorityCount}>
             {(data.highPriorityTasks ?? []).map(t => (
-              <TaskRow key={t.id} task={t} badge="高优先" badgeColor="bg-red-500/10 text-red-400 border-red-500/20" href={`/tasks/${t.id}`} showStatus />
+              <ActionTaskRow
+                key={t.id}
+                task={t}
+                urgencyLabel="高优先"
+                urgencyColor="bg-red-500/10 text-red-400 border-red-500/20"
+                urgencyDot="bg-red-400"
+                detailHref={`/tasks/${t.id}`}
+                actionHref={`/tasks/${t.id}`}
+                actionLabel="立即处理"
+                actionStyle="red"
+                showStatus
+                showTime
+              />
             ))}
           </Section>
         )}
@@ -170,7 +262,7 @@ export default function DashboardPage() {
             {(data.recentTasks ?? []).map(t => (
               <TaskRow key={t.id} task={t} href={`/tasks/${t.id}`} showStatus showTime />
             ))}
-            <Link href="/tasks" className="block text-center text-xs text-accent hover:underline pt-1">查看全部任务</Link>
+            <Link href="/tasks" className="block text-center text-xs text-accent hover:underline pt-1">查看全部任务 →</Link>
           </Section>
         )}
 
@@ -205,27 +297,89 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg text-white text-sm shadow-lg animate-flow-in ${toast.ok ? 'bg-green-600/90' : 'bg-red-600/90'}`}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }
 
-function StatCard({ label, value, color, href }: { label: string; value: number; color: string; href?: string }) {
-  const inner = (
-    <>
-      <p className="text-xs text-content-tertiary mb-1">{label}</p>
-      <p className={`text-2xl font-semibold ${color}`}>{value}</p>
-    </>
+// ---- ActionTaskRow: task card with urgency label + quick action buttons ----
+function ActionTaskRow({
+  task, urgencyLabel, urgencyColor, urgencyDot, detailHref, actionHref, actionLabel, actionStyle,
+  showStatus, showTime, onQuickApprove, approveLoading,
+}: {
+  task: TaskRef;
+  urgencyLabel: string;
+  urgencyColor: string;
+  urgencyDot: string;
+  detailHref: string;
+  actionHref: string;
+  actionLabel: string;
+  actionStyle: 'amber' | 'red';
+  showStatus?: boolean;
+  showTime?: boolean;
+  onQuickApprove?: () => void;
+  approveLoading?: boolean;
+}) {
+  const btnBase = 'text-[11px] px-2.5 py-1 rounded-lg border font-medium transition-colors';
+  const amberBtn = `${btnBase} bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20`;
+  const redBtn = `${btnBase} bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20`;
+  const primaryBtn = actionStyle === 'amber' ? amberBtn : redBtn;
+
+  return (
+    <div className="rounded-xl bg-surface-secondary/60 border border-border/30 overflow-hidden">
+      {/* Top row: title + urgency badge */}
+      <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${urgencyDot}`} />
+          <span className="text-sm text-content-primary font-medium truncate">{task.title}</span>
+        </div>
+        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold flex-shrink-0 ml-2 ${urgencyColor}`}>
+          {urgencyLabel}
+        </span>
+      </div>
+
+      {/* Meta row: time + status */}
+      <div className="flex items-center gap-3 px-3 pb-2 text-[11px] text-content-tertiary">
+        {(task.updatedAt || task.createdAt) && (
+          <span>{timeAgo(task.updatedAt || task.createdAt)}</span>
+        )}
+        {showStatus && task.status && (
+          <span>{STATUS_LABEL[task.status] || task.status}</span>
+        )}
+      </div>
+
+      {/* Action row: quick buttons + detail link */}
+      <div className="flex items-center gap-2 px-3 py-2 border-t border-border/20 bg-surface-tertiary/30">
+        {/* Quick approve button (only for waiting_review) */}
+        {onQuickApprove && (
+          <button
+            onClick={onQuickApprove}
+            disabled={approveLoading}
+            className={`${amberBtn} disabled:opacity-50`}
+          >
+            {approveLoading ? '处理中...' : '✓ 通过'}
+          </button>
+        )}
+        {/* Primary action button */}
+        <Link href={actionHref} className={primaryBtn}>
+          {actionLabel}
+        </Link>
+        {/* Detail link */}
+        <Link href={detailHref} className="ml-auto text-[11px] text-content-tertiary hover:text-accent transition-colors">
+          查看详情 →
+        </Link>
+      </div>
+    </div>
   );
-  if (href) {
-    return (
-      <Link href={href} className="block p-4 rounded-xl border border-border bg-surface-secondary hover:bg-surface-tertiary transition-colors">
-        {inner}
-      </Link>
-    );
-  }
-  return <div className="p-4 rounded-xl border border-border bg-surface-secondary">{inner}</div>;
 }
 
+// ---- TaskRow: simple list row ----
 function TaskRow({ task, badge, badgeColor, href, showStatus, showTime }: {
   task: TaskRef; badge?: string; badgeColor?: string; href: string; showStatus?: boolean; showTime?: boolean;
 }) {
@@ -255,6 +409,23 @@ function TaskRow({ task, badge, badgeColor, href, showStatus, showTime }: {
       </div>
     </Link>
   );
+}
+
+function StatCard({ label, value, color, href }: { label: string; value: number; color: string; href?: string }) {
+  const inner = (
+    <>
+      <p className="text-xs text-content-tertiary mb-1">{label}</p>
+      <p className={`text-2xl font-semibold ${color}`}>{value}</p>
+    </>
+  );
+  if (href) {
+    return (
+      <Link href={href} className="block p-4 rounded-xl border border-border bg-surface-secondary hover:bg-surface-tertiary transition-colors">
+        {inner}
+      </Link>
+    );
+  }
+  return <div className="p-4 rounded-xl border border-border bg-surface-secondary">{inner}</div>;
 }
 
 function SectionIcon({ name }: { name: string }) {

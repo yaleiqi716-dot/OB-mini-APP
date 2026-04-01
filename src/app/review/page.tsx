@@ -93,7 +93,14 @@ export default function ReviewPage() {
           {loading ? (
             <div className="flex justify-center py-12"><Spinner size="md" /></div>
           ) : tasks.length === 0 ? (
-            <div className="text-center py-12 text-content-tertiary text-sm">暂无待审核任务</div>
+            <div className="text-center py-12 px-4 space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center mx-auto">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <p className="text-content-secondary text-sm font-medium">你现在没有待审核任务</p>
+              <p className="text-content-tertiary text-xs">当 AI 完成任务后，结果会在这里等待你的确认</p>
+              <a href="/agent" className="inline-block text-xs text-accent hover:underline">去创建新任务 →</a>
+            </div>
           ) : (
             <div className="p-2 space-y-1">
               {tasks.map(t => (
