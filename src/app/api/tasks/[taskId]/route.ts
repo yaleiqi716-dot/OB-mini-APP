@@ -52,7 +52,7 @@ export async function PATCH(
     }
     const task = await prisma.task.findUnique({
       where: { id: params.taskId },
-      select: { id: true, assigneeId: true, status: true },
+      select: { id: true, assigneeId: true, status: true, input: true },
     });
     if (!task) return NextResponse.json({ error: '任务不存在' }, { status: 404 });
     if (task.status !== 'failed') {
@@ -63,7 +63,7 @@ export async function PATCH(
       data: { status: 'queued', errorMessage: null },
     });
     // Re-enqueue the task for execution
-    enqueue({ taskId: params.taskId, enqueuedAt: Date.now() });
+    enqueue({ taskId: params.taskId, input: task.input, enqueuedAt: Date.now() });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: '操作失败' }, { status: 500 });
