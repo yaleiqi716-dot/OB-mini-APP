@@ -31,6 +31,14 @@ export async function GET(req: NextRequest) {
       select: { id: true, title: true, type: true, status: true, priority: true, createdAt: true },
     });
 
+    // 失败任务（最近3条，含失败原因）
+    const failedTasks = await prisma.task.findMany({
+      where: { ...userFilter, status: 'failed' },
+      orderBy: { updatedAt: 'desc' },
+      take: 3,
+      select: { id: true, title: true, type: true, errorMessage: true, updatedAt: true },
+    });
+
     // 最近活跃任务（最近3条）
     const recentTasks = await prisma.task.findMany({
       where: userFilter,
@@ -103,6 +111,13 @@ export async function GET(req: NextRequest) {
       highlights,
       risks,
       aiSuggestions,
+      failedTasks: failedTasks.map(t => ({
+        id: t.id,
+        title: t.title || `${t.type} 任务`,
+        type: t.type,
+        errorMessage: t.errorMessage || null,
+        updatedAt: t.updatedAt.toISOString(),
+      })),
       waitingReviewTasks: waitingReviewTasks.map(t => ({
         id: t.id,
         title: t.title || `${t.type} 任务`,

@@ -26,6 +26,7 @@ interface Summary {
   waitingReviewTasks?: TaskRef[];
   highPriorityTasks?: TaskRef[];
   recentTasks?: TaskRef[];
+  failedTasks?: (TaskRef & { errorMessage?: string | null })[];
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -212,7 +213,35 @@ export default function DashboardPage() {
                 approveLoading={actionLoading === t.id + '_approve'}
               />
             ))}
-            {data.failed > 0 && (
+            {(data.failedTasks && data.failedTasks.length > 0) ? (
+              data.failedTasks.map(t => (
+                <div key={t.id} className="rounded-xl bg-red-500/5 border border-red-500/20 overflow-hidden">
+                  <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
+                      <span className="text-sm text-content-primary font-medium truncate">{t.title}</span>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-semibold flex-shrink-0 ml-2">BLOCKED</span>
+                  </div>
+                  {t.errorMessage && (
+                    <div className="px-3 pb-1.5">
+                      <p className="text-[11px] text-red-400/80 truncate">原因：{t.errorMessage}</p>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 px-3 py-2 border-t border-red-500/10 bg-red-500/5">
+                    <span className="text-[11px] text-content-tertiary">{timeAgo(t.updatedAt)}</span>
+                    <button
+                      onClick={() => handleRetry(t.id)}
+                      disabled={actionLoading === t.id + '_retry'}
+                      className="text-[11px] px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors font-medium disabled:opacity-50"
+                    >
+                      {actionLoading === t.id + '_retry' ? '重试中...' : '重试'}
+                    </button>
+                    <Link href={`/tasks/${t.id}`} className="ml-auto text-[11px] text-content-tertiary hover:text-accent transition-colors">查看详情 →</Link>
+                  </div>
+                </div>
+              ))
+            ) : data.failed > 0 ? (
               <div className="flex items-center justify-between px-3 py-3 rounded-xl bg-red-500/5 border border-red-500/20">
                 <div className="flex items-center gap-2.5">
                   <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" />
@@ -223,15 +252,10 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-medium">BLOCKED</span>
-                  <Link
-                    href="/tasks?filter=failed"
-                    className="text-xs px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors font-medium"
-                  >
-                    立即处理
-                  </Link>
+                  <Link href="/tasks?filter=failed" className="text-xs px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors font-medium">立即处理</Link>
                 </div>
               </div>
-            )}
+            ) : null}
           </Section>
         )}
 

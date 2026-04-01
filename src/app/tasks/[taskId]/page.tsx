@@ -4,6 +4,13 @@ import { useParams } from 'next/navigation';
 import { Spinner } from '@/components/ui/Spinner';
 import { NavHeader } from '@/components/NavHeader';
 
+interface TaskEvent {
+  id: string;
+  type: string;
+  data: Record<string, unknown>;
+  createdAt: string;
+}
+
 interface TaskDetail {
   id: string;
   title: string;
@@ -16,6 +23,7 @@ interface TaskDetail {
   assigneeId: string | null;
   createdAt: string;
   updatedAt: string;
+  events: TaskEvent[];
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -35,6 +43,55 @@ const STATUS_COLOR: Record<string, string> = {
   completed: 'bg-green-500/10 text-green-400',
   failed: 'bg-red-500/10 text-red-400',
 };
+
+// Map event type → human-readable label + icon color
+const EVENT_META: Record<string, { label: string; color: string }> = {
+  created:      { label: '任务创建', color: 'bg-content-tertiary' },
+  understanding:{ label: 'AI 理解需求', color: 'bg-blue-400' },
+  structuring:  { label: 'AI 规划步骤', color: 'bg-blue-400' },
+  step_start:   { label: '开始执行步骤', color: 'bg-amber-400' },
+  step_complete:{ label: '步骤完成', color: 'bg-green-400' },
+  tool_call:    { label: '调用工具', color: 'bg-purple-400' },
+  tool_result:  { label: '工具返回结果', color: 'bg-purple-400' },
+  interaction:  { label: '等待用户确认', color: 'bg-orange-400' },
+  completed:    { label: '任务完成', color: 'bg-green-400' },
+  error:        { label: '执行出错', color: 'bg-red-400' },
+  failed:       { label: '任务失败', color: 'bg-red-400' },
+};
+
+function getEventLabel(type: string, data: Record<string, unknown>): string {
+  const meta = EVENT_META[type];
+  if (meta) {
+    // Enrich with data details
+    if (type === 'step_start' && data.stepName) return `开始步骤：${data.stepName}`;
+    if (type === 'step_complete' && data.stepName) return `完成步骤：${data.stepName}`;
+    if (type === 'tool_call' && data.tool) return `调用工具：${data.tool}`;
+    if (type === 'error' && data.message) return `出错：${String(data.message).slice(0, 60)}`;
+    return meta.label;
+  }
+  return type;
+}
+
+function getEventColor(type: string): string {
+  return EVENT_META[type]?.color || 'bg-content-tertiary';
+}
+
+function timeAgo(iso: string): string {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return `${diff}秒前`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`;
+  return `${Math.floor(diff / 86400)}天前`;
+}
+
+// Filter out noisy/duplicate events for the timeline
+function filterKeyEvents(events: TaskEvent[]): TaskEvent[] {
+  const KEY_TYPES = new Set([
+    'created', 'understanding', 'structuring', 'step_start', 'step_complete',
+    'tool_call', 'interaction', 'completed', 'error', 'failed',
+  ]);
+  return events.filter(e => KEY_TYPES.has(e.type));
+}
 
 function extractResultText(result: Record<string, unknown> | null): string | null {
   if (!result) return null;
@@ -56,63 +113,6 @@ function extractResultText(result: Record<string, unknown> | null): string | nul
   return JSON.stringify(result, null, 2);
 }
 
-// ---- Discussion Section (mock UI) ----
-function DiscussionSection() {
-  const [comments, setComments] = useState<{ id: number; author: string; text: string; time: string }[]>([]);
-  const [input, setInput] = useState('');
-
-  function addComment() {
-    const text = input.trim();
-    if (!text) return;
-    setComments(prev => [...prev, { id: Date.now(), author: '我', text, time: '刚刚' }]);
-    setInput('');
-  }
-
-  return (
-    <div className="space-y-3">
-      <div className="text-xs font-medium text-content-tertiary uppercase tracking-wide">讨论区</div>
-      {comments.length === 0 ? (
-        <div className="rounded-xl bg-surface-secondary border border-border/50 p-4 text-center">
-          <p className="text-xs text-content-tertiary">还没有评论，发表第一条吧</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {comments.map((c) => (
-            <div key={c.id} className="flex items-start gap-2.5 rounded-xl bg-surface-secondary border border-border/50 p-3">
-              <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-[10px] text-accent font-medium flex-shrink-0">
-                {c.author.charAt(0)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-xs font-medium text-content-primary">{c.author}</span>
-                  <span className="text-[10px] text-content-tertiary">{c.time}</span>
-                </div>
-                <p className="text-xs text-content-secondary leading-relaxed">{c.text}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      <div className="flex items-center gap-2">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); } }}
-          placeholder="添加评论..."
-          className="flex-1 rounded-lg bg-surface-secondary border border-border/50 px-3 py-2 text-xs text-content-primary placeholder:text-content-tertiary focus:outline-none focus:border-accent/50 transition-colors"
-        />
-        <button
-          onClick={addComment}
-          disabled={!input.trim()}
-          className="px-3 py-2 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors disabled:opacity-40"
-        >
-          发送
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function TaskDetailPage() {
   const params = useParams();
   const taskId = params.taskId as string;
@@ -122,6 +122,7 @@ export default function TaskDetailPage() {
   const [unlocking, setUnlocking] = useState(false);
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [showTimeline, setShowTimeline] = useState(false);
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -140,6 +141,7 @@ export default function TaskDetailPage() {
         unlockCost: data.unlockCost || 0, errorMessage: data.errorMessage || null,
         assigneeId: data.assigneeId || null,
         createdAt: data.createdAt, updatedAt: data.updatedAt,
+        events: Array.isArray(data.events) ? data.events : [],
       });
     } catch { setError('网络错误'); } finally { setLoading(false); }
   }, [taskId]);
@@ -200,6 +202,7 @@ export default function TaskDetailPage() {
 
   const resultText = extractResultText(task.result);
   const isRunning = ['pending', 'queued', 'understanding', 'structuring', 'executing', 'running', 'interacting'].includes(task.status);
+  const keyEvents = filterKeyEvents(task.events);
 
   return (
     <div className="h-[100dvh] flex flex-col bg-surface-primary">
@@ -224,7 +227,7 @@ export default function TaskDetailPage() {
             </span>
           </div>
 
-          {/* Task meta: assignee + time */}
+          {/* Task meta */}
           <div className="rounded-xl bg-surface-secondary border border-border/50 p-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -240,6 +243,7 @@ export default function TaskDetailPage() {
                 <div className="text-[11px] text-content-tertiary font-medium">创建时间</div>
                 <div className="text-xs text-content-secondary">
                   {new Date(task.createdAt).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  <span className="ml-1 text-content-tertiary">({timeAgo(task.createdAt)})</span>
                 </div>
               </div>
             </div>
@@ -265,10 +269,18 @@ export default function TaskDetailPage() {
           )}
 
           {/* Error */}
-          {task.status === 'failed' && task.errorMessage && (
-            <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-4">
-              <div className="text-xs font-medium text-red-400 mb-1">执行失败原因</div>
-              <p className="text-sm text-content-secondary">{task.errorMessage}</p>
+          {task.status === 'failed' && (
+            <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-4 space-y-2">
+              <div className="text-xs font-medium text-red-400">执行失败</div>
+              {task.errorMessage ? (
+                <p className="text-sm text-content-secondary">{task.errorMessage}</p>
+              ) : (
+                <p className="text-sm text-content-tertiary">任务执行过程中发生错误，请重新创建任务</p>
+              )}
+              <a href="/agent" className="inline-flex items-center gap-1 text-xs text-accent hover:underline mt-1">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                去 Agent 重新创建
+              </a>
             </div>
           )}
 
@@ -297,7 +309,6 @@ export default function TaskDetailPage() {
                 )}
               </div>
 
-              {/* Result header badge */}
               <div className="flex items-center gap-2 px-1">
                 <div className="w-2 h-2 rounded-full bg-green-400" />
                 <span className="text-xs text-green-400 font-medium">任务已完成，以下是 AI 生成的结果</span>
@@ -333,7 +344,52 @@ export default function TaskDetailPage() {
             </div>
           )}
 
-          {/* Discussion section removed — single-user mode, no team collaboration backend */}
+          {/* Execution Timeline */}
+          {keyEvents.length > 0 && (
+            <div className="space-y-2">
+              <button
+                onClick={() => setShowTimeline(v => !v)}
+                className="flex items-center gap-2 text-xs font-medium text-content-tertiary uppercase tracking-wide hover:text-content-secondary transition-colors w-full"
+              >
+                <svg
+                  width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: showTimeline ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+                >
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+                执行记录（{keyEvents.length} 个步骤）
+              </button>
+
+              {showTimeline && (
+                <div className="rounded-xl bg-surface-secondary border border-border/50 p-4">
+                  <div className="relative space-y-0">
+                    {keyEvents.map((event, idx) => (
+                      <div key={event.id} className="flex gap-3 relative">
+                        {/* Vertical line */}
+                        {idx < keyEvents.length - 1 && (
+                          <div className="absolute left-[5px] top-4 bottom-0 w-px bg-border/50" />
+                        )}
+                        {/* Dot */}
+                        <div className={`w-3 h-3 rounded-full flex-shrink-0 mt-1 ${getEventColor(event.type)}`} />
+                        {/* Content */}
+                        <div className="flex-1 pb-4 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs text-content-primary font-medium">
+                              {getEventLabel(event.type, event.data)}
+                            </span>
+                            <span className="text-[10px] text-content-tertiary flex-shrink-0">
+                              {timeAgo(event.createdAt)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Quick actions */}
           <div className="flex items-center gap-3 pt-2 border-t border-border/30">
