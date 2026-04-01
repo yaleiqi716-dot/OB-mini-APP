@@ -410,7 +410,26 @@ export default function AgentPage() {
                 <h1 className="ob-welcome-title agent-welcome-title">
                   有什么我可以帮你？
                 </h1>
-                <p className="agent-welcome-subtitle">告诉我你的需求，我来帮你完成</p>
+                <p className="agent-welcome-subtitle">告诉我你的需求，AI 会帮你完成</p>
+
+                {/* Onboarding guide — 3-step cards, shown when no tasks exist */}
+                {tasks.length === 0 && (
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
+                    {[
+                      { step: '1', text: '输入你的需求', sub: '描述你想做什么' },
+                      { step: '2', text: 'AI 自动执行', sub: '思考 → 调用工具 → 生成结果' },
+                      { step: '3', text: '查看并使用结果', sub: '可复制、跳转、审核' },
+                    ].map((s) => (
+                      <div key={s.step} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 14px', borderRadius: 12, background: 'var(--surface-secondary)', border: '1px solid var(--border)', minWidth: 140, flex: '1 1 140px', maxWidth: 180 }}>
+                        <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.step}</div>
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.3 }}>{s.text}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>{s.sub}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Example chips — MiniMax 横排单行 */}
                 <div className="ob-chips agent-examples">

@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
@@ -990,21 +991,48 @@ function ResultView({ result, taskId: rvTaskId }: { result: Record<string, unkno
 }
 
 function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { title: string; subtitle?: string; children: React.ReactNode; taskId?: string }) {
+  const [copied, setCopied] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const handleCopy = useCallback(() => {
+    const text = contentRef.current?.textContent || '';
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, []);
   return (
-    <div className="space-y-3 pt-2">
-      <p className="text-sm text-content-primary leading-relaxed">
-        {title}{subtitle ? <span className="text-content-tertiary text-xs ml-2">{subtitle}</span> : null}
-      </p>
-      <div className="space-y-3">{children}</div>
-      {/* Chat → Tasks navigation links */}
+    <div className="space-y-0 pt-2 animate-flow-in">
+      {/* Result header — clearly marks this as the AI output */}
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-green-500/15">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex w-1.5 h-1.5 rounded-full bg-green-400" />
+          <span className="text-[11px] font-semibold text-green-400 uppercase tracking-widest">任务结果</span>
+          {subtitle && <span className="text-[11px] text-content-tertiary ml-1">{subtitle}</span>}
+        </div>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] text-content-tertiary hover:text-content-secondary hover:bg-surface-tertiary transition-colors"
+        >
+          {copied ? (
+            <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span className="text-green-400">已复制</span></>
+          ) : (
+            <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>复制</span></>
+          )}
+        </button>
+      </div>
+      {/* Result title */}
+      <p className="text-sm font-medium text-content-primary leading-relaxed mb-3">{title}</p>
+      {/* Result content */}
+      <div className="space-y-3" ref={contentRef}>{children}</div>
+      {/* Navigation links */}
       {rcTaskId && (
-        <div className="flex items-center gap-3 pt-2 border-t border-border/50">
+        <div className="flex items-center gap-3 pt-3 mt-3 border-t border-border/40">
           <a
             href={`/tasks/${rcTaskId}`}
             className="text-xs text-accent hover:underline flex items-center gap-1"
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            查看任务详情
+            查看完整详情
           </a>
           <span className="text-content-tertiary text-xs">·</span>
           <a
@@ -1012,7 +1040,7 @@ function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { titl
             className="text-xs text-content-secondary hover:text-accent hover:underline flex items-center gap-1"
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-            查看我的任务
+            所有任务
           </a>
         </div>
       )}
