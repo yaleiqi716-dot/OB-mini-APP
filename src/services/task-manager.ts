@@ -28,7 +28,7 @@ export function formatTask(t: {
   context: string; currentStep: string; result: string | null;
   errorMessage: string | null; source: string;
   estimatedCost?: number; actualCost?: number; userId?: string | null; assigneeId?: string | null;
-  businessStatus?: string; charged?: boolean; cost?: number;
+  businessStatus?: string; charged?: boolean; cost?: number; priority?: number;
   createdAt: Date; updatedAt: Date;
   events?: { id: string; taskId: string; type: string; data: string; createdAt: Date }[];
 }) {
@@ -58,6 +58,7 @@ export function formatTask(t: {
     estimatedCost: t.estimatedCost || 0,
     actualCost: t.actualCost || 0,
     assigneeId: t.assigneeId || null,
+    priority: t.priority ?? 0,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
     events: t.events?.map(formatEvent) ?? [],

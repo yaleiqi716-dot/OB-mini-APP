@@ -224,9 +224,9 @@ export default function TaskDetailPage() {
             </span>
           </div>
 
-          {/* Enterprise meta: assignee + department + time */}
+          {/* Task meta: assignee + time */}
           <div className="rounded-xl bg-surface-secondary border border-border/50 p-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <div className="text-[11px] text-content-tertiary font-medium">负责人</div>
                 <div className="flex items-center gap-2">
@@ -234,14 +234,6 @@ export default function TaskDetailPage() {
                     {(task.assigneeId || 'Me').charAt(0).toUpperCase()}
                   </div>
                   <span className="text-xs text-content-primary">{task.assigneeId || '我自己'}</span>
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <div className="text-[11px] text-content-tertiary font-medium">部门标签</div>
-                <div className="flex flex-wrap gap-1">
-                  {['运营', 'AI助手'].map((tag) => (
-                    <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">{tag}</span>
-                  ))}
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -341,8 +333,7 @@ export default function TaskDetailPage() {
             </div>
           )}
 
-          {/* Discussion */}
-          <DiscussionSection />
+          {/* Discussion section removed — single-user mode, no team collaboration backend */}
 
           {/* Quick actions */}
           <div className="flex items-center gap-3 pt-2 border-t border-border/30">

@@ -94,6 +94,8 @@ export default function AgentPage() {
   const [actionLoadingTaskId, setActionLoadingTaskId] = useState<string | null>(null);
   const [interactingTaskId, setInteractingTaskId] = useState<string | null>(null);
   const [errorToast, setErrorToast] = useState<string | null>(null);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
+  const prevTaskStatusRef = useRef<Record<string, string>>({});
   const [quota, setQuota] = useState<{ credits: number; plan: string; limits: { maxConcurrent: number; allowedTypes: string[] } } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const canvasEndRef = useRef<HTMLDivElement>(null);
@@ -113,7 +115,7 @@ export default function AgentPage() {
         if (event.type === 'status_change') u.status = event.data.status as TaskStatus;
         if (event.type === 'interaction_request') { u.currentInteraction = event.data as unknown as Interaction; u.status = 'interacting'; }
         if (event.type === 'artifact' && event.data.result) u.result = event.data.result as Record<string, unknown>;
-        if (event.type === 'task_completed' && event.data.result) { u.result = event.data.result as Record<string, unknown>; u.status = 'completed'; fetchQuota(); }
+        if (event.type === 'task_completed' && event.data.result) { u.result = event.data.result as Record<string, unknown>; u.status = 'completed'; fetchQuota(); showSuccess('✓ 任务已完成！点击查看结果'); }
         return u;
       }));
     }, []),
@@ -172,6 +174,7 @@ export default function AgentPage() {
   useEffect(() => { if (activeTaskId) setTasks(prev => prev.map(t => t.id === activeTaskId ? { ...t, lastSeenUpdatedAt: t.updatedAt } : t)); }, [activeTaskId]);
 
   function showError(m: string) { setErrorToast(m); setTimeout(() => setErrorToast(null), 3000); }
+  function showSuccess(m: string) { setSuccessToast(m); setTimeout(() => setSuccessToast(null), 4000); }
   function fetchQuota() { fetch('/api/user').then(r => r.json()).then(d => { if (d.credits !== undefined) setQuota(d); }).catch(() => {}); }
   useEffect(() => { fetchQuota(); }, []);
 
@@ -472,6 +475,12 @@ export default function AgentPage() {
       {errorToast && (
         <div className="ob-toast agent-error-toast animate-flow-in">
           {errorToast}
+        </div>
+      )}
+      {/* Success toast */}
+      {successToast && (
+        <div className="ob-toast animate-flow-in" style={{ background: 'var(--color-success, #16a34a)', color: '#fff', bottom: errorToast ? '80px' : '24px' }}>
+          {successToast}
         </div>
       )}
     </div>
