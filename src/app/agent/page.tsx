@@ -15,6 +15,16 @@ interface TaskState {
   source: TaskSource; createdAt: string; updatedAt: string; events: TaskEvent[];
   eventsLoaded: boolean; currentInteraction: Interaction | null;
   result: Record<string, unknown> | null; lastSeenUpdatedAt: string; context: Record<string, unknown>;
+  conversationId?: string;
+}
+
+// Conversation type for sidebar list
+interface ConversationItem {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  firstTaskInput: string;
 }
 
 function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
@@ -37,6 +47,7 @@ function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
     createdAt: (data.createdAt as string) || now, updatedAt, events, eventsLoaded: true,
     currentInteraction, result: (data.result as Record<string, unknown>) || null,
     lastSeenUpdatedAt: updatedAt, context: (data.context as Record<string, unknown>) || {},
+    conversationId: (data.conversationId as string) || undefined,
   };
 }
 
@@ -79,6 +90,64 @@ function ChipIcon({ name }: { name: string }) {
   return null;
 }
 
+// Sidebar conversation list component
+function ConversationList({
+  conversations,
+  activeConversationId,
+  onSelect,
+}: {
+  conversations: ConversationItem[];
+  activeConversationId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {conversations.map((conv) => (
+        <button
+          key={conv.id}
+          onClick={() => onSelect(conv.id)}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            gap: 2,
+            padding: '8px 10px',
+            borderRadius: 8,
+            border: 'none',
+            background: activeConversationId === conv.id ? 'var(--surface-secondary)' : 'transparent',
+            cursor: 'pointer',
+            textAlign: 'left',
+            width: '100%',
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={(e) => {
+            if (activeConversationId !== conv.id)
+              e.currentTarget.style.background = 'var(--surface-hover, rgba(255,255,255,0.04))';
+          }}
+          onMouseLeave={(e) => {
+            if (activeConversationId !== conv.id)
+              e.currentTarget.style.background = 'transparent';
+          }}
+        >
+          <span style={{
+            fontSize: 13,
+            fontWeight: activeConversationId === conv.id ? 500 : 400,
+            color: 'var(--text-primary)',
+            lineHeight: 1.4,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            width: '100%',
+            maxWidth: 180,
+          }}>
+            {conv.title || conv.firstTaskInput?.slice(0, 30) || '新对话'}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function AgentPage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
@@ -88,6 +157,13 @@ export default function AgentPage() {
     setAuthChecked(true);
   }, [router]);
 
+  // ── Conversation state ──
+  const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const currentConvRef = useRef<string | null>(null);
+  currentConvRef.current = currentConversationId;
+
+  // ── Task state (tasks within the current conversation) ──
   const [tasks, setTasks] = useState<TaskState[]>([]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -104,6 +180,7 @@ export default function AgentPage() {
   activeRef.current = activeTaskId;
   const activeTask = tasks.find((t) => t.id === activeTaskId) || null;
 
+  // ── SSE: subscribe to active task events ──
   const { reconnecting } = useSSE(activeTaskId, {
     enabled: !!activeTaskId,
     onEvent: useCallback((event: TaskEvent) => {
@@ -121,26 +198,37 @@ export default function AgentPage() {
     }, []),
   });
 
+  // ── Fetch conversation list ──
+  function fetchConversations() {
+    fetch('/api/conversations').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setConversations(data);
+    }).catch(() => {});
+  }
+  useEffect(() => { fetchConversations(); }, []);
+
+  // ── Fetch tasks for current conversation ──
+  function fetchConversationTasks(convId: string) {
+    fetch(`/api/conversations/${convId}/tasks`).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) {
+        const parsed = data.map((d: Record<string, unknown>) => parseTaskFromAPI(d));
+        setTasks(parsed);
+        // Auto-select the last task in the conversation
+        if (parsed.length > 0) {
+          setActiveTaskId(parsed[parsed.length - 1].id);
+        }
+      }
+    }).catch(() => {});
+  }
+
+  // When conversation changes, load its tasks
   useEffect(() => {
-    function poll() {
-      fetch('/api/tasks').then(r => r.json()).then(data => {
-        if (!Array.isArray(data)) return;
-        setTasks(prev => {
-          const pm = new Map(prev.map(t => [t.id, t])); const merged: TaskState[] = []; const cid = activeRef.current;
-          for (const t of data as Record<string, unknown>[]) {
-            const id = t.id as string, su = (t.updatedAt as string) || '', ss = (t.status as TaskStatus) || 'pending', ex = pm.get(id);
-            if (ex) {
-              if (id === cid) { merged.push({ ...ex, title: (t.title as string) || ex.title, type: (t.type as TaskType) || ex.type, source: (t.source as TaskSource) || ex.source, updatedAt: su > ex.updatedAt ? su : ex.updatedAt, lastSeenUpdatedAt: su > ex.lastSeenUpdatedAt ? su : ex.lastSeenUpdatedAt }); }
-              else { const upd = !TERMINAL.has(ex.status) || TERMINAL.has(ss); merged.push({ ...ex, type: (t.type as TaskType) || ex.type, status: upd ? ss : ex.status, title: (t.title as string) || ex.title, source: (t.source as TaskSource) || ex.source, updatedAt: su || ex.updatedAt, result: (t.result as Record<string, unknown>) || ex.result, lastSeenUpdatedAt: ex.lastSeenUpdatedAt }); }
-            } else { const now = new Date().toISOString(); merged.push({ id, type: (t.type as TaskType) || 'unknown', status: ss, title: (t.title as string) || '', input: (t.input as string) || '', source: (t.source as TaskSource) || 'agent', createdAt: (t.createdAt as string) || now, updatedAt: su || now, events: [], eventsLoaded: false, currentInteraction: null, result: (t.result as Record<string, unknown>) || null, lastSeenUpdatedAt: '', context: {} }); }
-          }
-          // ChatGPT model: do NOT auto-open old tasks on load
-          return merged;
-        });
-      }).catch(() => {});
+    if (!currentConversationId) {
+      setTasks([]);
+      setActiveTaskId(null);
+      return;
     }
-    poll(); const iv = setInterval(poll, 5000); return () => clearInterval(iv);
-  }, []);
+    fetchConversationTasks(currentConversationId);
+  }, [currentConversationId]);
 
   useEffect(() => {
     if (!activeTaskId) return;
@@ -153,7 +241,6 @@ export default function AgentPage() {
   }, [activeTaskId, tasks]);
 
   // Re-fetch active task every 2s while it's in a non-terminal state
-  // This catches interaction_request and other events that arrive before SSE connects
   useEffect(() => {
     if (!activeTaskId) return;
     let stopped = false;
@@ -183,11 +270,46 @@ export default function AgentPage() {
     canvasEndRef.current.scrollIntoView({ behavior: 'smooth' });
   });
 
+  // ── Handle new conversation ──
+  async function handleNewChat() {
+    setCurrentConversationId(null);
+    setTasks([]);
+    setActiveTaskId(null);
+    setSidebarOpen(false);
+  }
+
+  // ── Handle conversation selection ──
+  async function handleSelectConversation(convId: string) {
+    setCurrentConversationId(convId);
+    setSidebarOpen(false);
+  }
+
+  // ── Handle task submission ──
   async function handleSubmit(input: string, type?: string) {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const r = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input, type }) });
+      // If no current conversation, create one first
+      let convId = currentConvRef.current;
+      if (!convId) {
+        const cr = await fetch('/api/conversations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: input.slice(0, 40) }),
+        });
+        if (!cr.ok) { showError('创建会话失败'); return; }
+        const cd = await cr.json();
+        convId = cd.id;
+        setCurrentConversationId(convId);
+        // Add to conversations list
+        setConversations(prev => [cd, ...prev]);
+      }
+
+      const r = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input, type, conversationId: convId }),
+      });
       if (!r.ok) {
         const errData = await r.json().catch(() => ({}));
         const errMsg = errData.error || '提交失败，请重试';
@@ -201,8 +323,12 @@ export default function AgentPage() {
         const dr = await fetch(`/api/tasks/${data.taskId}`); const dd = await dr.json();
         let nt: TaskState;
         if (dd && !dd.error) { nt = parseTaskFromAPI(dd); if (nt.events.length === 0) nt.events = [think]; }
-        else { nt = { id: data.taskId, type: data.type || 'unknown', status: 'pending', title: input.slice(0, 50), input, source: 'agent', createdAt: now, updatedAt: now, events: [think], eventsLoaded: false, currentInteraction: null, result: null, lastSeenUpdatedAt: now, context: {} }; }
-        setTasks(prev => [nt, ...prev]); setActiveTaskId(data.taskId); fetchQuota();
+        else { nt = { id: data.taskId, type: data.type || 'unknown', status: 'pending', title: input.slice(0, 50), input, source: 'agent', createdAt: now, updatedAt: now, events: [think], eventsLoaded: false, currentInteraction: null, result: null, lastSeenUpdatedAt: now, context: {}, conversationId: convId || undefined }; }
+        setTasks(prev => [...prev, nt]);
+        setActiveTaskId(data.taskId);
+        fetchQuota();
+        // Update conversation list to reflect new activity
+        fetchConversations();
       }
     } catch (e) { console.error(e); } finally { setIsSubmitting(false); }
   }
@@ -219,8 +345,6 @@ export default function AgentPage() {
   async function handleAdjustProposal() { if (!activeTaskId || interactingTaskId === activeTaskId) return; setInteractingTaskId(activeTaskId); setTasks(prev => prev.map(t => t.id === activeTaskId ? { ...t, currentInteraction: null } : t)); try { await fetch(`/api/tasks/${activeTaskId}/interact`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ interactionId: '', stepId: 'request_adjust_proposal_structure', value: '' }) }); } catch { showError('操作失败'); } finally { setInteractingTaskId(null); } }
   async function handleReviseEmail() { if (!activeTaskId || interactingTaskId === activeTaskId) return; setInteractingTaskId(activeTaskId); setTasks(prev => prev.map(t => t.id === activeTaskId ? { ...t, currentInteraction: null } : t)); try { await fetch(`/api/tasks/${activeTaskId}/interact`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ interactionId: '', stepId: 'revise_email_request', value: '' }) }); } catch { showError('操作失败'); } finally { setInteractingTaskId(null); } }
 
-  function selectTask(id: string) { setActiveTaskId(id); setSidebarOpen(false); }
-
   const listItems = tasks.map(t => ({ id: t.id, type: t.type, status: t.status, title: t.title, input: t.input, createdAt: t.createdAt, summary: getTaskSummary(t), hasUnread: hasUnread(t), source: t.source }));
 
   if (!authChecked) return <div style={{ height: '100dvh', background: 'var(--bg)' }} />;
@@ -231,7 +355,7 @@ export default function AgentPage() {
       {/* Top: New chat button */}
       <div className="ob-sidebar-top">
         <button
-          onClick={() => { setActiveTaskId(null); setSidebarOpen(false); }}
+          onClick={handleNewChat}
           className="ob-new-chat-btn"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -242,10 +366,14 @@ export default function AgentPage() {
         </button>
       </div>
 
-      {/* Task list */}
+      {/* Conversation list */}
       <div className="ob-sidebar-scroll custom-scrollbar">
-        {tasks.length > 0 ? (
-          <TaskList tasks={listItems} activeTaskId={activeTaskId} onSelect={selectTask} />
+        {conversations.length > 0 ? (
+          <ConversationList
+            conversations={conversations}
+            activeConversationId={currentConversationId}
+            onSelect={handleSelectConversation}
+          />
         ) : (
           <p className="ob-sidebar-empty">暂无对话<br />输入一句话开始</p>
         )}
@@ -276,7 +404,7 @@ export default function AgentPage() {
         <a
           href="/agent"
           className="ob-header-brand"
-          onClick={(e) => { e.preventDefault(); setActiveTaskId(null); }}
+          onClick={(e) => { e.preventDefault(); handleNewChat(); }}
         >
           <span className="ob-header-brand-o">ORANGE</span>
           <span className="ob-header-brand-t">BENCH</span>
@@ -340,39 +468,43 @@ export default function AgentPage() {
             <div style={{ width: 36 }} />
           </div>
 
-          {activeTask ? (
+          {currentConversationId && tasks.length > 0 ? (
             <>
-              {/* Scrollable conversation */}
-              <div ref={scrollRef} className="ob-scroll agent-scroll custom-scrollbar" key={activeTask.id}>
+              {/* Scrollable conversation — show all tasks in this conversation */}
+              <div ref={scrollRef} className="ob-scroll agent-scroll custom-scrollbar" key={currentConversationId}>
                 <div className="ob-messages agent-content-wrap">
-                  {/* User message — right-aligned bubble */}
-                  <div className="ob-msg-user chat-user-bubble-row">
-                    <div className="ob-msg-user-bubble chat-user-bubble">
-                      {activeTask.input}
-                    </div>
-                  </div>
+                  {tasks.map((task) => (
+                    <div key={task.id}>
+                      {/* User message — right-aligned bubble */}
+                      <div className="ob-msg-user chat-user-bubble-row">
+                        <div className="ob-msg-user-bubble chat-user-bubble">
+                          {task.input}
+                        </div>
+                      </div>
 
-                  {/* AI response area */}
-                  <div className="ob-msg-ai chat-ai-area">
-                    <TaskCanvas
-                      taskId={activeTask.id} title={activeTask.title} type={activeTask.type}
-                      status={activeTask.status} input={activeTask.input} events={activeTask.events}
-                      currentInteraction={activeTask.currentInteraction}
-                      onInteractionSubmit={handleInteractionSubmit}
-                      onApprove={handleApprove} onReject={handleReject}
-                      onAdjustStructure={handleAdjustStructure}
-                      onAdjustProposal={handleAdjustProposal}
-                      onReviseEmail={handleReviseEmail}
-                      actionLoading={actionLoadingTaskId === activeTask.id}
-                      result={activeTask.result}
-                      loading={!!(activeTask && !activeTask.eventsLoaded)}
-                      credits={quota?.credits ?? null}
-                      executionStrategy={(activeTask.context.executionStrategy as string) || undefined}
-                      modelName={(activeTask.context.model as string) || undefined}
-                      onNewTask={handleSubmit}
-                    />
-                    <div ref={canvasEndRef} />
-                  </div>
+                      {/* AI response area */}
+                      <div className="ob-msg-ai chat-ai-area">
+                        <TaskCanvas
+                          taskId={task.id} title={task.title} type={task.type}
+                          status={task.status} input={task.input} events={task.events}
+                          currentInteraction={task.id === activeTaskId ? task.currentInteraction : null}
+                          onInteractionSubmit={handleInteractionSubmit}
+                          onApprove={handleApprove} onReject={handleReject}
+                          onAdjustStructure={handleAdjustStructure}
+                          onAdjustProposal={handleAdjustProposal}
+                          onReviseEmail={handleReviseEmail}
+                          actionLoading={actionLoadingTaskId === task.id}
+                          result={task.result}
+                          loading={!!(task && !task.eventsLoaded)}
+                          credits={quota?.credits ?? null}
+                          executionStrategy={(task.context.executionStrategy as string) || undefined}
+                          modelName={(task.context.model as string) || undefined}
+                          onNewTask={handleSubmit}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={canvasEndRef} />
                 </div>
               </div>
 
@@ -395,7 +527,7 @@ export default function AgentPage() {
                     activeTask?.status === 'interacting' &&
                     (activeTask.currentInteraction.type === 'text_input' || activeTask.currentInteraction.type === 'confirm')
                       ? '回复上面的问题...'
-                      : '继续说，我帮你接着做...'
+                      : '继续对话...'
                   }
                 />
                 {isSubmitting && (
@@ -415,8 +547,8 @@ export default function AgentPage() {
                 </h1>
                 <p className="agent-welcome-subtitle">告诉我你的需求，AI 会帮你完成</p>
 
-                {/* Onboarding guide — 3-step cards, shown when no tasks exist */}
-                {tasks.length === 0 && (
+                {/* Onboarding guide — 3-step cards, shown when no conversations exist */}
+                {conversations.length === 0 && (
                   <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
                     {[
                       { step: '1', text: '输入你的需求', sub: '描述你想做什么' },

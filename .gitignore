@@ -10,3 +10,13 @@ prisma/dev.db-journal
 prisma/migrations/
 *.tsbuildinfo
 next-env.d.ts
+
+# Database files
+prisma/prisma/
+prisma/prod.db
+*.db
+*.db-shm
+*.db-wal
+*.bak
+ecosystem.config.js
+

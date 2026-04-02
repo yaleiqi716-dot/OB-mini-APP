@@ -19,7 +19,7 @@ export interface OpenRouterResponse {
 }
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const DEFAULT_TIMEOUT_MS = 60_000; // 60 seconds
+const DEFAULT_TIMEOUT_MS = 150_000; // 150 seconds
 
 function getApiKey(): string {
   const key = process.env.OPENROUTER_API_KEY;

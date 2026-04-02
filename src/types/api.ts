@@ -7,6 +7,7 @@ export interface CreateTaskRequest {
   metadata?: Record<string, string>;
   assigneeId?: string;
   parentTaskId?: string;
+  conversationId?: string;
 }
 
 export interface CreateTaskResponse {

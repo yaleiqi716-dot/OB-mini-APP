@@ -56,10 +56,32 @@ export async function POST(req: NextRequest) {
     if (body.parentTaskId) {
       const parentTask = await prisma.task.findUnique({
         where: { id: body.parentTaskId },
-        select: { input: true, title: true },
+        select: { input: true, title: true, result: true },
       });
       if (parentTask) {
-        finalInput = `【原始任务】${parentTask.title || ''}\n${parentTask.input}\n\n【当前指令】${finalInput}`;
+        // 拼接父任务的 input + result，让 AI 能基于上次结果继续
+        // result 在 DB 中存储为 JSON 字符串，需要先 parse 再取 .content
+        let parentResult: string | null = null;
+        if (parentTask.result) {
+          try {
+            const parsed = JSON.parse(parentTask.result as string);
+            if (typeof parsed.content === 'string') {
+              parentResult = parsed.content;
+            } else if (typeof parsed === 'string') {
+              parentResult = parsed;
+            } else {
+              parentResult = JSON.stringify(parsed);
+            }
+          } catch {
+            // 如果不是 JSON，直接使用原始字符串
+            parentResult = parentTask.result as string;
+          }
+        }
+        if (parentResult) {
+          finalInput = `【上一次任务】${parentTask.title || parentTask.input}\n\n【上一次结果】\n${parentResult}\n\n【当前指令】${finalInput}`;
+        } else {
+          finalInput = `【原始任务】${parentTask.title || ''}\n${parentTask.input}\n\n【当前指令】${finalInput}`;
+        }
       }
     }
 
@@ -90,6 +112,20 @@ export async function POST(req: NextRequest) {
     const priority = PLAN_PRIORITY[user.plan] || 0;
 
     // Create task — always assign to current user so it appears in /tasks/mine and dashboard stats
+    // 处理 conversationId：如果前端传了就用，否则自动创建新会话
+    let conversationId: string | null = body.conversationId || null;
+    if (!conversationId) {
+      const conv = await prisma.conversation.create({
+        data: { userId, title: null },
+      });
+      conversationId = conv.id;
+    } else {
+      const conv = await prisma.conversation.findUnique({ where: { id: conversationId } });
+      if (!conv || conv.userId !== userId) {
+        return NextResponse.json({ error: '会话不存在' }, { status: 404 });
+      }
+    }
+
     const task = await createTask(finalInput, body.source || 'agent', {
       userId,
       estimatedCost: creditCheck.estimatedCost,
@@ -97,11 +133,13 @@ export async function POST(req: NextRequest) {
     });
 
     // Set priority + move to queued (worker polls DB by priority)
-    await prisma.task.update({ where: { id: task.id }, data: { priority } });
+    await prisma.task.update({ where: { id: task.id }, data: { priority, conversationId } });
+    // Update conversation updatedAt
+    await prisma.conversation.update({ where: { id: conversationId }, data: { updatedAt: new Date() } });
     await updateTaskStatus(task.id, 'queued');
     await emitLog(task.id, '任务已提交，排队中...');
 
-    return NextResponse.json({ taskId: task.id, type: task.type, status: 'queued' });
+    return NextResponse.json({ taskId: task.id, type: task.type, status: 'queued', conversationId });
   } catch (error) {
     console.error('[TASK_CREATE_ERROR]', error);
     return NextResponse.json({ error: '创建任务失败，请重试' }, { status: 500 });
