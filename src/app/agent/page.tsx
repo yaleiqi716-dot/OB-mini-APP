@@ -369,7 +369,7 @@ export default function AgentPage() {
       {/* Top: New chat button */}
       <div className="ob-sidebar-top">
         <button
-          onClick={handleNewChat}
+          onClick={() => { console.log('[NEW CHAT TRIGGERED] sidebar btn'); handleNewChat(); }}
           className="ob-new-chat-btn"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -417,7 +417,7 @@ export default function AgentPage() {
       <header className="ob-header">
         <button
           className="ob-header-brand"
-          onClick={handleNewChat}
+          onClick={() => { console.log('[NEW CHAT TRIGGERED] header brand'); handleNewChat(); }}
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
         >
           <span className="ob-header-brand-o">ORANGE</span>
@@ -479,7 +479,15 @@ export default function AgentPage() {
             <span className="agent-mobile-title">
               <span style={{ color: 'var(--accent)' }}>ORANGE</span>BENCH
             </span>
-            <div style={{ width: 36 }} />
+            <button
+              onClick={() => { console.log('[NEW CHAT TRIGGERED] mobile topbar'); handleNewChat(); }}
+              style={{ padding: '4px 8px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 12 }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </button>
           </div>
 
           {currentConversationId ? (
