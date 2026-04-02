@@ -1,6 +1,6 @@
 'use client';
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AgentInput } from '@/components/agent/AgentInput';
 import { TaskCanvas } from '@/components/agent/TaskCanvas';
 import { TaskList } from '@/components/agent/TaskList';
@@ -148,7 +148,7 @@ function ConversationList({
   );
 }
 
-export default function AgentPage() {
+function AgentPageInner() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
   useEffect(() => {
@@ -157,10 +157,14 @@ export default function AgentPage() {
     setAuthChecked(true);
   }, [router]);
 
+  // ── URL params ──
+  const searchParams = useSearchParams();
+  const urlConvId = searchParams.get('conversationId');
+
   // ── Conversation state ──
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  const currentConvRef = useRef<string | null>(null);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(urlConvId);
+  const currentConvRef = useRef<string | null>(urlConvId);
   currentConvRef.current = currentConversationId;
 
   // ── Task state (tasks within the current conversation) ──
@@ -179,6 +183,18 @@ export default function AgentPage() {
   const activeRef = useRef<string | null>(null);
   activeRef.current = activeTaskId;
   const activeTask = tasks.find((t) => t.id === activeTaskId) || null;
+
+  // Sync URL → state on mount / browser back-forward
+  useEffect(() => {
+    if (urlConvId && urlConvId !== currentConvRef.current) {
+      console.log('[URL SYNC] conversationId from URL:', urlConvId);
+      setActiveTaskId(null);
+      activeRef.current = null;
+      setTasks([]);
+      setCurrentConversationId(urlConvId);
+      currentConvRef.current = urlConvId;
+    }
+  }, [urlConvId]);
 
   // ── SSE: subscribe to active task events ──
   const { reconnecting } = useSSE(activeTaskId, {
@@ -278,24 +294,27 @@ export default function AgentPage() {
   // ── Handle new conversation ──
   async function handleNewChat() {
     console.log('[NEW CHAT TRIGGERED]');
-    // Clear all conversation state immediately
     setActiveTaskId(null);
     activeRef.current = null;
     setTasks([]);
     setCurrentConversationId(null);
     currentConvRef.current = null;
+    window.history.pushState(null, '', '/agent');
     setSidebarOpen(false);
   }
 
   // ── Handle conversation selection ──
   async function handleSelectConversation(convId: string) {
     if (convId === currentConvRef.current) { setSidebarOpen(false); return; }
+    console.log('[SELECT CONVERSATION]', convId);
     // Clear old state before loading new conversation
     setActiveTaskId(null);
     activeRef.current = null;
     setTasks([]);
     setCurrentConversationId(convId);
     currentConvRef.current = convId;
+    // Update URL without full navigation
+    window.history.pushState(null, '', `/agent?conversationId=${convId}`);
     setSidebarOpen(false);
   }
 
@@ -318,6 +337,7 @@ export default function AgentPage() {
         // Update both state and ref immediately to prevent race conditions
         currentConvRef.current = convId;
         setCurrentConversationId(convId);
+        window.history.pushState(null, '', `/agent?conversationId=${convId}`);
         setConversations(prev => [{ ...cd, firstTaskInput: input }, ...prev]);
       }
 
@@ -645,5 +665,13 @@ export default function AgentPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AgentPage() {
+  return (
+    <Suspense fallback={<div style={{ height: '100dvh', background: 'var(--bg)' }} />}>
+      <AgentPageInner />
+    </Suspense>
   );
 }
