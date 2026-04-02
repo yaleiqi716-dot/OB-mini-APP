@@ -1,19 +1,11 @@
 import nodemailer from 'nodemailer'
 
-// 配置说明：在 .env 中设置以下变量即可启用真实邮件发送
-// SMTP_HOST=smtp.qq.com
-// SMTP_PORT=465
-// SMTP_USER=your@qq.com
-// SMTP_PASS=your_smtp_password
-// SMTP_FROM="ORANGEBENCH <noreply@orangebench.ai>"
-
 function createTransport() {
   const host = process.env.SMTP_HOST
   const user = process.env.SMTP_USER
   const pass = process.env.SMTP_PASS
 
   if (!host || !user || !pass) {
-    // 开发模式：打印到控制台
     return null
   }
 
@@ -22,6 +14,9 @@ function createTransport() {
     port: parseInt(process.env.SMTP_PORT || '465'),
     secure: process.env.SMTP_PORT === '465' || !process.env.SMTP_PORT,
     auth: { user, pass },
+    tls: {
+      servername: process.env.SMTP_TLS_SERVERNAME || undefined,
+    },
   })
 }
 
@@ -29,9 +24,8 @@ export async function sendVerificationCode(email: string, code: string): Promise
   const transport = createTransport()
 
   if (!transport) {
-    // 开发模式：控制台输出验证码
-    console.log(`[DEV] 邮箱验证码 → ${email}: ${code}`)
-    return true
+    console.error('[Mailer] SMTP 未配置，无法发送验证码')
+    return false
   }
 
   try {
@@ -52,9 +46,7 @@ export async function sendVerificationCode(email: string, code: string): Promise
     })
     return true
   } catch (err) {
-    // SMTP 发送失败时，降级到控制台输出，确保验证码流程不中断
-    console.error('[Mailer] SMTP 发送失败，降级到控制台输出:', (err as Error).message)
-    console.log(`[FALLBACK] 邮箱验证码 → ${email}: ${code}`)
-    return true  // 降级成功，返回 true
+    console.error('[Mailer] 发送失败:', (err as Error).message)
+    return false
   }
 }

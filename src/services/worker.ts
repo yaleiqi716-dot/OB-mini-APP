@@ -9,7 +9,7 @@ import { dispatch, ASYNC_INTENTS } from './agent/dispatch';
 // ---- Concurrency control ----
 
 const MAX_CONCURRENT = 3;
-const TASK_TIMEOUT_MS = 30_000; // 30s — async tools return immediately, no need for 120s
+const TASK_TIMEOUT_MS = 180_000; // 180s — Router + LLM can take 60-150s
 
 let runningCount = 0;
 let workerInterval: ReturnType<typeof setInterval> | null = null;

@@ -319,15 +319,13 @@ export default function AgentPage() {
       const data = await r.json();
       if (data.taskId) {
         const now = new Date().toISOString();
-        const think: TaskEvent = { type: 'thinking', data: { text: '好，我来帮你处理这个任务，我先把整体思路理一下' }, createdAt: now };
         const dr = await fetch(`/api/tasks/${data.taskId}`); const dd = await dr.json();
         let nt: TaskState;
-        if (dd && !dd.error) { nt = parseTaskFromAPI(dd); if (nt.events.length === 0) nt.events = [think]; }
-        else { nt = { id: data.taskId, type: data.type || 'unknown', status: 'pending', title: input.slice(0, 50), input, source: 'agent', createdAt: now, updatedAt: now, events: [think], eventsLoaded: false, currentInteraction: null, result: null, lastSeenUpdatedAt: now, context: {}, conversationId: convId || undefined }; }
+        if (dd && !dd.error) { nt = parseTaskFromAPI(dd); }
+        else { nt = { id: data.taskId, type: data.type || 'unknown', status: 'pending', title: input.slice(0, 50), input, source: 'agent', createdAt: now, updatedAt: now, events: [], eventsLoaded: false, currentInteraction: null, result: null, lastSeenUpdatedAt: now, context: {}, conversationId: convId || undefined }; }
         setTasks(prev => [...prev, nt]);
         setActiveTaskId(data.taskId);
         fetchQuota();
-        // Update conversation list to reflect new activity
         fetchConversations();
       }
     } catch (e) { console.error(e); } finally { setIsSubmitting(false); }

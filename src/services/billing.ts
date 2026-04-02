@@ -15,9 +15,9 @@ const ALL_TYPES: TaskType[] = ['ppt', 'email', 'proposal', 'website', 'video', '
 
 export const PLAN_CONFIG: Record<string, PlanLimits> = {
   free: {
-    maxConcurrent: 3,  // preview: relaxed for testing
-    allowedTypes: ALL_TYPES,  // preview: allow all types
-    dailyCredits: 200,  // preview: generous daily credits
+    maxConcurrent: 1,
+    allowedTypes: ['ppt', 'email', 'proposal', 'unknown'] as TaskType[],
+    dailyCredits: 20,
     monthlyCredits: 0,
   },
   basic: {
