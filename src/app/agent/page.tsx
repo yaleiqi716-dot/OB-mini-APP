@@ -184,10 +184,10 @@ function AgentPageInner() {
   activeRef.current = activeTaskId;
   const activeTask = tasks.find((t) => t.id === activeTaskId) || null;
 
-  // Sync URL → state on mount / browser back-forward
+  // Sync URL → state: handle both navigating TO a conversation and BACK to welcome
   useEffect(() => {
-    if (urlConvId && urlConvId !== currentConvRef.current) {
-      console.log('[URL SYNC] conversationId from URL:', urlConvId);
+    if (urlConvId !== currentConvRef.current) {
+      console.log('[URL SYNC] conversationId from URL:', urlConvId, '(was:', currentConvRef.current, ')');
       setActiveTaskId(null);
       activeRef.current = null;
       setTasks([]);
@@ -195,6 +195,24 @@ function AgentPageInner() {
       currentConvRef.current = urlConvId;
     }
   }, [urlConvId]);
+
+  // Listen for browser back/forward (popstate) — read URL directly as a safety net
+  useEffect(() => {
+    function handlePopState() {
+      const params = new URLSearchParams(window.location.search);
+      const convId = params.get('conversationId');
+      if (convId !== currentConvRef.current) {
+        console.log('[POPSTATE] conversationId:', convId, '(was:', currentConvRef.current, ')');
+        setActiveTaskId(null);
+        activeRef.current = null;
+        setTasks([]);
+        setCurrentConversationId(convId);
+        currentConvRef.current = convId;
+      }
+    }
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // ── SSE: subscribe to active task events ──
   const { reconnecting } = useSSE(activeTaskId, {
