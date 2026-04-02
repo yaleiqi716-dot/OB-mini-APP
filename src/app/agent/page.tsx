@@ -277,12 +277,13 @@ export default function AgentPage() {
 
   // ── Handle new conversation ──
   async function handleNewChat() {
+    console.log('[NEW CHAT TRIGGERED]');
     // Clear all conversation state immediately
     setActiveTaskId(null);
+    activeRef.current = null;
     setTasks([]);
     setCurrentConversationId(null);
     currentConvRef.current = null;
-    activeRef.current = null;
     setSidebarOpen(false);
   }
 
@@ -414,14 +415,14 @@ export default function AgentPage() {
 
       {/* ── Header 56px ── */}
       <header className="ob-header">
-        <a
-          href="/agent"
+        <button
           className="ob-header-brand"
-          onClick={(e) => { e.preventDefault(); handleNewChat(); }}
+          onClick={handleNewChat}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
         >
           <span className="ob-header-brand-o">ORANGE</span>
           <span className="ob-header-brand-t">BENCH</span>
-        </a>
+        </button>
         <div className="ob-header-right">
           <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             {[{href:'/dashboard',label:'决策台'},{href:'/tasks',label:'我的任务'},{href:'/review',label:'审核'},{href:'/billing',label:'充值'}].map(({href,label}) => (
