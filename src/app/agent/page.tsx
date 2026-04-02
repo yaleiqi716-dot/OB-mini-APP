@@ -241,22 +241,27 @@ export default function AgentPage() {
   }, [activeTaskId, tasks]);
 
   // Re-fetch active task every 2s while it's in a non-terminal state
+  // Stops if conversation changes or task is terminal
   useEffect(() => {
-    if (!activeTaskId) return;
+    if (!activeTaskId || !currentConversationId) return;
+    const capturedConvId = currentConversationId;
+    const capturedTaskId = activeTaskId;
     let stopped = false;
     const iv = setInterval(() => {
-      if (stopped) return;
-      fetch(`/api/tasks/${activeTaskId}`).then(r => r.json()).then(d => {
+      if (stopped || currentConvRef.current !== capturedConvId || activeRef.current !== capturedTaskId) {
+        stopped = true; clearInterval(iv); return;
+      }
+      fetch(`/api/tasks/${capturedTaskId}`).then(r => r.json()).then(d => {
         if (!d || d.error || stopped) return;
         setTasks(prev => {
-          const cur = prev.find(t => t.id === activeTaskId);
+          const cur = prev.find(t => t.id === capturedTaskId);
           if (!cur || TERMINAL.has(cur.status)) { stopped = true; return prev; }
-          return prev.map(t => t.id !== activeTaskId ? t : parseTaskFromAPI(d));
+          return prev.map(t => t.id !== capturedTaskId ? t : parseTaskFromAPI(d));
         });
       }).catch(() => {});
     }, 2000);
     return () => { stopped = true; clearInterval(iv); };
-  }, [activeTaskId]);
+  }, [activeTaskId, currentConversationId]);
 
   useEffect(() => { if (activeTaskId) setTasks(prev => prev.map(t => t.id === activeTaskId ? { ...t, lastSeenUpdatedAt: t.updatedAt } : t)); }, [activeTaskId]);
 
@@ -272,15 +277,24 @@ export default function AgentPage() {
 
   // ── Handle new conversation ──
   async function handleNewChat() {
-    setCurrentConversationId(null);
-    setTasks([]);
+    // Clear all conversation state immediately
     setActiveTaskId(null);
+    setTasks([]);
+    setCurrentConversationId(null);
+    currentConvRef.current = null;
+    activeRef.current = null;
     setSidebarOpen(false);
   }
 
   // ── Handle conversation selection ──
   async function handleSelectConversation(convId: string) {
+    if (convId === currentConvRef.current) { setSidebarOpen(false); return; }
+    // Clear old state before loading new conversation
+    setActiveTaskId(null);
+    activeRef.current = null;
+    setTasks([]);
     setCurrentConversationId(convId);
+    currentConvRef.current = convId;
     setSidebarOpen(false);
   }
 
@@ -300,9 +314,10 @@ export default function AgentPage() {
         if (!cr.ok) { showError('创建会话失败'); return; }
         const cd = await cr.json();
         convId = cd.id;
+        // Update both state and ref immediately to prevent race conditions
+        currentConvRef.current = convId;
         setCurrentConversationId(convId);
-        // Add to conversations list
-        setConversations(prev => [cd, ...prev]);
+        setConversations(prev => [{ ...cd, firstTaskInput: input }, ...prev]);
       }
 
       const r = await fetch('/api/tasks', {
@@ -466,7 +481,8 @@ export default function AgentPage() {
             <div style={{ width: 36 }} />
           </div>
 
-          {currentConversationId && tasks.length > 0 ? (
+          {currentConversationId ? (
+            tasks.length > 0 ? (
             <>
               {/* Scrollable conversation — show all tasks in this conversation */}
               <div ref={scrollRef} className="ob-scroll agent-scroll custom-scrollbar" key={currentConversationId}>
@@ -536,6 +552,12 @@ export default function AgentPage() {
                 )}
               </div>
             </>
+            ) : (
+              /* Loading conversation tasks */
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Spinner size="sm" />
+              </div>
+            )
           ) : (
             /* ── Welcome / empty state — MiniMax new-chat ── */
             <div className="ob-welcome agent-welcome">
