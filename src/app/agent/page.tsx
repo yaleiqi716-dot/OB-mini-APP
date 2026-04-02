@@ -1,6 +1,6 @@
 'use client';
-import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { AgentInput } from '@/components/agent/AgentInput';
 import { TaskCanvas } from '@/components/agent/TaskCanvas';
 import { TaskList } from '@/components/agent/TaskList';
@@ -157,17 +157,20 @@ function AgentPageInner() {
     setAuthChecked(true);
   }, [router]);
 
-  // ── URL params ──
-  const searchParams = useSearchParams();
-  const urlConvId = searchParams.get('conversationId');
+  // ── URL as single source of truth ──
+  function getConvIdFromURL(): string | null {
+    if (typeof window === 'undefined') return null;
+    const p = new URLSearchParams(window.location.search);
+    return p.get('conversationId') || null;
+  }
 
   // ── Conversation state ──
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(urlConvId);
-  const currentConvRef = useRef<string | null>(urlConvId);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(getConvIdFromURL());
+  const currentConvRef = useRef<string | null>(currentConversationId);
   currentConvRef.current = currentConversationId;
 
-  // ── Task state (tasks within the current conversation) ──
+  // ── Task state ──
   const [tasks, setTasks] = useState<TaskState[]>([]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -184,17 +187,54 @@ function AgentPageInner() {
   activeRef.current = activeTaskId;
   const activeTask = tasks.find((t) => t.id === activeTaskId) || null;
 
-  // Sync URL → state on mount / browser back-forward
+  // ── Core: load a conversation's tasks from API ──
+  function loadConversation(convId: string) {
+    console.log('[LOAD CONVERSATION]', convId);
+    setCurrentConversationId(convId);
+    currentConvRef.current = convId;
+    setActiveTaskId(null);
+    activeRef.current = null;
+    setTasks([]);
+    fetch(`/api/conversations/${convId}/tasks`).then(r => r.json()).then(data => {
+      if (!Array.isArray(data)) return;
+      // Guard: only apply if still on this conversation
+      if (currentConvRef.current !== convId) return;
+      const parsed = data.map((d: Record<string, unknown>) => parseTaskFromAPI(d));
+      setTasks(parsed);
+      if (parsed.length > 0) {
+        const lastId = parsed[parsed.length - 1].id;
+        setActiveTaskId(lastId);
+        activeRef.current = lastId;
+      }
+    }).catch(() => {});
+  }
+
+  // ── On mount: read URL and load conversation ──
   useEffect(() => {
-    if (urlConvId && urlConvId !== currentConvRef.current) {
-      console.log('[URL SYNC] conversationId from URL:', urlConvId);
-      setActiveTaskId(null);
-      activeRef.current = null;
-      setTasks([]);
-      setCurrentConversationId(urlConvId);
-      currentConvRef.current = urlConvId;
+    const convId = getConvIdFromURL();
+    if (convId) {
+      loadConversation(convId);
     }
-  }, [urlConvId]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Listen for browser back/forward ──
+  useEffect(() => {
+    function handlePopState() {
+      const convId = getConvIdFromURL();
+      console.log('[POPSTATE]', convId);
+      if (convId) {
+        loadConversation(convId);
+      } else {
+        setCurrentConversationId(null);
+        currentConvRef.current = null;
+        setTasks([]);
+        setActiveTaskId(null);
+        activeRef.current = null;
+      }
+    }
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── SSE: subscribe to active task events ──
   const { reconnecting } = useSSE(activeTaskId, {
@@ -222,30 +262,7 @@ function AgentPageInner() {
   }
   useEffect(() => { fetchConversations(); }, []);
 
-  // ── Fetch tasks for current conversation ──
-  function fetchConversationTasks(convId: string) {
-    fetch(`/api/conversations/${convId}/tasks`).then(r => r.json()).then(data => {
-      if (Array.isArray(data)) {
-        const parsed = data.map((d: Record<string, unknown>) => parseTaskFromAPI(d));
-        setTasks(parsed);
-        // Auto-select the last task in the conversation
-        if (parsed.length > 0) {
-          setActiveTaskId(parsed[parsed.length - 1].id);
-        }
-      }
-    }).catch(() => {});
-  }
-
-  // When conversation changes, load its tasks
-  useEffect(() => {
-    if (!currentConversationId) {
-      setTasks([]);
-      setActiveTaskId(null);
-      return;
-    }
-    fetchConversationTasks(currentConversationId);
-  }, [currentConversationId]);
-
+  // ── Fetch full events when active task changes ──
   useEffect(() => {
     if (!activeTaskId) return;
     const t = tasks.find(t => t.id === activeTaskId);
@@ -294,12 +311,12 @@ function AgentPageInner() {
   // ── Handle new conversation ──
   async function handleNewChat() {
     console.log('[NEW CHAT TRIGGERED]');
+    window.history.pushState(null, '', '/agent');
+    setCurrentConversationId(null);
+    currentConvRef.current = null;
     setActiveTaskId(null);
     activeRef.current = null;
     setTasks([]);
-    setCurrentConversationId(null);
-    currentConvRef.current = null;
-    window.history.pushState(null, '', '/agent');
     setSidebarOpen(false);
   }
 
@@ -307,14 +324,8 @@ function AgentPageInner() {
   async function handleSelectConversation(convId: string) {
     if (convId === currentConvRef.current) { setSidebarOpen(false); return; }
     console.log('[SELECT CONVERSATION]', convId);
-    // Clear old state before loading new conversation
-    setActiveTaskId(null);
-    activeRef.current = null;
-    setTasks([]);
-    setCurrentConversationId(convId);
-    currentConvRef.current = convId;
-    // Update URL without full navigation
     window.history.pushState(null, '', `/agent?conversationId=${convId}`);
+    loadConversation(convId);
     setSidebarOpen(false);
   }
 
@@ -669,9 +680,5 @@ function AgentPageInner() {
 }
 
 export default function AgentPage() {
-  return (
-    <Suspense fallback={<div style={{ height: '100dvh', background: 'var(--bg)' }} />}>
-      <AgentPageInner />
-    </Suspense>
-  );
+  return <AgentPageInner />;
 }
