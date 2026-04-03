@@ -62,11 +62,11 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
           placeholder={placeholder || '描述你的任务...'}
           disabled={disabled}
           className="ob-textarea agent-input-textarea w-full"
-          style={{ fontFamily: 'inherit', padding: chatMode ? '16px 16px 8px' : undefined }}
+          style={{ fontFamily: 'inherit', padding: chatMode ? '14px 14px 6px' : undefined }}
         />
 
         {/* Bottom toolbar */}
-        <div className="ob-input-toolbar" style={chatMode ? { padding: '4px 12px 12px' } : undefined}>
+        <div className="ob-input-toolbar" style={chatMode ? { padding: '2px 14px 10px' } : undefined}>
           <div className="ob-input-toolbar-left">
             <button type="button" className="ob-toolbar-btn" aria-label="附件" title="附件" disabled>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

@@ -172,9 +172,9 @@ body{
 /* Conversation items */
 .ob-session-row,.sidebar-task-row{width:100%;text-align:left;padding:0;border:none;background:transparent;cursor:pointer;border-radius:10px;transition:background .2s ease;display:block;margin-bottom:1px}
 .ob-session-row:hover:not(.ob-session-row--active),.sidebar-task-row--idle:hover{background:#FFFFFF}
-.ob-session-row--active{background:rgba(255,122,26,.08);border-left:3px solid var(--accent)}
-.ob-session-inner,.sidebar-task-row-inner{padding:0 10px;display:flex;align-items:center;gap:6px;height:38px}
-.ob-session-title,.sidebar-task-title{font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;flex:1;min-width:0}
+.ob-session-row--active{background:rgba(255,122,26,.06);border-left:2px solid var(--accent)}
+.ob-session-inner,.sidebar-task-row-inner{padding:0 12px;display:flex;align-items:center;gap:6px;height:36px}
+.ob-session-title,.sidebar-task-title{font-size:12.5px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;flex:1;min-width:0}
 .ob-session-row--active .ob-session-title{font-weight:550;color:#171717}
 
 /* Empty */
@@ -210,8 +210,8 @@ body{
    ═══════════════════════════════════════════════════════════════ */
 .ob-welcome,.agent-welcome{flex:1;display:flex;flex-direction:column;overflow-y:auto}
 .ob-welcome-body,.agent-welcome-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:92px 24px 40px;max-width:var(--content-max);margin:0 auto;width:100%}
-.ob-welcome-title,.agent-welcome-title{font-size:48px;font-weight:650;color:#171717;text-align:center;margin-bottom:12px;letter-spacing:-.5px;line-height:1.16}
-.agent-welcome-subtitle{font-size:16px;color:#6B7280;text-align:center;margin-bottom:22px;line-height:1.7;max-width:520px}
+.ob-welcome-title,.agent-welcome-title{font-size:44px;font-weight:600;color:#171717;text-align:center;margin-bottom:10px;letter-spacing:-.5px;line-height:1.16}
+.agent-welcome-subtitle{font-size:16px;color:#7A7A7A;text-align:center;margin-bottom:22px;line-height:1.7;max-width:520px}
 
 /* Chips */
 .ob-chips,.agent-examples{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:600px;width:100%;margin-top:16px}
@@ -236,7 +236,7 @@ body{
 
 /* User bubble — orange bg white text */
 .ob-msg-user,.chat-user-bubble-row{display:flex;justify-content:flex-end;margin-bottom:12px;padding-right:24px}
-.ob-msg-user-bubble,.chat-user-bubble{max-width:360px;background:var(--accent);color:#ffffff;font-size:14px;line-height:1.6;padding:10px 14px;border-radius:16px 16px 4px 16px;white-space:pre-wrap;word-break:break-word}
+.ob-msg-user-bubble,.chat-user-bubble{max-width:340px;background:#EB8434;color:#ffffff;font-size:14px;line-height:1.6;padding:10px 14px;border-radius:14px 14px 4px 14px;white-space:pre-wrap;word-break:break-word}
 
 /* AI response area */
 .ob-msg-ai,.chat-ai-area{padding-bottom:12px}
@@ -257,7 +257,7 @@ body{
 .ob-result-card{background:#FFFFFF;border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.04)}
 .ob-result-card-header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border)}
 .ob-result-card-body{padding:24px}
-.ob-result-card-inner{background:#FBFBFA;border:1px solid #F0EDE8;border-radius:12px;padding:18px}
+.ob-result-card-inner{background:#FBFBFA;border-radius:12px;padding:18px}
 
 /* Result action buttons */
 .ob-result-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;padding-bottom:4px}
@@ -289,7 +289,7 @@ body{
 .ob-input-box--prominent:hover{box-shadow:0 10px 28px rgba(0,0,0,.06)}
 
 /* Chat input box — smaller radius */
-.ob-input-box--chat,.agent-input-box--chat{border-radius:20px;min-height:80px}
+.ob-input-box--chat,.agent-input-box--chat{border-radius:20px;min-height:72px}
 
 /* Textarea */
 .ob-textarea,.agent-input-textarea{flex:1;min-height:48px;max-height:200px;font-size:15px;line-height:1.6;resize:none;background:transparent;color:var(--text-primary);outline:none;border:none;font-family:inherit;padding:20px 20px 8px}
@@ -307,7 +307,7 @@ body{
 .ob-toolbar-label:disabled{opacity:.4;cursor:not-allowed}
 
 /* Auto badge */
-.ob-auto-badge{height:26px;font-size:11px;font-weight:500;color:var(--accent);background:var(--accent-subtle);border-radius:9999px;padding:0 10px;border:none;cursor:default;display:inline-flex;align-items:center}
+.ob-auto-badge{height:24px;font-size:11px;font-weight:500;color:var(--accent);background:var(--accent-subtle);border-radius:9999px;padding:0 10px;border:none;cursor:default;display:inline-flex;align-items:center}
 
 /* Send button */
 .ob-send-btn,.agent-send-btn{flex-shrink:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:background .2s ease,transform .1s ease}
