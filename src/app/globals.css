@@ -43,7 +43,7 @@
   /* Layout */
   --sidebar-w:    232px;
   --content-max:  760px;
-  --chat-max:     840px;
+  --chat-max:     780px;
   --header-h:     56px;
 
   /* Legacy compat (used by Tailwind bridge classes) */
@@ -167,15 +167,15 @@ body{
 .ob-sidebar-scroll,.sidebar-scroll{flex:1;overflow-y:auto;padding:4px 8px 8px}
 
 /* Section labels */
-.ob-section-label,.sidebar-section-title{font-size:11px;font-weight:500;color:#A3A3A3;padding:12px 8px 6px;letter-spacing:.02em}
+.ob-section-label,.sidebar-section-title{font-size:11px;font-weight:500;color:#A3A3A3;padding:16px 8px 6px;letter-spacing:.02em}
 
 /* Conversation items */
 .ob-session-row,.sidebar-task-row{width:100%;text-align:left;padding:0;border:none;background:transparent;cursor:pointer;border-radius:10px;transition:background .2s ease;display:block;margin-bottom:1px}
 .ob-session-row:hover:not(.ob-session-row--active),.sidebar-task-row--idle:hover{background:#FFFFFF}
-.ob-session-row--active{background:rgba(255,122,26,.08);border-left:2px solid var(--accent)}
-.ob-session-inner,.sidebar-task-row-inner{padding:0 10px;display:flex;align-items:center;gap:6px;height:36px}
+.ob-session-row--active{background:rgba(255,122,26,.08);border-left:3px solid var(--accent)}
+.ob-session-inner,.sidebar-task-row-inner{padding:0 10px;display:flex;align-items:center;gap:6px;height:38px}
 .ob-session-title,.sidebar-task-title{font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;flex:1;min-width:0}
-.ob-session-row--active .ob-session-title{font-weight:500;color:#171717}
+.ob-session-row--active .ob-session-title{font-weight:550;color:#171717}
 
 /* Empty */
 .ob-sidebar-empty,.sidebar-empty-hint{font-size:13px;color:#A3A3A3;text-align:center;padding:40px 16px;line-height:1.6}
@@ -210,21 +210,21 @@ body{
    ═══════════════════════════════════════════════════════════════ */
 .ob-welcome,.agent-welcome{flex:1;display:flex;flex-direction:column;overflow-y:auto}
 .ob-welcome-body,.agent-welcome-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:92px 24px 40px;max-width:var(--content-max);margin:0 auto;width:100%}
-.ob-welcome-title,.agent-welcome-title{font-size:52px;font-weight:700;color:#171717;text-align:center;margin-bottom:12px;letter-spacing:-.5px;line-height:1.16}
-.agent-welcome-subtitle{font-size:16px;color:#6B7280;text-align:center;margin-bottom:28px;line-height:1.7}
+.ob-welcome-title,.agent-welcome-title{font-size:48px;font-weight:650;color:#171717;text-align:center;margin-bottom:12px;letter-spacing:-.5px;line-height:1.16}
+.agent-welcome-subtitle{font-size:16px;color:#6B7280;text-align:center;margin-bottom:22px;line-height:1.7;max-width:520px}
 
 /* Chips */
-.ob-chips,.agent-examples{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:600px;width:100%;margin-top:16px}
+.ob-chips,.agent-examples{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:600px;width:100%;margin-top:16px}
 .ob-chip,.agent-example-btn{display:inline-flex;align-items:center;gap:6px;height:32px;font-size:13px;color:var(--text-secondary);background:#FFFFFF;border:1px solid var(--border);border-radius:9999px;padding:0 16px;cursor:pointer;transition:background .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease;white-space:nowrap}
 .ob-chip:hover:not(:disabled),.agent-example-btn:hover:not(:disabled){background:var(--accent-subtle);border-color:rgba(255,122,26,.25);color:var(--accent)}
 .ob-chip:disabled,.agent-example-btn:disabled{opacity:.45;cursor:not-allowed}
 
 /* Capability cards */
 .ob-cap-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:600px;width:100%;margin-top:28px}
-.ob-cap-card{height:112px;padding:18px;background:#FFFFFF;border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;justify-content:center;transition:transform .2s ease,box-shadow .2s ease}
-.ob-cap-card:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(0,0,0,.06)}
-.ob-cap-card-icon{width:28px;height:28px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--accent-subtle);color:var(--accent)}
-.ob-cap-card-title{font-size:18px;font-weight:600;color:#171717;margin-bottom:2px}
+.ob-cap-card{height:104px;padding:18px;background:#FFFFFF;border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;justify-content:center;transition:transform .2s ease,box-shadow .2s ease}
+.ob-cap-card:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.05)}
+.ob-cap-card-icon{width:24px;height:24px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:var(--accent-subtle);color:var(--accent)}
+.ob-cap-card-title{font-size:17px;font-weight:600;color:#171717;margin-bottom:2px}
 .ob-cap-card-desc{font-size:12px;color:#6B7280;line-height:1.4}
 
 
@@ -232,32 +232,35 @@ body{
    CONVERSATION SCROLL
    ═══════════════════════════════════════════════════════════════ */
 .ob-scroll,.agent-scroll{flex:1;overflow-y:auto}
-.ob-messages,.agent-content-wrap{max-width:var(--chat-max);margin:0 auto;padding:32px 24px 0}
+.ob-messages,.agent-content-wrap{max-width:var(--chat-max);margin:0 auto;padding:32px 24px 28px}
 
 /* User bubble — orange bg white text */
-.ob-msg-user,.chat-user-bubble-row{display:flex;justify-content:flex-end;margin-bottom:20px}
-.ob-msg-user-bubble,.chat-user-bubble{max-width:420px;background:var(--accent);color:#ffffff;font-size:14px;line-height:1.6;padding:12px 16px;border-radius:18px 18px 4px 18px;white-space:pre-wrap;word-break:break-word}
+.ob-msg-user,.chat-user-bubble-row{display:flex;justify-content:flex-end;margin-bottom:12px;padding-right:24px}
+.ob-msg-user-bubble,.chat-user-bubble{max-width:360px;background:var(--accent);color:#ffffff;font-size:14px;line-height:1.6;padding:10px 14px;border-radius:16px 16px 4px 16px;white-space:pre-wrap;word-break:break-word}
 
 /* AI response area */
-.ob-msg-ai,.chat-ai-area{padding-bottom:24px}
+.ob-msg-ai,.chat-ai-area{padding-bottom:12px}
+
+/* Step container */
+.ob-steps-container{background:#FCFCFB;border:1px solid #ECE9E4;border-radius:12px;padding:6px 8px;margin-bottom:12px}
 
 /* Step blocks — lightweight execution steps */
-.ob-step-block{display:flex;align-items:center;gap:10px;height:28px}
+.ob-step-block{display:flex;align-items:center;gap:10px;height:28px;padding:0 8px;border-radius:8px}
 .ob-step-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .ob-step-dot--active{background:var(--accent)}
 .ob-step-dot--done{background:#22c55e}
 .ob-step-text{font-size:13px;color:var(--text-secondary);line-height:1}
-.ob-step-block--active{background:var(--accent-subtle);border-radius:8px;padding:0 10px}
+.ob-step-block--active{background:var(--accent-subtle)}
 .ob-step-block--active .ob-step-text{color:var(--text-primary)}
 
 /* Result card — white bg */
 .ob-result-card{background:#FFFFFF;border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.04)}
 .ob-result-card-header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border)}
 .ob-result-card-body{padding:24px}
-.ob-result-card-inner{background:#FBFBFA;border-radius:12px;padding:18px}
+.ob-result-card-inner{background:#FBFBFA;border:1px solid #F0EDE8;border-radius:12px;padding:18px}
 
 /* Result action buttons */
-.ob-result-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.ob-result-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;padding-bottom:4px}
 .ob-result-action-btn{display:inline-flex;align-items:center;gap:6px;height:32px;font-size:13px;color:var(--text-secondary);background:#FFFFFF;border:1px solid var(--border);border-radius:9999px;padding:0 16px;cursor:pointer;transition:border-color .2s ease,color .2s ease,background .2s ease}
 .ob-result-action-btn:hover{border-color:rgba(255,122,26,.25);color:var(--accent)}
 
@@ -282,11 +285,11 @@ body{
 /* Input box — welcome (prominent) */
 .ob-input-box,.agent-input-box{display:flex;flex-direction:column;border-radius:24px;border:1px solid var(--border);background:#FFFFFF;overflow:hidden;transition:border-color .2s ease,box-shadow .2s ease;box-shadow:none}
 .ob-input-box:focus-within,.agent-input-box:focus-within{border-color:var(--accent);box-shadow:var(--input-focus-ring)}
-.ob-input-box--prominent,.agent-input-box--prominent{min-height:156px;box-shadow:0 8px 24px rgba(0,0,0,.04)}
+.ob-input-box--prominent,.agent-input-box--prominent{min-height:148px;box-shadow:0 8px 24px rgba(0,0,0,.04)}
 .ob-input-box--prominent:hover{box-shadow:0 10px 28px rgba(0,0,0,.06)}
 
 /* Chat input box — smaller radius */
-.ob-input-box--chat,.agent-input-box--chat{border-radius:20px;min-height:88px}
+.ob-input-box--chat,.agent-input-box--chat{border-radius:20px;min-height:80px}
 
 /* Textarea */
 .ob-textarea,.agent-input-textarea{flex:1;min-height:48px;max-height:200px;font-size:15px;line-height:1.6;resize:none;background:transparent;color:var(--text-primary);outline:none;border:none;font-family:inherit;padding:20px 20px 8px}
@@ -307,7 +310,7 @@ body{
 .ob-auto-badge{height:26px;font-size:11px;font-weight:500;color:var(--accent);background:var(--accent-subtle);border-radius:9999px;padding:0 10px;border:none;cursor:default;display:inline-flex;align-items:center}
 
 /* Send button */
-.ob-send-btn,.agent-send-btn{flex-shrink:0;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:background .2s ease,transform .1s ease}
+.ob-send-btn,.agent-send-btn{flex-shrink:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:background .2s ease,transform .1s ease}
 .ob-send-btn--on,.agent-send-btn--active{background:var(--accent);color:#fff}
 .ob-send-btn--on:hover,.agent-send-btn--active:hover{background:var(--accent-hover)}
 .ob-send-btn--on:active,.agent-send-btn--active:active{transform:scale(.9)}

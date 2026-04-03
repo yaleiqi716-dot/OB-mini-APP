@@ -584,7 +584,7 @@ function AgentPageInner() {
                 <p className="agent-welcome-subtitle">输入你的需求，Agent 会理解、执行并完成</p>
 
                 {/* Main input */}
-                <div style={{ width: '100%', maxWidth: 680, marginBottom: 20 }}>
+                <div style={{ width: '100%', maxWidth: 720, marginBottom: 20 }}>
                   <AgentInput
                     onSubmit={input => handleSubmit(input)}
                     disabled={isSubmitting}

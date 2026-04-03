@@ -391,10 +391,10 @@ export function TaskCanvas({
                   <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
                 </svg>
               </div>
-              <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>ORANGEBENCH</span>
+              <span style={{ fontSize: 12, fontWeight: 500, color: '#6B7280' }}>ORANGEBENCH</span>
               {isActive ? <Spinner size="sm" /> : null}
             </div>
-            <div className="flex-1 min-w-0 space-y-3 pl-9">
+            <div className="flex-1 min-w-0 space-y-3 pl-9" style={{ fontSize: 14, color: '#525252', lineHeight: 1.65 }}>
 
               {/* Logs — only during review */}
               {visibleLogs.map((event, i) => (
@@ -410,17 +410,24 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {/* Completed steps — action feed (brighter than thinking) */}
+              {/* Completed steps — lightweight step blocks */}
               {completedSteps.length > 0 ? (
-                <div className="space-y-2 animate-flow-in">
-                  {completedSteps.map((step, i) => (
-                    <p key={`step-${i}`} className="text-[13px] text-content-secondary leading-relaxed">
-                      {step.text}
-                      {step.current !== undefined && step.total !== undefined ? (
-                        <span className="text-content-tertiary text-xs tabular-nums ml-2">{step.current}/{step.total}</span>
-                      ) : null}
-                    </p>
-                  ))}
+                <div className="ob-steps-container animate-flow-in">
+                  {completedSteps.map((step, i) => {
+                    const isLast = i === completedSteps.length - 1;
+                    const isDone = !isLast || mode === 'result';
+                    return (
+                      <div key={`step-${i}`} className={`ob-step-block ${isLast && !isDone ? 'ob-step-block--active' : ''}`}>
+                        <span className={`ob-step-dot ${isDone ? 'ob-step-dot--done' : 'ob-step-dot--active'}`} />
+                        <span className="ob-step-text">
+                          {step.text}
+                          {step.current !== undefined && step.total !== undefined ? (
+                            <span style={{ color: '#9CA3AF', fontSize: 12, marginLeft: 6, fontVariantNumeric: 'tabular-nums' }}>{step.current}/{step.total}</span>
+                          ) : null}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : null}
 
@@ -989,7 +996,7 @@ function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { titl
       {/* Result body */}
       <div className="ob-result-card-body">
         <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 16 }}>{title}</p>
-        <div className="ob-result-card-inner">
+        <div className="ob-result-card-inner" style={{ color: '#404040', lineHeight: 1.75 }}>
           <div className="space-y-3" ref={contentRef}>{children}</div>
         </div>
       </div>
