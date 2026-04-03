@@ -100,12 +100,12 @@ export default function AccountPage() {
       </a>
       <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         {[
-          { href: '/agent', label: 'Agent' },
-          { href: '/tasks', label: 'Tasks' },
-          { href: '/dashboard', label: 'Dashboard' },
-          { href: '/review', label: 'Review' },
-          { href: '/settings', label: 'Settings' },
-          { href: '/account', label: 'Account' },
+          { href: '/agent', label: 'AGENT' },
+          { href: '/tasks', label: '任务' },
+          { href: '/dashboard', label: '总览' },
+          { href: '/review', label: '处理' },
+          { href: '/settings', label: '设置' },
+          { href: '/account', label: '账户' },
         ].map(n => {
           const active = n.href === '/account';
           return active ? (
@@ -138,7 +138,7 @@ export default function AccountPage() {
 
           {/* ── Top area ── */}
           <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', lineHeight: 1.2, margin: '0 0 8px' }}>Account</h1>
+            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', lineHeight: 1.2, margin: '0 0 8px' }}>账户</h1>
             <p style={{ fontSize: 14, color: '#7A7A7A', margin: 0, maxWidth: 520 }}>查看你的账号信息、套餐与使用权益</p>
           </div>
 
@@ -262,7 +262,7 @@ export default function AccountPage() {
                 <div style={{ fontSize: 14, fontWeight: 500, color: '#171717' }}>设置</div>
                 <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>偏好、通知、安全与集成</div>
               </div>
-              <a href="/settings" style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>前往 Settings</a>
+              <a href="/settings" style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>前往设置</a>
             </div>
 
             <div style={{ ...rowStyle, ...rowBorder }}>

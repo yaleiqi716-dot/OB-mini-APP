@@ -145,12 +145,12 @@ export default function ReviewPage() {
       </a>
       <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         {[
-          { href: '/agent', label: 'Agent' },
-          { href: '/tasks', label: 'Tasks' },
-          { href: '/dashboard', label: 'Dashboard' },
-          { href: '/review', label: 'Review' },
-          { href: '/settings', label: 'Settings' },
-          { href: '/account', label: 'Account' },
+          { href: '/agent', label: 'AGENT' },
+          { href: '/tasks', label: '任务' },
+          { href: '/dashboard', label: '总览' },
+          { href: '/review', label: '处理' },
+          { href: '/settings', label: '设置' },
+          { href: '/account', label: '账户' },
         ].map(n => {
           const active = n.href === '/review';
           return active ? (
@@ -191,7 +191,7 @@ export default function ReviewPage() {
 
           {/* Top area */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
-            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', lineHeight: 1.2, margin: 0 }}>Review</h1>
+            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', lineHeight: 1.2, margin: 0 }}>处理</h1>
             <div style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', pointerEvents: 'none' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>

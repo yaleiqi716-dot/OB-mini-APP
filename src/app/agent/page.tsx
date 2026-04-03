@@ -432,11 +432,11 @@ function AgentPageInner() {
       {/* Footer nav */}
       <div className="ob-sidebar-footer">
         {[
-          { href: '/tasks', icon: 'tasks', label: 'Tasks' },
-          { href: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-          { href: '/review', icon: 'review', label: 'Review' },
-          { href: '/settings', icon: 'settings', label: 'Settings' },
-          { href: '/account', icon: 'account', label: 'Account' },
+          { href: '/tasks', icon: 'tasks', label: '任务' },
+          { href: '/dashboard', icon: 'dashboard', label: '总览' },
+          { href: '/review', icon: 'review', label: '处理' },
+          { href: '/settings', icon: 'settings', label: '设置' },
+          { href: '/account', icon: 'account', label: '账户' },
         ].map(n => (
           <a key={n.href} href={n.href} className="ob-sidebar-footer-item">
             <SidebarIcon name={n.icon} />

@@ -117,12 +117,12 @@ export default function DashboardPage() {
       </a>
       <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         {[
-          { href: '/agent', label: 'Agent' },
-          { href: '/tasks', label: 'Tasks' },
-          { href: '/dashboard', label: 'Dashboard' },
-          { href: '/review', label: 'Review' },
-          { href: '/settings', label: 'Settings' },
-          { href: '/account', label: 'Account' },
+          { href: '/agent', label: 'AGENT' },
+          { href: '/tasks', label: '任务' },
+          { href: '/dashboard', label: '总览' },
+          { href: '/review', label: '处理' },
+          { href: '/settings', label: '设置' },
+          { href: '/account', label: '账户' },
         ].map(n => {
           const active = n.href === '/dashboard';
           return active ? (
@@ -200,7 +200,7 @@ export default function DashboardPage() {
           {/* ── Top area ── */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
             <div>
-              <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', lineHeight: 1.2, margin: 0 }}>Dashboard</h1>
+              <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', lineHeight: 1.2, margin: 0 }}>总览</h1>
             </div>
             {/* Time range chips */}
             <div style={{ display: 'flex', gap: 6 }}>

@@ -61,12 +61,12 @@ export default function SettingsPage() {
       </a>
       <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         {[
-          { href: '/agent', label: 'Agent' },
-          { href: '/tasks', label: 'Tasks' },
-          { href: '/dashboard', label: 'Dashboard' },
-          { href: '/review', label: 'Review' },
-          { href: '/settings', label: 'Settings' },
-          { href: '/account', label: 'Account' },
+          { href: '/agent', label: 'AGENT' },
+          { href: '/tasks', label: '任务' },
+          { href: '/dashboard', label: '总览' },
+          { href: '/review', label: '处理' },
+          { href: '/settings', label: '设置' },
+          { href: '/account', label: '账户' },
         ].map(n => {
           const active = n.href === '/settings';
           return active ? (
@@ -361,7 +361,7 @@ export default function SettingsPage() {
 
           {/* Top area */}
           <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', lineHeight: 1.2, margin: '0 0 8px' }}>Settings</h1>
+            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', lineHeight: 1.2, margin: '0 0 8px' }}>设置</h1>
             <p style={{ fontSize: 14, color: '#7A7A7A', margin: 0 }}>管理你的账号、偏好与产品设置</p>
           </div>
 
