@@ -123,14 +123,14 @@ export default function AccountPage() {
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px' }}>
 
           {/* ── Top area ── */}
-          <div style={{ marginBottom: 20 }}>
+          <div style={{ marginBottom: 24 }}>
             <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', lineHeight: 1.2, margin: '0 0 8px' }}>Account</h1>
-            <p style={{ fontSize: 14, color: '#7A7A7A', margin: 0 }}>查看你的账号信息、套餐与使用权益</p>
+            <p style={{ fontSize: 14, color: '#7A7A7A', margin: 0, maxWidth: 520 }}>查看你的账号信息、套餐与使用权益</p>
           </div>
 
           {/* ── Account overview card ── */}
-          <div style={{ ...cardStyle, minHeight: 140, marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ ...cardStyle, minHeight: 140, marginBottom: 20, display: 'flex', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%' }}>
               {/* Avatar */}
               <div style={{
                 width: 56, height: 56, borderRadius: '50%',
@@ -143,7 +143,7 @@ export default function AccountPage() {
 
               {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ fontSize: 18, fontWeight: 600, color: '#171717' }}>{userName}</span>
                   {/* Plan badge */}
                   <span style={{
