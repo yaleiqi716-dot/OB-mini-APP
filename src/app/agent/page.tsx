@@ -1,9 +1,8 @@
 'use client';
-import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AgentInput } from '@/components/agent/AgentInput';
 import { TaskCanvas } from '@/components/agent/TaskCanvas';
-import { TaskList } from '@/components/agent/TaskList';
 import { Spinner } from '@/components/ui/Spinner';
 import { useSSE } from '@/hooks/useSSE';
 import { TaskStatus, TaskType, TaskSource } from '@/types/task';
@@ -18,7 +17,6 @@ interface TaskState {
   conversationId?: string;
 }
 
-// Conversation type for sidebar list
 interface ConversationItem {
   id: string;
   title: string;
@@ -51,102 +49,66 @@ function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
   };
 }
 
-function getTaskSummary(task: TaskState): string {
-  const evts = task.events;
-  for (let i = evts.length - 1; i >= 0; i--) { if (evts[i].type === 'interaction_request') return String(evts[i].data.question || ''); }
-  for (let i = evts.length - 1; i >= 0; i--) { if (evts[i].type === 'step_update') { const d = evts[i].data; const text = String(d.text || ''); return d.current && d.total ? `${text} (${d.current}/${d.total})` : text; } }
-  for (let i = evts.length - 1; i >= 0; i--) { if (evts[i].type === 'log') return String(evts[i].data.message || ''); }
-  return '';
-}
-
-const UNREAD_TYPES = new Set(['interaction_request', 'task_completed', 'error', 'approval_requested']);
-function hasUnread(task: TaskState): boolean {
-  if (!task.lastSeenUpdatedAt) return true;
-  for (let i = task.events.length - 1; i >= 0; i--) {
-    const e = task.events[i];
-    if (UNREAD_TYPES.has(e.type) && e.createdAt > task.lastSeenUpdatedAt) return true;
-    if (e.createdAt <= task.lastSeenUpdatedAt) break;
-  }
-  if (!task.eventsLoaded && task.updatedAt > task.lastSeenUpdatedAt) return true;
-  return false;
-}
-
 const TERMINAL = new Set(['completed', 'failed']);
 
 const EXAMPLES = [
-  { label: '帮我写一封客户跟进邮件', type: 'email',   icon: 'mail' },
-  { label: '帮我做一份融资 PPT 结构', type: 'ppt',    icon: 'chart' },
-  { label: '帮我分析一个行业趋势',  type: 'unknown', icon: 'search' },
-  { label: '帮我生成一条产品视频',  type: 'video',   icon: 'video' },
+  { label: '定时任务', type: 'unknown', icon: 'clock' },
+  { label: '调研报告', type: 'proposal', icon: 'search' },
+  { label: 'AI PPT',  type: 'ppt',     icon: 'chart' },
+  { label: '优化文案', type: 'email',   icon: 'edit' },
 ];
 
-// SVG icon map — no emoji
 function ChipIcon({ name }: { name: string }) {
   const s = { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, flexShrink: 0 as const };
-  if (name === 'mail')   return <svg {...s}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>;
-  if (name === 'chart')  return <svg {...s}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
+  if (name === 'clock')  return <svg {...s}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
   if (name === 'search') return <svg {...s}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>;
-  if (name === 'video')  return <svg {...s}><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>;
+  if (name === 'chart')  return <svg {...s}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
+  if (name === 'edit')   return <svg {...s}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>;
   return null;
 }
 
-// Sidebar conversation list component
-function ConversationList({
-  conversations,
-  activeConversationId,
-  onSelect,
-}: {
-  conversations: ConversationItem[];
-  activeConversationId: string | null;
-  onSelect: (id: string) => void;
-}) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {conversations.map((conv) => (
-        <button
-          key={conv.id}
-          onClick={() => onSelect(conv.id)}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
-            gap: 2,
-            padding: '8px 10px',
-            borderRadius: 8,
-            border: 'none',
-            background: activeConversationId === conv.id ? 'var(--surface-secondary)' : 'transparent',
-            cursor: 'pointer',
-            textAlign: 'left',
-            width: '100%',
-            transition: 'background 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            if (activeConversationId !== conv.id)
-              e.currentTarget.style.background = 'var(--surface-hover, rgba(255,255,255,0.04))';
-          }}
-          onMouseLeave={(e) => {
-            if (activeConversationId !== conv.id)
-              e.currentTarget.style.background = 'transparent';
-          }}
-        >
-          <span style={{
-            fontSize: 13,
-            fontWeight: activeConversationId === conv.id ? 500 : 400,
-            color: 'var(--text-primary)',
-            lineHeight: 1.4,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            width: '100%',
-            maxWidth: 180,
-          }}>
-            {conv.title || conv.firstTaskInput?.slice(0, 30) || '新对话'}
-          </span>
-        </button>
-      ))}
-    </div>
-  );
+// ── Sidebar: group conversations by date ──
+function groupByDate(conversations: ConversationItem[]): { label: string; items: ConversationItem[] }[] {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const weekStart = todayStart - 6 * 86400000;
+
+  const today: ConversationItem[] = [];
+  const week: ConversationItem[] = [];
+  const older: ConversationItem[] = [];
+
+  for (const c of conversations) {
+    const t = new Date(c.updatedAt || c.createdAt).getTime();
+    if (t >= todayStart) today.push(c);
+    else if (t >= weekStart) week.push(c);
+    else older.push(c);
+  }
+
+  const groups: { label: string; items: ConversationItem[] }[] = [];
+  if (today.length) groups.push({ label: '今天', items: today });
+  if (week.length) groups.push({ label: '近 7 天', items: week });
+  if (older.length) groups.push({ label: '更早', items: older });
+  return groups;
 }
+
+// ── Sidebar icons ──
+function SidebarIcon({ name }: { name: string }) {
+  const s = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (name === 'tasks') return <svg {...s}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>;
+  if (name === 'settings') return <svg {...s}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
+  if (name === 'account') return <svg {...s}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+  return null;
+}
+
+// ── Capability card icons ──
+function CapIcon({ name }: { name: string }) {
+  const s = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (name === 'office') return <svg {...s}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>;
+  if (name === 'finance') return <svg {...s}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
+  if (name === 'coding') return <svg {...s}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>;
+  return null;
+}
+
 
 function AgentPageInner() {
   const router = useRouter();
@@ -167,7 +129,7 @@ function AgentPageInner() {
   const currentConvRef = useRef<string | null>(urlConvId);
   currentConvRef.current = currentConversationId;
 
-  // ── Task state (tasks within the current conversation) ──
+  // ── Task state ──
   const [tasks, setTasks] = useState<TaskState[]>([]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -175,9 +137,9 @@ function AgentPageInner() {
   const [interactingTaskId, setInteractingTaskId] = useState<string | null>(null);
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
-  const prevTaskStatusRef = useRef<Record<string, string>>({});
   const [quota, setQuota] = useState<{ credits: number; plan: string; limits: { maxConcurrent: number; allowedTypes: string[] } } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const canvasEndRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<string | null>(null);
@@ -187,7 +149,6 @@ function AgentPageInner() {
   // Sync URL → state: handle both navigating TO a conversation and BACK to welcome
   useEffect(() => {
     if (urlConvId !== currentConvRef.current) {
-      console.log('[URL SYNC] conversationId from URL:', urlConvId, '(was:', currentConvRef.current, ')');
       setActiveTaskId(null);
       activeRef.current = null;
       setTasks([]);
@@ -196,13 +157,12 @@ function AgentPageInner() {
     }
   }, [urlConvId]);
 
-  // Listen for browser back/forward (popstate) — read URL directly as a safety net
+  // Listen for browser back/forward (popstate)
   useEffect(() => {
     function handlePopState() {
       const params = new URLSearchParams(window.location.search);
       const convId = params.get('conversationId');
       if (convId !== currentConvRef.current) {
-        console.log('[POPSTATE] conversationId:', convId, '(was:', currentConvRef.current, ')');
         setActiveTaskId(null);
         activeRef.current = null;
         setTasks([]);
@@ -214,7 +174,7 @@ function AgentPageInner() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // ── SSE: subscribe to active task events ──
+  // ── SSE ──
   const { reconnecting } = useSSE(activeTaskId, {
     enabled: !!activeTaskId,
     onEvent: useCallback((event: TaskEvent) => {
@@ -226,7 +186,7 @@ function AgentPageInner() {
         if (event.type === 'status_change') u.status = event.data.status as TaskStatus;
         if (event.type === 'interaction_request') { u.currentInteraction = event.data as unknown as Interaction; u.status = 'interacting'; }
         if (event.type === 'artifact' && event.data.result) u.result = event.data.result as Record<string, unknown>;
-        if (event.type === 'task_completed' && event.data.result) { u.result = event.data.result as Record<string, unknown>; u.status = 'completed'; fetchQuota(); showSuccess('✓ 任务已完成！点击查看结果'); }
+        if (event.type === 'task_completed' && event.data.result) { u.result = event.data.result as Record<string, unknown>; u.status = 'completed'; fetchQuota(); showSuccess('任务已完成'); }
         return u;
       }));
     }, []),
@@ -246,7 +206,6 @@ function AgentPageInner() {
       if (Array.isArray(data)) {
         const parsed = data.map((d: Record<string, unknown>) => parseTaskFromAPI(d));
         setTasks(parsed);
-        // Auto-select the last task in the conversation
         if (parsed.length > 0) {
           setActiveTaskId(parsed[parsed.length - 1].id);
         }
@@ -254,7 +213,6 @@ function AgentPageInner() {
     }).catch(() => {});
   }
 
-  // When conversation changes, load its tasks
   useEffect(() => {
     if (!currentConversationId) {
       setTasks([]);
@@ -274,8 +232,7 @@ function AgentPageInner() {
     }).catch(() => {});
   }, [activeTaskId, tasks]);
 
-  // Re-fetch active task every 2s while it's in a non-terminal state
-  // Stops if conversation changes or task is terminal
+  // Re-fetch active task every 2s while non-terminal
   useEffect(() => {
     if (!activeTaskId || !currentConversationId) return;
     const capturedConvId = currentConversationId;
@@ -311,7 +268,6 @@ function AgentPageInner() {
 
   // ── Handle new conversation ──
   async function handleNewChat() {
-    console.log('[NEW CHAT TRIGGERED]');
     setActiveTaskId(null);
     activeRef.current = null;
     setTasks([]);
@@ -324,14 +280,11 @@ function AgentPageInner() {
   // ── Handle conversation selection ──
   async function handleSelectConversation(convId: string) {
     if (convId === currentConvRef.current) { setSidebarOpen(false); return; }
-    console.log('[SELECT CONVERSATION]', convId);
-    // Clear old state before loading new conversation
     setActiveTaskId(null);
     activeRef.current = null;
     setTasks([]);
     setCurrentConversationId(convId);
     currentConvRef.current = convId;
-    // Update URL without full navigation
     window.history.pushState(null, '', `/agent?conversationId=${convId}`);
     setSidebarOpen(false);
   }
@@ -341,7 +294,6 @@ function AgentPageInner() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      // If no current conversation, create one first
       let convId = currentConvRef.current;
       if (!convId) {
         const cr = await fetch('/api/conversations', {
@@ -352,7 +304,6 @@ function AgentPageInner() {
         if (!cr.ok) { showError('创建会话失败'); return; }
         const cd = await cr.json();
         convId = cd.id;
-        // Update both state and ref immediately to prevent race conditions
         currentConvRef.current = convId;
         setCurrentConversationId(convId);
         window.history.pushState(null, '', `/agent?conversationId=${convId}`);
@@ -397,88 +348,106 @@ function AgentPageInner() {
   async function handleAdjustProposal() { if (!activeTaskId || interactingTaskId === activeTaskId) return; setInteractingTaskId(activeTaskId); setTasks(prev => prev.map(t => t.id === activeTaskId ? { ...t, currentInteraction: null } : t)); try { await fetch(`/api/tasks/${activeTaskId}/interact`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ interactionId: '', stepId: 'request_adjust_proposal_structure', value: '' }) }); } catch { showError('操作失败'); } finally { setInteractingTaskId(null); } }
   async function handleReviseEmail() { if (!activeTaskId || interactingTaskId === activeTaskId) return; setInteractingTaskId(activeTaskId); setTasks(prev => prev.map(t => t.id === activeTaskId ? { ...t, currentInteraction: null } : t)); try { await fetch(`/api/tasks/${activeTaskId}/interact`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ interactionId: '', stepId: 'revise_email_request', value: '' }) }); } catch { showError('操作失败'); } finally { setInteractingTaskId(null); } }
 
-  const listItems = tasks.map(t => ({ id: t.id, type: t.type, status: t.status, title: t.title, input: t.input, createdAt: t.createdAt, summary: getTaskSummary(t), hasUnread: hasUnread(t), source: t.source }));
+  // ── Filtered conversations ──
+  const filteredConversations = useMemo(() => {
+    if (!searchQuery.trim()) return conversations;
+    const q = searchQuery.toLowerCase();
+    return conversations.filter(c =>
+      (c.title || '').toLowerCase().includes(q) ||
+      (c.firstTaskInput || '').toLowerCase().includes(q)
+    );
+  }, [conversations, searchQuery]);
 
-  if (!authChecked) return <div style={{ height: '100dvh', background: 'var(--bg)' }} />;
+  const conversationGroups = useMemo(() => groupByDate(filteredConversations), [filteredConversations]);
 
-  // ---- Sidebar content (shared desktop/mobile) ----
+  if (!authChecked) return <div style={{ height: '100dvh', background: '#F7F7F5' }} />;
+
+  // ── Sidebar content ──
   const sidebarContent = (
     <>
-      {/* Top: New chat button */}
+      {/* Brand */}
+      <div className="ob-sidebar-brand">
+        <div className="ob-sidebar-brand-title">
+          <span style={{ color: 'var(--accent)' }}>ORANGE</span>
+          <span style={{ color: 'var(--text-primary)' }}>BENCH</span>
+        </div>
+        <div className="ob-sidebar-brand-sub">AI AGENT</div>
+      </div>
+
+      {/* New chat button */}
       <div className="ob-sidebar-top">
-        <button
-          onClick={() => { console.log('[NEW CHAT TRIGGERED] sidebar btn'); handleNewChat(); }}
-          className="ob-new-chat-btn"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+        <button onClick={handleNewChat} className="ob-new-chat-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          新对话
+          新建对话
         </button>
       </div>
 
-      {/* Conversation list */}
-      <div className="ob-sidebar-scroll custom-scrollbar">
-        {conversations.length > 0 ? (
-          <ConversationList
-            conversations={conversations}
-            activeConversationId={currentConversationId}
-            onSelect={handleSelectConversation}
+      {/* Search */}
+      <div className="ob-sidebar-search">
+        <div className="ob-sidebar-search-wrap">
+          <span className="ob-sidebar-search-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          </span>
+          <input
+            type="text"
+            className="ob-sidebar-search-input"
+            placeholder="搜索对话..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
+        </div>
+      </div>
+
+      {/* Conversation list grouped */}
+      <div className="ob-sidebar-scroll custom-scrollbar">
+        {conversationGroups.length > 0 ? (
+          conversationGroups.map((group) => (
+            <div key={group.label} style={{ marginBottom: 4 }}>
+              <div className="ob-section-label">{group.label}</div>
+              {group.items.map((conv) => (
+                <button
+                  key={conv.id}
+                  onClick={() => handleSelectConversation(conv.id)}
+                  className={`ob-session-row ${currentConversationId === conv.id ? 'ob-session-row--active' : ''}`}
+                >
+                  <div className="ob-session-inner">
+                    <span className="ob-session-title">
+                      {conv.title || conv.firstTaskInput?.slice(0, 30) || '新对话'}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ))
         ) : (
-          <p className="ob-sidebar-empty">暂无对话<br />输入一句话开始</p>
+          <p className="ob-sidebar-empty">暂无对话<br />输入需求开始</p>
         )}
       </div>
 
-      {/* Footer: credits */}
-      {quota && (
-        <div className="ob-sidebar-footer">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Credits</span>
-            <span style={{ fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: quota.credits < 20 ? '#ef4444' : 'var(--accent)' }}>
-              {quota.credits}
-            </span>
-          </div>
-          {quota.credits < 30 && (
-            <a href="/billing" className="sidebar-topup-btn">充值</a>
-          )}
-        </div>
-      )}
+      {/* Footer: Tasks / Settings / Account */}
+      <div className="ob-sidebar-footer">
+        <a href="/tasks" className="ob-sidebar-footer-item">
+          <SidebarIcon name="tasks" />
+          <span>Tasks</span>
+        </a>
+        <button className="ob-sidebar-footer-item" onClick={() => {}}>
+          <SidebarIcon name="settings" />
+          <span>Settings</span>
+        </button>
+        <button className="ob-sidebar-footer-item" onClick={() => {}}>
+          <SidebarIcon name="account" />
+          <span>Account</span>
+        </button>
+      </div>
     </>
   );
 
   return (
     <div className="ob-shell agent-root">
-
-      {/* ── Header 56px ── */}
-      <header className="ob-header">
-        <button
-          className="ob-header-brand"
-          onClick={() => { console.log('[NEW CHAT TRIGGERED] header brand'); handleNewChat(); }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-        >
-          <span className="ob-header-brand-o">ORANGE</span>
-          <span className="ob-header-brand-t">BENCH</span>
-        </button>
-        <div className="ob-header-right">
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {[{href:'/dashboard',label:'决策台'},{href:'/tasks',label:'我的任务'},{href:'/review',label:'审核'},{href:'/billing',label:'充值'}].map(({href,label}) => (
-              <a key={href} href={href} style={{ fontSize:12, color:'var(--text-faint)', textDecoration:'none', padding:'3px 8px', borderRadius:6, transition:'color 0.15s' }}
-                onMouseEnter={e=>(e.currentTarget.style.color='var(--accent)')} onMouseLeave={e=>(e.currentTarget.style.color='var(--text-faint)')}>{label}</a>
-            ))}
-          </nav>
-          {quota && <span className="ob-header-plan">{quota.plan || 'Free'}</span>}
-          {quota && (
-            <span className={`ob-header-credits ${quota.credits < 20 ? 'ob-header-credits-low' : ''}`}>
-              {quota.credits} credits
-            </span>
-          )}
-          <div className="ob-header-avatar">U</div>
-        </div>
-      </header>
-
-      {/* ── Reconnect banner ── */}
+      {/* Reconnect banner */}
       {reconnecting && (
         <div className="ob-reconnect agent-reconnect-banner">连接中断，正在重连...</div>
       )}
@@ -518,12 +487,12 @@ function AgentPageInner() {
               <span style={{ color: 'var(--accent)' }}>ORANGE</span>BENCH
             </span>
             <button
-              onClick={() => { console.log('[NEW CHAT TRIGGERED] mobile topbar'); handleNewChat(); }}
-              style={{ padding: '4px 8px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 12 }}
+              onClick={handleNewChat}
+              style={{ padding: '4px 8px', borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-secondary)' }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
             </button>
           </div>
@@ -531,19 +500,19 @@ function AgentPageInner() {
           {currentConversationId ? (
             tasks.length > 0 ? (
             <>
-              {/* Scrollable conversation — show all tasks in this conversation */}
+              {/* Scrollable conversation */}
               <div ref={scrollRef} className="ob-scroll agent-scroll custom-scrollbar" key={currentConversationId}>
                 <div className="ob-messages agent-content-wrap">
                   {tasks.map((task) => (
                     <div key={task.id}>
-                      {/* User message — right-aligned bubble */}
+                      {/* User message — orange bubble */}
                       <div className="ob-msg-user chat-user-bubble-row">
                         <div className="ob-msg-user-bubble chat-user-bubble">
                           {task.input}
                         </div>
                       </div>
 
-                      {/* AI response area */}
+                      {/* AI response */}
                       <div className="ob-msg-ai chat-ai-area">
                         <TaskCanvas
                           taskId={task.id} title={task.title} type={task.type}
@@ -573,7 +542,6 @@ function AgentPageInner() {
               <div className="ob-input-area agent-input-area">
                 <AgentInput
                   onSubmit={input => {
-                    // 如果当前任务处于文本输入交互态，底部输入框回复就是交互回复
                     const ci = activeTask?.currentInteraction;
                     if (ci && activeTask?.status === 'interacting' &&
                       (ci.type === 'text_input' || ci.type === 'confirm')) {
@@ -590,6 +558,7 @@ function AgentPageInner() {
                       ? '回复上面的问题...'
                       : '继续对话...'
                   }
+                  chatMode
                 />
                 {isSubmitting && (
                   <div className="agent-submitting-hint">
@@ -600,40 +569,36 @@ function AgentPageInner() {
               </div>
             </>
             ) : (
-              /* Loading conversation tasks */
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Spinner size="sm" />
               </div>
             )
           ) : (
-            /* ── Welcome / empty state — MiniMax new-chat ── */
+            /* ── Welcome state ── */
             <div className="ob-welcome agent-welcome">
-              <div className="ob-welcome-body agent-welcome-body">
+              <div className="ob-welcome-body agent-welcome-body" style={{ paddingTop: 88 }}>
                 <h1 className="ob-welcome-title agent-welcome-title">
-                  有什么我可以帮你？
+                  把任务交给 <span style={{ color: 'var(--accent)' }}>ORANGEBENCH</span>
                 </h1>
-                <p className="agent-welcome-subtitle">告诉我你的需求，AI 会帮你完成</p>
+                <p className="agent-welcome-subtitle">输入你的需求，Agent 会理解、执行并完成</p>
 
-                {/* Onboarding guide — 3-step cards, shown when no conversations exist */}
-                {conversations.length === 0 && (
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
-                    {[
-                      { step: '1', text: '输入你的需求', sub: '描述你想做什么' },
-                      { step: '2', text: 'AI 自动执行', sub: '思考 → 调用工具 → 生成结果' },
-                      { step: '3', text: '查看并使用结果', sub: '可复制、跳转、审核' },
-                    ].map((s) => (
-                      <div key={s.step} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 14px', borderRadius: 12, background: 'var(--surface-secondary)', border: '1px solid var(--border)', minWidth: 140, flex: '1 1 140px', maxWidth: 180 }}>
-                        <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.step}</div>
-                        <div>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.3 }}>{s.text}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>{s.sub}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {/* Main input */}
+                <div style={{ width: '100%', maxWidth: 680, marginBottom: 20 }}>
+                  <AgentInput
+                    onSubmit={input => handleSubmit(input)}
+                    disabled={isSubmitting}
+                    placeholder="描述你的任务，例如：帮我写一份行业调研报告..."
+                    prominent
+                  />
+                  {isSubmitting && (
+                    <div className="agent-submitting-hint">
+                      <Spinner size="sm" />
+                      <span>正在处理...</span>
+                    </div>
+                  )}
+                </div>
 
-                {/* Example chips — MiniMax 横排单行 */}
+                {/* Chips */}
                 <div className="ob-chips agent-examples">
                   {EXAMPLES.map((ex, i) => (
                     <button
@@ -641,29 +606,29 @@ function AgentPageInner() {
                       onClick={() => handleSubmit(ex.label, ex.type)}
                       disabled={isSubmitting}
                       className="ob-chip agent-example-btn"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
                       <ChipIcon name={ex.icon} />
                       {ex.label}
                     </button>
                   ))}
                 </div>
-              </div>
 
-              {/* Input at bottom of welcome */}
-              <div className="ob-input-area agent-input-area">
-                <AgentInput
-                  onSubmit={input => handleSubmit(input)}
-                  disabled={isSubmitting}
-                  placeholder="说一句话，我来帮你完成"
-                  prominent
-                />
-                {isSubmitting && (
-                  <div className="agent-submitting-hint">
-                    <Spinner size="sm" />
-                    <span>正在处理...</span>
-                  </div>
-                )}
+                {/* Capability cards */}
+                <div className="ob-cap-cards">
+                  {[
+                    { icon: 'office', title: 'Office', desc: '文档、PPT、邮件自动生成' },
+                    { icon: 'finance', title: 'Finance', desc: '财务分析、报表、预算方案' },
+                    { icon: 'coding', title: 'Coding', desc: '代码生成、调试、技术方案' },
+                  ].map((cap) => (
+                    <div key={cap.icon} className="ob-cap-card">
+                      <div className="ob-cap-card-icon">
+                        <CapIcon name={cap.icon} />
+                      </div>
+                      <div className="ob-cap-card-title">{cap.title}</div>
+                      <div className="ob-cap-card-desc">{cap.desc}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -678,7 +643,7 @@ function AgentPageInner() {
       )}
       {/* Success toast */}
       {successToast && (
-        <div className="ob-toast animate-flow-in" style={{ background: 'var(--color-success, #16a34a)', color: '#fff', bottom: errorToast ? '80px' : '24px' }}>
+        <div className="ob-toast animate-flow-in" style={{ background: 'rgba(34,197,94,0.92)', color: '#fff', bottom: errorToast ? '80px' : '24px' }}>
           {successToast}
         </div>
       )}
@@ -688,7 +653,7 @@ function AgentPageInner() {
 
 export default function AgentPage() {
   return (
-    <Suspense fallback={<div style={{ height: '100dvh', background: 'var(--bg)' }} />}>
+    <Suspense fallback={<div style={{ height: '100dvh', background: '#F7F7F5' }} />}>
       <AgentPageInner />
     </Suspense>
   );

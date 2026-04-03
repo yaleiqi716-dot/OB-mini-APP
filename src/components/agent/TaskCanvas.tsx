@@ -553,33 +553,23 @@ export function TaskCanvas({
                         <div className="max-h-36 overflow-hidden opacity-60">
                           <ResultView result={result} />
                         </div>
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-surface-primary" />
+                        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent, var(--bg))' }} />
                       </div>
-                      <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                          <p className="text-sm font-medium text-amber-400">内容已生成（预览）</p>
+                      <div className="ob-error-hint">
+                        <div className="ob-error-hint-icon">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         </div>
-                        <p className="text-xs text-content-tertiary">
-                          解锁完整内容需 {Number((result as Record<string, unknown>)?._unlockCost) || 10} credits
-                        </p>
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="ob-error-hint-body">
+                          <div className="ob-error-hint-title">内容已生成（预览）</div>
+                          <div className="ob-error-hint-desc">解锁完整内容需 {Number((result as Record<string, unknown>)?._unlockCost) || 10} credits</div>
                           <button
                             onClick={() => {
                               fetch(`/api/tasks/${taskId}/unlock`, { method: 'POST' })
                                 .then(r => r.json())
-                                .then(d => {
-                                  if (d.success) window.location.reload();
-                                  else if (d.required) window.location.href = '/billing';
-                                });
+                                .then(d => { if (d.success) window.location.reload(); });
                             }}
-                            className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors"
-                          >
-                            立即解锁（{Number((result as Record<string, unknown>)?._unlockCost) || 10} credits）
-                          </button>
-                          <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg border border-accent text-accent hover:bg-accent/10 transition-colors">
-                            去充值
-                          </a>
+                            className="ob-error-hint-retry"
+                          >立即解锁</button>
                         </div>
                       </div>
                     </div>
@@ -595,109 +585,51 @@ export function TaskCanvas({
                     ) : null;
                   })()}
 
-                  {/* Review actions */}
-                  <div className="flex flex-wrap gap-2 mt-3">
+                  {/* Result action buttons */}
+                  <div className="ob-result-actions">
                     <button
-                      onClick={() => fetch(`/api/tasks/${taskId}/review`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'feedback' }),
-                      })}
-                      className="text-[11px] px-2.5 py-1 rounded-lg border border-border bg-surface-secondary hover:bg-surface-tertiary text-content-secondary transition-all"
-                    >
-                      让员工修改
-                    </button>
+                      onClick={() => onNewTask?.('帮我再优化一下这个结果', type)}
+                      className="ob-result-action-btn"
+                    >再优化一下</button>
                     <button
-                      onClick={() => fetch(`/api/tasks/${taskId}/review`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'ai_optimize' }),
-                      }).then(() => window.location.reload())}
-                      className="text-[11px] px-2.5 py-1 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 text-accent transition-all"
-                    >
-                      AI帮我优化
-                    </button>
+                      onClick={() => onNewTask?.('帮我换一种表达方式重新写', type)}
+                      className="ob-result-action-btn"
+                    >换一种表达</button>
                     <button
-                      onClick={() => fetch(`/api/tasks/${taskId}/review`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'approve' }),
-                      })}
-                      className="text-[11px] px-2.5 py-1 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 transition-all"
-                    >
-                      通过
-                    </button>
+                      onClick={() => onNewTask?.('把上面的结果做成 PPT', 'ppt')}
+                      className="ob-result-action-btn"
+                    >做成 PPT</button>
                     <button
                       onClick={() => {
-                        fetch(`/api/tasks/${taskId}/review`, {
-                          method: 'POST', headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ action: 'approve' }),
-                        }).then(() => {
-                          // Show brief toast-like feedback
+                        const text = document.querySelector('.ob-result-card-body')?.textContent || '';
+                        navigator.clipboard.writeText(text).then(() => {
                           const btn = document.activeElement as HTMLButtonElement;
-                          if (btn) { btn.textContent = '✓ 已标记完成'; btn.disabled = true; }
+                          if (btn) { const orig = btn.textContent; btn.textContent = '已复制'; setTimeout(() => { btn.textContent = orig; }, 1500); }
                         });
                       }}
-                      className="text-[11px] px-2.5 py-1 rounded-lg bg-surface-secondary border border-border text-content-tertiary hover:bg-surface-tertiary transition-all flex items-center gap-1"
-                    >
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      标记完成
-                    </button>
+                      className="ob-result-action-btn"
+                    >导出</button>
                   </div>
 
                   {/* Next-step suggestions — server-driven with static fallback */}
-                  {onNewTask ? (() => {
-                    // Prefer server-driven suggestions from event
-                    const sugEvent = events.findLast((e) => e.type === 'next_suggestions');
-                    const serverSugs = sugEvent?.data?.suggestions as { label: string; prompt: string; type: string; cost?: number }[] | undefined;
-                    const resultType = (result?.type as string) || type;
-                    const suggestions = serverSugs || SUGGESTIONS[resultType] || SUGGESTIONS.direct || [];
-                    return suggestions.length > 0 ? (
-                      <div className="mt-4 space-y-2">
-                        <p className="text-xs text-content-tertiary">你还可以继续：</p>
-                        <div className="flex flex-wrap gap-2">
-                          {suggestions.map((s, i) => (
-                            <button
-                              key={i}
-                              onClick={() => onNewTask(s.prompt, s.type)}
-                              className="text-xs px-3 py-1.5 rounded-lg border border-border bg-surface-secondary hover:bg-surface-tertiary hover:border-accent/30 text-content-primary transition-all flex items-center gap-1.5"
-                            >
-                              {s.label}
-                              {'cost' in s && typeof s.cost === 'number' ? (
-                                <span className="text-accent font-medium">-{s.cost}</span>
-                              ) : null}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null;
-                  })() : null}
+                  {/* Action buttons are now rendered by parent result section above */}
                 </div>
               ) : null}
 
               {/* Blocked — payment required */}
-              {mode === 'blocked' ? (() => {
-                const payEvent = events.findLast((e) => e.type === 'payment_required');
-                const required = payEvent ? (payEvent.data.required as number) : 0;
-                const current = payEvent ? (payEvent.data.current as number) : 0;
-                return (
-                  <div className="animate-flow-in p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
-                    <p className="text-sm font-medium text-amber-400">余额不足，任务已暂停</p>
-                    {required > 0 ? (
-                      <div className="text-xs text-content-tertiary space-y-1">
-                        <p>需要 <span className="text-amber-400 font-medium">{required}</span> credits</p>
-                        <p>当前余额 <span className="text-red-400 font-medium">{current}</span></p>
-                      </div>
-                    ) : null}
-                    <p className="text-xs text-content-tertiary">充值后任务将自动恢复执行</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors">
-                        充值 ¥19（100 credits）
-                      </a>
-                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg border border-accent text-accent hover:bg-accent/10 transition-colors">
-                        充值 ¥79（500 credits）
-                      </a>
-                    </div>
+              {mode === 'blocked' ? (
+                <div className="animate-flow-in ob-error-hint">
+                  <div className="ob-error-hint-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
                   </div>
-                );
-              })() : null}
+                  <div className="ob-error-hint-body">
+                    <div className="ob-error-hint-title">额度不足，任务已暂停</div>
+                    <div className="ob-error-hint-desc">充值后任务将自动恢复执行</div>
+                  </div>
+                </div>
+              ) : null}
 
               {mode === 'error' ? (() => {
                 const errMsg = events.find((e) => e.type === 'error')
@@ -705,60 +637,44 @@ export function TaskCanvas({
                   : '';
                 const hasInsufficientEvent = events.some((e) => e.type === 'insufficient_credits');
                 const isCreditsError = hasInsufficientEvent || errMsg.includes('余额不足') || errMsg.includes('额度不足');
-                // Detect config errors (API key missing etc.) and convert to friendly message
                 const isConfigError = errMsg.includes('API_KEY') || errMsg.includes('api_key') ||
                   errMsg.includes('OPENROUTER') || errMsg.includes('not configured') ||
                   errMsg.includes('未配置') || errMsg.includes('401') || errMsg.includes('403');
+                const isImageError = errMsg.includes('LEONARDO') || errMsg.includes('leonardo');
+                const isVideoError = errMsg.includes('MINIMAX') || errMsg.includes('minimax') || errMsg.includes('AKOOL') || errMsg.includes('akool');
 
-                return isCreditsError ? (
-                  <div className="animate-flow-in space-y-3">
-                    <p className="text-sm" style={{ color: 'var(--text-primary)' }}>我现在暂时无法继续执行，你的额度不足了。充値后任务会自动恢复。</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg bg-[#111] text-white hover:bg-[#333] transition-colors">
-                        充値 ¥19（100 credits）
-                      </a>
-                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg border border-[#e5e5e5] hover:bg-[#f5f5f5] transition-colors" style={{ color: 'var(--text-secondary)' }}>
-                        充値 ¥79（500 credits）
-                      </a>
+                const friendlyMsg = isCreditsError
+                  ? '额度不足，充值后任务会自动恢复'
+                  : isImageError ? '图片生成功能暂未开启'
+                  : isVideoError ? '视频生成功能暂未开启'
+                  : isConfigError ? '该功能暂未开启，请稍后再试'
+                  : (errMsg && !errMsg.includes('Error') && !errMsg.includes('error') && !errMsg.includes('API') && !errMsg.includes('KEY'))
+                  ? errMsg : '遇到了一些问题，请稍后再试';
+
+                return (
+                  <div className="animate-flow-in ob-error-hint">
+                    <div className="ob-error-hint-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                      </svg>
                     </div>
-                  </div>
-                ) : isConfigError ? (
-                  <div className="animate-flow-in space-y-3">
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>我现在无法连接模型，请稍后再试。</p>
-                    {taskId && (
-                      <button
-                        onClick={() => {
-                          fetch(`/api/tasks/${taskId}/retry`, { method: 'POST' })
-                            .then(r => r.json())
-                            .then(d => { if (d.taskId) window.location.reload(); });
-                        }}
-                        className="text-xs px-3 py-1.5 rounded-lg border border-border bg-surface-secondary hover:bg-surface-tertiary text-content-primary transition-colors flex items-center gap-1.5"
-                      >
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
-                        重试任务
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="animate-flow-in space-y-3">
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      {errMsg && !errMsg.includes('Error') && !errMsg.includes('error')
-                        ? errMsg
-                        : '遇到了一些问题，请稍后再试。'}
-                    </p>
-                    {taskId && (
-                      <button
-                        onClick={() => {
-                          fetch(`/api/tasks/${taskId}/retry`, { method: 'POST' })
-                            .then(r => r.json())
-                            .then(d => { if (d.taskId) window.location.reload(); });
-                        }}
-                        className="text-xs px-3 py-1.5 rounded-lg border border-border bg-surface-secondary hover:bg-surface-tertiary text-content-primary transition-colors flex items-center gap-1.5"
-                      >
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
-                        重试任务
-                      </button>
-                    )}
+                    <div className="ob-error-hint-body">
+                      <div className="ob-error-hint-title">{friendlyMsg}</div>
+                      {isCreditsError && <div className="ob-error-hint-desc">充值后任务将自动恢复执行</div>}
+                      {taskId && !isCreditsError && (
+                        <button
+                          onClick={() => {
+                            fetch(`/api/tasks/${taskId}/retry`, { method: 'POST' })
+                              .then(r => r.json())
+                              .then(d => { if (d.taskId) window.location.reload(); });
+                          }}
+                          className="ob-error-hint-retry"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
+                          重试
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })() : null}
@@ -1045,49 +961,32 @@ function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { titl
     });
   }, []);
   return (
-    <div className="space-y-0 pt-2 animate-flow-in">
-      {/* Result header — clearly marks this as the AI output */}
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-green-500/15">
+    <div className="ob-result-card animate-flow-in">
+      {/* Result header — white card top bar */}
+      <div className="ob-result-card-header">
         <div className="flex items-center gap-2">
-          <span className="inline-flex w-1.5 h-1.5 rounded-full bg-green-400" />
-          <span className="text-[11px] font-semibold text-green-400 uppercase tracking-widest">任务结果</span>
-          {subtitle && <span className="text-[11px] text-content-tertiary ml-1">{subtitle}</span>}
+          <span style={{ display: 'inline-flex', width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#22c55e', textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>任务结果</span>
+          {subtitle && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>{subtitle}</span>}
         </div>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] text-content-tertiary hover:text-content-secondary hover:bg-surface-tertiary transition-colors"
+          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 6, fontSize: 11, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', transition: 'background 0.15s' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
         >
           {copied ? (
-            <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span className="text-green-400">已复制</span></>
+            <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span style={{ color: '#22c55e' }}>已复制</span></>
           ) : (
             <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>复制</span></>
           )}
         </button>
       </div>
-      {/* Result title */}
-      <p className="text-sm font-medium text-content-primary leading-relaxed mb-3">{title}</p>
-      {/* Result content */}
-      <div className="space-y-3" ref={contentRef}>{children}</div>
-      {/* Navigation links */}
-      {rcTaskId && (
-        <div className="flex items-center gap-3 pt-3 mt-3 border-t border-border/40">
-          <a
-            href={`/tasks/${rcTaskId}`}
-            className="text-xs text-accent hover:underline flex items-center gap-1"
-          >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            查看完整详情
-          </a>
-          <span className="text-content-tertiary text-xs">·</span>
-          <a
-            href="/tasks"
-            className="text-xs text-content-secondary hover:text-accent hover:underline flex items-center gap-1"
-          >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-            所有任务
-          </a>
-        </div>
-      )}
+      {/* Result body */}
+      <div className="ob-result-card-body">
+        <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 12 }}>{title}</p>
+        <div className="space-y-3" ref={contentRef}>{children}</div>
+      </div>
     </div>
   );
 }
