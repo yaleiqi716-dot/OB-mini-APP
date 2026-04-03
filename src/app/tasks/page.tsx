@@ -149,7 +149,7 @@ export default function MyTasksPage() {
           {/* ── Top area: title + search ── */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
             <div>
-              <h1 style={{ fontSize: 36, fontWeight: 650, color: '#171717', lineHeight: 1.2, margin: 0 }}>Tasks</h1>
+              <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', lineHeight: 1.2, margin: 0 }}>Tasks</h1>
             </div>
             {/* Search box */}
             <div style={{ position: 'relative' }}>
@@ -249,6 +249,25 @@ export default function MyTasksPage() {
                 const displayTitle = t.title || t.input?.slice(0, 60) || '未命名任务';
                 const displayInput = t.input && t.input !== displayTitle ? t.input.slice(0, 100) : '';
 
+                const actionBtnStyle: React.CSSProperties = {
+                  height: 30, padding: '0 12px',
+                  borderRadius: 9999, fontSize: 12, fontWeight: 500,
+                  border: '1px solid #E7E5E1', background: '#FFFFFF',
+                  color: '#6B7280', textDecoration: 'none', cursor: 'pointer',
+                  display: 'inline-flex', alignItems: 'center',
+                  transition: 'border-color .2s, background .2s, color .2s',
+                };
+                const hoverIn = (e: React.MouseEvent<HTMLElement>) => {
+                  e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)';
+                  e.currentTarget.style.background = 'rgba(255,122,26,0.06)';
+                  e.currentTarget.style.color = '#F97316';
+                };
+                const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
+                  e.currentTarget.style.borderColor = '#E7E5E1';
+                  e.currentTarget.style.background = '#FFFFFF';
+                  e.currentTarget.style.color = '#6B7280';
+                };
+
                 return (
                   <div
                     key={t.id}
@@ -257,17 +276,20 @@ export default function MyTasksPage() {
                       border: '1px solid #E7E5E1',
                       borderRadius: 16,
                       padding: 18,
+                      minHeight: 96,
+                      display: 'flex',
+                      alignItems: 'center',
                       transition: 'transform .2s ease, box-shadow .2s ease',
                       cursor: 'default',
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.05)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, width: '100%' }}>
                       {/* Left: content */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         {/* Title row */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: displayInput ? 6 : 0 }}>
                           <p style={{
                             fontSize: 17, fontWeight: 600, color: '#171717',
                             margin: 0, overflow: 'hidden', textOverflow: 'ellipsis',
@@ -278,10 +300,10 @@ export default function MyTasksPage() {
                           <StatusBadge status={t.status} />
                         </div>
 
-                        {/* Input summary */}
+                        {/* Input summary — max 2 lines */}
                         {displayInput && (
                           <p style={{
-                            fontSize: 13, color: '#6B7280', margin: '0 0 8px', lineHeight: 1.5,
+                            fontSize: 13, color: '#6B7280', margin: 0, lineHeight: 1.5,
                             overflow: 'hidden', display: '-webkit-box',
                             WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
                           }}>
@@ -289,89 +311,53 @@ export default function MyTasksPage() {
                           </p>
                         )}
 
-                        {/* Time */}
-                        <span style={{ fontSize: 12, color: '#A3A3A3' }}>
+                        {/* Time — fixed below, 8px gap from summary */}
+                        <span style={{ display: 'block', fontSize: 12, color: '#A3A3A3', marginTop: 8 }}>
                           {timeAgo(t.updatedAt || t.createdAt)}
                         </span>
 
                         {/* Failed: friendly message */}
                         {failed && (
-                          <p style={{ fontSize: 12, color: '#B91C1C', marginTop: 8 }}>
+                          <p style={{ fontSize: 12, color: '#B91C1C', marginTop: 6 }}>
                             当前能力暂不可用 · 请稍后重试，或联系管理员启用该能力
                           </p>
                         )}
                       </div>
 
-                      {/* Right: actions */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, paddingTop: 2 }}>
+                      {/* Right: action buttons — unified style */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                         {failed && (
                           <button
                             onClick={() => handleRetry(t.id)}
                             disabled={retrying === t.id}
                             aria-label="重试任务"
-                            style={{
-                              height: 30, padding: '0 12px',
-                              borderRadius: 9999, fontSize: 12, fontWeight: 500,
-                              border: '1px solid #E7E5E1', background: '#FFFFFF',
-                              color: '#B91C1C', cursor: 'pointer',
-                              opacity: retrying === t.id ? 0.5 : 1,
-                              transition: 'border-color .2s',
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)')}
-                            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#E7E5E1')}
+                            style={{ ...actionBtnStyle, color: '#B91C1C', opacity: retrying === t.id ? 0.5 : 1 }}
+                            onMouseEnter={hoverIn}
+                            onMouseLeave={(e) => { hoverOut(e); e.currentTarget.style.color = '#B91C1C'; }}
                           >
                             {retrying === t.id ? '重试中...' : '重试'}
                           </button>
                         )}
+                        {failed && (
+                          <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
+                            查看详情
+                          </a>
+                        )}
                         {completed && (
-                          <a
-                            href={`/agent?conversationId=${t.id}`}
-                            style={{
-                              height: 30, padding: '0 12px',
-                              borderRadius: 9999, fontSize: 12, fontWeight: 500,
-                              border: '1px solid #E7E5E1', background: '#FFFFFF',
-                              color: '#6B7280', textDecoration: 'none',
-                              display: 'inline-flex', alignItems: 'center',
-                              transition: 'border-color .2s',
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)')}
-                            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#E7E5E1')}
-                          >
+                          <a href={`/agent?conversationId=${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
                             继续对话
                           </a>
                         )}
+                        {completed && (
+                          <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
+                            查看结果
+                          </a>
+                        )}
                         {running && (
-                          <a
-                            href={`/agent?conversationId=${t.id}`}
-                            style={{
-                              height: 30, padding: '0 12px',
-                              borderRadius: 9999, fontSize: 12, fontWeight: 500,
-                              border: '1px solid #E7E5E1', background: '#FFFFFF',
-                              color: '#C2410C', textDecoration: 'none',
-                              display: 'inline-flex', alignItems: 'center',
-                              transition: 'border-color .2s',
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)')}
-                            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#E7E5E1')}
-                          >
+                          <a href={`/agent?conversationId=${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
                             查看进度
                           </a>
                         )}
-                        <a
-                          href={`/tasks/${t.id}`}
-                          style={{
-                            height: 30, padding: '0 12px',
-                            borderRadius: 9999, fontSize: 12, fontWeight: 500,
-                            border: '1px solid #E7E5E1', background: '#FFFFFF',
-                            color: '#6B7280', textDecoration: 'none',
-                            display: 'inline-flex', alignItems: 'center',
-                            transition: 'border-color .2s, color .2s',
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)'; e.currentTarget.style.color = '#F97316'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.color = '#6B7280'; }}
-                        >
-                          查看
-                        </a>
                       </div>
                     </div>
                   </div>
