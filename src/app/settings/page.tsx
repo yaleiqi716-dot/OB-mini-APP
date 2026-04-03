@@ -108,8 +108,10 @@ export default function SettingsPage() {
     e.currentTarget.style.color = '#6B7280';
   };
   const placeholderTag: React.CSSProperties = {
-    fontSize: 11, fontWeight: 500, color: '#9CA3AF',
-    background: '#F7F7F4', borderRadius: 9999, padding: '2px 10px',
+    display: 'inline-flex', alignItems: 'center',
+    height: 22, fontSize: 11, fontWeight: 500, color: '#9CA3AF',
+    background: '#F7F7F4', borderRadius: 9999, padding: '0 10px',
+    border: '1px solid #E7E5E1',
   };
   const switchStyle = (on: boolean): React.CSSProperties => ({
     width: 44, height: 24, borderRadius: 12, border: 'none',
@@ -134,10 +136,12 @@ export default function SettingsPage() {
           <div>
             <div style={labelStyle}>头像</div>
           </div>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#F97316', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>
+          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,122,26,0.12)', color: '#F97316', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600 }}>
             {userId ? userId.slice(0, 1).toUpperCase() : 'U'}
           </div>
         </div>
+
+        <div style={{ height: 16 }} />
 
         <div style={{ ...rowStyle, ...rowBorder }}>
           <div>
@@ -280,9 +284,9 @@ export default function SettingsPage() {
             </div>
             <button
               onClick={handleLogout}
-              style={{ ...actionBtnStyle, color: '#B91C1C' }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; e.currentTarget.style.background = 'rgba(239,68,68,0.06)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.background = '#FFFFFF'; }}
+              style={{ height: 30, padding: '0 12px', borderRadius: 9999, fontSize: 12, fontWeight: 500, border: '1px solid rgba(185,28,28,0.18)', background: '#FFFFFF', color: '#B91C1C', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', transition: 'background .2s' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.06)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
               aria-label="登出所有设备"
             >
               退出登录
@@ -363,8 +367,9 @@ export default function SettingsPage() {
                         display: 'flex', alignItems: 'center', gap: 10,
                         height: 40, padding: '0 12px', borderRadius: 12,
                         fontSize: 14, fontWeight: 500, border: 'none',
-                        background: active ? 'rgba(255,122,26,0.08)' : 'transparent',
+                        background: active ? 'rgba(255,122,26,0.06)' : 'transparent',
                         color: active ? '#171717' : '#6B7280',
+                        fontWeight: active ? 550 : 500,
                         cursor: 'pointer',
                         borderLeft: active ? '2px solid #F97316' : '2px solid transparent',
                         transition: 'all .2s',
