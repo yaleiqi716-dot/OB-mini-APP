@@ -32,24 +32,18 @@ function QRModal({
   onCancel: () => void;
 }) {
   const [payState, setPayState] = useState<PayState>('pending');
-  const [countdown, setCountdown] = useState(3);
+
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const countRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const maxWait = 30; // seconds
   const elapsed = useRef(0);
 
-  // Countdown for preview UX
-  useEffect(() => {
-    countRef.current = setInterval(() => {
-      setCountdown((c) => Math.max(0, c - 1));
-    }, 1000);
-    return () => { if (countRef.current) clearInterval(countRef.current); };
-  }, []);
 
-  // Start polling after 3s (preview mode: backend auto-completes in ~2s)
+
+  // Start polling immediately after QR modal opens
   useEffect(() => {
+    setPayState('polling');
     const startPoll = setTimeout(() => {
-      setPayState('polling');
       pollRef.current = setInterval(async () => {
         elapsed.current += 1;
         try {
@@ -75,7 +69,7 @@ function QRModal({
           setTimeout(() => onDone(false), 1200);
         }
       }, 1000);
-    }, 3000);
+    }, 500);
 
     return () => {
       clearTimeout(startPoll);
@@ -128,11 +122,7 @@ function QRModal({
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrUrl)}`}
                 alt="支付二维码" className="rounded-lg" width={180} height={180}
               />
-              <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/5">
-                <div className="bg-white/90 rounded-lg px-3 py-1.5 text-xs font-medium shadow" style={{color:'#444'}}>
-                  Preview 模式
-                </div>
-              </div>
+
             </div>
 
             {/* Status row */}
@@ -145,24 +135,17 @@ function QRModal({
               ) : (
                 <div className="flex items-center gap-2 text-sm" style={{color:'#444'}}>
                   <Spinner size="sm" />
-                  <span>等待扫码... {countdown}s 后自动完成</span>
+                  <span>正在确认支付状态...</span>
                 </div>
               )}
               {/* Progress bar */}
               <div className="w-48 h-1.5 rounded-full overflow-hidden" style={{background:'#eee'}}>
-                {payState === 'polling' ? (
-                  <div className="h-full rounded-full bg-orange-400 animate-progress-pulse" style={{width:'80%'}} />
-                ) : (
-                  <div className="h-full rounded-full transition-all duration-1000" style={{
-                    width:`${((3-countdown)/3)*100}%`,
-                    background:'#f97316'
-                  }} />
-                )}
+                <div className="h-full rounded-full bg-orange-400 animate-progress-pulse" style={{width:'80%'}} />
               </div>
             </div>
 
             <p className="text-xs text-center" style={{color:'#aaa'}}>
-              {payState === 'polling' ? '正在验证支付结果，请稍候...' : `Preview 模式：${countdown}s 后自动模拟支付成功`}
+              正在验证支付结果，请稍候...
             </p>
             <button onClick={onCancel} className="text-xs transition-colors" style={{color:'#aaa'}}>取消支付</button>
           </>
@@ -227,7 +210,7 @@ export default function BillingPage() {
       }
       const product = products.find(p => p.code === code);
       setQrModal({
-        qrUrl: data.codeUrl || 'https://orangebench.tech/pay/preview',
+        qrUrl: data.codeUrl,
         orderId: data.orderId,
         amountLabel: product?.amountLabel || data.amountLabel || '¥19',
       });
@@ -334,9 +317,7 @@ export default function BillingPage() {
           </div>
         ) : null}
 
-        <div className="rounded-xl border border-border bg-surface-secondary/50 p-4 text-xs text-content-tertiary text-center">
-          Preview 模式：点击订阅/购买后显示模拟二维码，3秒后自动完成支付，额度实时更新。不影响未来真实支付接入。
-        </div>
+
       </div>
 
       {/* QR Modal */}
