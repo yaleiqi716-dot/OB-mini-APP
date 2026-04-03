@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Spinner } from '@/components/ui/Spinner';
 
 interface ReviewTask {
@@ -72,12 +73,18 @@ const FILTERS: { value: FilterType; label: string }[] = [
 ];
 
 export default function ReviewPage() {
+  const router = useRouter();
   const [tasks, setTasks] = useState<ReviewTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>('all');
   const [search, setSearch] = useState('');
   const [retrying, setRetrying] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    const m = document.cookie.match(/ob-user-id=([^;]+)/);
+    if (!m || !m[1]) { router.replace('/login'); }
+  }, [router]);
 
   const fetchTasks = useCallback(() => {
     setLoading(true);
@@ -137,9 +144,21 @@ export default function ReviewPage() {
         <span style={{ color: '#171717', fontWeight: 700, fontSize: 15 }}>BENCH</span>
       </a>
       <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <a href="/agent" style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8 }}>Agent</a>
-        <a href="/tasks" style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8 }}>Tasks</a>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>Review</span>
+        {[
+          { href: '/agent', label: 'Agent' },
+          { href: '/tasks', label: 'Tasks' },
+          { href: '/dashboard', label: 'Dashboard' },
+          { href: '/review', label: 'Review' },
+          { href: '/settings', label: 'Settings' },
+          { href: '/account', label: 'Account' },
+        ].map(n => {
+          const active = n.href === '/review';
+          return active ? (
+            <span key={n.href} style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>{n.label}</span>
+          ) : (
+            <a key={n.href} href={n.href} style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8, transition: 'color .2s' }}>{n.label}</a>
+          );
+        })}
       </nav>
     </header>
   );
@@ -322,11 +341,11 @@ export default function ReviewPage() {
                         {completed && (
                           <>
                             <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看结果</a>
-                            <a href={`/agent?conversationId=${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>继续对话</a>
+                            <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>继续对话</a>
                           </>
                         )}
                         {running && (
-                          <a href={`/agent?conversationId=${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看进度</a>
+                          <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看进度</a>
                         )}
                         {failed && (
                           <>

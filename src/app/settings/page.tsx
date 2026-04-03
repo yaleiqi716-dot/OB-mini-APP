@@ -38,8 +38,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const m = document.cookie.match(/ob-user-id=([^;]+)/);
-    if (m?.[1]) setUserId(decodeURIComponent(m[1]));
-  }, []);
+    if (!m || !m[1]) { router.replace('/login'); return; }
+    setUserId(decodeURIComponent(m[1]));
+  }, [router]);
 
   function handleLogout() {
     document.cookie = 'ob-user-id=; path=/; max-age=0';
@@ -59,9 +60,21 @@ export default function SettingsPage() {
         <span style={{ color: '#171717', fontWeight: 700, fontSize: 15 }}>BENCH</span>
       </a>
       <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <a href="/agent" style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8 }}>Agent</a>
-        <a href="/tasks" style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8 }}>Tasks</a>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>Settings</span>
+        {[
+          { href: '/agent', label: 'Agent' },
+          { href: '/tasks', label: 'Tasks' },
+          { href: '/dashboard', label: 'Dashboard' },
+          { href: '/review', label: 'Review' },
+          { href: '/settings', label: 'Settings' },
+          { href: '/account', label: 'Account' },
+        ].map(n => {
+          const active = n.href === '/settings';
+          return active ? (
+            <span key={n.href} style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>{n.label}</span>
+          ) : (
+            <a key={n.href} href={n.href} style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8, transition: 'color .2s' }}>{n.label}</a>
+          );
+        })}
       </nav>
     </header>
   );

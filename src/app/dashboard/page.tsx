@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Spinner } from '@/components/ui/Spinner';
 
 interface TaskRef {
@@ -63,12 +64,18 @@ function StatusBadge({ status }: { status: string }) {
 type TimeRange = 'today' | 'week' | 'month';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [data, setData] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
+
+  useEffect(() => {
+    const m = document.cookie.match(/ob-user-id=([^;]+)/);
+    if (!m || !m[1]) { router.replace('/login'); }
+  }, [router]);
 
   const showToast = useCallback((msg: string, ok: boolean) => {
     setToast({ msg, ok });
@@ -109,9 +116,21 @@ export default function DashboardPage() {
         <span style={{ color: '#171717', fontWeight: 700, fontSize: 15 }}>BENCH</span>
       </a>
       <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <a href="/agent" style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8 }}>Agent</a>
-        <a href="/tasks" style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8 }}>Tasks</a>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>Dashboard</span>
+        {[
+          { href: '/agent', label: 'Agent' },
+          { href: '/tasks', label: 'Tasks' },
+          { href: '/dashboard', label: 'Dashboard' },
+          { href: '/review', label: 'Review' },
+          { href: '/settings', label: 'Settings' },
+          { href: '/account', label: 'Account' },
+        ].map(n => {
+          const active = n.href === '/dashboard';
+          return active ? (
+            <span key={n.href} style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>{n.label}</span>
+          ) : (
+            <a key={n.href} href={n.href} style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8, transition: 'color .2s' }}>{n.label}</a>
+          );
+        })}
       </nav>
     </header>
   );

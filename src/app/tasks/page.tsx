@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Spinner } from '@/components/ui/Spinner';
 
 interface TaskItem {
@@ -67,12 +68,18 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function MyTasksPage() {
+  const router = useRouter();
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
   const [retrying, setRetrying] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const m = document.cookie.match(/ob-user-id=([^;]+)/);
+    if (!m || !m[1]) { router.replace('/login'); }
+  }, [router]);
 
   async function handleRetry(taskId: string) {
     setRetrying(taskId);
@@ -133,8 +140,21 @@ export default function MyTasksPage() {
         <span style={{ color: '#171717', fontWeight: 700, fontSize: 15 }}>BENCH</span>
       </a>
       <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <a href="/agent" style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8, transition: 'color .2s' }}>Agent</a>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>Tasks</span>
+        {[
+          { href: '/agent', label: 'Agent' },
+          { href: '/tasks', label: 'Tasks' },
+          { href: '/dashboard', label: 'Dashboard' },
+          { href: '/review', label: 'Review' },
+          { href: '/settings', label: 'Settings' },
+          { href: '/account', label: 'Account' },
+        ].map(n => {
+          const active = n.href === '/tasks';
+          return active ? (
+            <span key={n.href} style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>{n.label}</span>
+          ) : (
+            <a key={n.href} href={n.href} style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8, transition: 'color .2s' }}>{n.label}</a>
+          );
+        })}
       </nav>
     </header>
   );
@@ -344,7 +364,7 @@ export default function MyTasksPage() {
                           </a>
                         )}
                         {completed && (
-                          <a href={`/agent?conversationId=${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
+                          <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
                             继续对话
                           </a>
                         )}
@@ -354,7 +374,7 @@ export default function MyTasksPage() {
                           </a>
                         )}
                         {running && (
-                          <a href={`/agent?conversationId=${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
+                          <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
                             查看进度
                           </a>
                         )}
