@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
       where: { ...userFilter, status: 'failed' },
       orderBy: { updatedAt: 'desc' },
       take: 3,
-      select: { id: true, title: true, type: true, errorMessage: true, updatedAt: true },
+      select: { id: true, title: true, type: true, errorMessage: true, updatedAt: true, conversationId: true },
     });
 
     // 最近活跃任务（最近3条）
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
       where: userFilter,
       orderBy: { updatedAt: 'desc' },
       take: 3,
-      select: { id: true, title: true, type: true, status: true, updatedAt: true },
+      select: { id: true, title: true, type: true, status: true, updatedAt: true, conversationId: true },
     });
 
     // Highlights: 最近完成的任务标题
@@ -117,6 +117,7 @@ export async function GET(req: NextRequest) {
         type: t.type,
         errorMessage: t.errorMessage || null,
         updatedAt: t.updatedAt.toISOString(),
+        conversationId: t.conversationId,
       })),
       waitingReviewTasks: waitingReviewTasks.map(t => ({
         id: t.id,
@@ -138,6 +139,7 @@ export async function GET(req: NextRequest) {
         type: t.type,
         status: t.status,
         updatedAt: t.updatedAt.toISOString(),
+        conversationId: t.conversationId,
       })),
     });
   } catch (error) {

@@ -608,11 +608,20 @@ export function TaskCanvas({
                     >做成 PPT</button>
                     <button
                       onClick={() => {
-                        const text = document.querySelector('.ob-result-card-body')?.textContent || '';
-                        navigator.clipboard.writeText(text).then(() => {
-                          const btn = document.activeElement as HTMLButtonElement;
-                          if (btn) { const orig = btn.textContent; btn.textContent = '已复制'; setTimeout(() => { btn.textContent = orig; }, 1500); }
-                        });
+                        const el = document.querySelector('.ob-result-card-body');
+                        const text = el?.textContent || '';
+                        if (!text.trim()) return;
+                        const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `orangebench-result-${taskId.slice(0, 8)}.md`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        const btn = document.activeElement as HTMLButtonElement;
+                        if (btn) { const orig = btn.textContent; btn.textContent = '已下载'; setTimeout(() => { btn.textContent = orig; }, 1500); }
                       }}
                       className="ob-result-action-btn"
                     >导出</button>
@@ -674,9 +683,13 @@ export function TaskCanvas({
                       {taskId && !isCreditsError && (
                         <button
                           onClick={() => {
-                            fetch(`/api/tasks/${taskId}/retry`, { method: 'POST' })
+                            fetch(`/api/tasks/${taskId}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ status: 'queued' }),
+                            })
                               .then(r => r.json())
-                              .then(d => { if (d.taskId) window.location.reload(); });
+                              .then(d => { if (d.success) window.location.reload(); });
                           }}
                           className="ob-error-hint-retry"
                         >

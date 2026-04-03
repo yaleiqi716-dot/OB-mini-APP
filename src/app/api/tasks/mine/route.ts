@@ -18,17 +18,22 @@ export async function GET(req: NextRequest) {
         status: true,
         type: true,
         createdAt: true,
+        updatedAt: true,
         assigneeId: true,
         userId: true,
+        conversationId: true,
       },
       take: 50,
     });
     return NextResponse.json(tasks.map(t => ({
       id: t.id,
       title: t.title || t.input?.slice(0, 40) || '无标题任务',
+      input: t.input,
       status: t.status,
       type: t.type,
       createdAt: t.createdAt.toISOString(),
+      updatedAt: t.updatedAt?.toISOString(),
+      conversationId: t.conversationId,
       isAssigned: t.assigneeId === userId && t.userId !== userId,
     })));
   } catch (error) {

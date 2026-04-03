@@ -11,6 +11,7 @@ interface TaskRef {
   priority?: number;
   updatedAt?: string;
   createdAt?: string;
+  conversationId?: string;
 }
 
 interface Summary {
@@ -249,7 +250,7 @@ export default function DashboardPage() {
                   {recentTasks.map((t, i) => (
                     <a
                       key={t.id}
-                      href={`/tasks/${t.id}`}
+                      href={t.conversationId ? `/agent?conversationId=${t.conversationId}` : `/tasks/${t.id}`}
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         height: 56, padding: '0 4px', textDecoration: 'none',
@@ -332,7 +333,7 @@ export default function DashboardPage() {
                         </button>
                       )}
                       <a
-                        href={`/tasks/${t.id}`}
+                        href={t.conversationId ? `/agent?conversationId=${t.conversationId}` : `/tasks/${t.id}`}
                         style={actionBtnStyle}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)'; e.currentTarget.style.background = 'rgba(255,122,26,0.06)'; e.currentTarget.style.color = '#F97316'; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#6B7280'; }}

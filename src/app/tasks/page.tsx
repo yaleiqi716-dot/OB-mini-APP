@@ -12,6 +12,7 @@ interface TaskItem {
   priority?: number;
   createdAt: string;
   updatedAt?: string;
+  conversationId?: string;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -363,8 +364,8 @@ export default function MyTasksPage() {
                             查看详情
                           </a>
                         )}
-                        {completed && (
-                          <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
+                        {completed && t.conversationId && (
+                          <a href={`/agent?conversationId=${t.conversationId}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
                             继续对话
                           </a>
                         )}
@@ -373,8 +374,8 @@ export default function MyTasksPage() {
                             查看结果
                           </a>
                         )}
-                        {running && (
-                          <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
+                        {running && t.conversationId && (
+                          <a href={`/agent?conversationId=${t.conversationId}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
                             查看进度
                           </a>
                         )}

@@ -13,6 +13,7 @@ interface ReviewTask {
   type?: string;
   updatedAt: string;
   createdAt: string;
+  conversationId?: string;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -341,11 +342,11 @@ export default function ReviewPage() {
                         {completed && (
                           <>
                             <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看结果</a>
-                            <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>继续对话</a>
+                            {t.conversationId && <a href={`/agent?conversationId=${t.conversationId}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>继续对话</a>}
                           </>
                         )}
                         {running && (
-                          <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看进度</a>
+                          {t.conversationId ? <a href={`/agent?conversationId=${t.conversationId}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看进度</a> : <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看进度</a>}
                         )}
                         {failed && (
                           <>
