@@ -27,6 +27,9 @@ export default function SettingsPage() {
   const [userId, setUserId] = useState('');
   const [section, setSection] = useState<Section>('profile');
   const [toast, setToast] = useState<string | null>(null);
+  const [taskDone, setTaskDone] = useState(true);
+  const [taskFailed, setTaskFailed] = useState(true);
+  const [newFeature, setNewFeature] = useState(false);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -212,9 +215,6 @@ export default function SettingsPage() {
   }
 
   function renderNotifications() {
-    const [taskDone, setTaskDone] = useState(true);
-    const [taskFailed, setTaskFailed] = useState(true);
-    const [newFeature, setNewFeature] = useState(false);
 
     return (
       <div style={cardStyle}>
@@ -366,7 +366,7 @@ export default function SettingsPage() {
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10,
                         height: 40, padding: '0 12px', borderRadius: 12,
-                        fontSize: 14, fontWeight: 500, border: 'none',
+                        fontSize: 14, border: 'none',
                         background: active ? 'rgba(255,122,26,0.06)' : 'transparent',
                         color: active ? '#171717' : '#6B7280',
                         fontWeight: active ? 550 : 500,
