@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { Spinner } from '@/components/ui/Spinner';
-import { NavHeader } from '@/components/NavHeader';
 
 interface TaskItem {
   id: string;
@@ -15,42 +14,10 @@ interface TaskItem {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  queued: '排队中', understanding: '理解中', running: 'AI执行中',
-  executing: 'AI执行中', interacting: '等待确认', structuring: '规划中',
-  completed: '已完成', failed: '执行失败', cancelled: '已取消',
+  queued: '排队中', understanding: '理解中', running: '执行中',
+  executing: '执行中', interacting: '等待确认', structuring: '规划中',
+  completed: '已完成', failed: '失败', cancelled: '已取消',
 };
-
-const STATUS_COLOR: Record<string, string> = {
-  queued: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
-  understanding: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
-  running: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
-  executing: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
-  interacting: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
-  structuring: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
-  completed: 'bg-green-500/10 text-green-400 border border-green-500/20',
-  failed: 'bg-red-500/10 text-red-400 border border-red-500/20',
-  cancelled: 'bg-surface-tertiary text-content-tertiary border border-border/50',
-};
-
-const STATUS_DOT: Record<string, string> = {
-  queued: 'bg-blue-400', understanding: 'bg-blue-400 animate-pulse',
-  running: 'bg-amber-400 animate-pulse', executing: 'bg-amber-400 animate-pulse',
-  interacting: 'bg-purple-400 animate-pulse', structuring: 'bg-blue-400 animate-pulse',
-  completed: 'bg-green-400', failed: 'bg-red-400', cancelled: 'bg-content-tertiary',
-};
-
-const TYPE_LABEL: Record<string, string> = {
-  ppt: '演示文稿', email: '邮件', proposal: '方案',
-  website: '网页', video: '视频', unknown: '任务', direct: '任务',
-};
-
-function TypeIcon({ type }: { type?: string }) {
-  const s = { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-  if (type === 'ppt') return <svg {...s}><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>;
-  if (type === 'email') return <svg {...s}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>;
-  if (type === 'proposal') return <svg {...s}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>;
-  return <svg {...s}><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="16" x2="12" y2="16"/></svg>;
-}
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -73,12 +40,39 @@ const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: 'failed', label: '失败' },
 ];
 
+// Status badge component
+function StatusBadge({ status }: { status: string }) {
+  const isRunning = ['queued', 'understanding', 'running', 'executing', 'interacting', 'structuring'].includes(status);
+  const isCompleted = status === 'completed';
+  const isFailed = status === 'failed';
+
+  let bg = 'rgba(156,163,175,0.10)';
+  let color = '#6B7280';
+  if (isRunning)   { bg = 'rgba(255,122,26,0.10)'; color = '#C2410C'; }
+  if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = '#047857'; }
+  if (isFailed)    { bg = 'rgba(239,68,68,0.10)';  color = '#B91C1C'; }
+
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center',
+      height: 22, padding: '0 10px',
+      fontSize: 11, fontWeight: 500,
+      borderRadius: 9999,
+      background: bg, color,
+      whiteSpace: 'nowrap',
+    }}>
+      {STATUS_LABEL[status] || status}
+    </span>
+  );
+}
+
 export default function MyTasksPage() {
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
   const [retrying, setRetrying] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   async function handleRetry(taskId: string) {
     setRetrying(taskId);
@@ -116,161 +110,273 @@ export default function MyTasksPage() {
   const isRunning = (s: string) => ['queued', 'understanding', 'running', 'executing', 'interacting', 'structuring'].includes(s);
 
   const filtered = tasks.filter((t) => {
-    if (filter === 'all') return true;
-    if (filter === 'running') return isRunning(t.status);
-    if (filter === 'completed') return t.status === 'completed';
-    if (filter === 'failed') return t.status === 'failed';
+    if (filter === 'running' && !isRunning(t.status)) return false;
+    if (filter === 'completed' && t.status !== 'completed') return false;
+    if (filter === 'failed' && t.status !== 'failed') return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      if (!(t.title || '').toLowerCase().includes(q) && !(t.input || '').toLowerCase().includes(q)) return false;
+    }
     return true;
   });
 
-  const countFor = (f: FilterType) => {
-    if (f === 'all') return tasks.length;
-    if (f === 'running') return tasks.filter(t => isRunning(t.status)).length;
-    if (f === 'completed') return tasks.filter(t => t.status === 'completed').length;
-    if (f === 'failed') return tasks.filter(t => t.status === 'failed').length;
-    return 0;
-  };
+  // ── Minimal header for tasks page (matches /agent visual language) ──
+  const headerBar = (
+    <header style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      height: 52, padding: '0 32px',
+      borderBottom: '1px solid #E7E5E1',
+      background: '#F7F7F4', flexShrink: 0,
+    }}>
+      <a href="/agent" style={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}>
+        <span style={{ color: '#F97316', fontWeight: 700, fontSize: 15 }}>ORANGE</span>
+        <span style={{ color: '#171717', fontWeight: 700, fontSize: 15 }}>BENCH</span>
+      </a>
+      <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <a href="/agent" style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8, transition: 'color .2s' }}>Agent</a>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>Tasks</span>
+      </nav>
+    </header>
+  );
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-surface-primary">
-      <NavHeader />
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-5">
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
+      {headerBar}
 
-          {/* Header */}
-          <div className="flex items-center justify-between">
+      <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
+        <div style={{ maxWidth: 980, margin: '0 auto', padding: '40px 32px 60px' }}>
+
+          {/* ── Top area: title + search ── */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
             <div>
-              <h1 className="text-base font-semibold text-content-primary">我的任务</h1>
-              <p className="text-xs text-content-tertiary mt-0.5">所有 AI 任务的执行记录与结果</p>
+              <h1 style={{ fontSize: 36, fontWeight: 650, color: '#171717', lineHeight: 1.2, margin: 0 }}>Tasks</h1>
             </div>
-            <a
-              href="/agent"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-80"
-              style={{ background: 'var(--accent, #f97316)' }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              新建任务
-            </a>
+            {/* Search box */}
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', pointerEvents: 'none' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              </span>
+              <input
+                type="text"
+                placeholder="搜索任务..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{
+                  width: 220, height: 36, borderRadius: 12,
+                  border: '1px solid #E7E5E1', background: '#FFFFFF',
+                  padding: '0 12px 0 34px', fontSize: 13,
+                  color: '#171717', outline: 'none',
+                  transition: 'border-color .2s, box-shadow .2s',
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255,122,26,0.12)'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.boxShadow = 'none'; }}
+              />
+            </div>
           </div>
 
-          {/* Filter tabs */}
-          <div className="flex gap-1.5 flex-wrap">
-            {FILTER_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setFilter(opt.value)}
-                className={`px-3 py-1 rounded-full text-xs transition-colors ${
-                  filter === opt.value
-                    ? 'text-white font-medium'
-                    : 'bg-surface-secondary text-content-tertiary hover:text-content-primary border border-border/50'
-                }`}
-                style={filter === opt.value ? { background: 'var(--accent, #f97316)' } : {}}
-              >
-                {opt.label}
-                <span className="ml-1 opacity-60">({countFor(opt.value)})</span>
-              </button>
-            ))}
+          <p style={{ fontSize: 14, color: '#7A7A7A', margin: '0 0 20px' }}>查看你的 AI 执行记录与结果</p>
+
+          {/* ── Filter chips ── */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+            {FILTER_OPTIONS.map((opt) => {
+              const active = filter === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setFilter(opt.value)}
+                  style={{
+                    height: 32, padding: '0 14px',
+                    borderRadius: 9999, fontSize: 13, fontWeight: active ? 500 : 400,
+                    border: active ? 'none' : '1px solid #E7E5E1',
+                    background: active ? 'rgba(255,122,26,0.10)' : '#FFFFFF',
+                    color: active ? '#F97316' : '#6B7280',
+                    cursor: 'pointer',
+                    transition: 'all .2s ease',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Content */}
+          {/* ── Content ── */}
           {loading ? (
-            <div className="flex justify-center py-16"><Spinner size="md" /></div>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+              <Spinner size="md" />
+            </div>
           ) : error ? (
-            <div className="text-center py-16 space-y-3">
-              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div style={{ textAlign: 'center', padding: '80px 0' }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(239,68,68,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
-              <p className="text-content-tertiary text-sm">{error}</p>
-              <button onClick={fetchTasks} className="text-xs text-accent hover:underline">重新加载</button>
+              <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 12 }}>{error}</p>
+              <button onClick={fetchTasks} style={{ fontSize: 13, color: '#F97316', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>重新加载</button>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-16 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-surface-secondary border border-border/50 flex items-center justify-center mx-auto">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary, #888)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            /* ── Empty state ── */
+            <div style={{ textAlign: 'center', padding: '80px 0' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 16, background: '#FFFFFF', border: '1px solid #E7E5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="16" x2="12" y2="16"/>
                 </svg>
               </div>
-              <div className="space-y-1">
-                <p className="text-content-secondary text-sm font-medium">
-                  {filter === 'all' ? '你现在没有任何任务' : `没有${FILTER_OPTIONS.find(o => o.value === filter)?.label}任务`}
-                </p>
-                <p className="text-content-tertiary text-xs">
-                  {filter === 'all' ? '把你的工作交给 AI，去创建第一个任务吧' : '换个筛选条件，或者去创建一个新任务'}
-                </p>
-              </div>
-              {filter === 'all' ? (
-                <a href="/agent" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium text-white hover:opacity-80 transition-opacity" style={{ background: 'var(--accent, #f97316)' }}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  创建第一个任务
-                </a>
-              ) : (
-                <button onClick={() => setFilter('all')} className="text-accent text-xs hover:underline">查看全部任务</button>
-              )}
+              <p style={{ fontSize: 16, fontWeight: 600, color: '#171717', marginBottom: 6 }}>还没有任务记录</p>
+              <p style={{ fontSize: 14, color: '#7A7A7A', marginBottom: 20 }}>去 Agent 交给 ORANGEBENCH 一个任务吧</p>
+              <a
+                href="/agent"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  height: 36, padding: '0 18px',
+                  borderRadius: 9999, fontSize: 14, fontWeight: 500,
+                  background: '#F97316', color: '#fff',
+                  textDecoration: 'none',
+                  transition: 'background .2s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#E8680F')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#F97316')}
+              >
+                去 Agent
+              </a>
             </div>
           ) : (
-            /* Card grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {filtered.map((t) => (
-                <div
-                  key={t.id}
-                  className="group rounded-2xl border border-border/50 bg-surface-secondary p-4 hover:bg-surface-tertiary hover:border-accent/20 transition-all duration-150 space-y-3"
-                >
-                  {/* Card top: type icon + status badge */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-content-tertiary">
-                      <TypeIcon type={t.type} />
-                      <span className="text-[11px]">{TYPE_LABEL[t.type || ''] || '任务'}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {(t.priority ?? 0) >= 2 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 flex items-center gap-0.5">
-                          <span className="w-1 h-1 rounded-full bg-red-400" />
-                          高优先
-                        </span>
-                      )}
-                      {(t.priority ?? 0) === 1 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-0.5">
-                          <span className="w-1 h-1 rounded-full bg-amber-400" />
-                          中优先
-                        </span>
-                      )}
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1 ${STATUS_COLOR[t.status] || 'bg-surface-tertiary text-content-tertiary border border-border/50'}`}>
-                        <span className={`w-1 h-1 rounded-full flex-shrink-0 ${STATUS_DOT[t.status] || 'bg-content-tertiary'}`} />
-                        {STATUS_LABEL[t.status] || t.status}
-                      </span>
-                    </div>
-                  </div>
+            /* ── Task card list ── */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {filtered.map((t) => {
+                const failed = t.status === 'failed';
+                const completed = t.status === 'completed';
+                const running = isRunning(t.status);
+                const displayTitle = t.title || t.input?.slice(0, 60) || '未命名任务';
+                const displayInput = t.input && t.input !== displayTitle ? t.input.slice(0, 100) : '';
 
-                  {/* Card title */}
-                  <p className="text-sm font-medium text-content-primary line-clamp-2 leading-snug group-hover:text-accent transition-colors">
-                    {t.title || t.input?.slice(0, 60) || '未命名任务'}
-                  </p>
+                return (
+                  <div
+                    key={t.id}
+                    style={{
+                      background: '#FFFFFF',
+                      border: '1px solid #E7E5E1',
+                      borderRadius: 16,
+                      padding: 18,
+                      transition: 'transform .2s ease, box-shadow .2s ease',
+                      cursor: 'default',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.05)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+                      {/* Left: content */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {/* Title row */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                          <p style={{
+                            fontSize: 17, fontWeight: 600, color: '#171717',
+                            margin: 0, overflow: 'hidden', textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap', flex: 1, minWidth: 0,
+                          }}>
+                            {displayTitle}
+                          </p>
+                          <StatusBadge status={t.status} />
+                        </div>
 
-                  {/* Card footer: time + actions */}
-                  <div className="flex items-center justify-between pt-1 border-t border-border/30">
-                    <span className="text-[11px] text-content-tertiary">{timeAgo(t.updatedAt || t.createdAt)}</span>
-                    <div className="flex items-center gap-1.5">
-                      {t.status === 'failed' && (
-                        <button
-                          onClick={() => handleRetry(t.id)}
-                          disabled={retrying === t.id}
-                          className="text-[11px] px-2 py-0.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                        {/* Input summary */}
+                        {displayInput && (
+                          <p style={{
+                            fontSize: 13, color: '#6B7280', margin: '0 0 8px', lineHeight: 1.5,
+                            overflow: 'hidden', display: '-webkit-box',
+                            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                          }}>
+                            {displayInput}
+                          </p>
+                        )}
+
+                        {/* Time */}
+                        <span style={{ fontSize: 12, color: '#A3A3A3' }}>
+                          {timeAgo(t.updatedAt || t.createdAt)}
+                        </span>
+
+                        {/* Failed: friendly message */}
+                        {failed && (
+                          <p style={{ fontSize: 12, color: '#B91C1C', marginTop: 8 }}>
+                            当前能力暂不可用 · 请稍后重试，或联系管理员启用该能力
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Right: actions */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, paddingTop: 2 }}>
+                        {failed && (
+                          <button
+                            onClick={() => handleRetry(t.id)}
+                            disabled={retrying === t.id}
+                            aria-label="重试任务"
+                            style={{
+                              height: 30, padding: '0 12px',
+                              borderRadius: 9999, fontSize: 12, fontWeight: 500,
+                              border: '1px solid #E7E5E1', background: '#FFFFFF',
+                              color: '#B91C1C', cursor: 'pointer',
+                              opacity: retrying === t.id ? 0.5 : 1,
+                              transition: 'border-color .2s',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#E7E5E1')}
+                          >
+                            {retrying === t.id ? '重试中...' : '重试'}
+                          </button>
+                        )}
+                        {completed && (
+                          <a
+                            href={`/agent?conversationId=${t.id}`}
+                            style={{
+                              height: 30, padding: '0 12px',
+                              borderRadius: 9999, fontSize: 12, fontWeight: 500,
+                              border: '1px solid #E7E5E1', background: '#FFFFFF',
+                              color: '#6B7280', textDecoration: 'none',
+                              display: 'inline-flex', alignItems: 'center',
+                              transition: 'border-color .2s',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#E7E5E1')}
+                          >
+                            继续对话
+                          </a>
+                        )}
+                        {running && (
+                          <a
+                            href={`/agent?conversationId=${t.id}`}
+                            style={{
+                              height: 30, padding: '0 12px',
+                              borderRadius: 9999, fontSize: 12, fontWeight: 500,
+                              border: '1px solid #E7E5E1', background: '#FFFFFF',
+                              color: '#C2410C', textDecoration: 'none',
+                              display: 'inline-flex', alignItems: 'center',
+                              transition: 'border-color .2s',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#E7E5E1')}
+                          >
+                            查看进度
+                          </a>
+                        )}
+                        <a
+                          href={`/tasks/${t.id}`}
+                          style={{
+                            height: 30, padding: '0 12px',
+                            borderRadius: 9999, fontSize: 12, fontWeight: 500,
+                            border: '1px solid #E7E5E1', background: '#FFFFFF',
+                            color: '#6B7280', textDecoration: 'none',
+                            display: 'inline-flex', alignItems: 'center',
+                            transition: 'border-color .2s, color .2s',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)'; e.currentTarget.style.color = '#F97316'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.color = '#6B7280'; }}
                         >
-                          {retrying === t.id ? '重试中...' : '重试'}
-                        </button>
-                      )}
-                      {isRunning(t.status) && (
-                        <a href={`/agent?task=${t.id}`} className="text-[11px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors">
-                          继续
+                          查看
                         </a>
-                      )}
-                      <a href={`/tasks/${t.id}`} className="text-[11px] text-accent hover:underline">查看</a>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
