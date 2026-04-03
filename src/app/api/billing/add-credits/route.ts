@@ -1,20 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { addCredits, getUserStatus } from '@/services/billing';
+import { NextResponse } from 'next/server';
 
-export async function POST(req: NextRequest) {
-  try {
-    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
-    if (!userId) {
-      return NextResponse.json({ error: '未登录' }, { status: 401 });
-    }
-    const body = await req.json().catch(() => ({}));
-    const amount = typeof body.amount === 'number' ? body.amount : 100;
-
-    await addCredits(userId, amount);
-    const status = await getUserStatus(userId);
-
-    return NextResponse.json({ success: true, ...status });
-  } catch (error) {
-    return NextResponse.json({ error: '充值失败' }, { status: 500 });
-  }
+// SECURITY: This endpoint is permanently disabled for all users.
+// Credits are only added via the wechat-webhook route after verified payment.
+// If admin credit adjustment is needed in the future, implement a separate
+// admin-authenticated endpoint with proper RBAC.
+export async function POST() {
+  return NextResponse.json(
+    { error: '此接口已关闭，请通过正常支付流程充值' },
+    { status: 403 }
+  );
 }

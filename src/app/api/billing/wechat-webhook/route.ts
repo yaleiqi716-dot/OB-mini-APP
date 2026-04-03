@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const signature = req.headers.get('wechatpay-signature') || '';
     const serial = req.headers.get('wechatpay-serial') || '';
 
-    const valid = verifyWebhookSignature({ timestamp, nonce, signature, serial }, body);
+    const valid = await verifyWebhookSignature({ timestamp, nonce, signature, serial }, body);
     if (!valid) {
       return NextResponse.json({ code: 'FAIL', message: '签名验证失败' }, { status: 401 });
     }
