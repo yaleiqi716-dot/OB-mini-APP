@@ -27,6 +27,8 @@ model User {
   verificationCodes VerificationCode[]
   teamMemberships   TeamMember[]
   ownedTeams        Team[]   @relation("TeamOwner")
+  workspaceMemberships WorkspaceMember[]
+  ownedWorkspaces      Workspace[]      @relation("WorkspaceOwner")
 }
 
 model Session {
@@ -76,14 +78,16 @@ model TeamMember {
 }
 
 model Conversation {
-  id        String   @id @default(uuid())
-  userId    String
-  
-  title     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tasks     Task[]
+  id          String     @id @default(uuid())
+  userId      String
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
+  title       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  tasks       Task[]
   @@index([userId, createdAt])
+  @@index([workspaceId])
 }
 
 model Task {
@@ -108,16 +112,19 @@ model Task {
   businessStatus String     @default("assigned")
   externalJobId  String?
   externalEngine String?
-  conversationId String?
-  conversation  Conversation? @relation(fields: [conversationId], references: [id])
-  userId        String?
-  user          User?       @relation(fields: [userId], references: [id])
-  teamId        String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  events        TaskEvent[]
+  conversationId   String?
+  conversation     Conversation?  @relation(fields: [conversationId], references: [id])
+  userId           String?
+  user             User?          @relation(fields: [userId], references: [id])
+  teamId           String?
+  workspaceTaskId  String?
+  workspaceTask    WorkspaceTask? @relation(fields: [workspaceTaskId], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  events           TaskEvent[]
   @@index([conversationId])
   @@index([userId, createdAt])
+  @@index([workspaceTaskId])
 }
 
 model TaskEvent {
@@ -171,4 +178,91 @@ model Order {
   updatedAt       DateTime  @updatedAt
   @@index([providerOrderId])
   @@index([userId, status])
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// WORKSPACE MODELS — Team Task Flow MVP v1.0
+// ═══════════════════════════════════════════════════════════════
+
+model Workspace {
+  id              String             @id @default(cuid())
+  name            String
+  ownerId         String
+  owner           User               @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  wecomWebhookUrl String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  members         WorkspaceMember[]
+  invites         WorkspaceInvite[]
+  tasks           WorkspaceTask[]
+  conversations   Conversation[]
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String    @default("member")
+  status      String    @default("active")
+  invitedAt   DateTime  @default(now())
+  joinedAt    DateTime?
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model WorkspaceInvite {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email          String
+  role           String    @default("member")
+  invitedBy      String
+  token          String    @unique
+  status         String    @default("pending")
+  expiresAt      DateTime
+  acceptedUserId String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  @@index([token])
+  @@index([workspaceId, email])
+  @@index([email, status])
+}
+
+model WorkspaceTask {
+  id                String              @id @default(cuid())
+  workspaceId       String
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  title             String
+  description       String?
+  businessStatus    String              @default("draft")
+  priority          Int                 @default(0)
+  createdBy         String
+  assigneeId        String?
+  dueAt             DateTime?
+  feedback          String?
+  submissionSummary String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  links             WorkspaceTaskLink[]
+  agentTasks        Task[]
+  @@index([workspaceId, businessStatus])
+  @@index([assigneeId, businessStatus])
+  @@index([createdBy])
+}
+
+model WorkspaceTaskLink {
+  id              String        @id @default(cuid())
+  workspaceTaskId String
+  workspaceTask   WorkspaceTask @relation(fields: [workspaceTaskId], references: [id], onDelete: Cascade)
+  agentTaskId     String
+  conversationId  String?
+  purpose         String        @default("draft")
+  submittedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  @@index([workspaceTaskId])
+  @@index([agentTaskId])
 }
