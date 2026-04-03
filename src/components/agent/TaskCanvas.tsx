@@ -647,9 +647,12 @@ export function TaskCanvas({
                   ? '额度不足，充值后任务会自动恢复'
                   : isImageError ? '图片生成功能暂未开启'
                   : isVideoError ? '视频生成功能暂未开启'
-                  : isConfigError ? '该功能暂未开启，请稍后再试'
+                  : isConfigError ? '当前能力暂不可用'
                   : (errMsg && !errMsg.includes('Error') && !errMsg.includes('error') && !errMsg.includes('API') && !errMsg.includes('KEY'))
-                  ? errMsg : '遇到了一些问题，请稍后再试';
+                  ? errMsg : '当前能力暂不可用';
+                const friendlyDesc = isCreditsError
+                  ? '充值后任务将自动恢复执行'
+                  : '请稍后重试，或联系管理员启用该能力';
 
                 return (
                   <div className="animate-flow-in ob-error-hint">
@@ -660,7 +663,7 @@ export function TaskCanvas({
                     </div>
                     <div className="ob-error-hint-body">
                       <div className="ob-error-hint-title">{friendlyMsg}</div>
-                      {isCreditsError && <div className="ob-error-hint-desc">充值后任务将自动恢复执行</div>}
+                      <div className="ob-error-hint-desc">{friendlyDesc}</div>
                       {taskId && !isCreditsError && (
                         <button
                           onClick={() => {
@@ -971,7 +974,8 @@ function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { titl
         </div>
         <button
           onClick={handleCopy}
-          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 6, fontSize: 11, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', transition: 'background 0.15s' }}
+          aria-label="复制内容"
+          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 6, fontSize: 11, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', transition: 'background .2s ease' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
         >
@@ -984,8 +988,10 @@ function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { titl
       </div>
       {/* Result body */}
       <div className="ob-result-card-body">
-        <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 12 }}>{title}</p>
-        <div className="space-y-3" ref={contentRef}>{children}</div>
+        <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 16 }}>{title}</p>
+        <div className="ob-result-card-inner">
+          <div className="space-y-3" ref={contentRef}>{children}</div>
+        </div>
       </div>
     </div>
   );

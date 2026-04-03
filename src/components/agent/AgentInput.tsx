@@ -46,10 +46,10 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
       <div
         className={cn(
           'ob-input-box agent-input-box',
-          prominent && 'ob-input-box--prominent agent-input-box--prominent'
+          prominent && 'ob-input-box--prominent agent-input-box--prominent',
+          chatMode && 'ob-input-box--chat agent-input-box--chat'
         )}
       >
-        {/* Textarea */}
         <textarea
           ref={textareaRef}
           rows={prominent ? 4 : 2}
@@ -62,28 +62,24 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
           placeholder={placeholder || '描述你的任务...'}
           disabled={disabled}
           className="ob-textarea agent-input-textarea w-full"
-          style={{ fontFamily: 'inherit' }}
+          style={{ fontFamily: 'inherit', padding: chatMode ? '16px 16px 8px' : undefined }}
         />
 
         {/* Bottom toolbar */}
-        <div className="ob-input-toolbar">
+        <div className="ob-input-toolbar" style={chatMode ? { padding: '4px 12px 12px' } : undefined}>
           <div className="ob-input-toolbar-left">
-            {/* Attach button */}
-            <button type="button" className="ob-toolbar-btn" title="附件" disabled>
+            <button type="button" className="ob-toolbar-btn" aria-label="附件" title="附件" disabled>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
               </svg>
             </button>
-            {/* Tools/Skills */}
-            <button type="button" className="ob-toolbar-label" disabled>
+            <button type="button" className="ob-toolbar-label" aria-label="Tools" disabled>
               Tools
             </button>
           </div>
 
           <div className="ob-input-toolbar-right">
-            {/* Auto badge */}
-            <span className="ob-auto-badge">Auto</span>
-            {/* Send button */}
+            <span className="ob-auto-badge" aria-label="Auto mode">Auto</span>
             <button
               type="button"
               onClick={handleSubmit}
@@ -97,12 +93,12 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
               )}
             >
               {disabled ? (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
                   <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" style={{ animation: 'spin 0.8s linear infinite' }} />
                 </svg>
               ) : (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 4l8 8h-5v8H9v-8H4l8-8z" />
                 </svg>
               )}

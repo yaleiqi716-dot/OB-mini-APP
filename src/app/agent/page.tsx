@@ -376,7 +376,7 @@ function AgentPageInner() {
 
       {/* New chat button */}
       <div className="ob-sidebar-top">
-        <button onClick={handleNewChat} className="ob-new-chat-btn">
+        <button onClick={handleNewChat} className="ob-new-chat-btn" aria-label="新建对话">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
@@ -388,8 +388,8 @@ function AgentPageInner() {
       {/* Search */}
       <div className="ob-sidebar-search">
         <div className="ob-sidebar-search-wrap">
-          <span className="ob-sidebar-search-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span className="ob-sidebar-search-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           </span>
           <input
             type="text"
@@ -423,7 +423,7 @@ function AgentPageInner() {
             </div>
           ))
         ) : (
-          <p className="ob-sidebar-empty">暂无对话<br />输入需求开始</p>
+          <p className="ob-sidebar-empty">暂无历史对话</p>
         )}
       </div>
 
@@ -488,6 +488,7 @@ function AgentPageInner() {
             </span>
             <button
               onClick={handleNewChat}
+              aria-label="新建对话"
               style={{ padding: '4px 8px', borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-secondary)' }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -576,7 +577,7 @@ function AgentPageInner() {
           ) : (
             /* ── Welcome state ── */
             <div className="ob-welcome agent-welcome">
-              <div className="ob-welcome-body agent-welcome-body" style={{ paddingTop: 88 }}>
+              <div className="ob-welcome-body agent-welcome-body">
                 <h1 className="ob-welcome-title agent-welcome-title">
                   把任务交给 <span style={{ color: 'var(--accent)' }}>ORANGEBENCH</span>
                 </h1>
@@ -616,9 +617,9 @@ function AgentPageInner() {
                 {/* Capability cards */}
                 <div className="ob-cap-cards">
                   {[
-                    { icon: 'office', title: 'Office', desc: '文档、PPT、邮件自动生成' },
-                    { icon: 'finance', title: 'Finance', desc: '财务分析、报表、预算方案' },
-                    { icon: 'coding', title: 'Coding', desc: '代码生成、调试、技术方案' },
+                    { icon: 'office', title: 'Office', desc: '文档、PPT、邮件' },
+                    { icon: 'finance', title: 'Finance', desc: '报表、分析、预测' },
+                    { icon: 'coding', title: 'Coding', desc: '代码、调试、方案' },
                   ].map((cap) => (
                     <div key={cap.icon} className="ob-cap-card">
                       <div className="ob-cap-card-icon">
