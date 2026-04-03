@@ -1,10 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
 type Step = 'choose' | 'email' | 'code';
 
-export default function LoginPage() {
+function LoginPageInner() {
   const [step, setStep] = useState<Step>('choose');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -12,11 +13,29 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState(0);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
+  const prefillEmail = searchParams.get('email');
 
   useEffect(() => {
     const hasSession = document.cookie.includes('ob-session=') || document.cookie.includes('ob-user-id=');
-    if (hasSession) router.replace('/agent');
-  }, [router]);
+    if (hasSession) {
+      // If redirect is an invite link, go there; otherwise go to agent
+      if (redirectUrl && redirectUrl.startsWith('/invite/')) {
+        router.replace(redirectUrl);
+      } else {
+        router.replace('/agent');
+      }
+    }
+  }, [router, redirectUrl]);
+
+  // Prefill email from invite link
+  useEffect(() => {
+    if (prefillEmail && !email) {
+      setEmail(prefillEmail);
+      setStep('email');
+    }
+  }, [prefillEmail, email]);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -69,7 +88,12 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || '验证失败'); return; }
-      router.replace('/agent');
+      // Redirect to invite page if that's where we came from, otherwise /agent
+      if (redirectUrl && redirectUrl.startsWith('/invite/')) {
+        router.replace(redirectUrl);
+      } else {
+        router.replace('/agent');
+      }
     } catch { setError('网络错误，请重试'); }
     finally { setLoading(false); }
   }
@@ -147,5 +171,13 @@ export default function LoginPage() {
         <p className="text-zinc-600 text-xs text-center mt-6">登录即表示同意服务条款和隐私政策</p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100dvh', background: '#0a0a0a' }} />}>
+      <LoginPageInner />
+    </Suspense>
   );
 }

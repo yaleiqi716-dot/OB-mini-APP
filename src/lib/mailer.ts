@@ -88,3 +88,39 @@ export async function sendVerificationCode(email: string, code: string): Promise
   console.error('[Mailer] No mailer configured')
   return false
 }
+
+// General-purpose HTML email (for invites etc.)
+export async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY
+  if (apiKey) {
+    try {
+      const resend = new Resend(apiKey)
+      const from = process.env.RESEND_FROM || 'ORANGEBENCH <onboarding@resend.dev>'
+      const { error } = await resend.emails.send({ from, to: [to], subject, html })
+      if (error) { console.error('[Mailer] Resend error:', error.message); return false }
+      console.log('[Mailer] Email sent via Resend ->', to)
+      return true
+    } catch (err) { console.error('[Mailer] Resend exception:', (err as Error).message) }
+  }
+  const host = process.env.SMTP_HOST
+  const user = process.env.SMTP_USER
+  const pass = process.env.SMTP_PASS
+  if (host && user && pass) {
+    try {
+      const transport = nodemailer.createTransport({
+        host, port: parseInt(process.env.SMTP_PORT || '465'),
+        secure: process.env.SMTP_PORT === '465' || !process.env.SMTP_PORT,
+        auth: { user, pass },
+        tls: { servername: process.env.SMTP_TLS_SERVERNAME || undefined },
+      })
+      await transport.sendMail({
+        from: process.env.SMTP_FROM || `ORANGEBENCH <${user}>`,
+        to, subject, html,
+      })
+      console.log('[Mailer] Email sent via SMTP ->', to)
+      return true
+    } catch (err) { console.error('[Mailer] SMTP error:', (err as Error).message) }
+  }
+  console.error('[Mailer] No mailer configured for general email')
+  return false
+}
