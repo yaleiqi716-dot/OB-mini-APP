@@ -1,15 +1,35 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { NavHeader } from '@/components/NavHeader';
+
+type Section = 'profile' | 'preferences' | 'notifications' | 'security' | 'integrations';
+
+const NAV_ITEMS: { id: Section; label: string; icon: string }[] = [
+  { id: 'profile', label: '个人资料', icon: 'user' },
+  { id: 'preferences', label: '偏好设置', icon: 'sliders' },
+  { id: 'notifications', label: '通知', icon: 'bell' },
+  { id: 'security', label: '安全', icon: 'shield' },
+  { id: 'integrations', label: '连接与集成', icon: 'plug' },
+];
+
+function NavIcon({ name }: { name: string }) {
+  const s = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (name === 'user') return <svg {...s}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+  if (name === 'sliders') return <svg {...s}><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>;
+  if (name === 'bell') return <svg {...s}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>;
+  if (name === 'shield') return <svg {...s}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>;
+  if (name === 'plug') return <svg {...s}><path d="M12 2v6"/><path d="M6 6v6a6 6 0 0 0 12 0V6"/><path d="M8 2v4"/><path d="M16 2v4"/><path d="M12 18v4"/></svg>;
+  return null;
+}
 
 export default function SettingsPage() {
   const router = useRouter();
   const [userId, setUserId] = useState('');
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [section, setSection] = useState<Section>('profile');
+  const [toast, setToast] = useState<string | null>(null);
 
-  function showToast(msg: string, ok = true) {
-    setToast({ msg, ok });
+  function showToast(msg: string) {
+    setToast(msg);
     setTimeout(() => setToast(null), 3000);
   }
 
@@ -20,108 +40,364 @@ export default function SettingsPage() {
 
   function handleLogout() {
     document.cookie = 'ob-user-id=; path=/; max-age=0';
+    document.cookie = 'ob-session=; path=/; max-age=0';
     router.replace('/login');
   }
 
-  function handleClearData() {
-    showToast('本地缓存已清除', true);
+  const headerBar = (
+    <header style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      height: 52, padding: '0 32px',
+      borderBottom: '1px solid #E7E5E1',
+      background: '#F7F7F4', flexShrink: 0,
+    }}>
+      <a href="/agent" style={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}>
+        <span style={{ color: '#F97316', fontWeight: 700, fontSize: 15 }}>ORANGE</span>
+        <span style={{ color: '#171717', fontWeight: 700, fontSize: 15 }}>BENCH</span>
+      </a>
+      <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <a href="/agent" style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8 }}>Agent</a>
+        <a href="/tasks" style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8 }}>Tasks</a>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>Settings</span>
+      </nav>
+    </header>
+  );
+
+  // ── Shared styles ──
+  const cardStyle: React.CSSProperties = {
+    background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 16, padding: 20,
+  };
+  const sectionTitle: React.CSSProperties = {
+    fontSize: 17, fontWeight: 600, color: '#171717', margin: '0 0 4px',
+  };
+  const sectionDesc: React.CSSProperties = {
+    fontSize: 13, color: '#6B7280', margin: '0 0 16px',
+  };
+  const rowStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    minHeight: 56, padding: '12px 0',
+  };
+  const rowBorder: React.CSSProperties = {
+    borderBottom: '1px solid #F0EDE8',
+  };
+  const labelStyle: React.CSSProperties = {
+    fontSize: 14, fontWeight: 500, color: '#171717',
+  };
+  const sublabelStyle: React.CSSProperties = {
+    fontSize: 12, color: '#9CA3AF', marginTop: 2,
+  };
+  const valueStyle: React.CSSProperties = {
+    fontSize: 14, color: '#6B7280',
+  };
+  const actionBtnStyle: React.CSSProperties = {
+    height: 30, padding: '0 12px', borderRadius: 9999,
+    fontSize: 12, fontWeight: 500,
+    border: '1px solid #E7E5E1', background: '#FFFFFF',
+    color: '#6B7280', cursor: 'pointer',
+    display: 'inline-flex', alignItems: 'center',
+    transition: 'border-color .2s, background .2s, color .2s',
+  };
+  const hoverIn = (e: React.MouseEvent<HTMLElement>) => {
+    e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)';
+    e.currentTarget.style.background = 'rgba(255,122,26,0.06)';
+    e.currentTarget.style.color = '#F97316';
+  };
+  const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
+    e.currentTarget.style.borderColor = '#E7E5E1';
+    e.currentTarget.style.background = '#FFFFFF';
+    e.currentTarget.style.color = '#6B7280';
+  };
+  const placeholderTag: React.CSSProperties = {
+    fontSize: 11, fontWeight: 500, color: '#9CA3AF',
+    background: '#F7F7F4', borderRadius: 9999, padding: '2px 10px',
+  };
+  const switchStyle = (on: boolean): React.CSSProperties => ({
+    width: 44, height: 24, borderRadius: 12, border: 'none',
+    background: on ? '#F97316' : '#D5D3CE', cursor: 'pointer',
+    position: 'relative', transition: 'background .2s',
+    flexShrink: 0,
+  });
+  const switchDot = (on: boolean): React.CSSProperties => ({
+    position: 'absolute', top: 2, left: on ? 22 : 2,
+    width: 20, height: 20, borderRadius: '50%', background: '#FFFFFF',
+    transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+  });
+
+  // ── Section renderers ──
+  function renderProfile() {
+    return (
+      <div style={cardStyle}>
+        <p style={sectionTitle}>个人资料</p>
+        <p style={sectionDesc}>管理你的基本信息</p>
+
+        <div style={{ ...rowStyle, ...rowBorder }}>
+          <div>
+            <div style={labelStyle}>头像</div>
+          </div>
+          <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#F97316', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>
+            {userId ? userId.slice(0, 1).toUpperCase() : 'U'}
+          </div>
+        </div>
+
+        <div style={{ ...rowStyle, ...rowBorder }}>
+          <div>
+            <div style={labelStyle}>邮箱</div>
+            <div style={sublabelStyle}>登录账号</div>
+          </div>
+          <span style={valueStyle}>{userId || '未设置'}</span>
+        </div>
+
+        <div style={{ ...rowStyle, ...rowBorder }}>
+          <div>
+            <div style={labelStyle}>昵称</div>
+            <div style={sublabelStyle}>显示名称</div>
+          </div>
+          <span style={placeholderTag}>即将开放</span>
+        </div>
+
+        <div style={rowStyle}>
+          <div>
+            <div style={labelStyle}>当前套餐</div>
+            <div style={sublabelStyle}>你的账户类型</div>
+          </div>
+          <span style={valueStyle}>Free</span>
+        </div>
+      </div>
+    );
   }
 
-  return (
-    <div className="h-[100dvh] flex flex-col bg-surface-primary">
-      <NavHeader />
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="max-w-2xl mx-auto px-4 md:px-6 py-8 space-y-6">
-          <h1 className="text-xl font-semibold text-content-primary">设置</h1>
+  function renderPreferences() {
+    return (
+      <div style={cardStyle}>
+        <p style={sectionTitle}>偏好设置</p>
+        <p style={sectionDesc}>自定义你的使用体验</p>
 
-          {/* Account section */}
-          <div className="rounded-2xl border border-border bg-surface-secondary overflow-hidden">
-            <div className="px-5 py-3 border-b border-border/50">
-              <h2 className="text-xs font-semibold text-content-tertiary uppercase tracking-wide">账户</h2>
+        <div style={{ ...rowStyle, ...rowBorder }}>
+          <div>
+            <div style={labelStyle}>默认模型</div>
+            <div style={sublabelStyle}>Agent 执行时使用的 AI 模型</div>
+          </div>
+          <span style={placeholderTag}>配置后可用</span>
+        </div>
+
+        <div style={{ ...rowStyle, ...rowBorder }}>
+          <div>
+            <div style={labelStyle}>结果展示偏好</div>
+            <div style={sublabelStyle}>控制结果卡的默认显示方式</div>
+          </div>
+          <span style={placeholderTag}>即将开放</span>
+        </div>
+
+        <div style={{ ...rowStyle, ...rowBorder }}>
+          <div>
+            <div style={labelStyle}>语言偏好</div>
+            <div style={sublabelStyle}>界面与 AI 回复语言</div>
+          </div>
+          <span style={valueStyle}>简体中文</span>
+        </div>
+
+        <div style={rowStyle}>
+          <div>
+            <div style={labelStyle}>主题模式</div>
+            <div style={sublabelStyle}>浅色 / 深色 / 跟随系统</div>
+          </div>
+          <span style={placeholderTag}>即将开放</span>
+        </div>
+      </div>
+    );
+  }
+
+  function renderNotifications() {
+    const [taskDone, setTaskDone] = useState(true);
+    const [taskFailed, setTaskFailed] = useState(true);
+    const [newFeature, setNewFeature] = useState(false);
+
+    return (
+      <div style={cardStyle}>
+        <p style={sectionTitle}>通知</p>
+        <p style={sectionDesc}>控制你收到的提醒</p>
+
+        <div style={{ ...rowStyle, ...rowBorder }}>
+          <div>
+            <div style={labelStyle}>任务完成通知</div>
+            <div style={sublabelStyle}>任务执行完成后提醒你</div>
+          </div>
+          <button style={switchStyle(taskDone)} onClick={() => { setTaskDone(!taskDone); showToast(taskDone ? '已关闭' : '已开启'); }} aria-label="任务完成通知">
+            <span style={switchDot(taskDone)} />
+          </button>
+        </div>
+
+        <div style={{ ...rowStyle, ...rowBorder }}>
+          <div>
+            <div style={labelStyle}>失败任务提醒</div>
+            <div style={sublabelStyle}>任务执行失败时提醒你</div>
+          </div>
+          <button style={switchStyle(taskFailed)} onClick={() => { setTaskFailed(!taskFailed); showToast(taskFailed ? '已关闭' : '已开启'); }} aria-label="失败任务提醒">
+            <span style={switchDot(taskFailed)} />
+          </button>
+        </div>
+
+        <div style={rowStyle}>
+          <div>
+            <div style={labelStyle}>新功能通知</div>
+            <div style={sublabelStyle}>产品更新与新功能上线提醒</div>
+          </div>
+          <button style={switchStyle(newFeature)} onClick={() => { setNewFeature(!newFeature); showToast(newFeature ? '已关闭' : '已开启'); }} aria-label="新功能通知">
+            <span style={switchDot(newFeature)} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function renderSecurity() {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={cardStyle}>
+          <p style={sectionTitle}>安全</p>
+          <p style={sectionDesc}>管理你的登录与安全设置</p>
+
+          <div style={{ ...rowStyle, ...rowBorder }}>
+            <div>
+              <div style={labelStyle}>登录邮箱</div>
+              <div style={sublabelStyle}>用于接收验证码</div>
             </div>
-            <div className="divide-y divide-border/30">
-              <div className="flex items-center justify-between px-5 py-4">
-                <div>
-                  <div className="text-sm font-medium text-content-primary">当前用户</div>
-                  <div className="text-xs text-content-tertiary mt-0.5">{userId || '未登录'}</div>
-                </div>
-              </div>
-              <a href="/profile" className="flex items-center justify-between px-5 py-4 hover:bg-surface-tertiary transition-colors">
-                <div className="text-sm text-content-primary">个人资料</div>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-content-tertiary">
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
-              </a>
-              <a href="/billing" className="flex items-center justify-between px-5 py-4 hover:bg-surface-tertiary transition-colors">
-                <div className="text-sm text-content-primary">充值与套餐</div>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-content-tertiary">
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
-              </a>
-            </div>
+            <span style={valueStyle}>{userId || '未设置'}</span>
           </div>
 
-          {/* Data section */}
-          <div className="rounded-2xl border border-border bg-surface-secondary overflow-hidden">
-            <div className="px-5 py-3 border-b border-border/50">
-              <h2 className="text-xs font-semibold text-content-tertiary uppercase tracking-wide">数据</h2>
+          <div style={{ ...rowStyle, ...rowBorder }}>
+            <div>
+              <div style={labelStyle}>验证方式</div>
+              <div style={sublabelStyle}>当前使用邮箱验证码登录</div>
             </div>
-            <div className="divide-y divide-border/30">
-              <button
-                onClick={handleClearData}
-                className="w-full flex items-center justify-between px-5 py-4 hover:bg-surface-tertiary transition-colors text-left"
-              >
-                <div className="text-sm text-content-primary">清除本地缓存</div>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-content-tertiary">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                  <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                </svg>
-              </button>
-            </div>
+            <span style={valueStyle}>邮箱验证码</span>
           </div>
 
-          {/* About section */}
-          <div className="rounded-2xl border border-border bg-surface-secondary overflow-hidden">
-            <div className="px-5 py-3 border-b border-border/50">
-              <h2 className="text-xs font-semibold text-content-tertiary uppercase tracking-wide">关于</h2>
-            </div>
-            <div className="divide-y divide-border/30">
-              <div className="flex items-center justify-between px-5 py-4">
-                <div className="text-sm text-content-primary">版本</div>
-                <div className="text-sm text-content-tertiary">1.0.0</div>
-              </div>
-              <div className="flex items-center justify-between px-5 py-4">
-                <div className="text-sm text-content-primary">产品</div>
-                <div className="text-sm text-content-tertiary">ORANGEBENCH</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Danger zone */}
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/5 overflow-hidden">
-            <div className="px-5 py-3 border-b border-red-500/20">
-              <h2 className="text-xs font-semibold text-red-400 uppercase tracking-wide">危险操作</h2>
+          <div style={rowStyle}>
+            <div>
+              <div style={labelStyle}>登出所有设备</div>
+              <div style={sublabelStyle}>清除所有登录会话</div>
             </div>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-5 py-4 hover:bg-red-500/10 transition-colors text-left"
+              style={{ ...actionBtnStyle, color: '#B91C1C' }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; e.currentTarget.style.background = 'rgba(239,68,68,0.06)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.background = '#FFFFFF'; }}
+              aria-label="登出所有设备"
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-              <span className="text-sm text-red-400">退出登录</span>
+              退出登录
             </button>
           </div>
         </div>
       </div>
+    );
+  }
 
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-flow-in">
-          <div className={`px-4 py-2 rounded-lg text-white text-sm shadow-lg ${toast.ok ? 'bg-green-600/90' : 'bg-red-600/90'}`}>
-            {toast.msg}
+  function renderIntegrations() {
+    return (
+      <div style={cardStyle}>
+        <p style={sectionTitle}>连接与集成</p>
+        <p style={sectionDesc}>管理第三方服务连接</p>
+
+        <div style={{ ...rowStyle, ...rowBorder }}>
+          <div>
+            <div style={labelStyle}>已连接服务</div>
+            <div style={sublabelStyle}>当前已接入的外部服务</div>
           </div>
+          <span style={placeholderTag}>当前未启用</span>
+        </div>
+
+        <div style={{ ...rowStyle, ...rowBorder }}>
+          <div>
+            <div style={labelStyle}>第三方能力状态</div>
+            <div style={sublabelStyle}>图片、视频、搜索等能力</div>
+          </div>
+          <span style={placeholderTag}>配置后可用</span>
+        </div>
+
+        <div style={rowStyle}>
+          <div style={{ flex: 1 }}>
+            <div style={labelStyle}>更多集成</div>
+            <div style={{ fontSize: 13, color: '#7A7A7A', marginTop: 4, lineHeight: 1.5 }}>
+              Zapier、Slack、飞书等更多集成即将开放，敬请期待。
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const sectionRenderers: Record<Section, () => React.ReactNode> = {
+    profile: renderProfile,
+    preferences: renderPreferences,
+    notifications: renderNotifications,
+    security: renderSecurity,
+    integrations: renderIntegrations,
+  };
+
+  return (
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
+      {headerBar}
+
+      <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px' }}>
+
+          {/* Top area */}
+          <div style={{ marginBottom: 24 }}>
+            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', lineHeight: 1.2, margin: '0 0 8px' }}>Settings</h1>
+            <p style={{ fontSize: 14, color: '#7A7A7A', margin: 0 }}>管理你的账号、偏好与产品设置</p>
+          </div>
+
+          {/* Two-column layout */}
+          <div style={{ display: 'flex', gap: 24 }}>
+            {/* Left nav */}
+            <nav style={{ width: 220, flexShrink: 0 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, position: 'sticky', top: 40 }}>
+                {NAV_ITEMS.map(item => {
+                  const active = section === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setSection(item.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        height: 40, padding: '0 12px', borderRadius: 12,
+                        fontSize: 14, fontWeight: 500, border: 'none',
+                        background: active ? 'rgba(255,122,26,0.08)' : 'transparent',
+                        color: active ? '#171717' : '#6B7280',
+                        cursor: 'pointer',
+                        borderLeft: active ? '2px solid #F97316' : '2px solid transparent',
+                        transition: 'all .2s',
+                        width: '100%', textAlign: 'left',
+                      }}
+                      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = '#FFFFFF'; }}
+                      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <NavIcon name={item.icon} />
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+
+            {/* Right content */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {sectionRenderers[section]()}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className="animate-flow-in" style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 60, padding: '10px 20px', borderRadius: 9999,
+          background: 'rgba(34,197,94,0.92)', color: '#fff', fontSize: 13,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.12)', whiteSpace: 'nowrap', pointerEvents: 'none',
+        }}>
+          {toast}
         </div>
       )}
     </div>
