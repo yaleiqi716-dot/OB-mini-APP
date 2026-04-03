@@ -263,7 +263,7 @@ export default function ReviewPage() {
                     key={t.id}
                     style={{
                       background: '#FFFFFF', border: '1px solid #E7E5E1',
-                      borderRadius: 16, padding: 18, minHeight: 120,
+                      borderRadius: 16, padding: 18, minHeight: 124,
                       transition: 'transform .2s, box-shadow .2s',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.05)'; }}
@@ -305,7 +305,7 @@ export default function ReviewPage() {
                         {/* Running status */}
                         {running && (
                           <p style={{ fontSize: 13, color: '#C2410C', marginTop: 8 }}>
-                            {STATUS_LABEL[t.status] || '执行中'}...
+                            AI 正在继续处理这项任务
                           </p>
                         )}
 
@@ -317,8 +317,8 @@ export default function ReviewPage() {
                         )}
                       </div>
 
-                      {/* Right: actions */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0, justifyContent: 'flex-start', paddingTop: 2 }}>
+                      {/* Right: actions — pinned bottom-right */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0, justifyContent: 'flex-end' }}>
                         {completed && (
                           <>
                             <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看结果</a>
