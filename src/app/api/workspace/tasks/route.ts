@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
+import { notifyTaskAssigned } from '@/services/wecom';
 
 // Helper: get user's workspace membership
 async function getMembership(userId: string) {
@@ -88,6 +89,12 @@ export async function POST(req: NextRequest) {
         businessStatus: assigneeId ? 'assigned' : 'draft',
       },
     });
+
+    // Notify via WeCom if assigned
+    if (assigneeId && task.id) {
+      const owner = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
+      notifyTaskAssigned(membership.workspaceId, title, owner?.name || owner?.email || '管理员', task.id).catch(() => {});
+    }
 
     return NextResponse.json(task);
   } catch (error) {

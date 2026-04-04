@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
+import { notifyTaskCompleted, notifyTaskRevision } from '@/services/wecom';
 
 // POST — Owner reviews: approve or request revision
 export async function POST(
@@ -34,6 +35,7 @@ export async function POST(
         where: { id: params.id },
         data: { businessStatus: 'completed' },
       });
+      notifyTaskCompleted(task.workspaceId, task.title, task.id).catch(() => {});
       return NextResponse.json({ success: true, task: updated });
     }
 
@@ -46,9 +48,10 @@ export async function POST(
         data: {
           businessStatus: 'revision',
           feedback: feedback.trim(),
-          submissionSummary: null, // clear previous submission
+          submissionSummary: null,
         },
       });
+      notifyTaskRevision(task.workspaceId, task.title, feedback.trim(), task.id).catch(() => {});
       return NextResponse.json({ success: true, task: updated });
     }
 

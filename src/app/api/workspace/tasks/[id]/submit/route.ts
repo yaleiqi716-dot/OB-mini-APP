@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
+import { notifyTaskSubmitted } from '@/services/wecom';
 
 // POST — Member submits deliverable
 export async function POST(
@@ -55,6 +56,10 @@ export async function POST(
         submissionSummary: submissionSummary?.trim() || null,
       },
     });
+
+    // WeCom notification
+    const member = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
+    notifyTaskSubmitted(task.workspaceId, task.title, member?.name || member?.email || '成员', task.id).catch(() => {});
 
     return NextResponse.json({ success: true, task: updated });
   } catch (error) {

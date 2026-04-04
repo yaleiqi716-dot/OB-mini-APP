@@ -1,0 +1,286 @@
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+
+interface AgentTaskRef { id: string; title: string; status: string; conversationId: string | null; createdAt: string; hasResult: boolean; }
+interface LinkRef { id: string; agentTaskId: string; conversationId: string | null; purpose: string; submittedAt: string | null; }
+interface WsTaskDetail {
+  id: string; title: string; description: string | null; businessStatus: string;
+  priority: number; createdBy: string; assigneeId: string | null; dueAt: string | null;
+  feedback: string | null; submissionSummary: string | null;
+  createdAt: string; updatedAt: string; userRole: string;
+  agentTasks: AgentTaskRef[]; links: LinkRef[];
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  draft: '草稿', assigned: '已分配', in_progress: '进行中',
+  submitted: '已提交', revision: '需修改', completed: '已完成',
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const colors: Record<string, { bg: string; color: string }> = {
+    draft: { bg: 'rgba(156,163,175,0.10)', color: '#6B7280' },
+    assigned: { bg: 'rgba(255,122,26,0.10)', color: '#C2410C' },
+    in_progress: { bg: 'rgba(255,122,26,0.10)', color: '#C2410C' },
+    submitted: { bg: 'rgba(59,130,246,0.10)', color: '#1D4ED8' },
+    revision: { bg: 'rgba(239,68,68,0.10)', color: '#B91C1C' },
+    completed: { bg: 'rgba(16,185,129,0.10)', color: '#047857' },
+  };
+  const c = colors[status] || colors.draft;
+  return <span style={{ display: 'inline-flex', alignItems: 'center', height: 24, padding: '0 12px', fontSize: 12, fontWeight: 500, borderRadius: 9999, background: c.bg, color: c.color }}>{STATUS_LABEL[status] || status}</span>;
+}
+
+export default function WorkspaceTaskDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const taskId = params.id as string;
+
+  const [task, setTask] = useState<WsTaskDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [submitSummary, setSubmitSummary] = useState('');
+  const [reviewFeedback, setReviewFeedback] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
+
+  const userId = (() => { const m = document.cookie.match(/ob-user-id=([^;]+)/); return m?.[1] ? decodeURIComponent(m[1]) : ''; })();
+
+  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 3000); }
+
+  const loadTask = useCallback(() => {
+    setLoading(true);
+    fetch(`/api/workspace/tasks/${taskId}`)
+      .then(r => r.json())
+      .then(d => { if (d?.id) setTask(d); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [taskId]);
+
+  useEffect(() => {
+    if (!userId) { router.replace('/login'); return; }
+    loadTask();
+  }, [userId, router, loadTask]);
+
+  const isOwner = task?.userRole === 'owner';
+  const isAssignee = task?.assigneeId === userId;
+  const canExecute = isAssignee && ['assigned', 'in_progress', 'revision'].includes(task?.businessStatus || '');
+  const canSubmit = isAssignee && ['in_progress', 'revision'].includes(task?.businessStatus || '') && (task?.agentTasks || []).some(t => t.status === 'completed');
+  const canReview = isOwner && task?.businessStatus === 'submitted';
+
+  async function handleUseAgent() {
+    setActionLoading('agent');
+    try {
+      const res = await fetch(`/api/workspace/tasks/${taskId}/agent`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success && data.redirectUrl) {
+        router.push(data.redirectUrl);
+      } else {
+        showToast(data.error || '创建 Agent 任务失败');
+      }
+    } catch { showToast('网络错误'); }
+    finally { setActionLoading(null); }
+  }
+
+  async function handleSubmit() {
+    setActionLoading('submit');
+    try {
+      const res = await fetch(`/api/workspace/tasks/${taskId}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionSummary: submitSummary.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (data.success) { showToast('已提交，等待审核'); loadTask(); setSubmitSummary(''); }
+      else showToast(data.error || '提交失败');
+    } catch { showToast('网络错误'); }
+    finally { setActionLoading(null); }
+  }
+
+  async function handleReview(action: 'approve' | 'revision') {
+    if (action === 'revision' && !reviewFeedback.trim()) { showToast('请填写修改意见'); return; }
+    setActionLoading(action);
+    try {
+      const res = await fetch(`/api/workspace/tasks/${taskId}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, feedback: reviewFeedback.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(action === 'approve' ? '已通过' : '已退回修改');
+        loadTask(); setReviewFeedback('');
+      } else showToast(data.error || '操作失败');
+    } catch { showToast('网络错误'); }
+    finally { setActionLoading(null); }
+  }
+
+  const cardStyle: React.CSSProperties = { background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 16, padding: 20, marginBottom: 16 };
+  const actionBtn: React.CSSProperties = { height: 36, padding: '0 18px', borderRadius: 12, fontSize: 14, fontWeight: 500, border: 'none', cursor: 'pointer', transition: 'background .2s' };
+
+  if (loading || !task) {
+    return (
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
+        <header style={{ display: 'flex', alignItems: 'center', height: 52, padding: '0 32px', borderBottom: '1px solid #E7E5E1', background: '#F7F7F4', flexShrink: 0 }}>
+          <a href="/workspace" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#6B7280', textDecoration: 'none' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            返回
+          </a>
+        </header>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 20, height: 20, border: '2px solid #F97316', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
+      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 52, padding: '0 32px', borderBottom: '1px solid #E7E5E1', background: '#F7F7F4', flexShrink: 0 }}>
+        <a href="/workspace" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#6B7280', textDecoration: 'none' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          返回工作区
+        </a>
+        <StatusBadge status={task.businessStatus} />
+      </header>
+
+      <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
+        <div style={{ maxWidth: 780, margin: '0 auto', padding: '32px 32px 60px' }}>
+
+          {/* Title + meta */}
+          <div style={{ marginBottom: 20 }}>
+            <h1 style={{ fontSize: 24, fontWeight: 600, color: '#171717', margin: '0 0 8px' }}>{task.title}</h1>
+            <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#9CA3AF' }}>
+              <span>创建于 {new Date(task.createdAt).toLocaleDateString('zh-CN')}</span>
+              {task.dueAt && <span>截止 {new Date(task.dueAt).toLocaleDateString('zh-CN')}</span>}
+              {task.priority >= 2 && <span style={{ color: '#B91C1C', fontWeight: 500 }}>紧急</span>}
+            </div>
+          </div>
+
+          {/* Description */}
+          {task.description && (
+            <div style={cardStyle}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#9CA3AF', margin: '0 0 8px' }}>任务描述</p>
+              <p style={{ fontSize: 14, color: '#404040', lineHeight: 1.75, margin: 0, whiteSpace: 'pre-wrap' }}>{task.description}</p>
+            </div>
+          )}
+
+          {/* Revision feedback */}
+          {task.feedback && task.businessStatus === 'revision' && (
+            <div style={{ ...cardStyle, background: '#FFF7F5', borderColor: '#F5D0C5' }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#C2410C', margin: '0 0 8px' }}>修改意见</p>
+              <p style={{ fontSize: 14, color: '#404040', lineHeight: 1.6, margin: 0 }}>{task.feedback}</p>
+            </div>
+          )}
+
+          {/* Agent execution history */}
+          {task.agentTasks.length > 0 && (
+            <div style={cardStyle}>
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#171717', margin: '0 0 12px' }}>执行记录</p>
+              {task.agentTasks.map((at, i) => {
+                const link = task.links.find(l => l.agentTaskId === at.id);
+                return (
+                  <div key={at.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < task.agentTasks.length - 1 ? '1px solid #F0EDE8' : 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: at.status === 'completed' ? '#22c55e' : at.status === 'failed' ? '#ef4444' : '#F97316', flexShrink: 0 }} />
+                      <span style={{ fontSize: 14, color: '#171717' }}>{at.title || 'Agent 任务'}</span>
+                      {link?.purpose === 'final' && <span style={{ fontSize: 11, color: '#047857', fontWeight: 500 }}>已提交</span>}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 12, color: '#9CA3AF' }}>{new Date(at.createdAt).toLocaleDateString('zh-CN')}</span>
+                      {at.conversationId && (
+                        <a href={`/agent?conversationId=${at.conversationId}`} style={{ height: 26, padding: '0 10px', borderRadius: 9999, fontSize: 12, fontWeight: 500, border: '1px solid #E7E5E1', background: '#FFFFFF', color: '#6B7280', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>查看</a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Submission summary */}
+          {task.submissionSummary && task.businessStatus === 'submitted' && (
+            <div style={cardStyle}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#9CA3AF', margin: '0 0 8px' }}>交付说明</p>
+              <p style={{ fontSize: 14, color: '#404040', lineHeight: 1.6, margin: 0 }}>{task.submissionSummary}</p>
+            </div>
+          )}
+
+          {/* ── Action area ── */}
+          <div style={cardStyle}>
+
+            {/* Member: Use Agent */}
+            {canExecute && (
+              <div style={{ marginBottom: 16 }}>
+                <button onClick={handleUseAgent} disabled={actionLoading === 'agent'}
+                  style={{ ...actionBtn, background: '#F97316', color: '#fff', opacity: actionLoading === 'agent' ? 0.5 : 1 }}>
+                  {actionLoading === 'agent' ? '创建中...' : '用 Agent 执行'}
+                </button>
+              </div>
+            )}
+
+            {/* Member: Submit */}
+            {canSubmit && (
+              <div style={{ borderTop: canExecute ? '1px solid #F0EDE8' : 'none', paddingTop: canExecute ? 16 : 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 500, color: '#171717', margin: '0 0 8px' }}>提交交付物</p>
+                <textarea value={submitSummary} onChange={e => setSubmitSummary(e.target.value)}
+                  placeholder="简要说明你的交付内容（可选）" rows={2}
+                  style={{ width: '100%', borderRadius: 12, border: '1px solid #E7E5E1', padding: '10px 14px', fontSize: 14, color: '#171717', outline: 'none', resize: 'vertical', minHeight: 60, fontFamily: 'inherit', marginBottom: 10 }}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#F97316')} onBlur={e => (e.currentTarget.style.borderColor = '#E7E5E1')} />
+                <button onClick={handleSubmit} disabled={actionLoading === 'submit'}
+                  style={{ ...actionBtn, background: '#171717', color: '#fff', opacity: actionLoading === 'submit' ? 0.5 : 1 }}>
+                  {actionLoading === 'submit' ? '提交中...' : '提交交付物'}
+                </button>
+              </div>
+            )}
+
+            {/* Owner: Review */}
+            {canReview && (
+              <div>
+                <p style={{ fontSize: 15, fontWeight: 600, color: '#171717', margin: '0 0 12px' }}>审核</p>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+                  <button onClick={() => handleReview('approve')} disabled={!!actionLoading}
+                    style={{ ...actionBtn, background: '#047857', color: '#fff', opacity: actionLoading ? 0.5 : 1 }}>
+                    {actionLoading === 'approve' ? '处理中...' : '通过'}
+                  </button>
+                </div>
+                <div>
+                  <textarea value={reviewFeedback} onChange={e => setReviewFeedback(e.target.value)}
+                    placeholder="填写修改意见后点击退回..." rows={2}
+                    style={{ width: '100%', borderRadius: 12, border: '1px solid #E7E5E1', padding: '10px 14px', fontSize: 14, color: '#171717', outline: 'none', resize: 'vertical', minHeight: 60, fontFamily: 'inherit', marginBottom: 10 }}
+                    onFocus={e => (e.currentTarget.style.borderColor = '#F97316')} onBlur={e => (e.currentTarget.style.borderColor = '#E7E5E1')} />
+                  <button onClick={() => handleReview('revision')} disabled={!!actionLoading || !reviewFeedback.trim()}
+                    style={{ ...actionBtn, background: '#FFFFFF', border: '1px solid rgba(185,28,28,0.18)', color: '#B91C1C', opacity: (actionLoading || !reviewFeedback.trim()) ? 0.5 : 1 }}>
+                    {actionLoading === 'revision' ? '处理中...' : '退回修改'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Completed */}
+            {task.businessStatus === 'completed' && (
+              <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                <span style={{ fontSize: 14, color: '#047857', fontWeight: 500 }}>任务已完成</span>
+              </div>
+            )}
+
+            {/* No actions available */}
+            {!canExecute && !canSubmit && !canReview && task.businessStatus !== 'completed' && task.businessStatus !== 'submitted' && (
+              <p style={{ fontSize: 14, color: '#9CA3AF', textAlign: 'center' }}>等待任务负责人处理</p>
+            )}
+
+            {/* Submitted waiting for owner */}
+            {task.businessStatus === 'submitted' && !canReview && (
+              <p style={{ fontSize: 14, color: '#1D4ED8', textAlign: 'center' }}>已提交，等待审核</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {toast && (
+        <div className="animate-flow-in" style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 60, padding: '10px 20px', borderRadius: 9999, background: 'rgba(34,197,94,0.92)', color: '#fff', fontSize: 13, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}

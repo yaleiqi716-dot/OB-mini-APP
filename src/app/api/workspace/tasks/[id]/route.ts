@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
+import { notifyTaskAssigned } from '@/services/wecom';
 
 // GET — Task detail with linked agent tasks
 export async function GET(
@@ -109,6 +110,12 @@ export async function PATCH(
       where: { id: params.id },
       data,
     });
+
+    // Notify if newly assigned
+    if (body.assigneeId && data.businessStatus === 'assigned') {
+      const owner = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
+      notifyTaskAssigned(task.workspaceId, task.title, owner?.name || owner?.email || '管理员', task.id).catch(() => {});
+    }
 
     return NextResponse.json(updated);
   } catch (error) {
