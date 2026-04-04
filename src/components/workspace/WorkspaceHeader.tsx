@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { MAIN_NAV } from '@/lib/nav';
 
 const WS_NAV = [
   { href: '/workspace', label: '看板' },
@@ -28,37 +29,18 @@ export function WorkspaceHeader() {
         <span style={{ color: '#171717', fontWeight: 700, fontSize: 15 }}>BENCH</span>
       </a>
       <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        {/* Global nav */}
-        {[
-          { href: '/agent', label: 'AGENT' },
-          { href: '/tasks', label: '任务' },
-          { href: '/dashboard', label: '总览' },
-          { href: '/review', label: '处理' },
-        ].map(n => (
-          <a key={n.href} href={n.href} style={{
-            fontSize: 13, textDecoration: 'none', padding: '4px 10px', borderRadius: 8,
-            color: '#9CA3AF', transition: 'color .2s',
-          }}>{n.label}</a>
-        ))}
-
-        {/* Workspace — highlighted when on any /workspace page */}
-        <a href="/workspace" style={{
-          fontSize: 13, fontWeight: isWsPage ? 600 : 400,
-          color: isWsPage ? '#F97316' : '#9CA3AF',
-          textDecoration: 'none', padding: '4px 10px', borderRadius: 8,
-          background: isWsPage ? 'rgba(255,122,26,0.10)' : 'transparent',
-          transition: 'color .2s',
-        }}>工作区</a>
-
-        {[
-          { href: '/settings', label: '设置' },
-          { href: '/account', label: '账户' },
-        ].map(n => (
-          <a key={n.href} href={n.href} style={{
-            fontSize: 13, textDecoration: 'none', padding: '4px 10px', borderRadius: 8,
-            color: '#9CA3AF', transition: 'color .2s',
-          }}>{n.label}</a>
-        ))}
+        {MAIN_NAV.map(n => {
+          const active = n.href === '/workspace' ? isWsPage : false;
+          return (
+            <a key={n.href} href={n.href} style={{
+              fontSize: 13, textDecoration: 'none', padding: '4px 10px', borderRadius: 8,
+              fontWeight: active ? 600 : 400,
+              color: active ? '#F97316' : '#9CA3AF',
+              background: active ? 'rgba(255,122,26,0.10)' : 'transparent',
+              transition: 'color .2s',
+            }}>{n.label}</a>
+          );
+        })}
       </nav>
     </header>
   );

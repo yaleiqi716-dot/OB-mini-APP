@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Spinner } from '@/components/ui/Spinner';
+import { MAIN_NAV } from '@/lib/nav';
 
 interface ReviewTask {
   id: string;
@@ -145,15 +146,7 @@ export default function ReviewPage() {
         <span style={{ color: '#171717', fontWeight: 700, fontSize: 15 }}>BENCH</span>
       </a>
       <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        {[
-          { href: '/agent', label: 'AGENT' },
-          { href: '/tasks', label: '任务' },
-          { href: '/dashboard', label: '总览' },
-          { href: '/review', label: '处理' },
-          { href: '/workspace', label: '工作区' },
-          { href: '/settings', label: '设置' },
-          { href: '/account', label: '账户' },
-        ].map(n => {
+        {MAIN_NAV.map(n => {
           const active = n.href === '/review';
           return active ? (
             <span key={n.href} style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>{n.label}</span>
