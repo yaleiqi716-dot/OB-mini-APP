@@ -654,7 +654,7 @@ function AgentPageInner() {
                         </div>
                       </a>
                     ) : (
-                      <button key={i} onClick={() => a.action && handleSubmit(a.action, a.type)} disabled={isSubmitting} className="ob-action-card" style={{ border: '1px solid #E7E5E1' }}>
+                      <button key={i} onClick={() => a.action && handleSubmit(a.action, a.type)} disabled={isSubmitting} className="ob-action-card" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div className="ob-action-icon" style={{ background: 'rgba(249,115,22,0.08)', color: '#F97316' }}>
                           <ActionIcon name={a.icon} />
                         </div>

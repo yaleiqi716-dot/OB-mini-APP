@@ -105,24 +105,25 @@ export function AppHeader() {
     <header style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       height: 52, padding: '0 32px',
-      borderBottom: '1px solid #E7E5E1',
-      background: '#F7F7F4', flexShrink: 0,
+      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      background: '#0E0E0C', flexShrink: 0,
     }}>
       <a href="/agent" style={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}>
-        <span style={{ color: '#F97316', fontWeight: 700, fontSize: 15 }}>ORANGE</span>
-        <span style={{ color: '#171717', fontWeight: 700, fontSize: 15 }}>BENCH</span>
+        <span style={{ color: '#F97316', fontWeight: 700, fontSize: 15, textShadow: '0 0 12px rgba(249,115,22,0.3)' }}>ORANGE</span>
+        <span style={{ color: '#F0EDE8', fontWeight: 700, fontSize: 15 }}>BENCH</span>
       </a>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {MAIN_NAV.map(n => {
             const active = isNavActive(n.href);
             return (
               <a key={n.href} href={n.href} style={{
-                fontSize: 13, textDecoration: 'none', padding: '4px 10px', borderRadius: 8,
+                fontSize: 13, textDecoration: 'none', padding: '5px 10px', borderRadius: 8,
                 fontWeight: active ? 600 : 400,
-                color: active ? '#F97316' : '#9CA3AF',
-                background: active ? 'rgba(255,122,26,0.10)' : 'transparent',
-                transition: 'color .2s',
+                color: active ? '#F97316' : '#6B7280',
+                background: active ? 'rgba(249,115,22,0.10)' : 'transparent',
+                borderBottom: active ? '2px solid #F97316' : '2px solid transparent',
+                transition: 'color .15s, background .15s',
               }}>{n.label}</a>
             );
           })}
@@ -162,13 +163,13 @@ export function AppHeader() {
             <div style={{
               position: 'absolute', top: 40, right: 0,
               width: 340, maxHeight: 420, overflowY: 'auto',
-              background: '#FFFFFF', border: '1px solid #E7E5E1',
-              borderRadius: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+              background: '#1A1A17', border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 16, boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
               zIndex: 100,
             }}>
               {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 10px', borderBottom: '1px solid #F0EDE8' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#171717' }}>通知</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#F0EDE8' }}>通知</span>
                 {unreadCount > 0 && (
                   <button onClick={handleMarkAllRead} style={{ fontSize: 12, color: '#F97316', background: 'none', border: 'none', cursor: 'pointer' }}>
                     全部已读
@@ -189,12 +190,12 @@ export function AppHeader() {
                       onClick={() => handleClickNotif(n)}
                       style={{
                         width: '100%', display: 'flex', alignItems: 'flex-start', gap: 10,
-                        padding: '12px 16px', border: 'none', borderBottom: '1px solid #F0EDE8',
-                        background: n.read ? 'transparent' : 'rgba(255,122,26,0.03)',
+                        padding: '12px 16px', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                        background: n.read ? 'transparent' : 'rgba(249,115,22,0.04)',
                         cursor: 'pointer', textAlign: 'left', transition: 'background .15s',
                       }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.02)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(255,122,26,0.03)')}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(249,115,22,0.04)')}
                     >
                       {/* Unread dot */}
                       <span style={{
@@ -202,7 +203,7 @@ export function AppHeader() {
                         background: n.read ? 'transparent' : '#F97316',
                       }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: n.read ? 400 : 500, color: '#171717', margin: '0 0 2px', lineHeight: 1.4 }}>{n.title}</p>
+                        <p style={{ fontSize: 13, fontWeight: n.read ? 400 : 500, color: '#F0EDE8', margin: '0 0 2px', lineHeight: 1.4 }}>{n.title}</p>
                         {n.body && <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</p>}
                         <span style={{ fontSize: 11, color: '#9CA3AF' }}>{timeAgo(n.createdAt)}</span>
                       </div>
@@ -228,17 +229,17 @@ export function WorkspaceSubNav() {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 6,
       padding: '0 32px', height: 40,
-      borderBottom: '1px solid #F0EDE8',
-      background: '#F7F7F4',
+      borderBottom: '1px solid rgba(255,255,255,0.04)',
+      background: '#0E0E0C',
     }}>
       {WS_NAV.map(n => {
         const active = n.href === activeHref;
         return (
           <a key={n.href} href={n.href} style={{
             fontSize: 13, fontWeight: active ? 500 : 400,
-            color: active ? '#171717' : '#9CA3AF',
+            color: active ? '#F0EDE8' : '#6B7280',
             textDecoration: 'none', padding: '6px 12px', borderRadius: 8,
-            background: active ? 'rgba(0,0,0,0.03)' : 'transparent',
+            background: active ? 'rgba(255,255,255,0.04)' : 'transparent',
             transition: 'all .2s',
           }}>{n.label}</a>
         );

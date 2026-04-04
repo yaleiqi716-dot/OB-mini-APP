@@ -37,31 +37,31 @@ export default function WorkspaceSettingsPage() {
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', height: 40, borderRadius: 12, border: '1px solid #E7E5E1',
-    background: '#FFFFFF', padding: '0 14px', fontSize: 14, color: '#171717', outline: 'none',
+    width: '100%', height: 40, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)',
+    background: '#1A1A17', padding: '0 14px', fontSize: 14, color: '#F0EDE8', outline: 'none',
   };
-  const labelStyle: React.CSSProperties = { fontSize: 14, fontWeight: 500, color: '#171717', marginBottom: 6, display: 'block' };
+  const labelStyle: React.CSSProperties = { fontSize: 14, fontWeight: 500, color: '#F0EDE8', marginBottom: 6, display: 'block' };
   const descStyle: React.CSSProperties = { fontSize: 12, color: '#9CA3AF', marginTop: 4 };
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
       <AppHeader />
       <WorkspaceSubNav />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '40px 32px 60px' }}>
-          <h1 style={{ fontSize: 28, fontWeight: 600, color: '#171717', margin: '0 0 24px' }}>工作区设置</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 600, color: '#F0EDE8', margin: '0 0 24px' }}>工作区设置</h1>
 
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <div style={{ width: 20, height: 20, border: '2px solid #F97316', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto' }} />
             </div>
           ) : (
-            <div style={{ background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 16, padding: 24 }}>
+            <div style={{ background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24 }}>
               <div style={{ marginBottom: 24 }}>
                 <label style={labelStyle}>工作区名称</label>
                 <input value={name} onChange={e => setName(e.target.value)} style={inputStyle}
-                  onFocus={e => (e.currentTarget.style.borderColor = '#F97316')} onBlur={e => (e.currentTarget.style.borderColor = '#E7E5E1')} />
+                  onFocus={e => (e.currentTarget.style.borderColor = '#F97316')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')} />
               </div>
 
               <div style={{ marginBottom: 24 }}>
@@ -69,7 +69,7 @@ export default function WorkspaceSettingsPage() {
                 <input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)}
                   placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..."
                   style={inputStyle}
-                  onFocus={e => (e.currentTarget.style.borderColor = '#F97316')} onBlur={e => (e.currentTarget.style.borderColor = '#E7E5E1')} />
+                  onFocus={e => (e.currentTarget.style.borderColor = '#F97316')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')} />
                 <p style={descStyle}>配置后，任务分配、提交、审核等关键节点会推送通知到企业微信群</p>
               </div>
 

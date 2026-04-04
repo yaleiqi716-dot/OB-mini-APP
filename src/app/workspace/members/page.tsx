@@ -97,7 +97,7 @@ export default function WorkspaceMembersPage() {
 
   const actionBtn: React.CSSProperties = {
     height: 28, padding: '0 10px', borderRadius: 9999, fontSize: 12, fontWeight: 500,
-    border: '1px solid #E7E5E1', background: '#FFFFFF', color: '#6B7280', cursor: 'pointer',
+    border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17', color: '#6B7280', cursor: 'pointer',
     transition: 'border-color .2s, color .2s',
   };
 
@@ -106,21 +106,21 @@ export default function WorkspaceMembersPage() {
   const pendingInvites = invites.filter(i => i.status === 'pending' && !i.expired);
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
       <AppHeader />
       <WorkspaceSubNav />
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 780, margin: '0 auto', padding: '40px 32px 60px' }}>
 
           <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', margin: '0 0 8px' }}>成员管理</h1>
-            <p style={{ fontSize: 14, color: '#7A7A7A', margin: 0 }}>邀请成员加入工作区</p>
+            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#F0EDE8', margin: '0 0 8px' }}>成员管理</h1>
+            <p style={{ fontSize: 14, color: '#9CA3AF', margin: 0 }}>邀请成员加入工作区</p>
           </div>
 
           {/* Invite form (owner only) */}
           {isOwner && (
-            <div style={{ background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 16, padding: 20, marginBottom: 20 }}>
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#171717', margin: '0 0 12px' }}>邀请新成员</p>
+            <div style={{ background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#F0EDE8', margin: '0 0 12px' }}>邀请新成员</p>
               <div style={{ display: 'flex', gap: 10 }}>
                 <input
                   type="email"
@@ -129,12 +129,12 @@ export default function WorkspaceMembersPage() {
                   onKeyDown={e => e.key === 'Enter' && handleInvite()}
                   placeholder="输入邮箱地址"
                   style={{
-                    flex: 1, height: 40, borderRadius: 12, border: '1px solid #E7E5E1',
-                    background: '#FFFFFF', padding: '0 14px', fontSize: 14, color: '#171717', outline: 'none',
+                    flex: 1, height: 40, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)',
+                    background: '#1A1A17', padding: '0 14px', fontSize: 14, color: '#F0EDE8', outline: 'none',
                     transition: 'border-color .2s',
                   }}
                   onFocus={e => (e.currentTarget.style.borderColor = '#F97316')}
-                  onBlur={e => (e.currentTarget.style.borderColor = '#E7E5E1')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
                 />
                 <button
                   onClick={handleInvite}
@@ -154,15 +154,15 @@ export default function WorkspaceMembersPage() {
 
           {/* Pending invites */}
           {pendingInvites.length > 0 && (
-            <div style={{ background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 16, padding: 20, marginBottom: 20 }}>
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#171717', margin: '0 0 12px' }}>待接受邀请</p>
+            <div style={{ background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#F0EDE8', margin: '0 0 12px' }}>待接受邀请</p>
               {pendingInvites.map(inv => (
                 <div key={inv.id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 0', borderBottom: '1px solid #F0EDE8',
+                  padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)',
                 }}>
                   <div>
-                    <span style={{ fontSize: 14, color: '#171717' }}>{inv.email}</span>
+                    <span style={{ fontSize: 14, color: '#F0EDE8' }}>{inv.email}</span>
                     <span style={{ fontSize: 12, color: '#9CA3AF', marginLeft: 8 }}>待接受</span>
                   </div>
                   {isOwner && (
@@ -174,8 +174,8 @@ export default function WorkspaceMembersPage() {
           )}
 
           {/* Members list */}
-          <div style={{ background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 16, padding: 20 }}>
-            <p style={{ fontSize: 15, fontWeight: 600, color: '#171717', margin: '0 0 12px' }}>
+          <div style={{ background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 20 }}>
+            <p style={{ fontSize: 15, fontWeight: 600, color: '#F0EDE8', margin: '0 0 12px' }}>
               当前成员 ({members.length})
             </p>
             {loading ? (
@@ -199,7 +199,7 @@ export default function WorkspaceMembersPage() {
                       {(m.name || m.email || 'U').slice(0, 1).toUpperCase()}
                     </div>
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 500, color: '#171717' }}>{m.name || m.email}</div>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: '#F0EDE8' }}>{m.name || m.email}</div>
                       {m.name && <div style={{ fontSize: 12, color: '#9CA3AF' }}>{m.email}</div>}
                     </div>
                   </div>

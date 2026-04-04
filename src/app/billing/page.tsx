@@ -67,13 +67,13 @@ function QRModal({
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
-      <div style={{ background: '#FFFFFF', borderRadius: 20, padding: 32, width: 340, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }} className="animate-flow-in">
+      <div style={{ background: '#1A1A17', borderRadius: 20, padding: 32, width: 340, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }} className="animate-flow-in">
         {payState === 'success' ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '16px 0' }}>
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(16,185,129,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#047857" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
-            <p style={{ fontSize: 18, fontWeight: 600, color: '#171717' }}>支付成功</p>
+            <p style={{ fontSize: 18, fontWeight: 600, color: '#F0EDE8' }}>支付成功</p>
             <p style={{ fontSize: 14, color: '#6B7280' }}>额度已到账，正在刷新...</p>
           </div>
         ) : payState === 'failed' ? (
@@ -81,17 +81,17 @@ function QRModal({
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(239,68,68,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </div>
-            <p style={{ fontSize: 18, fontWeight: 600, color: '#171717' }}>支付未完成</p>
+            <p style={{ fontSize: 18, fontWeight: 600, color: '#F0EDE8' }}>支付未完成</p>
             <p style={{ fontSize: 14, color: '#6B7280' }}>请重试或使用其他支付方式</p>
-            <button onClick={onCancel} style={{ height: 36, padding: '0 20px', borderRadius: 9999, fontSize: 14, border: '1px solid #E7E5E1', background: '#FFFFFF', color: '#6B7280', cursor: 'pointer' }}>关闭</button>
+            <button onClick={onCancel} style={{ height: 36, padding: '0 20px', borderRadius: 9999, fontSize: 14, border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17', color: '#6B7280', cursor: 'pointer' }}>关闭</button>
           </div>
         ) : (
           <>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: 16, fontWeight: 600, color: '#171717', marginBottom: 4 }}>微信扫码支付</p>
+              <p style={{ fontSize: 16, fontWeight: 600, color: '#F0EDE8', marginBottom: 4 }}>微信扫码支付</p>
               <p style={{ fontSize: 24, fontWeight: 700, color: '#F97316' }}>{amountLabel}</p>
             </div>
-            <div style={{ padding: 8, borderRadius: 16, border: '2px solid #E7E5E1', background: '#FFFFFF' }}>
+            <div style={{ padding: 8, borderRadius: 16, border: '2px solid rgba(255,255,255,0.06)', background: '#1A1A17' }}>
               <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrUrl)}`} alt="支付二维码" width={180} height={180} style={{ borderRadius: 8 }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#6B7280' }}>
@@ -159,14 +159,14 @@ export default function BillingPage() {
   const planLabel = user?.plan?.toUpperCase() || 'FREE';
 
   if (loading) return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
       <AppHeader />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Spinner size="md" /></div>
     </div>
   );
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
@@ -186,11 +186,11 @@ export default function BillingPage() {
             const pct = Math.min(100, Math.round((user.credits / maxCredits) * 100));
             const isLow = user.credits < 20;
             return (
-              <div style={{ background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 16, padding: 24, marginBottom: 28 }}>
+              <div style={{ background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24, marginBottom: 28 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                      <span style={{ fontSize: 22, fontWeight: 700, color: '#171717' }}>{planLabel}</span>
+                      <span style={{ fontSize: 22, fontWeight: 700, color: '#F0EDE8' }}>{planLabel}</span>
                       <span style={{ fontSize: 11, fontWeight: 500, color: '#C2410C', background: 'rgba(249,115,22,0.10)', padding: '2px 10px', borderRadius: 9999 }}>当前套餐</span>
                     </div>
                     {user.expireAt && (
@@ -217,21 +217,21 @@ export default function BillingPage() {
           {/* Subscription plans */}
           {subs.length > 0 && (
             <div style={{ marginBottom: 24 }}>
-              <p style={{ fontSize: 17, fontWeight: 600, color: '#171717', margin: '0 0 14px' }}>订阅套餐</p>
+              <p style={{ fontSize: 17, fontWeight: 600, color: '#F0EDE8', margin: '0 0 14px' }}>订阅套餐</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                 {subs.map((p, idx) => {
                   const isRecommended = idx === 1; // Pro = middle tier
                   return (
                   <div key={p.code} className={isRecommended ? 'ob-tier-recommended' : ''} style={{
-                    background: '#FFFFFF', border: isRecommended ? undefined : '1px solid #E7E5E1', borderRadius: 16,
+                    background: '#1A1A17', border: isRecommended ? undefined : '1px solid rgba(255,255,255,0.06)', borderRadius: 16,
                     padding: 20, display: 'flex', flexDirection: 'column', position: 'relative',
                     transition: 'border-color .2s, box-shadow .2s',
                   }}
                     onMouseEnter={e => { if (!isRecommended) e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.04)'; }}
-                    onMouseLeave={e => { if (!isRecommended) e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.boxShadow = 'none'; }}
+                    onMouseLeave={e => { if (!isRecommended) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}
                   >
                     {isRecommended && <span className="ob-tier-badge">推荐</span>}
-                    <p style={{ fontSize: 15, fontWeight: 600, color: '#171717', margin: '0 0 8px' }}>{p.label}</p>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: '#F0EDE8', margin: '0 0 8px' }}>{p.label}</p>
                     <p style={{ fontSize: 28, fontWeight: 700, color: '#F97316', margin: '0 0 4px' }}>
                       {p.amountLabel}<span style={{ fontSize: 13, fontWeight: 400, color: '#9CA3AF' }}>/月</span>
                     </p>
@@ -258,19 +258,19 @@ export default function BillingPage() {
           {/* Credits packs */}
           {creds.length > 0 && (
             <div>
-              <p style={{ fontSize: 17, fontWeight: 600, color: '#171717', margin: '0 0 14px' }}>额度补给包</p>
+              <p style={{ fontSize: 17, fontWeight: 600, color: '#F0EDE8', margin: '0 0 14px' }}>额度补给包</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                 {creds.map(p => (
                   <div key={p.code} style={{
-                    background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 16,
+                    background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16,
                     padding: 20, display: 'flex', flexDirection: 'column',
                     transition: 'border-color .2s',
                   }}
                     onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)')}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = '#E7E5E1')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
                   >
-                    <p style={{ fontSize: 15, fontWeight: 600, color: '#171717', margin: '0 0 8px' }}>{p.label}</p>
-                    <p style={{ fontSize: 28, fontWeight: 700, color: '#171717', margin: '0 0 4px' }}>{p.amountLabel}</p>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: '#F0EDE8', margin: '0 0 8px' }}>{p.label}</p>
+                    <p style={{ fontSize: 28, fontWeight: 700, color: '#F0EDE8', margin: '0 0 4px' }}>{p.amountLabel}</p>
                     <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 16px' }}>+{p.credits} 额度</p>
                     <button
                       onClick={() => handleBuy(p.code)}
