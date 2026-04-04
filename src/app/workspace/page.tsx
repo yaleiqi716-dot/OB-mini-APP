@@ -161,6 +161,35 @@ export default function WorkspacePage() {
             )}
           </div>
 
+          {/* Command center summary */}
+          {tasks.length > 0 && (() => {
+            const active = tasks.filter(t => ['assigned', 'in_progress'].includes(t.businessStatus)).length;
+            const review = tasks.filter(t => ['submitted', 'revision'].includes(t.businessStatus)).length;
+            const done = tasks.filter(t => t.businessStatus === 'completed').length;
+            const overdue = tasks.filter(t => t.dueAt && new Date(t.dueAt).getTime() < Date.now() && t.businessStatus !== 'completed').length;
+            return (
+              <div className="ob-command-bar">
+                <div className="ob-command-stat ob-command-stat--accent">
+                  <span className="ob-live-dot" style={{ width: 5, height: 5, animation: active > 0 ? 'statusCycle 2s ease-in-out infinite' : 'none', background: active > 0 ? '#F97316' : '#D5D3CE' }} />
+                  <span><strong>{active}</strong> 进行中</span>
+                </div>
+                <div className="ob-command-stat" style={{ color: review > 0 ? '#1D4ED8' : undefined }}>
+                  <span><strong>{review}</strong> 待审核</span>
+                </div>
+                <div className="ob-command-stat ob-command-stat--green">
+                  <span><strong>{done}</strong> 已完成</span>
+                </div>
+                {overdue > 0 && (
+                  <div className="ob-command-stat ob-command-stat--red">
+                    <span><strong>{overdue}</strong> 已逾期</span>
+                  </div>
+                )}
+                <div style={{ flex: 1 }} />
+                <span style={{ fontSize: 12, color: '#9CA3AF' }}>{ws?.memberCount} 位成员协作中</span>
+              </div>
+            );
+          })()}
+
           {/* Search + filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <div style={{ position: 'relative', flex: 1, maxWidth: 260 }}>

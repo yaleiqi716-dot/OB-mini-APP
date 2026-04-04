@@ -51,10 +51,41 @@ function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
 
 const TERMINAL = new Set(['completed', 'failed']);
 
-const EXAMPLES = [
-  { label: '定时任务', type: 'unknown', icon: 'clock' },
-  { label: '调研报告', type: 'proposal', icon: 'search' },
-  { label: 'AI PPT',  type: 'ppt',     icon: 'chart' },
+const QUICK_ACTIONS = [
+  { label: '创建团队任务', desc: '分配给成员执行', icon: 'team', href: '/workspace/tasks/new' },
+  { label: '生成汇报方案', desc: 'AI 帮你写方案', icon: 'doc', action: '帮我写一份汇报方案', type: 'proposal' },
+  { label: '推进待审核任务', desc: '查看需要处理的', icon: 'check', href: '/review' },
+  { label: '整理交付内容', desc: 'PPT / 邮件 / 报告', icon: 'package', action: '帮我整理一份交付文档', type: 'unknown' },
+  { label: '发起工作区协作', desc: '邀请团队成员', icon: 'users', href: '/workspace/members' },
+  { label: '查看执行进度', desc: '所有任务状态', icon: 'activity', href: '/tasks' },
+];
+
+const STATUS_WORDS = ['理解任务中', '拆解需求中', '组织方案中', '生成内容中', '整理交付中'];
+
+function ActionIcon({ name }: { name: string }) {
+  const s = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (name === 'team') return <svg {...s}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+  if (name === 'doc') return <svg {...s}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>;
+  if (name === 'check') return <svg {...s}><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>;
+  if (name === 'package') return <svg {...s}><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>;
+  if (name === 'users') return <svg {...s}><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>;
+  if (name === 'activity') return <svg {...s}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
+  return null;
+}
+
+function LiveStatusCycle() {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const iv = setInterval(() => setIdx(i => (i + 1) % STATUS_WORDS.length), 2500);
+    return () => clearInterval(iv);
+  }, []);
+  return (
+    <div className="ob-live-status">
+      <span className="ob-live-dot" />
+      <span>Agent {STATUS_WORDS[idx]}</span>
+    </div>
+  );
+}
   { label: '优化文案', type: 'email',   icon: 'edit' },
 ];
 
@@ -578,59 +609,61 @@ function AgentPageInner() {
               </div>
             )
           ) : (
-            /* ── Welcome state ── */
+            /* ── Welcome: Task Launcher ── */
             <div className="ob-welcome agent-welcome">
-              <div className="ob-welcome-body agent-welcome-body">
-                <h1 className="ob-welcome-title agent-welcome-title">
-                  把任务交给 <span style={{ color: 'var(--accent)' }}>ORANGEBENCH</span>
-                </h1>
-                <p className="agent-welcome-subtitle">输入你的需求，Agent 会理解、执行并完成</p>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 24px 40px', maxWidth: 800, margin: '0 auto', width: '100%' }}>
 
-                {/* Main input */}
-                <div style={{ width: '100%', maxWidth: 720, marginBottom: 20 }}>
+                {/* Live status pulse */}
+                <LiveStatusCycle />
+
+                {/* Hero */}
+                <h1 className="ob-hero-title">
+                  告诉我任务，<span className="ob-hero-accent">推进到完成</span>
+                </h1>
+                <p className="ob-hero-sub">
+                  不只是对话 — ORANGEBENCH 会理解、拆解、执行、交付，并推动团队协作闭环
+                </p>
+
+                {/* Task launcher input */}
+                <div className="ob-launcher">
                   <AgentInput
                     onSubmit={input => handleSubmit(input)}
                     disabled={isSubmitting}
-                    placeholder="描述你的任务，例如：帮我写一份行业调研报告..."
+                    placeholder="输入任务：写一份行业调研报告、整理季度 PPT、帮我跟进客户邮件..."
                     prominent
                   />
                   {isSubmitting && (
                     <div className="agent-submitting-hint">
                       <Spinner size="sm" />
-                      <span>正在处理...</span>
+                      <span>正在启动任务...</span>
                     </div>
                   )}
                 </div>
 
-                {/* Chips */}
-                <div className="ob-chips agent-examples">
-                  {EXAMPLES.map((ex, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleSubmit(ex.label, ex.type)}
-                      disabled={isSubmitting}
-                      className="ob-chip agent-example-btn"
-                    >
-                      <ChipIcon name={ex.icon} />
-                      {ex.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Capability cards */}
-                <div className="ob-cap-cards">
-                  {[
-                    { icon: 'office', title: 'Office', desc: '文档、PPT、邮件' },
-                    { icon: 'finance', title: 'Finance', desc: '报表、分析、预测' },
-                    { icon: 'coding', title: 'Coding', desc: '代码、调试、方案' },
-                  ].map((cap) => (
-                    <div key={cap.icon} className="ob-cap-card">
-                      <div className="ob-cap-card-icon">
-                        <CapIcon name={cap.icon} />
-                      </div>
-                      <div className="ob-cap-card-title">{cap.title}</div>
-                      <div className="ob-cap-card-desc">{cap.desc}</div>
-                    </div>
+                {/* Quick actions grid */}
+                <div className="ob-actions">
+                  {QUICK_ACTIONS.map((a, i) => (
+                    a.href ? (
+                      <a key={i} href={a.href} className="ob-action-card">
+                        <div className="ob-action-icon" style={{ background: 'rgba(249,115,22,0.08)', color: '#F97316' }}>
+                          <ActionIcon name={a.icon} />
+                        </div>
+                        <div>
+                          <div className="ob-action-label">{a.label}</div>
+                          <div className="ob-action-desc">{a.desc}</div>
+                        </div>
+                      </a>
+                    ) : (
+                      <button key={i} onClick={() => a.action && handleSubmit(a.action, a.type)} disabled={isSubmitting} className="ob-action-card" style={{ border: '1px solid #E7E5E1' }}>
+                        <div className="ob-action-icon" style={{ background: 'rgba(249,115,22,0.08)', color: '#F97316' }}>
+                          <ActionIcon name={a.icon} />
+                        </div>
+                        <div style={{ textAlign: 'left' }}>
+                          <div className="ob-action-label">{a.label}</div>
+                          <div className="ob-action-desc">{a.desc}</div>
+                        </div>
+                      </button>
+                    )
                   ))}
                 </div>
               </div>

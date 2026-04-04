@@ -392,8 +392,31 @@ export function TaskCanvas({
                 </svg>
               </div>
               <span style={{ fontSize: 12, fontWeight: 500, color: '#6B7280' }}>ORANGEBENCH</span>
-              {isActive ? <Spinner size="sm" /> : null}
+              {isActive ? (
+                <span style={{ fontSize: 11, color: '#C2410C', fontWeight: 500, background: 'rgba(249,115,22,0.08)', padding: '2px 8px', borderRadius: 9999 }}>执行中</span>
+              ) : mode === 'result' ? (
+                <span style={{ fontSize: 11, color: '#047857', fontWeight: 500, background: 'rgba(16,185,129,0.08)', padding: '2px 8px', borderRadius: 9999 }}>已完成</span>
+              ) : null}
             </div>
+
+            {/* Mission phase indicator */}
+            {isActive && (
+              <div className="ob-mission-phase" style={{ marginLeft: 36 }}>
+                <span className={`ob-mission-dot ${status === 'understanding' || status === 'structuring' ? 'ob-mission-dot--active' : status === 'executing' || status === 'completed' ? 'ob-mission-dot--done' : 'ob-mission-dot--active'}`} />
+                <span className="ob-mission-label" style={{ flex: 1 }}>
+                  {status === 'queued' || status === 'pending' ? '准备启动' :
+                   status === 'understanding' ? '理解任务需求' :
+                   status === 'structuring' ? '整理执行方案' :
+                   status === 'executing' ? '正在生成内容' :
+                   status === 'interacting' ? '等待你的确认' :
+                   '推进中'}
+                </span>
+                <span className="ob-mission-sub">
+                  {completedSteps.length > 0 ? `${completedSteps.length} 步已完成` : ''}
+                </span>
+              </div>
+            )}
+
             <div className="flex-1 min-w-0 space-y-3 pl-9" style={{ fontSize: 14, color: '#525252', lineHeight: 1.65 }}>
 
               {/* Logs — only during review */}
@@ -553,7 +576,7 @@ export function TaskCanvas({
               ) : null}
 
               {mode === 'result' ? (
-                <div className="animate-flow-in">
+                <div className="animate-flow-in ob-result-node">
                   {result !== null && (result as Record<string, unknown>)?._preview === true ? (
                     <div className="space-y-3">
                       <div className="relative">

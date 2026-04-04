@@ -172,47 +172,65 @@ export default function BillingPage() {
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 980, margin: '0 auto', padding: '40px 32px 60px' }}>
 
-          {/* Title */}
-          <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', margin: '0 0 8px' }}>订阅与充值</h1>
-            <p style={{ fontSize: 14, color: '#7A7A7A', margin: 0 }}>管理你的套餐与额度</p>
+          {/* Hero */}
+          <div style={{ marginBottom: 28 }}>
+            <h1 className="ob-hero-title" style={{ fontSize: 32, textAlign: 'left' }}>
+              执行<span className="ob-hero-accent">燃料</span>补给
+            </h1>
+            <p style={{ fontSize: 15, color: '#6B7280', margin: 0 }}>订阅解锁长期能力，额度包补给高强度执行</p>
           </div>
 
-          {/* Current status card */}
-          {user && (
-            <div style={{ background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 16, padding: 20, marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <div>
-                  <p style={{ fontSize: 13, color: '#9CA3AF', margin: '0 0 4px' }}>当前套餐</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 20, fontWeight: 650, color: '#171717' }}>{planLabel}</span>
+          {/* Fuel status card */}
+          {user && (() => {
+            const maxCredits = planLabel === 'FREE' ? 100 : planLabel === 'BASIC' ? 1000 : planLabel === 'PRO' ? 5000 : 20000;
+            const pct = Math.min(100, Math.round((user.credits / maxCredits) * 100));
+            const isLow = user.credits < 20;
+            return (
+              <div style={{ background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 16, padding: 24, marginBottom: 28 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                      <span style={{ fontSize: 22, fontWeight: 700, color: '#171717' }}>{planLabel}</span>
+                      <span style={{ fontSize: 11, fontWeight: 500, color: '#C2410C', background: 'rgba(249,115,22,0.10)', padding: '2px 10px', borderRadius: 9999 }}>当前套餐</span>
+                    </div>
                     {user.expireAt && (
                       <span style={{ fontSize: 12, color: '#9CA3AF' }}>到期 {new Date(user.expireAt).toLocaleDateString('zh-CN')}</span>
                     )}
                   </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: 36, fontWeight: 700, color: isLow ? '#B91C1C' : '#F97316', lineHeight: 1 }}>{user.credits}</span>
+                    <p style={{ fontSize: 12, color: '#9CA3AF', margin: '4px 0 0' }}>剩余额度</p>
+                  </div>
+                </div>
+                {/* Fuel gauge */}
+                <div className="ob-fuel-gauge">
+                  <div className={`ob-fuel-fill ${isLow ? 'ob-fuel-fill--low' : ''}`} style={{ width: `${pct}%` }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>
+                  <span>{isLow ? '额度不足，建议充值' : `已使用 ${100 - pct}%`}</span>
+                  <span>上限 {maxCredits}</span>
                 </div>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <p style={{ fontSize: 13, color: '#9CA3AF', margin: '0 0 4px' }}>剩余额度</p>
-                <span style={{ fontSize: 28, fontWeight: 650, color: user.credits < 20 ? '#B91C1C' : '#F97316' }}>{user.credits}</span>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Subscription plans */}
           {subs.length > 0 && (
             <div style={{ marginBottom: 24 }}>
               <p style={{ fontSize: 17, fontWeight: 600, color: '#171717', margin: '0 0 14px' }}>订阅套餐</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                {subs.map(p => (
-                  <div key={p.code} style={{
-                    background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 16,
-                    padding: 20, display: 'flex', flexDirection: 'column',
+                {subs.map((p, idx) => {
+                  const isRecommended = idx === 1; // Pro = middle tier
+                  return (
+                  <div key={p.code} className={isRecommended ? 'ob-tier-recommended' : ''} style={{
+                    background: '#FFFFFF', border: isRecommended ? undefined : '1px solid #E7E5E1', borderRadius: 16,
+                    padding: 20, display: 'flex', flexDirection: 'column', position: 'relative',
                     transition: 'border-color .2s, box-shadow .2s',
                   }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.04)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.boxShadow = 'none'; }}
+                    onMouseEnter={e => { if (!isRecommended) e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.04)'; }}
+                    onMouseLeave={e => { if (!isRecommended) e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.boxShadow = 'none'; }}
                   >
+                    {isRecommended && <span className="ob-tier-badge">推荐</span>}
                     <p style={{ fontSize: 15, fontWeight: 600, color: '#171717', margin: '0 0 8px' }}>{p.label}</p>
                     <p style={{ fontSize: 28, fontWeight: 700, color: '#F97316', margin: '0 0 4px' }}>
                       {p.amountLabel}<span style={{ fontSize: 13, fontWeight: 400, color: '#9CA3AF' }}>/月</span>
@@ -231,7 +249,8 @@ export default function BillingPage() {
                       {buying === p.code ? '创建订单...' : user?.plan === p.plan ? '续费' : '订阅'}
                     </button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -239,7 +258,7 @@ export default function BillingPage() {
           {/* Credits packs */}
           {creds.length > 0 && (
             <div>
-              <p style={{ fontSize: 17, fontWeight: 600, color: '#171717', margin: '0 0 14px' }}>额度充值</p>
+              <p style={{ fontSize: 17, fontWeight: 600, color: '#171717', margin: '0 0 14px' }}>额度补给包</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                 {creds.map(p => (
                   <div key={p.code} style={{
