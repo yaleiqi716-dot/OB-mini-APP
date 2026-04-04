@@ -115,6 +115,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(invites.map(i => ({
       id: i.id,
+      token: i.token,
       email: i.email,
       role: i.role,
       status: i.status,

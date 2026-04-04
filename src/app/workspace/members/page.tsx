@@ -15,6 +15,7 @@ interface Member {
 
 interface Invite {
   id: string;
+  token: string;
   email: string;
   role: string;
   status: string;
@@ -77,9 +78,9 @@ export default function WorkspaceMembersPage() {
     finally { setInviting(false); }
   }
 
-  async function handleRevoke(inviteId: string) {
+  async function handleRevoke(inviteToken: string) {
     try {
-      const res = await fetch(`/api/workspace/invite/${inviteId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/workspace/invite/${inviteToken}`, { method: 'DELETE' });
       if (res.ok) { showToast('邀请已撤销'); loadData(); }
       else showToast('撤销失败');
     } catch { showToast('网络错误'); }
@@ -165,7 +166,7 @@ export default function WorkspaceMembersPage() {
                     <span style={{ fontSize: 12, color: '#9CA3AF', marginLeft: 8 }}>待接受</span>
                   </div>
                   {isOwner && (
-                    <button onClick={() => handleRevoke(inv.id)} style={actionBtn}>撤销</button>
+                    <button onClick={() => handleRevoke(inv.token)} style={actionBtn}>撤销</button>
                   )}
                 </div>
               ))}
