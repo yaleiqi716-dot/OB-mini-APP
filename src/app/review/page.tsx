@@ -51,17 +51,25 @@ function extractPreview(result: unknown): string {
   return '';
 }
 
+const WS_STATUS_LABEL: Record<string, string> = {
+  draft: '草稿', assigned: '已分配', in_progress: '进行中',
+  submitted: '已提交', revision: '需修改', completed: '已完成',
+};
+
 function StatusBadge({ status }: { status: string }) {
-  const isRunning = ['queued', 'understanding', 'running', 'executing', 'interacting', 'structuring'].includes(status);
+  const isRunning = ['queued', 'understanding', 'running', 'executing', 'interacting', 'structuring', 'assigned', 'in_progress'].includes(status);
   const isCompleted = status === 'completed';
+  const isReview = ['submitted', 'revision'].includes(status);
   const isFailed = status === 'failed';
   let bg = 'rgba(156,163,175,0.10)'; let color = '#6B7280';
   if (isRunning)   { bg = 'rgba(255,122,26,0.10)'; color = '#C2410C'; }
   if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = '#047857'; }
   if (isFailed)    { bg = 'rgba(239,68,68,0.10)';  color = '#B91C1C'; }
+  if (isReview)    { bg = 'rgba(59,130,246,0.10)';  color = '#1D4ED8'; }
+  const label = WS_STATUS_LABEL[status] || STATUS_LABEL[status] || status;
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px', fontSize: 11, fontWeight: 500, borderRadius: 9999, background: bg, color, whiteSpace: 'nowrap' }}>
-      {STATUS_LABEL[status] || status}
+      {label}
     </span>
   );
 }
@@ -77,11 +85,14 @@ const FILTERS: { value: FilterType; label: string }[] = [
 export default function ReviewPage() {
   const router = useRouter();
   const [tasks, setTasks] = useState<ReviewTask[]>([]);
+  const [wsTasks, setWsTasks] = useState<ReviewTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>('all');
   const [search, setSearch] = useState('');
   const [retrying, setRetrying] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'personal' | 'team'>('personal');
+  const [hasWorkspace, setHasWorkspace] = useState(false);
 
   useEffect(() => {
     const m = document.cookie.match(/ob-user-id=([^;]+)/);
@@ -101,6 +112,33 @@ export default function ReviewPage() {
   }, []);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
+
+  // Fetch workspace tasks for team review view
+  useEffect(() => {
+    fetch('/api/workspace').then(r => r.json()).then(d => {
+      if (d?.id) {
+        setHasWorkspace(true);
+        fetch('/api/workspace/tasks').then(r => r.json()).then(wt => {
+          if (Array.isArray(wt)) {
+            // Team review shows: submitted (needs review), revision (sent back), in_progress (being worked on)
+            const reviewable = wt.filter((t: { businessStatus: string }) =>
+              ['submitted', 'revision', 'in_progress', 'assigned'].includes(t.businessStatus)
+            );
+            setWsTasks(reviewable.map((t: Record<string, unknown>) => ({
+              id: t.id as string,
+              title: t.title as string,
+              input: (t.description as string) || '',
+              result: null,
+              status: t.businessStatus as string,
+              updatedAt: t.updatedAt as string,
+              createdAt: t.createdAt as string,
+              conversationId: undefined,
+            })));
+          }
+        }).catch(() => {});
+      }
+    }).catch(() => {});
+  }, []);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -123,10 +161,17 @@ export default function ReviewPage() {
 
   const isRunning = (s: string) => ['queued', 'understanding', 'running', 'executing', 'interacting', 'structuring'].includes(s);
 
-  const filtered = tasks.filter(t => {
-    if (filter === 'completed' && t.status !== 'completed') return false;
-    if (filter === 'running' && !isRunning(t.status)) return false;
-    if (filter === 'failed' && t.status !== 'failed') return false;
+  const activeTasks = viewMode === 'team' ? wsTasks : tasks;
+  const filtered = activeTasks.filter(t => {
+    if (viewMode === 'team') {
+      if (filter === 'completed') return false; // team view has no completed
+      if (filter === 'running' && !['in_progress', 'assigned'].includes(t.status)) return false;
+      if (filter === 'failed' && t.status !== 'revision') return false; // revision = needs attention
+    } else {
+      if (filter === 'completed' && t.status !== 'completed') return false;
+      if (filter === 'running' && !isRunning(t.status)) return false;
+      if (filter === 'failed' && t.status !== 'failed') return false;
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       if (!(t.title || '').toLowerCase().includes(q) && !(t.input || '').toLowerCase().includes(q)) return false;
@@ -209,7 +254,24 @@ export default function ReviewPage() {
               />
             </div>
           </div>
-          <p style={{ fontSize: 14, color: '#7A7A7A', margin: '0 0 20px' }}>查看需要你确认、继续或处理的任务</p>
+          <p style={{ fontSize: 14, color: '#7A7A7A', margin: '0 0 16px' }}>查看需要你确认、继续或处理的任务</p>
+
+          {/* View mode tabs */}
+          {hasWorkspace && (
+            <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid #E7E5E1' }}>
+              {([['personal', '个人'], ['team', '团队']] as const).map(([value, label]) => (
+                <button key={value} onClick={() => { setViewMode(value); setFilter('all'); }}
+                  style={{
+                    padding: '8px 20px', fontSize: 14, fontWeight: viewMode === value ? 600 : 400,
+                    color: viewMode === value ? '#F97316' : '#6B7280',
+                    borderBottom: viewMode === value ? '2px solid #F97316' : '2px solid transparent',
+                    background: 'transparent', border: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+                    cursor: 'pointer', transition: 'color .2s', marginBottom: -1,
+                  }}
+                >{label}</button>
+              ))}
+            </div>
+          )}
 
           {/* Filter chips */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
@@ -265,12 +327,16 @@ export default function ReviewPage() {
             /* Card list */
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {filtered.map(t => {
+                const isTeam = viewMode === 'team';
                 const completed = t.status === 'completed';
-                const failed = t.status === 'failed';
-                const running = isRunning(t.status);
+                const failed = isTeam ? false : t.status === 'failed';
+                const running = isTeam ? ['in_progress', 'assigned'].includes(t.status) : isRunning(t.status);
+                const isSubmitted = isTeam && t.status === 'submitted';
+                const isRevision = isTeam && t.status === 'revision';
                 const title = t.title || t.input?.slice(0, 60) || '未命名任务';
                 const inputSummary = t.input && t.input !== title ? t.input.slice(0, 100) : '';
                 const preview = completed ? extractPreview(t.result) : '';
+                const detailUrl = isTeam ? `/workspace/tasks/${t.id}` : `/tasks/${t.id}`;
 
                 return (
                   <div
@@ -317,10 +383,25 @@ export default function ReviewPage() {
                         )}
 
                         {/* Running status */}
-                        {running && (
+                        {running && !isTeam && (
                           <p style={{ fontSize: 13, color: '#C2410C', marginTop: 8 }}>
                             AI 正在继续处理这项任务
                           </p>
+                        )}
+
+                        {/* Team: submitted = needs review */}
+                        {isSubmitted && (
+                          <p style={{ fontSize: 13, color: '#1D4ED8', marginTop: 8 }}>已提交，等待审核</p>
+                        )}
+
+                        {/* Team: revision = sent back */}
+                        {isRevision && (
+                          <p style={{ fontSize: 13, color: '#B91C1C', marginTop: 8 }}>已退回修改，等待重新提交</p>
+                        )}
+
+                        {/* Team: running = member working */}
+                        {running && isTeam && (
+                          <p style={{ fontSize: 13, color: '#C2410C', marginTop: 8 }}>成员正在处理中</p>
                         )}
 
                         {/* Failed message */}
@@ -333,16 +414,23 @@ export default function ReviewPage() {
 
                       {/* Right: actions — pinned bottom-right */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0, justifyContent: 'flex-end' }}>
-                        {completed && (
+                        {/* Team mode: all actions point to workspace detail */}
+                        {isTeam && (
+                          <a href={detailUrl} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
+                            {isSubmitted ? '去审核' : '查看详情'}
+                          </a>
+                        )}
+                        {/* Personal mode: existing actions */}
+                        {!isTeam && completed && (
                           <>
-                            <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看结果</a>
+                            <a href={detailUrl} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看结果</a>
                             {t.conversationId && <a href={`/agent?conversationId=${t.conversationId}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>继续对话</a>}
                           </>
                         )}
-                        {running && (
-                          {t.conversationId ? <a href={`/agent?conversationId=${t.conversationId}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看进度</a> : <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看进度</a>}
+                        {!isTeam && running && (
+                          <a href={detailUrl} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看进度</a>
                         )}
-                        {failed && (
+                        {!isTeam && failed && (
                           <>
                             <button
                               onClick={() => handleRetry(t.id)}
@@ -354,7 +442,7 @@ export default function ReviewPage() {
                             >
                               {retrying === t.id ? '重试中...' : '重试'}
                             </button>
-                            <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看详情</a>
+                            <a href={detailUrl} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>查看详情</a>
                           </>
                         )}
                       </div>
