@@ -15,8 +15,8 @@ export default function WorkspaceSettingsPage() {
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 3000); }
 
   useEffect(() => {
-    const m = document.cookie.match(/ob-user-id=([^;]+)/);
-    if (!m || !m[1]) { router.replace('/login'); return; }
+    const hasSession = document.cookie.includes('ob-session=') || document.cookie.includes('ob-user-id=');
+    if (!hasSession) { router.replace('/login'); return; }
     fetch('/api/workspace').then(r => r.json()).then(d => {
       if (d?.name) { setName(d.name); setWebhookUrl(d.wecomWebhookUrl || ''); }
     }).catch(() => {}).finally(() => setLoading(false));

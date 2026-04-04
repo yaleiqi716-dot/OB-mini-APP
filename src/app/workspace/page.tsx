@@ -78,8 +78,8 @@ export default function WorkspacePage() {
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    const m = document.cookie.match(/ob-user-id=([^;]+)/);
-    if (!m || !m[1]) { router.replace('/login'); }
+    const hasSession = document.cookie.includes('ob-session=') || document.cookie.includes('ob-user-id=');
+    if (!hasSession) { router.replace('/login'); }
   }, [router]);
 
   const loadData = useCallback(() => {

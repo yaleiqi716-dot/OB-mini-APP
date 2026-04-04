@@ -50,8 +50,15 @@ export default function WorkspaceTaskDetailPage() {
   const [comments, setComments] = useState<{ id: string; userId: string; userName: string; content: string; createdAt: string }[]>([]);
   const [commentText, setCommentText] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
+  const [userId, setUserId] = useState('');
 
-  const userId = (() => { const m = document.cookie.match(/ob-user-id=([^;]+)/); return m?.[1] ? decodeURIComponent(m[1]) : ''; })();
+  // Read userId from cookie in useEffect (SSR-safe)
+  useEffect(() => {
+    const m = document.cookie.match(/ob-user-id=([^;]+)/);
+    const hasSession = document.cookie.includes('ob-session=') || (m && m[1]);
+    if (!hasSession) { router.replace('/login'); return; }
+    if (m?.[1]) setUserId(decodeURIComponent(m[1]));
+  }, [router]);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 3000); }
 
@@ -65,7 +72,6 @@ export default function WorkspaceTaskDetailPage() {
   }, [taskId]);
 
   useEffect(() => {
-    if (!userId) { router.replace('/login'); return; }
     loadTask();
     // Fetch comments
     fetch(`/api/workspace/tasks/${taskId}/comments`).then(r => r.json()).then(data => {
@@ -81,7 +87,7 @@ export default function WorkspaceTaskDetailPage() {
         setMemberNames(names);
       }
     }).catch(() => {});
-  }, [userId, router, loadTask]);
+  }, [loadTask, taskId]);
 
   const isOwner = task?.userRole === 'owner';
   const isAssignee = task?.assigneeId === userId;

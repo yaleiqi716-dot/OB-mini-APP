@@ -85,7 +85,7 @@ export async function notifyTaskCompleted(workspaceId: string, taskTitle: string
   const url = await getWebhookUrl(workspaceId);
   if (url) await sendWecom(url, `## 任务完成\n任务「${taskTitle}」已通过审核并完成\n[查看结果](${link})`);
   if (recipientUserId) {
-    await createNotification(recipientUserId, 'task_completed', `任务「${taskTitle}」已完成`, null, `/workspace/tasks/${taskId}`);
+    await createNotification(recipientUserId, 'task_completed', `任务「${taskTitle}」已完成`, undefined, `/workspace/tasks/${taskId}`);
   }
 }
 

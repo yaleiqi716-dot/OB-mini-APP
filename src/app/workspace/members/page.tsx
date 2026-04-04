@@ -36,8 +36,8 @@ export default function WorkspaceMembersPage() {
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 3000); }
 
   useEffect(() => {
-    const m = document.cookie.match(/ob-user-id=([^;]+)/);
-    if (!m || !m[1]) { router.replace('/login'); }
+    const hasSession = document.cookie.includes('ob-session=') || document.cookie.includes('ob-user-id=');
+    if (!hasSession) { router.replace('/login'); }
   }, [router]);
 
   const loadData = useCallback(() => {

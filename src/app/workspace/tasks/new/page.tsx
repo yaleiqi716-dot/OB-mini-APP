@@ -20,8 +20,8 @@ export default function NewWorkspaceTaskPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const m = document.cookie.match(/ob-user-id=([^;]+)/);
-    if (!m || !m[1]) { router.replace('/login'); return; }
+    const hasSession = document.cookie.includes('ob-session=') || document.cookie.includes('ob-user-id=');
+    if (!hasSession) { router.replace('/login'); return; }
     fetch('/api/workspace/members').then(r => r.json()).then(d => { if (Array.isArray(d)) setMembers(d); }).catch(() => {});
   }, [router]);
 
