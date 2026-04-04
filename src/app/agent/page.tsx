@@ -435,6 +435,7 @@ function AgentPageInner() {
           { href: '/tasks', icon: 'tasks', label: '任务' },
           { href: '/dashboard', icon: 'dashboard', label: '总览' },
           { href: '/review', icon: 'review', label: '处理' },
+          { href: '/workspace', icon: 'dashboard', label: '工作区' },
           { href: '/settings', icon: 'settings', label: '设置' },
           { href: '/account', icon: 'account', label: '账户' },
         ].map(n => (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { WorkspaceHeader, WorkspaceSubNav } from '@/components/workspace/WorkspaceHeader';
 
 interface Member {
   id: string;
@@ -99,32 +100,14 @@ export default function WorkspaceMembersPage() {
     transition: 'border-color .2s, color .2s',
   };
 
-  const headerBar = (
-    <header style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      height: 52, padding: '0 32px', borderBottom: '1px solid #E7E5E1',
-      background: '#F7F7F4', flexShrink: 0,
-    }}>
-      <a href="/agent" style={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}>
-        <span style={{ color: '#F97316', fontWeight: 700, fontSize: 15 }}>ORANGE</span>
-        <span style={{ color: '#171717', fontWeight: 700, fontSize: 15 }}>BENCH</span>
-      </a>
-      <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        {[
-          { href: '/agent', label: 'AGENT' },
-          { href: '/workspace', label: '工作区' },
-        ].map(n => (
-          <a key={n.href} href={n.href} style={{ fontSize: 13, color: n.href === '/workspace' ? '#F97316' : '#9CA3AF', fontWeight: n.href === '/workspace' ? 600 : 400, textDecoration: 'none', padding: '4px 10px', borderRadius: 8, background: n.href === '/workspace' ? 'rgba(255,122,26,0.10)' : 'transparent' }}>{n.label}</a>
-        ))}
-      </nav>
-    </header>
-  );
+  // header replaced by shared component
 
   const pendingInvites = invites.filter(i => i.status === 'pending' && !i.expired);
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-      {headerBar}
+      <WorkspaceHeader />
+      <WorkspaceSubNav />
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 780, margin: '0 auto', padding: '40px 32px 60px' }}>
 

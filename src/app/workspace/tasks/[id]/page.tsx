@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { WorkspaceHeader } from '@/components/workspace/WorkspaceHeader';
 
 interface AgentTaskRef { id: string; title: string; status: string; conversationId: string | null; createdAt: string; hasResult: boolean; }
 interface LinkRef { id: string; agentTaskId: string; conversationId: string | null; purpose: string; submittedAt: string | null; }
@@ -42,6 +43,7 @@ export default function WorkspaceTaskDetailPage() {
   const [submitSummary, setSubmitSummary] = useState('');
   const [reviewFeedback, setReviewFeedback] = useState('');
   const [toast, setToast] = useState<string | null>(null);
+  const [memberNames, setMemberNames] = useState<Record<string, string>>({});
 
   const userId = (() => { const m = document.cookie.match(/ob-user-id=([^;]+)/); return m?.[1] ? decodeURIComponent(m[1]) : ''; })();
 
@@ -59,6 +61,16 @@ export default function WorkspaceTaskDetailPage() {
   useEffect(() => {
     if (!userId) { router.replace('/login'); return; }
     loadTask();
+    // Fetch member names for display
+    fetch('/api/workspace/members').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) {
+        const names: Record<string, string> = {};
+        data.forEach((m: { userId: string; name: string | null; email: string }) => {
+          names[m.userId] = m.name || m.email;
+        });
+        setMemberNames(names);
+      }
+    }).catch(() => {});
   }, [userId, router, loadTask]);
 
   const isOwner = task?.userRole === 'owner';
@@ -120,12 +132,7 @@ export default function WorkspaceTaskDetailPage() {
   if (loading || !task) {
     return (
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-        <header style={{ display: 'flex', alignItems: 'center', height: 52, padding: '0 32px', borderBottom: '1px solid #E7E5E1', background: '#F7F7F4', flexShrink: 0 }}>
-          <a href="/workspace" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#6B7280', textDecoration: 'none' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-            返回
-          </a>
-        </header>
+        <WorkspaceHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: 20, height: 20, border: '2px solid #F97316', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
         </div>
@@ -135,21 +142,19 @@ export default function WorkspaceTaskDetailPage() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 52, padding: '0 32px', borderBottom: '1px solid #E7E5E1', background: '#F7F7F4', flexShrink: 0 }}>
-        <a href="/workspace" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#6B7280', textDecoration: 'none' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-          返回工作区
-        </a>
-        <StatusBadge status={task.businessStatus} />
-      </header>
+      <WorkspaceHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 780, margin: '0 auto', padding: '32px 32px 60px' }}>
 
           {/* Title + meta */}
           <div style={{ marginBottom: 20 }}>
-            <h1 style={{ fontSize: 24, fontWeight: 600, color: '#171717', margin: '0 0 8px' }}>{task.title}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <h1 style={{ fontSize: 24, fontWeight: 600, color: '#171717', margin: 0 }}>{task.title}</h1>
+              <StatusBadge status={task.businessStatus} />
+            </div>
             <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#9CA3AF' }}>
+              {task.assigneeId && <span>负责人：<strong style={{ color: '#171717', fontWeight: 500 }}>{memberNames[task.assigneeId] || task.assigneeId}</strong></span>}
               <span>创建于 {new Date(task.createdAt).toLocaleDateString('zh-CN')}</span>
               {task.dueAt && <span>截止 {new Date(task.dueAt).toLocaleDateString('zh-CN')}</span>}
               {task.priority >= 2 && <span style={{ color: '#B91C1C', fontWeight: 500 }}>紧急</span>}

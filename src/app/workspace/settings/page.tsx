@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { WorkspaceHeader, WorkspaceSubNav } from '@/components/workspace/WorkspaceHeader';
 
 export default function WorkspaceSettingsPage() {
   const router = useRouter();
@@ -44,16 +45,8 @@ export default function WorkspaceSettingsPage() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 52, padding: '0 32px', borderBottom: '1px solid #E7E5E1', background: '#F7F7F4', flexShrink: 0 }}>
-        <a href="/workspace" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#6B7280', textDecoration: 'none' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-          返回工作区
-        </a>
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <a href="/workspace/members" style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8 }}>成员</a>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>设置</span>
-        </nav>
-      </header>
+      <WorkspaceHeader />
+      <WorkspaceSubNav />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '40px 32px 60px' }}>

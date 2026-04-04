@@ -122,6 +122,7 @@ export default function DashboardPage() {
           { href: '/tasks', label: '任务' },
           { href: '/dashboard', label: '总览' },
           { href: '/review', label: '处理' },
+          { href: '/workspace', label: '工作区' },
           { href: '/settings', label: '设置' },
           { href: '/account', label: '账户' },
         ].map(n => {
