@@ -11,8 +11,11 @@ interface WsTask {
   businessStatus: string;
   priority: number;
   assigneeId: string | null;
+  assigneeName: string | null;
   createdBy: string;
   dueAt: string | null;
+  attachmentCount: number;
+  commentCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -112,8 +115,9 @@ export default function WorkspacePage() {
     return (
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
         <AppHeader />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 20, height: 20, border: '2px solid #F97316', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+          <div style={{ width: 24, height: 24, border: '2px solid #F97316', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+          <p style={{ fontSize: 14, color: '#9CA3AF' }}>加载工作区...</p>
         </div>
       </div>
     );
@@ -188,12 +192,22 @@ export default function WorkspacePage() {
           {/* Task list */}
           {filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 16, background: '#FFFFFF', border: '1px solid #E7E5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="16" x2="12" y2="16"/>
+                </svg>
+              </div>
               <p style={{ fontSize: 16, fontWeight: 600, color: '#171717', marginBottom: 6 }}>
                 {search || filter !== 'all' ? '没有匹配的任务' : '还没有任务'}
               </p>
-              <p style={{ fontSize: 14, color: '#7A7A7A' }}>
+              <p style={{ fontSize: 14, color: '#7A7A7A', marginBottom: search || filter !== 'all' ? 0 : 20 }}>
                 {search || filter !== 'all' ? '换个条件试试' : '创建第一个任务，分配给团队成员'}
               </p>
+              {!(search || filter !== 'all') && ws?.role === 'owner' && (
+                <a href="/workspace/tasks/new" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 9999, fontSize: 14, fontWeight: 500, background: '#F97316', color: '#fff', textDecoration: 'none' }}>
+                  + 新建任务
+                </a>
+              )}
             </div>
           ) : (
             filter === 'all' && !search.trim() ? (
@@ -224,20 +238,71 @@ export default function WorkspacePage() {
 }
 
 function TaskCard({ task }: { task: WsTask }) {
+  const hasDue = !!task.dueAt;
+  const isOverdue = hasDue && new Date(task.dueAt!).getTime() < Date.now() && task.businessStatus !== 'completed';
+
   return (
     <a
       href={`/workspace/tasks/${task.id}`}
-      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 14, padding: '12px 16px', textDecoration: 'none', transition: 'transform .2s, box-shadow .2s' }}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 14,
+        padding: '14px 16px', textDecoration: 'none',
+        transition: 'transform .2s, box-shadow .2s',
+      }}
       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.04)'; }}
       onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
     >
+      {/* Assignee avatar */}
+      {task.assigneeName ? (
+        <div style={{
+          width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+          background: 'rgba(255,122,26,0.10)', color: '#F97316',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 12, fontWeight: 600,
+        }}>
+          {task.assigneeName.slice(0, 1).toUpperCase()}
+        </div>
+      ) : (
+        <div style={{
+          width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+          background: '#F0EDE8', color: '#9CA3AF',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 12,
+        }}>?</div>
+      )}
+
+      {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-          <span style={{ fontSize: 14, fontWeight: 500, color: '#171717', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</span>
+        {/* Title row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: '#171717', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>{task.title}</span>
           <StatusBadge status={task.businessStatus} />
           {task.priority >= 2 && <span style={{ fontSize: 11, color: '#B91C1C', fontWeight: 500 }}>紧急</span>}
         </div>
-        <span style={{ fontSize: 12, color: '#A3A3A3' }}>{timeAgo(task.updatedAt)}</span>
+
+        {/* Meta row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: '#9CA3AF' }}>
+          {task.assigneeName && <span>{task.assigneeName}</span>}
+          <span>{timeAgo(task.updatedAt)}</span>
+          {hasDue && (
+            <span style={{ color: isOverdue ? '#B91C1C' : '#9CA3AF' }}>
+              {isOverdue ? '已逾期' : `截止 ${new Date(task.dueAt!).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}`}
+            </span>
+          )}
+          {task.attachmentCount > 0 && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              {task.attachmentCount}
+            </span>
+          )}
+          {task.commentCount > 0 && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              {task.commentCount}
+            </span>
+          )}
+        </div>
       </div>
     </a>
   );

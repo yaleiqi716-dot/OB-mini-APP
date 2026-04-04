@@ -21,22 +21,39 @@ export async function GET(req: NextRequest) {
       where,
       orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
       take: 50,
+      include: {
+        _count: { select: { comments: true } },
+      },
     });
 
-    return NextResponse.json(tasks.map(t => ({
-      id: t.id,
-      title: t.title,
-      description: t.description,
-      businessStatus: t.businessStatus,
-      priority: t.priority,
-      createdBy: t.createdBy,
-      assigneeId: t.assigneeId,
-      dueAt: t.dueAt?.toISOString() || null,
-      feedback: t.feedback,
-      submissionSummary: t.submissionSummary,
-      createdAt: t.createdAt.toISOString(),
-      updatedAt: t.updatedAt.toISOString(),
-    })));
+    // Batch fetch assignee names
+    const assigneeIds = Array.from(new Set(tasks.map(t => t.assigneeId).filter(Boolean) as string[]));
+    const users = assigneeIds.length > 0
+      ? await prisma.user.findMany({ where: { id: { in: assigneeIds } }, select: { id: true, name: true, email: true } })
+      : [];
+    const userMap = new Map(users.map(u => [u.id, u.name || u.email || u.id]));
+
+    return NextResponse.json(tasks.map(t => {
+      let attachmentCount = 0;
+      try { if (t.attachments) attachmentCount = JSON.parse(t.attachments).length; } catch {}
+      return {
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        businessStatus: t.businessStatus,
+        priority: t.priority,
+        createdBy: t.createdBy,
+        assigneeId: t.assigneeId,
+        assigneeName: t.assigneeId ? userMap.get(t.assigneeId) || null : null,
+        dueAt: t.dueAt?.toISOString() || null,
+        feedback: t.feedback,
+        submissionSummary: t.submissionSummary,
+        attachmentCount,
+        commentCount: t._count.comments,
+        createdAt: t.createdAt.toISOString(),
+        updatedAt: t.updatedAt.toISOString(),
+      };
+    }));
   } catch (error) {
     console.error('[WS_TASKS_LIST_ERROR]', error);
     return NextResponse.json({ error: '获取失败' }, { status: 500 });
