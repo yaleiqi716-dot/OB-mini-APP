@@ -109,7 +109,7 @@ export function AppHeader() {
       background: '#0E0E0C', flexShrink: 0,
     }}>
       <a href="/agent" style={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}>
-        <span style={{ color: '#F97316', fontWeight: 700, fontSize: 15, textShadow: '0 0 12px rgba(249,115,22,0.3)' }}>ORANGE</span>
+        <span style={{ color: '#FF6B2C', fontWeight: 700, fontSize: 15, textShadow: '0 0 12px rgba(255,107,44,0.3)' }}>ORANGE</span>
         <span style={{ color: '#F0EDE8', fontWeight: 700, fontSize: 15 }}>BENCH</span>
       </a>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -120,9 +120,9 @@ export function AppHeader() {
               <a key={n.href} href={n.href} style={{
                 fontSize: 13, textDecoration: 'none', padding: '5px 10px', borderRadius: 8,
                 fontWeight: active ? 600 : 400,
-                color: active ? '#F97316' : '#6B7280',
-                background: active ? 'rgba(249,115,22,0.10)' : 'transparent',
-                borderBottom: active ? '2px solid #F97316' : '2px solid transparent',
+                color: active ? '#FF6B2C' : '#6B7280',
+                background: active ? 'rgba(255,107,44,0.10)' : 'transparent',
+                borderBottom: active ? '2px solid #FF6B2C' : '2px solid transparent',
                 transition: 'color .15s, background .15s',
               }}>{n.label}</a>
             );
@@ -136,12 +136,12 @@ export function AppHeader() {
             aria-label="通知"
             style={{
               width: 32, height: 32, borderRadius: 8, border: 'none',
-              background: dropdownOpen ? 'rgba(255,122,26,0.10)' : 'transparent',
+              background: dropdownOpen ? 'rgba(255,107,44,0.10)' : 'transparent',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               position: 'relative', transition: 'background .2s',
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dropdownOpen ? '#F97316' : '#9CA3AF'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dropdownOpen ? '#FF6B2C' : '#9CA3AF'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
             {unreadCount > 0 && (
@@ -171,7 +171,7 @@ export function AppHeader() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <span style={{ fontSize: 15, fontWeight: 600, color: '#F0EDE8' }}>通知</span>
                 {unreadCount > 0 && (
-                  <button onClick={handleMarkAllRead} style={{ fontSize: 12, color: '#F97316', background: 'none', border: 'none', cursor: 'pointer' }}>
+                  <button onClick={handleMarkAllRead} style={{ fontSize: 12, color: '#FF6B2C', background: 'none', border: 'none', cursor: 'pointer' }}>
                     全部已读
                   </button>
                 )}
@@ -191,16 +191,16 @@ export function AppHeader() {
                       style={{
                         width: '100%', display: 'flex', alignItems: 'flex-start', gap: 10,
                         padding: '12px 16px', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)',
-                        background: n.read ? 'transparent' : 'rgba(249,115,22,0.04)',
+                        background: n.read ? 'transparent' : 'rgba(255,107,44,0.04)',
                         cursor: 'pointer', textAlign: 'left', transition: 'background .15s',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(249,115,22,0.04)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(255,107,44,0.04)')}
                     >
                       {/* Unread dot */}
                       <span style={{
                         width: 6, height: 6, borderRadius: '50%', flexShrink: 0, marginTop: 6,
-                        background: n.read ? 'transparent' : '#F97316',
+                        background: n.read ? 'transparent' : '#FF6B2C',
                       }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: 13, fontWeight: n.read ? 400 : 500, color: '#F0EDE8', margin: '0 0 2px', lineHeight: 1.4 }}>{n.title}</p>

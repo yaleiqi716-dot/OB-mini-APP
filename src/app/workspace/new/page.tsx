@@ -40,8 +40,8 @@ export default function NewWorkspacePage() {
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{ width: '100%', maxWidth: 440 }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,122,26,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,107,44,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF6B2C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
               </svg>
             </div>
@@ -64,7 +64,7 @@ export default function NewWorkspacePage() {
                 background: '#1A1A17', padding: '0 16px', fontSize: 15, color: '#F0EDE8', outline: 'none',
                 transition: 'border-color .2s',
               }}
-              onFocus={e => (e.currentTarget.style.borderColor = '#F97316')}
+              onFocus={e => (e.currentTarget.style.borderColor = '#FF6B2C')}
               onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
             />
 
@@ -76,7 +76,7 @@ export default function NewWorkspacePage() {
                 disabled={!name.trim() || creating}
                 style={{
                   flex: 1, height: 44, borderRadius: 12, fontSize: 15, fontWeight: 600,
-                  border: 'none', background: '#F97316', color: '#fff', cursor: 'pointer',
+                  border: 'none', background: '#FF6B2C', color: '#fff', cursor: 'pointer',
                   opacity: (!name.trim() || creating) ? 0.5 : 1, transition: 'background .2s',
                 }}
               >

@@ -51,8 +51,8 @@ const FILTER_OPTIONS = [
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, { bg: string; color: string }> = {
     draft: { bg: 'rgba(156,163,175,0.10)', color: '#6B7280' },
-    assigned: { bg: 'rgba(255,122,26,0.10)', color: '#C2410C' },
-    in_progress: { bg: 'rgba(255,122,26,0.10)', color: '#C2410C' },
+    assigned: { bg: 'rgba(255,107,44,0.10)', color: '#C2410C' },
+    in_progress: { bg: 'rgba(255,107,44,0.10)', color: '#C2410C' },
     submitted: { bg: 'rgba(59,130,246,0.10)', color: '#1D4ED8' },
     revision: { bg: 'rgba(239,68,68,0.10)', color: '#B91C1C' },
     completed: { bg: 'rgba(16,185,129,0.10)', color: '#047857' },
@@ -116,7 +116,7 @@ export default function WorkspacePage() {
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <div style={{ width: 24, height: 24, border: '2px solid #F97316', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+          <div style={{ width: 24, height: 24, border: '2px solid #FF6B2C', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
           <p style={{ fontSize: 14, color: '#9CA3AF' }}>加载工作区...</p>
         </div>
       </div>
@@ -134,7 +134,7 @@ export default function WorkspacePage() {
             <a href="/workspace/new" style={{
               display: 'inline-flex', alignItems: 'center', height: 40, padding: '0 24px',
               borderRadius: 9999, fontSize: 15, fontWeight: 600,
-              background: '#F97316', color: '#fff', textDecoration: 'none',
+              background: '#FF6B2C', color: '#fff', textDecoration: 'none',
             }}>创建工作区</a>
           </div>
         </div>
@@ -155,7 +155,7 @@ export default function WorkspacePage() {
               <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0 }}>{ws.memberCount} 位成员 · {ws.taskCount} 个任务</p>
             </div>
             {ws.role === 'owner' && (
-              <a href="/workspace/tasks/new" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 9999, fontSize: 14, fontWeight: 500, background: '#F97316', color: '#fff', textDecoration: 'none' }}>
+              <a href="/workspace/tasks/new" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 9999, fontSize: 14, fontWeight: 500, background: '#FF6B2C', color: '#fff', textDecoration: 'none' }}>
                 + 新建任务
               </a>
             )}
@@ -170,7 +170,7 @@ export default function WorkspacePage() {
             return (
               <div className="ob-command-bar">
                 <div className="ob-command-stat ob-command-stat--accent">
-                  <span className="ob-live-dot" style={{ width: 5, height: 5, animation: active > 0 ? 'statusCycle 2s ease-in-out infinite' : 'none', background: active > 0 ? '#F97316' : '#D5D3CE' }} />
+                  <span className="ob-live-dot" style={{ width: 5, height: 5, animation: active > 0 ? 'statusCycle 2s ease-in-out infinite' : 'none', background: active > 0 ? '#FF6B2C' : '#D5D3CE' }} />
                   <span><strong>{active}</strong> 进行中</span>
                 </div>
                 <div className="ob-command-stat" style={{ color: review > 0 ? '#1D4ED8' : undefined }}>
@@ -200,7 +200,7 @@ export default function WorkspacePage() {
                 type="text" placeholder="搜索任务..." value={search}
                 onChange={e => setSearch(e.target.value)}
                 style={{ width: '100%', height: 36, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17', padding: '0 12px 0 34px', fontSize: 13, color: '#F0EDE8', outline: 'none', transition: 'border-color .2s' }}
-                onFocus={e => (e.currentTarget.style.borderColor = '#F97316')}
+                onFocus={e => (e.currentTarget.style.borderColor = '#FF6B2C')}
                 onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
               />
             </div>
@@ -210,8 +210,8 @@ export default function WorkspacePage() {
                   height: 32, padding: '0 14px', borderRadius: 9999, fontSize: 13,
                   fontWeight: filter === f.value ? 500 : 400,
                   border: filter === f.value ? 'none' : '1px solid rgba(255,255,255,0.06)',
-                  background: filter === f.value ? 'rgba(255,122,26,0.10)' : '#FFFFFF',
-                  color: filter === f.value ? '#F97316' : '#6B7280',
+                  background: filter === f.value ? 'rgba(255,107,44,0.10)' : '#FFFFFF',
+                  color: filter === f.value ? '#FF6B2C' : '#6B7280',
                   cursor: 'pointer', transition: 'all .2s',
                 }}>{f.label}</button>
               ))}
@@ -233,7 +233,7 @@ export default function WorkspacePage() {
                 {search || filter !== 'all' ? '换个条件试试' : '创建第一个任务，分配给团队成员'}
               </p>
               {!(search || filter !== 'all') && ws?.role === 'owner' && (
-                <a href="/workspace/tasks/new" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 9999, fontSize: 14, fontWeight: 500, background: '#F97316', color: '#fff', textDecoration: 'none' }}>
+                <a href="/workspace/tasks/new" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 9999, fontSize: 14, fontWeight: 500, background: '#FF6B2C', color: '#fff', textDecoration: 'none' }}>
                   + 新建任务
                 </a>
               )}
@@ -286,7 +286,7 @@ function TaskCard({ task }: { task: WsTask }) {
       {task.assigneeName ? (
         <div style={{
           width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-          background: 'rgba(255,122,26,0.10)', color: '#F97316',
+          background: 'rgba(255,107,44,0.10)', color: '#FF6B2C',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 12, fontWeight: 600,
         }}>

@@ -84,9 +84,9 @@ export default function SettingsPage() {
     transition: 'border-color .2s, background .2s, color .2s',
   };
   const hoverIn = (e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)';
-    e.currentTarget.style.background = 'rgba(255,122,26,0.06)';
-    e.currentTarget.style.color = '#F97316';
+    e.currentTarget.style.borderColor = 'rgba(255,107,44,0.3)';
+    e.currentTarget.style.background = 'rgba(255,107,44,0.06)';
+    e.currentTarget.style.color = '#FF6B2C';
   };
   const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
     e.currentTarget.style.borderColor = '#E7E5E1';
@@ -101,7 +101,7 @@ export default function SettingsPage() {
   };
   const switchStyle = (on: boolean): React.CSSProperties => ({
     width: 44, height: 24, borderRadius: 12, border: 'none',
-    background: on ? '#F97316' : '#D5D3CE', cursor: 'pointer',
+    background: on ? '#FF6B2C' : '#D5D3CE', cursor: 'pointer',
     position: 'relative', transition: 'background .2s',
     flexShrink: 0,
   });
@@ -122,7 +122,7 @@ export default function SettingsPage() {
           <div>
             <div style={labelStyle}>头像</div>
           </div>
-          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,122,26,0.12)', color: '#F97316', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600 }}>
+          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,107,44,0.12)', color: '#FF6B2C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600 }}>
             {userId ? userId.slice(0, 1).toUpperCase() : 'U'}
           </div>
         </div>
@@ -350,11 +350,11 @@ export default function SettingsPage() {
                         display: 'flex', alignItems: 'center', gap: 10,
                         height: 40, padding: '0 12px', borderRadius: 12,
                         fontSize: 14, border: 'none',
-                        background: active ? 'rgba(255,122,26,0.06)' : 'transparent',
+                        background: active ? 'rgba(255,107,44,0.06)' : 'transparent',
                         color: active ? '#171717' : '#6B7280',
                         fontWeight: active ? 550 : 500,
                         cursor: 'pointer',
-                        borderLeft: active ? '2px solid #F97316' : '2px solid transparent',
+                        borderLeft: active ? '2px solid #FF6B2C' : '2px solid transparent',
                         transition: 'all .2s',
                         width: '100%', textAlign: 'left',
                       }}

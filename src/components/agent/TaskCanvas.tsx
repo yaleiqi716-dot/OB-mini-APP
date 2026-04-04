@@ -393,7 +393,7 @@ export function TaskCanvas({
               </div>
               <span style={{ fontSize: 12, fontWeight: 500, color: '#6B7280' }}>ORANGEBENCH</span>
               {isActive ? (
-                <span style={{ fontSize: 11, color: '#C2410C', fontWeight: 500, background: 'rgba(249,115,22,0.08)', padding: '2px 8px', borderRadius: 9999 }}>执行中</span>
+                <span style={{ fontSize: 11, color: '#C2410C', fontWeight: 500, background: 'rgba(255,107,44,0.08)', padding: '2px 8px', borderRadius: 9999 }}>执行中</span>
               ) : mode === 'result' ? (
                 <span style={{ fontSize: 11, color: '#047857', fontWeight: 500, background: 'rgba(16,185,129,0.08)', padding: '2px 8px', borderRadius: 9999 }}>已完成</span>
               ) : null}

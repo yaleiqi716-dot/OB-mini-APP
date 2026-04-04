@@ -67,9 +67,9 @@ export default function AccountPage() {
     transition: 'border-color .2s, background .2s, color .2s',
   };
   const hoverIn = (e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)';
-    e.currentTarget.style.background = 'rgba(255,122,26,0.06)';
-    e.currentTarget.style.color = '#F97316';
+    e.currentTarget.style.borderColor = 'rgba(255,107,44,0.3)';
+    e.currentTarget.style.background = 'rgba(255,107,44,0.06)';
+    e.currentTarget.style.color = '#FF6B2C';
   };
   const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
     e.currentTarget.style.borderColor = '#E7E5E1';
@@ -93,7 +93,7 @@ export default function AccountPage() {
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 20, height: 20, border: '2px solid #F97316', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+          <div style={{ width: 20, height: 20, border: '2px solid #FF6B2C', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
         </div>
       </div>
     );
@@ -118,7 +118,7 @@ export default function AccountPage() {
               {/* Avatar */}
               <div style={{
                 width: 56, height: 56, borderRadius: '50%',
-                background: 'rgba(255,122,26,0.12)', color: '#F97316',
+                background: 'rgba(255,107,44,0.12)', color: '#FF6B2C',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 18, fontWeight: 600, flexShrink: 0,
               }}>
@@ -134,7 +134,7 @@ export default function AccountPage() {
                     display: 'inline-flex', alignItems: 'center',
                     height: 24, padding: '0 10px', borderRadius: 9999,
                     fontSize: 11, fontWeight: 500,
-                    background: 'rgba(255,122,26,0.10)', color: '#C2410C',
+                    background: 'rgba(255,107,44,0.10)', color: '#C2410C',
                   }}>
                     {planLabel}
                   </span>

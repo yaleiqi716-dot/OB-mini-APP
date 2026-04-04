@@ -62,7 +62,7 @@ function StatusBadge({ status }: { status: string }) {
   const isReview = ['submitted', 'revision'].includes(status);
   const isFailed = status === 'failed';
   let bg = 'rgba(156,163,175,0.10)'; let color = '#6B7280';
-  if (isRunning)   { bg = 'rgba(255,122,26,0.10)'; color = '#C2410C'; }
+  if (isRunning)   { bg = 'rgba(255,107,44,0.10)'; color = '#C2410C'; }
   if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = '#047857'; }
   if (isFailed)    { bg = 'rgba(239,68,68,0.10)';  color = '#B91C1C'; }
   if (isReview)    { bg = 'rgba(59,130,246,0.10)';  color = '#1D4ED8'; }
@@ -188,9 +188,9 @@ export default function ReviewPage() {
     transition: 'border-color .2s, background .2s, color .2s',
   };
   const hoverIn = (e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)';
-    e.currentTarget.style.background = 'rgba(255,122,26,0.06)';
-    e.currentTarget.style.color = '#F97316';
+    e.currentTarget.style.borderColor = 'rgba(255,107,44,0.3)';
+    e.currentTarget.style.background = 'rgba(255,107,44,0.06)';
+    e.currentTarget.style.color = '#FF6B2C';
   };
   const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
     e.currentTarget.style.borderColor = '#E7E5E1';
@@ -225,7 +225,7 @@ export default function ReviewPage() {
                   color: '#171717', outline: 'none',
                   transition: 'border-color .2s, box-shadow .2s',
                 }}
-                onFocus={e => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255,122,26,0.12)'; }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#FF6B2C'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255,107,44,0.12)'; }}
                 onBlur={e => { e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.boxShadow = 'none'; }}
               />
             </div>
@@ -239,8 +239,8 @@ export default function ReviewPage() {
                 <button key={value} onClick={() => { setViewMode(value); setFilter('all'); }}
                   style={{
                     padding: '8px 20px', fontSize: 14, fontWeight: viewMode === value ? 600 : 400,
-                    color: viewMode === value ? '#F97316' : '#6B7280',
-                    borderBottom: viewMode === value ? '2px solid #F97316' : '2px solid transparent',
+                    color: viewMode === value ? '#FF6B2C' : '#6B7280',
+                    borderBottom: viewMode === value ? '2px solid #FF6B2C' : '2px solid transparent',
                     background: 'transparent', border: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none',
                     cursor: 'pointer', transition: 'color .2s', marginBottom: -1,
                   }}
@@ -259,8 +259,8 @@ export default function ReviewPage() {
                   height: 32, padding: '0 14px', borderRadius: 9999,
                   fontSize: 13, fontWeight: filter === f.value ? 500 : 400,
                   border: filter === f.value ? 'none' : '1px solid #E7E5E1',
-                  background: filter === f.value ? 'rgba(255,122,26,0.10)' : '#FFFFFF',
-                  color: filter === f.value ? '#F97316' : '#6B7280',
+                  background: filter === f.value ? 'rgba(255,107,44,0.10)' : '#FFFFFF',
+                  color: filter === f.value ? '#FF6B2C' : '#6B7280',
                   cursor: 'pointer', transition: 'all .2s',
                 }}
               >
@@ -290,11 +290,11 @@ export default function ReviewPage() {
                   display: 'inline-flex', alignItems: 'center', gap: 6,
                   height: 36, padding: '0 18px', borderRadius: 9999,
                   fontSize: 14, fontWeight: 500,
-                  background: '#F97316', color: '#fff', textDecoration: 'none',
+                  background: '#FF6B2C', color: '#fff', textDecoration: 'none',
                   transition: 'background .2s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#E8680F')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#F97316')}
+                onMouseEnter={e => (e.currentTarget.style.background = '#E85A1A')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#FF6B2C')}
               >
                 去 Tasks
               </a>

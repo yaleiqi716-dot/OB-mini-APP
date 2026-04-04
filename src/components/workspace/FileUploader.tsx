@@ -74,7 +74,7 @@ export function FileUploader({ files, onChange, disabled, label }: FileUploaderP
                 <span style={{ fontSize: 11, color: '#9CA3AF', flexShrink: 0 }}>{formatSize(f.size)}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                <a href={f.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#F97316', textDecoration: 'none' }}>下载</a>
+                <a href={f.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#FF6B2C', textDecoration: 'none' }}>下载</a>
                 {!disabled && (
                   <button
                     type="button"
@@ -106,7 +106,7 @@ export function FileUploader({ files, onChange, disabled, label }: FileUploaderP
               color: uploading ? '#9CA3AF' : '#6B7280', cursor: uploading ? 'wait' : 'pointer',
               transition: 'border-color .2s, color .2s',
             }}
-            onMouseEnter={e => { if (!uploading) { e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)'; e.currentTarget.style.color = '#F97316'; }}}
+            onMouseEnter={e => { if (!uploading) { e.currentTarget.style.borderColor = 'rgba(255,107,44,0.3)'; e.currentTarget.style.color = '#FF6B2C'; }}}
             onMouseLeave={e => { e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.color = '#6B7280'; }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -141,7 +141,7 @@ export function AttachmentList({ files, title }: { files: UploadedFile[]; title?
               <span style={{ fontSize: 11, color: '#9CA3AF', flexShrink: 0 }}>{formatSize(f.size)}</span>
             </div>
             <a href={f.url} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 12, color: '#F97316', textDecoration: 'none', flexShrink: 0 }}>下载</a>
+              style={{ fontSize: 12, color: '#FF6B2C', textDecoration: 'none', flexShrink: 0 }}>下载</a>
           </div>
         ))}
       </div>
