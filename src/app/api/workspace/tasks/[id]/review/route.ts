@@ -35,7 +35,7 @@ export async function POST(
         where: { id: params.id },
         data: { businessStatus: 'completed' },
       });
-      notifyTaskCompleted(task.workspaceId, task.title, task.id).catch(() => {});
+      notifyTaskCompleted(task.workspaceId, task.title, task.id, task.assigneeId || undefined).catch(() => {});
       return NextResponse.json({ success: true, task: updated });
     }
 
@@ -51,7 +51,7 @@ export async function POST(
           submissionSummary: null,
         },
       });
-      notifyTaskRevision(task.workspaceId, task.title, feedback.trim(), task.id).catch(() => {});
+      notifyTaskRevision(task.workspaceId, task.title, feedback.trim(), task.id, task.assigneeId || undefined).catch(() => {});
       return NextResponse.json({ success: true, task: updated });
     }
 

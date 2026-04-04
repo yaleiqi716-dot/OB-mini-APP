@@ -63,7 +63,9 @@ export async function POST(
 
     // WeCom notification
     const member = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
-    notifyTaskSubmitted(task.workspaceId, task.title, member?.name || member?.email || '成员', task.id).catch(() => {});
+    // Notify owner (recipient)
+    const ws = await prisma.workspace.findUnique({ where: { id: task.workspaceId }, select: { ownerId: true } });
+    notifyTaskSubmitted(task.workspaceId, task.title, member?.name || member?.email || '成员', task.id, ws?.ownerId).catch(() => {});
 
     return NextResponse.json({ success: true, task: updated });
   } catch (error) {

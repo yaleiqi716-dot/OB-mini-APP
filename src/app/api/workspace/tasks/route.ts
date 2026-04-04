@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
     // Notify via WeCom if assigned
     if (assigneeId && task.id) {
       const owner = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
-      notifyTaskAssigned(membership.workspaceId, title, owner?.name || owner?.email || '管理员', task.id).catch(() => {});
+      notifyTaskAssigned(membership.workspaceId, title, owner?.name || owner?.email || '管理员', task.id, assigneeId).catch(() => {});
     }
 
     return NextResponse.json(task);

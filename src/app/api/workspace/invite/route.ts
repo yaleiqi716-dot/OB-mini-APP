@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { randomBytes } from 'crypto';
 import { sendEmail } from '@/lib/mailer';
+import { notifyInviteReceived } from '@/services/wecom';
 
 // POST — Create invite (owner only)
 export async function POST(req: NextRequest) {
@@ -81,6 +82,9 @@ export async function POST(req: NextRequest) {
       </div>
       `
     );
+
+    // In-app notification for existing users
+    notifyInviteReceived(email, workspace.name, ownerName, token).catch(() => {});
 
     return NextResponse.json({
       id: invite.id,
