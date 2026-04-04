@@ -73,6 +73,7 @@ export default function DashboardPage() {
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
+  const [wsSummary, setWsSummary] = useState<{ name: string; assigned: number; submitted: number; completed: number } | null>(null);
 
   useEffect(() => {
     const m = document.cookie.match(/ob-user-id=([^;]+)/);
@@ -93,6 +94,23 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Fetch workspace summary
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/workspace').then(r => r.json()),
+      fetch('/api/workspace/tasks').then(r => r.json()),
+    ]).then(([ws, tasks]) => {
+      if (ws?.id && Array.isArray(tasks)) {
+        setWsSummary({
+          name: ws.name,
+          assigned: tasks.filter((t: { businessStatus: string }) => ['assigned', 'in_progress'].includes(t.businessStatus)).length,
+          submitted: tasks.filter((t: { businessStatus: string }) => ['submitted', 'revision'].includes(t.businessStatus)).length,
+          completed: tasks.filter((t: { businessStatus: string }) => t.businessStatus === 'completed').length,
+        });
+      }
+    }).catch(() => {});
+  }, []);
 
   async function handleRetry(taskId: string) {
     if (actionLoading) return;
@@ -232,6 +250,47 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+
+          {/* ── Workspace summary card ── */}
+          {wsSummary && (
+            <div style={{
+              background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 16,
+              padding: 18, marginBottom: 20,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                <div>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: '#171717', margin: '0 0 4px' }}>
+                    工作区：{wsSummary.name}
+                  </p>
+                  <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0 }}>团队任务概览</p>
+                </div>
+                <div style={{ display: 'flex', gap: 16, marginLeft: 16 }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: 20, fontWeight: 650, color: '#C2410C', margin: 0 }}>{wsSummary.assigned}</p>
+                    <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>进行中</p>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: 20, fontWeight: 650, color: '#1D4ED8', margin: 0 }}>{wsSummary.submitted}</p>
+                    <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>待审核</p>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: 20, fontWeight: 650, color: '#047857', margin: 0 }}>{wsSummary.completed}</p>
+                    <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>已完成</p>
+                  </div>
+                </div>
+              </div>
+              <a href="/workspace" style={{
+                height: 30, padding: '0 14px', borderRadius: 9999, fontSize: 13, fontWeight: 500,
+                border: '1px solid #E7E5E1', background: '#FFFFFF', color: '#6B7280',
+                textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
+                transition: 'border-color .2s, color .2s',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,122,26,0.3)'; e.currentTarget.style.color = '#F97316'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.color = '#6B7280'; }}
+              >查看工作区</a>
+            </div>
+          )}
 
           {/* ── Row 2: Recent tasks + AI Summary ── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: 20, marginBottom: 20 }}>

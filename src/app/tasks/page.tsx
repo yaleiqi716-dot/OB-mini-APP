@@ -20,6 +20,9 @@ const STATUS_LABEL: Record<string, string> = {
   queued: '排队中', understanding: '理解中', running: '执行中',
   executing: '执行中', interacting: '等待确认', structuring: '规划中',
   completed: '已完成', failed: '失败', cancelled: '已取消',
+  // Workspace business statuses
+  draft: '草稿', assigned: '已分配', in_progress: '进行中',
+  submitted: '已提交', revision: '需修改',
 };
 
 function timeAgo(dateStr: string): string {
@@ -45,15 +48,17 @@ const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
 
 // Status badge component
 function StatusBadge({ status }: { status: string }) {
-  const isRunning = ['queued', 'understanding', 'running', 'executing', 'interacting', 'structuring'].includes(status);
+  const isRunning = ['queued', 'understanding', 'running', 'executing', 'interacting', 'structuring', 'assigned', 'in_progress'].includes(status);
   const isCompleted = status === 'completed';
   const isFailed = status === 'failed';
+  const isReview = ['submitted', 'revision'].includes(status);
 
   let bg = 'rgba(156,163,175,0.10)';
   let color = '#6B7280';
   if (isRunning)   { bg = 'rgba(255,122,26,0.10)'; color = '#C2410C'; }
   if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = '#047857'; }
   if (isFailed)    { bg = 'rgba(239,68,68,0.10)';  color = '#B91C1C'; }
+  if (isReview)    { bg = 'rgba(59,130,246,0.10)';  color = '#1D4ED8'; }
 
   return (
     <span style={{
@@ -72,11 +77,14 @@ function StatusBadge({ status }: { status: string }) {
 export default function MyTasksPage() {
   const router = useRouter();
   const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [wsTasks, setWsTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
   const [retrying, setRetrying] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState<'personal' | 'team'>('personal');
+  const [hasWorkspace, setHasWorkspace] = useState(false);
 
   useEffect(() => {
     const m = document.cookie.match(/ob-user-id=([^;]+)/);
@@ -116,12 +124,41 @@ export default function MyTasksPage() {
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
+  // Fetch workspace tasks (team view)
+  useEffect(() => {
+    fetch('/api/workspace').then(r => r.json()).then(d => {
+      if (d?.id) {
+        setHasWorkspace(true);
+        fetch('/api/workspace/tasks').then(r => r.json()).then(wt => {
+          if (Array.isArray(wt)) {
+            setWsTasks(wt.map((t: Record<string, unknown>) => ({
+              id: t.id as string,
+              title: t.title as string,
+              status: (t.businessStatus as string) || 'draft',
+              input: t.description as string || '',
+              createdAt: t.createdAt as string,
+              updatedAt: t.updatedAt as string,
+            })));
+          }
+        }).catch(() => {});
+      }
+    }).catch(() => {});
+  }, []);
+
   const isRunning = (s: string) => ['queued', 'understanding', 'running', 'executing', 'interacting', 'structuring'].includes(s);
 
-  const filtered = tasks.filter((t) => {
-    if (filter === 'running' && !isRunning(t.status)) return false;
-    if (filter === 'completed' && t.status !== 'completed') return false;
-    if (filter === 'failed' && t.status !== 'failed') return false;
+  const activeTasks = viewMode === 'team' ? wsTasks : tasks;
+  const filtered = activeTasks.filter((t) => {
+    if (viewMode === 'team') {
+      // Team mode uses workspace business statuses
+      if (filter === 'running' && !['assigned', 'in_progress', 'revision'].includes(t.status)) return false;
+      if (filter === 'completed' && t.status !== 'completed') return false;
+      if (filter === 'failed' && t.status !== 'submitted') return false; // "submitted" maps to "pending review"
+    } else {
+      if (filter === 'running' && !isRunning(t.status)) return false;
+      if (filter === 'completed' && t.status !== 'completed') return false;
+      if (filter === 'failed' && t.status !== 'failed') return false;
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       if (!(t.title || '').toLowerCase().includes(q) && !(t.input || '').toLowerCase().includes(q)) return false;
@@ -189,7 +226,25 @@ export default function MyTasksPage() {
             </div>
           </div>
 
-          <p style={{ fontSize: 14, color: '#7A7A7A', margin: '0 0 20px' }}>查看你的 AI 执行记录与结果</p>
+          <p style={{ fontSize: 14, color: '#7A7A7A', margin: '0 0 16px' }}>查看你的 AI 执行记录与结果</p>
+
+          {/* ── View mode tabs ── */}
+          {hasWorkspace && (
+            <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid #E7E5E1' }}>
+              {([['personal', '个人'], ['team', '团队']] as const).map(([value, label]) => (
+                <button key={value} onClick={() => { setViewMode(value); setFilter('all'); }}
+                  style={{
+                    padding: '8px 20px', fontSize: 14, fontWeight: viewMode === value ? 600 : 400,
+                    color: viewMode === value ? '#F97316' : '#6B7280',
+                    borderBottom: viewMode === value ? '2px solid #F97316' : '2px solid transparent',
+                    background: 'transparent', border: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+                    cursor: 'pointer', transition: 'color .2s',
+                    marginBottom: -1,
+                  }}
+                >{label}</button>
+              ))}
+            </div>
+          )}
 
           {/* ── Filter chips ── */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
@@ -258,10 +313,12 @@ export default function MyTasksPage() {
             /* ── Task card list ── */
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {filtered.map((t) => {
-                const failed = t.status === 'failed';
-                const completed = t.status === 'completed';
-                const running = isRunning(t.status);
+                const isTeam = viewMode === 'team';
+                const failed = isTeam ? false : t.status === 'failed';
+                const completed = isTeam ? t.status === 'completed' : t.status === 'completed';
+                const running = isTeam ? ['assigned', 'in_progress', 'revision'].includes(t.status) : isRunning(t.status);
                 const displayTitle = t.title || t.input?.slice(0, 60) || '未命名任务';
+                const detailUrl = isTeam ? `/workspace/tasks/${t.id}` : `/tasks/${t.id}`;
                 const displayInput = t.input && t.input !== displayTitle ? t.input.slice(0, 100) : '';
 
                 const actionBtnStyle: React.CSSProperties = {
@@ -354,7 +411,7 @@ export default function MyTasksPage() {
                           </button>
                         )}
                         {failed && (
-                          <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
+                          <a href={detailUrl} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
                             查看详情
                           </a>
                         )}
@@ -364,7 +421,7 @@ export default function MyTasksPage() {
                           </a>
                         )}
                         {completed && (
-                          <a href={`/tasks/${t.id}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
+                          <a href={detailUrl} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
                             查看结果
                           </a>
                         )}
