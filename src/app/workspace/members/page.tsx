@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { WorkspaceHeader, WorkspaceSubNav } from '@/components/workspace/WorkspaceHeader';
+import { AppHeader, WorkspaceSubNav } from '@/components/workspace/AppHeader';
 
 interface Member {
   id: string;
@@ -106,7 +106,7 @@ export default function WorkspaceMembersPage() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-      <WorkspaceHeader />
+      <AppHeader />
       <WorkspaceSubNav />
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 780, margin: '0 auto', padding: '40px 32px 60px' }}>

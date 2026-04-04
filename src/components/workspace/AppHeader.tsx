@@ -30,9 +30,17 @@ function timeAgo(d: string): string {
   return `${Math.floor(hrs / 24)}天前`;
 }
 
-export function WorkspaceHeader() {
+// Re-export old name for backward compat during transition
+export const WorkspaceHeader = AppHeader;
+
+export function AppHeader() {
   const pathname = usePathname();
-  const isWsPage = pathname.startsWith('/workspace');
+
+  function isNavActive(href: string): boolean {
+    if (href === '/agent') return pathname === '/agent';
+    if (href === '/workspace') return pathname.startsWith('/workspace');
+    return pathname === href || pathname.startsWith(href + '/');
+  }
 
   // Notification state
   const [unreadCount, setUnreadCount] = useState(0);
@@ -107,7 +115,7 @@ export function WorkspaceHeader() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {MAIN_NAV.map(n => {
-            const active = n.href === '/workspace' ? isWsPage : false;
+            const active = isNavActive(n.href);
             return (
               <a key={n.href} href={n.href} style={{
                 fontSize: 13, textDecoration: 'none', padding: '4px 10px', borderRadius: 8,

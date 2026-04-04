@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MAIN_NAV } from '@/lib/nav';
+import { AppHeader } from '@/components/workspace/AppHeader';
 
 type Section = 'profile' | 'preferences' | 'notifications' | 'security' | 'integrations';
 
@@ -48,30 +48,6 @@ export default function SettingsPage() {
     document.cookie = 'ob-session=; path=/; max-age=0';
     router.replace('/login');
   }
-
-  const headerBar = (
-    <header style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      height: 52, padding: '0 32px',
-      borderBottom: '1px solid #E7E5E1',
-      background: '#F7F7F4', flexShrink: 0,
-    }}>
-      <a href="/agent" style={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}>
-        <span style={{ color: '#F97316', fontWeight: 700, fontSize: 15 }}>ORANGE</span>
-        <span style={{ color: '#171717', fontWeight: 700, fontSize: 15 }}>BENCH</span>
-      </a>
-      <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        {MAIN_NAV.map(n => {
-          const active = n.href === '/settings';
-          return active ? (
-            <span key={n.href} style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>{n.label}</span>
-          ) : (
-            <a key={n.href} href={n.href} style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8, transition: 'color .2s' }}>{n.label}</a>
-          );
-        })}
-      </nav>
-    </header>
-  );
 
   // ── Shared styles ──
   const cardStyle: React.CSSProperties = {
@@ -348,7 +324,7 @@ export default function SettingsPage() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-      {headerBar}
+      <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px' }}>

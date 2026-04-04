@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { WorkspaceHeader, WorkspaceSubNav } from '@/components/workspace/WorkspaceHeader';
+import { AppHeader, WorkspaceSubNav } from '@/components/workspace/AppHeader';
 
 interface WsTask {
   id: string;
@@ -111,7 +111,7 @@ export default function WorkspacePage() {
   if (loading) {
     return (
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-        <WorkspaceHeader />
+        <AppHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: 20, height: 20, border: '2px solid #F97316', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
         </div>
@@ -122,7 +122,7 @@ export default function WorkspacePage() {
   if (!ws) {
     return (
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-        <WorkspaceHeader />
+        <AppHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center' }}>
             <p style={{ fontSize: 18, fontWeight: 600, color: '#171717', marginBottom: 8 }}>还没有工作区</p>
@@ -140,7 +140,7 @@ export default function WorkspacePage() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-      <WorkspaceHeader />
+      <AppHeader />
       <WorkspaceSubNav />
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 32px 60px' }}>

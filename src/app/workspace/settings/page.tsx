@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { WorkspaceHeader, WorkspaceSubNav } from '@/components/workspace/WorkspaceHeader';
+import { AppHeader, WorkspaceSubNav } from '@/components/workspace/AppHeader';
 
 export default function WorkspaceSettingsPage() {
   const router = useRouter();
@@ -45,7 +45,7 @@ export default function WorkspaceSettingsPage() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-      <WorkspaceHeader />
+      <AppHeader />
       <WorkspaceSubNav />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">

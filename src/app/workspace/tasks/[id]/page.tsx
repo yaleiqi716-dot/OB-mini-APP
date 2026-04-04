@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { WorkspaceHeader } from '@/components/workspace/WorkspaceHeader';
+import { AppHeader } from '@/components/workspace/AppHeader';
 import { FileUploader, AttachmentList, UploadedFile } from '@/components/workspace/FileUploader';
 
 interface AgentTaskRef { id: string; title: string; status: string; conversationId: string | null; createdAt: string; hasResult: boolean; }
@@ -169,7 +169,7 @@ export default function WorkspaceTaskDetailPage() {
   if (loading || !task) {
     return (
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-        <WorkspaceHeader />
+        <AppHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: 20, height: 20, border: '2px solid #F97316', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
         </div>
@@ -179,7 +179,7 @@ export default function WorkspaceTaskDetailPage() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-      <WorkspaceHeader />
+      <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 780, margin: '0 auto', padding: '32px 32px 60px' }}>

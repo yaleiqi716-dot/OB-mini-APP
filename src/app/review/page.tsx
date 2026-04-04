@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Spinner } from '@/components/ui/Spinner';
-import { MAIN_NAV } from '@/lib/nav';
+import { AppHeader } from '@/components/workspace/AppHeader';
 
 interface ReviewTask {
   id: string;
@@ -179,30 +179,6 @@ export default function ReviewPage() {
     return true;
   });
 
-  const headerBar = (
-    <header style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      height: 52, padding: '0 32px',
-      borderBottom: '1px solid #E7E5E1',
-      background: '#F7F7F4', flexShrink: 0,
-    }}>
-      <a href="/agent" style={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}>
-        <span style={{ color: '#F97316', fontWeight: 700, fontSize: 15 }}>ORANGE</span>
-        <span style={{ color: '#171717', fontWeight: 700, fontSize: 15 }}>BENCH</span>
-      </a>
-      <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        {MAIN_NAV.map(n => {
-          const active = n.href === '/review';
-          return active ? (
-            <span key={n.href} style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>{n.label}</span>
-          ) : (
-            <a key={n.href} href={n.href} style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8, transition: 'color .2s' }}>{n.label}</a>
-          );
-        })}
-      </nav>
-    </header>
-  );
-
   const actionBtnStyle: React.CSSProperties = {
     height: 30, padding: '0 12px', borderRadius: 9999,
     fontSize: 12, fontWeight: 500,
@@ -224,7 +200,7 @@ export default function ReviewPage() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-      {headerBar}
+      <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 980, margin: '0 auto', padding: '40px 32px 60px' }}>

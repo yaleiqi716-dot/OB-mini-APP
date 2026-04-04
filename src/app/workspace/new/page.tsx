@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { WorkspaceHeader } from '@/components/workspace/WorkspaceHeader';
+import { AppHeader } from '@/components/workspace/AppHeader';
 
 export default function NewWorkspacePage() {
   const router = useRouter();
@@ -36,7 +36,7 @@ export default function NewWorkspacePage() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-      <WorkspaceHeader />
+      <AppHeader />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{ width: '100%', maxWidth: 440 }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MAIN_NAV } from '@/lib/nav';
+import { AppHeader } from '@/components/workspace/AppHeader';
 
 interface UserInfo {
   id: string;
@@ -88,34 +88,10 @@ export default function AccountPage() {
     border: '1px solid #E7E5E1',
   };
 
-  const headerBar = (
-    <header style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      height: 52, padding: '0 32px',
-      borderBottom: '1px solid #E7E5E1',
-      background: '#F7F7F4', flexShrink: 0,
-    }}>
-      <a href="/agent" style={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}>
-        <span style={{ color: '#F97316', fontWeight: 700, fontSize: 15 }}>ORANGE</span>
-        <span style={{ color: '#171717', fontWeight: 700, fontSize: 15 }}>BENCH</span>
-      </a>
-      <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        {MAIN_NAV.map(n => {
-          const active = n.href === '/account';
-          return active ? (
-            <span key={n.href} style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>{n.label}</span>
-          ) : (
-            <a key={n.href} href={n.href} style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8, transition: 'color .2s' }}>{n.label}</a>
-          );
-        })}
-      </nav>
-    </header>
-  );
-
   if (loading) {
     return (
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-        {headerBar}
+        <AppHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: 20, height: 20, border: '2px solid #F97316', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
         </div>
@@ -125,7 +101,7 @@ export default function AccountPage() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-      {headerBar}
+      <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px' }}>
@@ -269,10 +245,11 @@ export default function AccountPage() {
 
             <div style={{ ...rowStyle, ...rowBorder }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: '#171717' }}>账单与充值</div>
-                <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>管理订阅与额度</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#171717' }}>订阅与充值</div>
+                <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>管理套餐与额度</div>
               </div>
-              <span style={placeholderTag}>即将开放</span>
+              <a href="/billing" style={actionBtnStyle}
+                onMouseEnter={hoverIn} onMouseLeave={hoverOut}>前往充值</a>
             </div>
 
             <div style={rowStyle}>

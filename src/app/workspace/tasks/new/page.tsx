@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { WorkspaceHeader } from '@/components/workspace/WorkspaceHeader';
+import { AppHeader } from '@/components/workspace/AppHeader';
 import { FileUploader, UploadedFile } from '@/components/workspace/FileUploader';
 
 interface Member { id: string; userId: string; name: string | null; email: string; role: string; }
@@ -60,7 +60,7 @@ export default function NewWorkspaceTaskPage() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-      <WorkspaceHeader />
+      <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '40px 32px 60px' }}>

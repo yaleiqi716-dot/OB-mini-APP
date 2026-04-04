@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Spinner } from '@/components/ui/Spinner';
-import { MAIN_NAV } from '@/lib/nav';
+import { AppHeader } from '@/components/workspace/AppHeader';
 
 interface TaskRef {
   id: string;
@@ -123,35 +123,10 @@ export default function DashboardPage() {
     finally { setActionLoading(null); }
   }
 
-  // ── Header bar ──
-  const headerBar = (
-    <header style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      height: 52, padding: '0 32px',
-      borderBottom: '1px solid #E7E5E1',
-      background: '#F7F7F4', flexShrink: 0,
-    }}>
-      <a href="/agent" style={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}>
-        <span style={{ color: '#F97316', fontWeight: 700, fontSize: 15 }}>ORANGE</span>
-        <span style={{ color: '#171717', fontWeight: 700, fontSize: 15 }}>BENCH</span>
-      </a>
-      <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        {MAIN_NAV.map(n => {
-          const active = n.href === '/dashboard';
-          return active ? (
-            <span key={n.href} style={{ fontSize: 13, fontWeight: 600, color: '#F97316', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,122,26,0.10)' }}>{n.label}</span>
-          ) : (
-            <a key={n.href} href={n.href} style={{ fontSize: 13, color: '#9CA3AF', textDecoration: 'none', padding: '4px 10px', borderRadius: 8, transition: 'color .2s' }}>{n.label}</a>
-          );
-        })}
-      </nav>
-    </header>
-  );
-
   if (loading) {
     return (
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-        {headerBar}
+        <AppHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Spinner size="md" />
         </div>
@@ -162,7 +137,7 @@ export default function DashboardPage() {
   if (error || !data) {
     return (
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-        {headerBar}
+        <AppHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
           <p style={{ fontSize: 14, color: '#6B7280' }}>{error || '数据加载失败'}</p>
           <button onClick={() => window.location.reload()} style={{ fontSize: 13, color: '#F97316', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>刷新页面</button>
@@ -205,7 +180,7 @@ export default function DashboardPage() {
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
-      {headerBar}
+      <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px' }}>

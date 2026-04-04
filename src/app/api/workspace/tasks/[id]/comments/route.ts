@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
+import { createNotification } from '@/services/wecom';
 
 // GET — List comments for a workspace task
 export async function GET(
@@ -91,6 +92,14 @@ export async function POST(
       where: { id: userId },
       select: { name: true, email: true },
     });
+    const userName = user?.name || user?.email || '成员';
+
+    // Notify the other party (owner ↔ assignee)
+    const workspace = await prisma.workspace.findUnique({ where: { id: task.workspaceId }, select: { ownerId: true } });
+    const recipientId = userId === workspace?.ownerId ? task.assigneeId : workspace?.ownerId;
+    if (recipientId && recipientId !== userId) {
+      createNotification(recipientId, 'task_commented', `${userName} 评论了任务「${task.title}」`, content.trim().slice(0, 100), `/workspace/tasks/${task.id}`).catch(() => {});
+    }
 
     return NextResponse.json({
       id: comment.id,
