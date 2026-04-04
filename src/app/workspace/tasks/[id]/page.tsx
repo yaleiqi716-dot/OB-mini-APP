@@ -47,6 +47,9 @@ export default function WorkspaceTaskDetailPage() {
   const [reviewFeedback, setReviewFeedback] = useState('');
   const [toast, setToast] = useState<string | null>(null);
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
+  const [comments, setComments] = useState<{ id: string; userId: string; userName: string; content: string; createdAt: string }[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [sendingComment, setSendingComment] = useState(false);
 
   const userId = (() => { const m = document.cookie.match(/ob-user-id=([^;]+)/); return m?.[1] ? decodeURIComponent(m[1]) : ''; })();
 
@@ -64,6 +67,10 @@ export default function WorkspaceTaskDetailPage() {
   useEffect(() => {
     if (!userId) { router.replace('/login'); return; }
     loadTask();
+    // Fetch comments
+    fetch(`/api/workspace/tasks/${taskId}/comments`).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setComments(data);
+    }).catch(() => {});
     // Fetch member names for display
     fetch('/api/workspace/members').then(r => r.json()).then(data => {
       if (Array.isArray(data)) {
@@ -130,6 +137,24 @@ export default function WorkspaceTaskDetailPage() {
       } else showToast(data.error || '操作失败');
     } catch { showToast('网络错误'); }
     finally { setActionLoading(null); }
+  }
+
+  async function handleSendComment() {
+    if (!commentText.trim() || sendingComment) return;
+    setSendingComment(true);
+    try {
+      const res = await fetch(`/api/workspace/tasks/${taskId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: commentText.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.id) {
+        setComments(prev => [...prev, data]);
+        setCommentText('');
+      } else showToast(data.error || '发送失败');
+    } catch { showToast('网络错误'); }
+    finally { setSendingComment(false); }
   }
 
   const cardStyle: React.CSSProperties = { background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 16, padding: 20, marginBottom: 16 };
@@ -229,6 +254,71 @@ export default function WorkspaceTaskDetailPage() {
               )}
             </div>
           )}
+
+          {/* ── Comments / Discussion ── */}
+          <div style={cardStyle}>
+            <p style={{ fontSize: 15, fontWeight: 600, color: '#171717', margin: '0 0 12px' }}>讨论</p>
+
+            {comments.length === 0 ? (
+              <p style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 12 }}>暂无讨论，发条消息开始</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+                {comments.map(c => (
+                  <div key={c.id} style={{ display: 'flex', gap: 10 }}>
+                    <div style={{
+                      width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                      background: 'rgba(255,122,26,0.10)', color: '#F97316',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 12, fontWeight: 600, marginTop: 2,
+                    }}>
+                      {(c.userName || 'U').slice(0, 1).toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: '#171717' }}>{c.userName}</span>
+                        <span style={{ fontSize: 11, color: '#9CA3AF' }}>
+                          {new Date(c.createdAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: 14, color: '#404040', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>{c.content}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Comment input */}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <textarea
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendComment(); } }}
+                placeholder="输入讨论内容..."
+                rows={2}
+                style={{
+                  flex: 1, borderRadius: 12, border: '1px solid #E7E5E1',
+                  padding: '10px 14px', fontSize: 14, color: '#171717',
+                  outline: 'none', resize: 'none', minHeight: 44, fontFamily: 'inherit',
+                  transition: 'border-color .2s',
+                }}
+                onFocus={e => (e.currentTarget.style.borderColor = '#F97316')}
+                onBlur={e => (e.currentTarget.style.borderColor = '#E7E5E1')}
+              />
+              <button
+                onClick={handleSendComment}
+                disabled={!commentText.trim() || sendingComment}
+                style={{
+                  height: 44, padding: '0 16px', borderRadius: 12,
+                  fontSize: 14, fontWeight: 500, border: 'none',
+                  background: (!commentText.trim() || sendingComment) ? '#D5D3CE' : '#F97316',
+                  color: '#fff', cursor: (!commentText.trim() || sendingComment) ? 'not-allowed' : 'pointer',
+                  flexShrink: 0, transition: 'background .2s',
+                }}
+              >
+                {sendingComment ? '...' : '发送'}
+              </button>
+            </div>
+          </div>
 
           {/* ── Action area ── */}
           <div style={cardStyle}>

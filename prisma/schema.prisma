@@ -251,6 +251,7 @@ model WorkspaceTask {
   updatedAt         DateTime            @updatedAt
   links             WorkspaceTaskLink[]
   agentTasks        Task[]
+  comments          WorkspaceTaskComment[]
   @@index([workspaceId, businessStatus])
   @@index([assigneeId, businessStatus])
   @@index([createdBy])
@@ -267,4 +268,15 @@ model WorkspaceTaskLink {
   createdAt       DateTime      @default(now())
   @@index([workspaceTaskId])
   @@index([agentTaskId])
+}
+
+model WorkspaceTaskComment {
+  id              String        @id @default(cuid())
+  workspaceTaskId String
+  workspaceTask   WorkspaceTask @relation(fields: [workspaceTaskId], references: [id], onDelete: Cascade)
+  userId          String
+  content         String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  @@index([workspaceTaskId, createdAt])
 }
