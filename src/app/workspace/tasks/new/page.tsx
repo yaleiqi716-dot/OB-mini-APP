@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { WorkspaceHeader } from '@/components/workspace/WorkspaceHeader';
+import { FileUploader, UploadedFile } from '@/components/workspace/FileUploader';
 
 interface Member { id: string; userId: string; name: string | null; email: string; role: string; }
 
@@ -14,6 +15,7 @@ export default function NewWorkspaceTaskPage() {
   const [assigneeId, setAssigneeId] = useState('');
   const [dueAt, setDueAt] = useState('');
   const [members, setMembers] = useState<Member[]>([]);
+  const [attachments, setAttachments] = useState<UploadedFile[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -36,6 +38,7 @@ export default function NewWorkspaceTaskPage() {
           priority,
           assigneeId: assigneeId || undefined,
           dueAt: dueAt || undefined,
+          attachments: attachments.length > 0 ? attachments : undefined,
         }),
       });
       const data = await res.json();
@@ -103,6 +106,10 @@ export default function NewWorkspaceTaskPage() {
             <div style={{ marginBottom: 24 }}>
               <label style={labelStyle}>截止时间</label>
               <input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)} style={inputStyle} />
+            </div>
+
+            <div style={{ marginBottom: 24 }}>
+              <FileUploader files={attachments} onChange={setAttachments} label="附件（可选）" />
             </div>
 
             {error && <p style={{ fontSize: 13, color: '#B91C1C', marginBottom: 16 }}>{error}</p>}

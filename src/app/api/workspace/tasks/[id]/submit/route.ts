@@ -29,7 +29,10 @@ export async function POST(
     }
 
     const body = await req.json().catch(() => ({}));
-    const { submissionSummary, agentTaskId } = body as { submissionSummary?: string; agentTaskId?: string };
+    const { submissionSummary, agentTaskId, submissionAttachments } = body as {
+      submissionSummary?: string; agentTaskId?: string;
+      submissionAttachments?: { id: string; name: string; size: number; type: string; url: string }[];
+    };
 
     // If specific agent task provided, mark its link as submitted
     if (agentTaskId) {
@@ -54,6 +57,7 @@ export async function POST(
       data: {
         businessStatus: 'submitted',
         submissionSummary: submissionSummary?.trim() || null,
+        submissionAttachments: submissionAttachments ? JSON.stringify(submissionAttachments) : null,
       },
     });
 

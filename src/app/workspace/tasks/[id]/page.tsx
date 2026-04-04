@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { WorkspaceHeader } from '@/components/workspace/WorkspaceHeader';
+import { FileUploader, AttachmentList, UploadedFile } from '@/components/workspace/FileUploader';
 
 interface AgentTaskRef { id: string; title: string; status: string; conversationId: string | null; createdAt: string; hasResult: boolean; }
 interface LinkRef { id: string; agentTaskId: string; conversationId: string | null; purpose: string; submittedAt: string | null; }
@@ -10,6 +11,7 @@ interface WsTaskDetail {
   id: string; title: string; description: string | null; businessStatus: string;
   priority: number; createdBy: string; assigneeId: string | null; dueAt: string | null;
   feedback: string | null; submissionSummary: string | null;
+  attachments: UploadedFile[]; submissionAttachments: UploadedFile[];
   createdAt: string; updatedAt: string; userRole: string;
   agentTasks: AgentTaskRef[]; links: LinkRef[];
 }
@@ -41,6 +43,7 @@ export default function WorkspaceTaskDetailPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [submitSummary, setSubmitSummary] = useState('');
+  const [submitFiles, setSubmitFiles] = useState<UploadedFile[]>([]);
   const [reviewFeedback, setReviewFeedback] = useState('');
   const [toast, setToast] = useState<string | null>(null);
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
@@ -99,10 +102,13 @@ export default function WorkspaceTaskDetailPage() {
       const res = await fetch(`/api/workspace/tasks/${taskId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ submissionSummary: submitSummary.trim() || undefined }),
+        body: JSON.stringify({
+          submissionSummary: submitSummary.trim() || undefined,
+          submissionAttachments: submitFiles.length > 0 ? submitFiles : undefined,
+        }),
       });
       const data = await res.json();
-      if (data.success) { showToast('已提交，等待审核'); loadTask(); setSubmitSummary(''); }
+      if (data.success) { showToast('已提交，等待审核'); loadTask(); setSubmitSummary(''); setSubmitFiles([]); }
       else showToast(data.error || '提交失败');
     } catch { showToast('网络错误'); }
     finally { setActionLoading(null); }
@@ -169,6 +175,13 @@ export default function WorkspaceTaskDetailPage() {
             </div>
           )}
 
+          {/* Task attachments */}
+          {task.attachments && task.attachments.length > 0 && (
+            <div style={cardStyle}>
+              <AttachmentList files={task.attachments} title="参考资料" />
+            </div>
+          )}
+
           {/* Revision feedback */}
           {task.feedback && task.businessStatus === 'revision' && (
             <div style={{ ...cardStyle, background: '#FFF7F5', borderColor: '#F5D0C5' }}>
@@ -202,11 +215,18 @@ export default function WorkspaceTaskDetailPage() {
             </div>
           )}
 
-          {/* Submission summary */}
-          {task.submissionSummary && task.businessStatus === 'submitted' && (
+          {/* Submission summary + attachments */}
+          {task.businessStatus === 'submitted' && (task.submissionSummary || (task.submissionAttachments && task.submissionAttachments.length > 0)) && (
             <div style={cardStyle}>
-              <p style={{ fontSize: 13, fontWeight: 500, color: '#9CA3AF', margin: '0 0 8px' }}>交付说明</p>
-              <p style={{ fontSize: 14, color: '#404040', lineHeight: 1.6, margin: 0 }}>{task.submissionSummary}</p>
+              {task.submissionSummary && (
+                <>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: '#9CA3AF', margin: '0 0 8px' }}>交付说明</p>
+                  <p style={{ fontSize: 14, color: '#404040', lineHeight: 1.6, margin: '0 0 12px' }}>{task.submissionSummary}</p>
+                </>
+              )}
+              {task.submissionAttachments && task.submissionAttachments.length > 0 && (
+                <AttachmentList files={task.submissionAttachments} title="交付附件" />
+              )}
             </div>
           )}
 
@@ -231,6 +251,9 @@ export default function WorkspaceTaskDetailPage() {
                   placeholder="简要说明你的交付内容（可选）" rows={2}
                   style={{ width: '100%', borderRadius: 12, border: '1px solid #E7E5E1', padding: '10px 14px', fontSize: 14, color: '#171717', outline: 'none', resize: 'vertical', minHeight: 60, fontFamily: 'inherit', marginBottom: 10 }}
                   onFocus={e => (e.currentTarget.style.borderColor = '#F97316')} onBlur={e => (e.currentTarget.style.borderColor = '#E7E5E1')} />
+                <div style={{ marginBottom: 12 }}>
+                  <FileUploader files={submitFiles} onChange={setSubmitFiles} label="附加文件（可选）" />
+                </div>
                 <button onClick={handleSubmit} disabled={actionLoading === 'submit'}
                   style={{ ...actionBtn, background: '#171717', color: '#fff', opacity: actionLoading === 'submit' ? 0.5 : 1 }}>
                   {actionLoading === 'submit' ? '提交中...' : '提交交付物'}

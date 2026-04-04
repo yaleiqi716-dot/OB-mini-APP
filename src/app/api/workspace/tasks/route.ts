@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     if (membership.role !== 'owner') return NextResponse.json({ error: '只有 Owner 可以创建任务' }, { status: 403 });
 
     const body = await req.json();
-    const { title, description, priority, assigneeId, dueAt } = body;
+    const { title, description, priority, assigneeId, dueAt, attachments } = body;
 
     if (!title || !title.trim()) return NextResponse.json({ error: '请输入任务标题' }, { status: 400 });
 
@@ -86,6 +86,7 @@ export async function POST(req: NextRequest) {
         createdBy: userId,
         assigneeId: assigneeId || null,
         dueAt: dueAt ? new Date(dueAt) : null,
+        attachments: attachments ? JSON.stringify(attachments) : null,
         businessStatus: assigneeId ? 'assigned' : 'draft',
       },
     });

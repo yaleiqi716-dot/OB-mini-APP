@@ -37,8 +37,16 @@ export async function GET(
         })
       : [];
 
+    // Parse JSON attachment fields
+    let parsedAttachments = [];
+    let parsedSubAttachments = [];
+    try { if (task.attachments) parsedAttachments = JSON.parse(task.attachments); } catch {}
+    try { if (task.submissionAttachments) parsedSubAttachments = JSON.parse(task.submissionAttachments); } catch {}
+
     return NextResponse.json({
       ...task,
+      attachments: parsedAttachments,
+      submissionAttachments: parsedSubAttachments,
       dueAt: task.dueAt?.toISOString() || null,
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString(),
@@ -90,6 +98,7 @@ export async function PATCH(
     if (body.description !== undefined) data.description = body.description?.trim() || null;
     if (body.priority !== undefined) data.priority = body.priority;
     if (body.dueAt !== undefined) data.dueAt = body.dueAt ? new Date(body.dueAt) : null;
+    if (body.attachments !== undefined) data.attachments = body.attachments ? JSON.stringify(body.attachments) : null;
 
     // Handle assignment
     if (body.assigneeId !== undefined) {
