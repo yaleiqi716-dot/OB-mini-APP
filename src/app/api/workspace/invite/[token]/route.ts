@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { withAuth, isErrorResponse } from '@/lib/workspace-auth';
 
 // GET — Validate invite token (public — no auth required)
 export async function GET(
@@ -43,8 +43,8 @@ export async function DELETE(
   { params }: { params: { token: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
+    const ctx = await withAuth(req);
+    if (isErrorResponse(ctx)) return ctx;
 
     const invite = await prisma.workspaceInvite.findUnique({
       where: { token: params.token },
@@ -52,7 +52,7 @@ export async function DELETE(
     });
 
     if (!invite) return NextResponse.json({ error: '邀请不存在' }, { status: 404 });
-    if (invite.workspace.ownerId !== userId) {
+    if (invite.workspace.ownerId !== ctx.userId) {
       return NextResponse.json({ error: '无权限' }, { status: 403 });
     }
     if (invite.status !== 'pending') {

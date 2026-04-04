@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { withAuth, isErrorResponse } from '@/lib/workspace-auth';
 
 // POST — Accept invite (must be logged in)
 export async function POST(
@@ -8,8 +8,8 @@ export async function POST(
   { params }: { params: { token: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '请先登录' }, { status: 401 });
+    const ctx = await withAuth(req);
+    if (isErrorResponse(ctx)) return ctx;
 
     const invite = await prisma.workspaceInvite.findUnique({
       where: { token: params.token },
@@ -29,13 +29,13 @@ export async function POST(
 
     // Check if already a member
     const existingMember = await prisma.workspaceMember.findFirst({
-      where: { workspaceId: invite.workspaceId, userId, status: 'active' },
+      where: { workspaceId: invite.workspaceId, userId: ctx.userId, status: 'active' },
     });
     if (existingMember) {
       // Already a member — mark invite as accepted and return success
       await prisma.workspaceInvite.update({
         where: { id: invite.id },
-        data: { status: 'accepted', acceptedUserId: userId },
+        data: { status: 'accepted', acceptedUserId: ctx.userId },
       });
       return NextResponse.json({ success: true, workspaceId: invite.workspaceId, alreadyMember: true });
     }
@@ -44,12 +44,12 @@ export async function POST(
     await prisma.$transaction([
       prisma.workspaceInvite.update({
         where: { id: invite.id },
-        data: { status: 'accepted', acceptedUserId: userId },
+        data: { status: 'accepted', acceptedUserId: ctx.userId },
       }),
       prisma.workspaceMember.create({
         data: {
           workspaceId: invite.workspaceId,
-          userId,
+          userId: ctx.userId,
           role: invite.role,
           status: 'active',
           joinedAt: new Date(),

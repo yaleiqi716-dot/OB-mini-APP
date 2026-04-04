@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { withAuth, isErrorResponse } from '@/lib/workspace-auth';
 
 // DELETE — Remove a member (owner only)
 export async function DELETE(
@@ -8,8 +8,8 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
+    const ctx = await withAuth(req);
+    if (isErrorResponse(ctx)) return ctx;
 
     const member = await prisma.workspaceMember.findUnique({
       where: { id: params.id },
@@ -18,7 +18,7 @@ export async function DELETE(
     if (!member) return NextResponse.json({ error: '成员不存在' }, { status: 404 });
 
     // Only workspace owner can remove members
-    if (member.workspace.ownerId !== userId) {
+    if (member.workspace.ownerId !== ctx.userId) {
       return NextResponse.json({ error: '无权限' }, { status: 403 });
     }
 

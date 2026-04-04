@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { Spinner } from '@/components/ui/Spinner';
-import { NavHeader } from '@/components/NavHeader';
+import { AppHeader } from '@/components/workspace/AppHeader';
 
 interface TaskEvent {
   id: string;
@@ -178,14 +178,14 @@ export default function TaskDetailPage() {
 
   if (loading) return (
     <div className="h-[100dvh] flex flex-col bg-surface-primary">
-      <NavHeader />
+      <AppHeader />
       <div className="flex-1 flex items-center justify-center"><Spinner size="md" /></div>
     </div>
   );
 
   if (error) return (
     <div className="h-[100dvh] flex flex-col bg-surface-primary">
-      <NavHeader />
+      <AppHeader />
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center space-y-3">
           <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
@@ -206,7 +206,7 @@ export default function TaskDetailPage() {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-surface-primary">
-      <NavHeader />
+      <AppHeader />
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-6">
 

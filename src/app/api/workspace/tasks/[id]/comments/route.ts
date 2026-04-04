@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { withAuth, isErrorResponse } from '@/lib/workspace-auth';
 import { createNotification } from '@/services/wecom';
 
 // GET — List comments for a workspace task
@@ -9,15 +9,15 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
+    const ctx = await withAuth(req);
+    if (isErrorResponse(ctx)) return ctx;
 
     // Verify task exists and user has access
     const task = await prisma.workspaceTask.findUnique({ where: { id: params.id } });
     if (!task) return NextResponse.json({ error: '任务不存在' }, { status: 404 });
 
     const membership = await prisma.workspaceMember.findFirst({
-      where: { workspaceId: task.workspaceId, userId, status: 'active' },
+      where: { workspaceId: task.workspaceId, userId: ctx.userId, status: 'active' },
     });
     if (!membership) return NextResponse.json({ error: '无权限' }, { status: 403 });
 
@@ -57,14 +57,14 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
+    const ctx = await withAuth(req);
+    if (isErrorResponse(ctx)) return ctx;
 
     const task = await prisma.workspaceTask.findUnique({ where: { id: params.id } });
     if (!task) return NextResponse.json({ error: '任务不存在' }, { status: 404 });
 
     const membership = await prisma.workspaceMember.findFirst({
-      where: { workspaceId: task.workspaceId, userId, status: 'active' },
+      where: { workspaceId: task.workspaceId, userId: ctx.userId, status: 'active' },
     });
     if (!membership) return NextResponse.json({ error: '无权限' }, { status: 403 });
 
@@ -82,29 +82,29 @@ export async function POST(
     const comment = await prisma.workspaceTaskComment.create({
       data: {
         workspaceTaskId: params.id,
-        userId,
+        userId: ctx.userId,
         content: content.trim(),
       },
     });
 
     // Get user info for response
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: ctx.userId },
       select: { name: true, email: true },
     });
     const userName = user?.name || user?.email || '成员';
 
     // Notify the other party (owner ↔ assignee)
     const workspace = await prisma.workspace.findUnique({ where: { id: task.workspaceId }, select: { ownerId: true } });
-    const recipientId = userId === workspace?.ownerId ? task.assigneeId : workspace?.ownerId;
-    if (recipientId && recipientId !== userId) {
+    const recipientId = ctx.userId === workspace?.ownerId ? task.assigneeId : workspace?.ownerId;
+    if (recipientId && recipientId !== ctx.userId) {
       createNotification(recipientId, 'task_commented', `${userName} 评论了任务「${task.title}」`, content.trim().slice(0, 100), `/workspace/tasks/${task.id}`).catch(() => {});
     }
 
     return NextResponse.json({
       id: comment.id,
       userId: comment.userId,
-      userName: user?.name || user?.email || userId,
+      userName: user?.name || user?.email || ctx.userId,
       content: comment.content,
       createdAt: comment.createdAt.toISOString(),
     });

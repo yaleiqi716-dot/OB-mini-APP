@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { NavHeader } from '@/components/NavHeader';
+import { AppHeader } from '@/components/workspace/AppHeader';
 import { Spinner } from '@/components/ui/Spinner';
 
 interface UserInfo {
@@ -28,7 +28,7 @@ export default function ProfilePage() {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-surface-primary">
-      <NavHeader />
+      <AppHeader />
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="max-w-2xl mx-auto px-4 md:px-6 py-8 space-y-6">
           <h1 className="text-xl font-semibold text-content-primary">个人资料</h1>

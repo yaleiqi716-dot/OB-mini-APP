@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { withWorkspaceOwner, isErrorResponse } from '@/lib/workspace-auth';
 import { randomBytes } from 'crypto';
 import { sendEmail } from '@/lib/mailer';
 import { notifyInviteReceived } from '@/services/wecom';
@@ -8,11 +8,8 @@ import { notifyInviteReceived } from '@/services/wecom';
 // POST — Create invite (owner only)
 export async function POST(req: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
-
-    const workspace = await prisma.workspace.findFirst({ where: { ownerId: userId } });
-    if (!workspace) return NextResponse.json({ error: '工作区不存在' }, { status: 404 });
+    const ctx = await withWorkspaceOwner(req);
+    if (isErrorResponse(ctx)) return ctx;
 
     const body = await req.json();
     const { email, role } = body as { email: string; role?: string };
@@ -25,7 +22,7 @@ export async function POST(req: NextRequest) {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       const existingMember = await prisma.workspaceMember.findFirst({
-        where: { workspaceId: workspace.id, userId: existingUser.id, status: 'active' },
+        where: { workspaceId: ctx.workspaceId, userId: existingUser.id, status: 'active' },
       });
       if (existingMember) {
         return NextResponse.json({ error: '该用户已是工作区成员' }, { status: 400 });
@@ -34,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     // Check for existing pending invite
     const existingInvite = await prisma.workspaceInvite.findFirst({
-      where: { workspaceId: workspace.id, email, status: 'pending', expiresAt: { gt: new Date() } },
+      where: { workspaceId: ctx.workspaceId, email, status: 'pending', expiresAt: { gt: new Date() } },
     });
     if (existingInvite) {
       return NextResponse.json({ error: '已有未过期的邀请，请等待对方接受或撤销后重发' }, { status: 400 });
@@ -45,10 +42,10 @@ export async function POST(req: NextRequest) {
 
     const invite = await prisma.workspaceInvite.create({
       data: {
-        workspaceId: workspace.id,
+        workspaceId: ctx.workspaceId,
         email,
         role: role || 'member',
-        invitedBy: userId,
+        invitedBy: ctx.userId,
         token,
         status: 'pending',
         expiresAt,
@@ -58,12 +55,14 @@ export async function POST(req: NextRequest) {
     // Send invite email
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://orangebench.tech';
     const inviteUrl = `${appUrl}/invite/${token}`;
-    const ownerUser = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
+    const workspace = await prisma.workspace.findUnique({ where: { id: ctx.workspaceId }, select: { name: true } });
+    const ownerUser = await prisma.user.findUnique({ where: { id: ctx.userId }, select: { name: true, email: true } });
     const ownerName = ownerUser?.name || ownerUser?.email || '管理员';
+    const workspaceName = workspace?.name || '工作区';
 
     await sendEmail(
       email,
-      `${ownerName} 邀请你加入 ${workspace.name} — ORANGEBENCH`,
+      `${ownerName} 邀请你加入 ${workspaceName} — ORANGEBENCH`,
       `
       <div style="font-family: -apple-system, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px;">
         <div style="margin-bottom: 24px;">
@@ -71,7 +70,7 @@ export async function POST(req: NextRequest) {
         </div>
         <h2 style="color: #171717; font-size: 22px; font-weight: 600; margin: 0 0 8px;">你被邀请加入工作区</h2>
         <p style="color: #6B7280; font-size: 15px; margin: 0 0 24px; line-height: 1.6;">
-          <strong>${ownerName}</strong> 邀请你加入工作区 <strong>${workspace.name}</strong>，角色为 ${role === 'owner' ? '管理员' : '成员'}。
+          <strong>${ownerName}</strong> 邀请你加入工作区 <strong>${workspaceName}</strong>，角色为 ${role === 'owner' ? '管理员' : '成员'}。
         </p>
         <a href="${inviteUrl}" style="display: inline-block; background: #F97316; color: #ffffff; font-size: 15px; font-weight: 600; padding: 12px 28px; border-radius: 12px; text-decoration: none;">
           接受邀请
@@ -84,7 +83,7 @@ export async function POST(req: NextRequest) {
     );
 
     // In-app notification for existing users
-    notifyInviteReceived(email, workspace.name, ownerName, token).catch(() => {});
+    notifyInviteReceived(email, workspaceName, ownerName, token).catch(() => {});
 
     return NextResponse.json({
       id: invite.id,
@@ -101,14 +100,11 @@ export async function POST(req: NextRequest) {
 // GET — List pending invites for workspace (owner only)
 export async function GET(req: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
-
-    const workspace = await prisma.workspace.findFirst({ where: { ownerId: userId } });
-    if (!workspace) return NextResponse.json({ error: '工作区不存在' }, { status: 404 });
+    const ctx = await withWorkspaceOwner(req);
+    if (isErrorResponse(ctx)) return ctx;
 
     const invites = await prisma.workspaceInvite.findMany({
-      where: { workspaceId: workspace.id },
+      where: { workspaceId: ctx.workspaceId },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });

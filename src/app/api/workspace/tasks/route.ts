@@ -1,32 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { withWorkspaceMember, isErrorResponse } from '@/lib/workspace-auth';
 import { notifyTaskAssigned } from '@/services/wecom';
-
-// Helper: get user's workspace membership
-async function getMembership(userId: string) {
-  return prisma.workspaceMember.findFirst({
-    where: { userId, status: 'active' },
-    include: { workspace: true },
-  });
-}
 
 // GET — List workspace tasks (filterable by status)
 export async function GET(req: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
-
-    const membership = await getMembership(userId);
-    if (!membership) return NextResponse.json({ error: '未加入工作区' }, { status: 403 });
+    const ctx = await withWorkspaceMember(req);
+    if (isErrorResponse(ctx)) return ctx;
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
     const assignee = searchParams.get('assignee');
 
-    const where: Record<string, unknown> = { workspaceId: membership.workspaceId };
+    const where: Record<string, unknown> = { workspaceId: ctx.workspaceId };
     if (status) where.businessStatus = status;
-    if (assignee === 'me') where.assigneeId = userId;
+    if (assignee === 'me') where.assigneeId = ctx.userId;
 
     const tasks = await prisma.workspaceTask.findMany({
       where,
@@ -57,12 +46,9 @@ export async function GET(req: NextRequest) {
 // POST — Create workspace task (owner only)
 export async function POST(req: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
-
-    const membership = await getMembership(userId);
-    if (!membership) return NextResponse.json({ error: '未加入工作区' }, { status: 403 });
-    if (membership.role !== 'owner') return NextResponse.json({ error: '只有 Owner 可以创建任务' }, { status: 403 });
+    const ctx = await withWorkspaceMember(req);
+    if (isErrorResponse(ctx)) return ctx;
+    if (ctx.role !== 'owner') return NextResponse.json({ error: '只有 Owner 可以创建任务' }, { status: 403 });
 
     const body = await req.json();
     const { title, description, priority, assigneeId, dueAt, attachments } = body;
@@ -72,18 +58,18 @@ export async function POST(req: NextRequest) {
     // Validate assignee is a workspace member
     if (assigneeId) {
       const assigneeMember = await prisma.workspaceMember.findFirst({
-        where: { workspaceId: membership.workspaceId, userId: assigneeId, status: 'active' },
+        where: { workspaceId: ctx.workspaceId, userId: assigneeId, status: 'active' },
       });
       if (!assigneeMember) return NextResponse.json({ error: '指派对象不是工作区成员' }, { status: 400 });
     }
 
     const task = await prisma.workspaceTask.create({
       data: {
-        workspaceId: membership.workspaceId,
+        workspaceId: ctx.workspaceId,
         title: title.trim(),
         description: description?.trim() || null,
         priority: priority || 0,
-        createdBy: userId,
+        createdBy: ctx.userId,
         assigneeId: assigneeId || null,
         dueAt: dueAt ? new Date(dueAt) : null,
         attachments: attachments ? JSON.stringify(attachments) : null,
@@ -93,8 +79,8 @@ export async function POST(req: NextRequest) {
 
     // Notify via WeCom if assigned
     if (assigneeId && task.id) {
-      const owner = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
-      notifyTaskAssigned(membership.workspaceId, title, owner?.name || owner?.email || '管理员', task.id, assigneeId).catch(() => {});
+      const owner = await prisma.user.findUnique({ where: { id: ctx.userId }, select: { name: true, email: true } });
+      notifyTaskAssigned(ctx.workspaceId, title, owner?.name || owner?.email || '管理员', task.id, assigneeId).catch(() => {});
     }
 
     return NextResponse.json(task);

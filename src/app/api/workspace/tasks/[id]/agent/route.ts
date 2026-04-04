@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { withAuth, isErrorResponse } from '@/lib/workspace-auth';
 
 // POST — Create a linked Agent task for this workspace task
 export async function POST(
@@ -8,14 +8,14 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
+    const ctx = await withAuth(req);
+    if (isErrorResponse(ctx)) return ctx;
 
     const wsTask = await prisma.workspaceTask.findUnique({ where: { id: params.id } });
     if (!wsTask) return NextResponse.json({ error: '任务不存在' }, { status: 404 });
 
     // Only assignee can create agent tasks
-    if (wsTask.assigneeId !== userId) {
+    if (wsTask.assigneeId !== ctx.userId) {
       return NextResponse.json({ error: '只有任务负责人可以使用 Agent' }, { status: 403 });
     }
 
@@ -39,7 +39,7 @@ export async function POST(
     // Create conversation for this workspace task
     const conversation = await prisma.conversation.create({
       data: {
-        userId,
+        userId: ctx.userId,
         workspaceId: wsTask.workspaceId,
         title: wsTask.title,
       },
@@ -53,7 +53,7 @@ export async function POST(
         title: wsTask.title,
         input: contextParts,
         source: 'agent',
-        userId,
+        userId: ctx.userId,
         conversationId: conversation.id,
         workspaceTaskId: wsTask.id,
         priority: wsTask.priority,

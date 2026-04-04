@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { withAuth, isErrorResponse } from '@/lib/workspace-auth';
 import { notifyTaskSubmitted } from '@/services/wecom';
 
 // POST — Member submits deliverable
@@ -9,8 +9,8 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
+    const ctx = await withAuth(req);
+    if (isErrorResponse(ctx)) return ctx;
 
     const task = await prisma.workspaceTask.findUnique({
       where: { id: params.id },
@@ -19,7 +19,7 @@ export async function POST(
     if (!task) return NextResponse.json({ error: '任务不存在' }, { status: 404 });
 
     // Only assignee can submit
-    if (task.assigneeId !== userId) {
+    if (task.assigneeId !== ctx.userId) {
       return NextResponse.json({ error: '只有任务负责人可以提交' }, { status: 403 });
     }
 
@@ -62,7 +62,7 @@ export async function POST(
     });
 
     // WeCom notification
-    const member = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
+    const member = await prisma.user.findUnique({ where: { id: ctx.userId }, select: { name: true, email: true } });
     // Notify owner (recipient)
     const ws = await prisma.workspace.findUnique({ where: { id: task.workspaceId }, select: { ownerId: true } });
     notifyTaskSubmitted(task.workspaceId, task.title, member?.name || member?.email || '成员', task.id, ws?.ownerId).catch(() => {});

@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { withWorkspaceMember, isErrorResponse } from '@/lib/workspace-auth';
 
 // GET — List workspace members
 export async function GET(req: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
-
-    const membership = await prisma.workspaceMember.findFirst({
-      where: { userId, status: 'active' },
-    });
-    if (!membership) return NextResponse.json({ error: '未加入工作区' }, { status: 403 });
+    const ctx = await withWorkspaceMember(req);
+    if (isErrorResponse(ctx)) return ctx;
 
     const members = await prisma.workspaceMember.findMany({
-      where: { workspaceId: membership.workspaceId, status: 'active' },
+      where: { workspaceId: ctx.workspaceId, status: 'active' },
       include: {
         user: { select: { id: true, email: true, name: true, avatarUrl: true } },
       },

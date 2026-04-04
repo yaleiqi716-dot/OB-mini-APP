@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { withAuth, isErrorResponse } from '@/lib/workspace-auth';
 import { notifyTaskAssigned } from '@/services/wecom';
 
 // GET — Task detail with linked agent tasks
@@ -9,8 +9,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
+    const ctx = await withAuth(req);
+    if (isErrorResponse(ctx)) return ctx;
 
     const task = await prisma.workspaceTask.findUnique({
       where: { id: params.id },
@@ -24,7 +24,7 @@ export async function GET(
 
     // Verify user is a member of this workspace
     const membership = await prisma.workspaceMember.findFirst({
-      where: { workspaceId: task.workspaceId, userId, status: 'active' },
+      where: { workspaceId: task.workspaceId, userId: ctx.userId, status: 'active' },
     });
     if (!membership) return NextResponse.json({ error: '无权限' }, { status: 403 });
 
@@ -79,15 +79,15 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
+    const ctx = await withAuth(req);
+    if (isErrorResponse(ctx)) return ctx;
 
     const task = await prisma.workspaceTask.findUnique({ where: { id: params.id } });
     if (!task) return NextResponse.json({ error: '任务不存在' }, { status: 404 });
 
     // Only owner can update tasks
     const workspace = await prisma.workspace.findUnique({ where: { id: task.workspaceId } });
-    if (!workspace || workspace.ownerId !== userId) {
+    if (!workspace || workspace.ownerId !== ctx.userId) {
       return NextResponse.json({ error: '只有 Owner 可以修改任务' }, { status: 403 });
     }
 
@@ -122,7 +122,7 @@ export async function PATCH(
 
     // Notify if newly assigned
     if (body.assigneeId && data.businessStatus === 'assigned') {
-      const owner = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
+      const owner = await prisma.user.findUnique({ where: { id: ctx.userId }, select: { name: true, email: true } });
       notifyTaskAssigned(task.workspaceId, task.title, owner?.name || owner?.email || '管理员', task.id, body.assigneeId).catch(() => {});
     }
 

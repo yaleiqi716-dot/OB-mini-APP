@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { withAuth, isErrorResponse } from '@/lib/workspace-auth';
 import { notifyTaskCompleted, notifyTaskRevision } from '@/services/wecom';
 
 // POST — Owner reviews: approve or request revision
@@ -9,15 +9,15 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
+    const ctx = await withAuth(req);
+    if (isErrorResponse(ctx)) return ctx;
 
     const task = await prisma.workspaceTask.findUnique({ where: { id: params.id } });
     if (!task) return NextResponse.json({ error: '任务不存在' }, { status: 404 });
 
     // Only workspace owner can review
     const workspace = await prisma.workspace.findUnique({ where: { id: task.workspaceId } });
-    if (!workspace || workspace.ownerId !== userId) {
+    if (!workspace || workspace.ownerId !== ctx.userId) {
       return NextResponse.json({ error: '只有 Owner 可以审核' }, { status: 403 });
     }
 
