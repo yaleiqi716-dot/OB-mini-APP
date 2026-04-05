@@ -141,7 +141,7 @@ export async function createTask(
       input,
       source,
       status: 'pending',
-      userId: opts?.userId || null,
+      ...(opts?.userId ? { user: { connect: { id: opts.userId } } } : {}),
       estimatedCost: opts?.estimatedCost || 0,
       assigneeId: opts?.assigneeId || null,
       businessStatus: opts?.assigneeId ? 'assigned' : 'assigned',
