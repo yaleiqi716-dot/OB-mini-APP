@@ -148,7 +148,7 @@ export default function WorkspacePage() {
       <WorkspaceSubNav />
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }} className="custom-scrollbar">
         {/* Command center atmosphere */}
-        <div className="ob-command-atmosphere" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 480, pointerEvents: 'none', zIndex: 0 }} />
+        <div className="ob-command-atmosphere ob-dotgrid-ws" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 500, pointerEvents: 'none', zIndex: 0 }} />
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px', position: 'relative', zIndex: 1 }}>
           {/* Title + new task */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>

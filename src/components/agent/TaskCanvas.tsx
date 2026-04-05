@@ -403,7 +403,7 @@ export function TaskCanvas({
             {isActive && (
               <div className="ob-mission-phase" style={{ marginLeft: 36 }}>
                 <span className={`ob-mission-dot ${status === 'understanding' || status === 'structuring' ? 'ob-mission-dot--active' : status === 'executing' || status === 'completed' ? 'ob-mission-dot--done' : 'ob-mission-dot--active'}`} />
-                <span style={{ fontSize: 10, color: 'rgba(224,216,208,0.28)', letterSpacing: '0.06em', flexShrink: 0 }}>
+                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: '#8A8078', letterSpacing: '1px', flexShrink: 0 }}>
                   {status === 'queued' || status === 'pending' ? 'READY' :
                    status === 'understanding' ? 'SIGNAL' :
                    status === 'structuring' ? 'PLAN' :
@@ -418,8 +418,8 @@ export function TaskCanvas({
                    status === 'interacting' ? '等待你的确认' :
                    '推进中'}
                 </span>
-                <span className="ob-mission-sub">
-                  {completedSteps.length > 0 ? `${completedSteps.length} Done` : ''}
+                <span className="ob-mission-sub" style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: '1px', color: '#8A8078' }}>
+                  {completedSteps.length > 0 ? `${completedSteps.length} DONE` : ''}
                 </span>
               </div>
             )}
@@ -1019,7 +1019,7 @@ function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { titl
       <div className="ob-result-card-header">
         <div className="flex items-center gap-2">
           <span style={{ display: 'inline-flex', width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#22c55e', textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>任务结果</span>
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, fontWeight: 600, color: '#22c55e', textTransform: 'uppercase' as const, letterSpacing: '1.5px' }}>RESULT</span>
           {subtitle && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>{subtitle}</span>}
         </div>
         <button

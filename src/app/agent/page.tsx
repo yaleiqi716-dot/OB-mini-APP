@@ -520,7 +520,7 @@ function AgentPageInner() {
             tasks.length > 0 ? (
             <>
               {/* Scrollable conversation — with chat atmosphere */}
-              <div ref={scrollRef} className="ob-scroll agent-scroll custom-scrollbar ob-chat-atmosphere" key={currentConversationId}>
+              <div ref={scrollRef} className="ob-scroll agent-scroll custom-scrollbar ob-chat-atmosphere ob-exec-lines ob-dotgrid-exec" key={currentConversationId}>
                 <div className="ob-messages agent-content-wrap">
                   {tasks.map((task) => (
                     <div key={task.id}>
@@ -595,20 +595,25 @@ function AgentPageInner() {
           ) : (
             /* ── Welcome: Task Launcher ── */
             <div className="ob-welcome agent-welcome" style={{ position: 'relative' }}>
-              {/* Atmosphere layer — hero ambient glow */}
-              <div className="ob-hero-atmosphere" />
+              {/* Atmosphere + dot grid */}
+              <div className="ob-hero-atmosphere ob-dotgrid-hero" />
 
-              <div className="ob-atmosphere-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '56px 24px 48px', maxWidth: 800, margin: '0 auto', width: '100%' }}>
+              <div className="ob-atmosphere-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '56px 24px 48px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
 
-                {/* Live status pulse */}
-                <div style={{ marginBottom: 20 }}><LiveStatusCycle /></div>
+                {/* Status bar — ABOVE title per spec */}
+                <div style={{ marginBottom: 24 }}><LiveStatusCycle /></div>
 
-                {/* Hero */}
+                {/* Hero title */}
                 <h1 className="ob-hero-title" style={{ marginBottom: 12 }}>
                   告诉我任务，<span className="ob-hero-accent">推进到完成</span>
                 </h1>
-                <p className="ob-hero-sub">
-                  不只是对话 — ORANGEBENCH 会理解、拆解、执行、交付，并推动团队协作闭环
+                {/* Subtitle — mono style per spec */}
+                <p style={{
+                  fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 3,
+                  textTransform: 'uppercase' as const, color: '#8A8078', textAlign: 'center',
+                  marginBottom: 32, maxWidth: 520,
+                }}>
+                  UNDERSTAND · DECOMPOSE · EXECUTE · DELIVER · COLLABORATE
                 </p>
 
                 {/* Task launcher input */}

@@ -171,11 +171,16 @@ export default function BillingPage() {
 
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }} className="custom-scrollbar">
         {/* Fuel station atmosphere */}
-        <div className="ob-fuel-atmosphere" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 420, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }} />
+        <div className="ob-fuel-atmosphere ob-dotgrid-billing" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 420, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }} />
         <div style={{ maxWidth: 980, margin: '0 auto', padding: '48px 32px 60px', position: 'relative', zIndex: 1 }}>
 
-          {/* Hero */}
+          {/* Eyebrow + Hero */}
           <div style={{ marginBottom: 24 }}>
+            {/* Eyebrow — mono signal line */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <span style={{ width: 24, height: 2, background: '#FF3D00', borderRadius: 1 }} />
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, letterSpacing: 3, textTransform: 'uppercase' as const, color: '#FF3D00' }}>FUEL STATION</span>
+            </div>
             <h1 className="ob-hero-title" style={{ fontSize: 32, textAlign: 'left', marginBottom: 8 }}>
               执行<span className="ob-hero-accent">燃料</span>补给
             </h1>
@@ -233,17 +238,19 @@ export default function BillingPage() {
                     onMouseLeave={e => { if (!isRecommended) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.boxShadow = 'none'; }}
                   >
                     {isRecommended && <span className="ob-tier-badge">推荐</span>}
-                    <p style={{ fontSize: 15, fontWeight: 600, color: '#E0D8D0', margin: '0 0 8px' }}>{p.label}</p>
+                    <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 600, color: '#E0D8D0', margin: '0 0 8px', textTransform: 'uppercase' as const, letterSpacing: '1.5px' }}>{p.label}</p>
                     <p style={{ fontSize: 28, fontWeight: 700, color: '#FF3D00', margin: '0 0 4px' }}>
                       {p.amountLabel}<span style={{ fontSize: 13, fontWeight: 400, color: 'rgba(224,216,208,0.55)' }}>/月</span>
                     </p>
-                    <p style={{ fontSize: 13, color: 'rgba(224,216,208,0.28)', margin: '0 0 16px' }}>{p.credits} 额度 · {p.durationDays} 天</p>
+                    <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: '#8A8078', margin: '0 0 16px' }}>{p.credits} CREDITS · {p.durationDays}D</p>
                     <button
                       onClick={() => handleBuy(p.code)}
                       disabled={!!buying}
                       style={{
-                        height: 40, borderRadius: 12, fontSize: 14, fontWeight: 600,
-                        border: 'none', background: '#FF3D00', color: '#fff',
+                        height: 40, borderRadius: 6, fontSize: 14, fontWeight: 600,
+                        border: isRecommended ? 'none' : '1px solid #FF3D00',
+                        background: isRecommended ? '#FF3D00' : 'transparent',
+                        color: isRecommended ? '#fff' : '#FF3D00',
                         cursor: buying ? 'wait' : 'pointer', opacity: buying ? 0.5 : 1,
                         transition: 'background .2s', marginTop: 'auto',
                       }}
@@ -271,7 +278,7 @@ export default function BillingPage() {
                     onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,61,0,0.3)')}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')}
                   >
-                    <p style={{ fontSize: 15, fontWeight: 600, color: '#E0D8D0', margin: '0 0 8px' }}>{p.label}</p>
+                    <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 600, color: '#E0D8D0', margin: '0 0 8px', textTransform: 'uppercase' as const, letterSpacing: '1.5px' }}>{p.label}</p>
                     <p style={{ fontSize: 28, fontWeight: 700, color: '#E0D8D0', margin: '0 0 4px' }}>{p.amountLabel}</p>
                     <p style={{ fontSize: 13, color: 'rgba(224,216,208,0.28)', margin: '0 0 16px' }}>+{p.credits} 额度</p>
                     <button
