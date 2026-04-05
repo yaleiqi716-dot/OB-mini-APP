@@ -102,7 +102,7 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
                 display: 'inline-flex', alignItems: 'center', gap: 4,
                 height: 26, padding: '0 8px 0 10px', borderRadius: 9999,
                 fontSize: 12, color: '#888888',
-                background: '#F7F7F4', border: '1px solid #E7E5E1',
+                background: '#2A2826', border: '1px solid rgba(255,255,255,0.06)',
               }}>
                 {f.name.length > 20 ? f.name.slice(0, 17) + '...' : f.name}
                 <button

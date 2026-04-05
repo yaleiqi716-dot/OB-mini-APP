@@ -169,11 +169,13 @@ export default function BillingPage() {
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
       <AppHeader />
 
-      <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
-        <div style={{ maxWidth: 980, margin: '0 auto', padding: '40px 32px 60px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }} className="custom-scrollbar">
+        {/* Fuel station atmosphere */}
+        <div className="ob-fuel-atmosphere" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 240, pointerEvents: 'none', zIndex: 0 }} />
+        <div style={{ maxWidth: 980, margin: '0 auto', padding: '48px 32px 60px', position: 'relative', zIndex: 1 }}>
 
           {/* Hero */}
-          <div style={{ marginBottom: 28 }}>
+          <div style={{ marginBottom: 32 }}>
             <h1 className="ob-hero-title" style={{ fontSize: 32, textAlign: 'left' }}>
               执行<span className="ob-hero-accent">燃料</span>补给
             </h1>

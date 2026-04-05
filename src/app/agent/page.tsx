@@ -517,8 +517,8 @@ function AgentPageInner() {
           {currentConversationId ? (
             tasks.length > 0 ? (
             <>
-              {/* Scrollable conversation */}
-              <div ref={scrollRef} className="ob-scroll agent-scroll custom-scrollbar" key={currentConversationId}>
+              {/* Scrollable conversation — with chat atmosphere */}
+              <div ref={scrollRef} className="ob-scroll agent-scroll custom-scrollbar ob-chat-atmosphere" key={currentConversationId}>
                 <div className="ob-messages agent-content-wrap">
                   {tasks.map((task) => (
                     <div key={task.id}>
@@ -592,8 +592,11 @@ function AgentPageInner() {
             )
           ) : (
             /* ── Welcome: Task Launcher ── */
-            <div className="ob-welcome agent-welcome">
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 24px 40px', maxWidth: 800, margin: '0 auto', width: '100%' }}>
+            <div className="ob-welcome agent-welcome" style={{ position: 'relative' }}>
+              {/* Atmosphere layer — hero ambient glow */}
+              <div className="ob-hero-atmosphere" />
+
+              <div className="ob-atmosphere-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '72px 24px 48px', maxWidth: 800, margin: '0 auto', width: '100%' }}>
 
                 {/* Live status pulse */}
                 <LiveStatusCycle />
@@ -607,7 +610,7 @@ function AgentPageInner() {
                 </p>
 
                 {/* Task launcher input */}
-                <div className="ob-launcher">
+                <div className="ob-launcher ob-launcher-atmosphere" style={{ marginBottom: 8 }}>
                   <AgentInput
                     onSubmit={input => handleSubmit(input)}
                     disabled={isSubmitting}

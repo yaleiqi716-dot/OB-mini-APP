@@ -182,7 +182,7 @@ export default function WorkspaceTaskDetailPage() {
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
-        <div style={{ maxWidth: 780, margin: '0 auto', padding: '32px 32px 60px' }}>
+        <div className="ob-mission-atmosphere" style={{ maxWidth: 780, margin: '0 auto', padding: '40px 32px 60px' }}>
 
           {/* Title + meta */}
           <div style={{ marginBottom: 20 }}>

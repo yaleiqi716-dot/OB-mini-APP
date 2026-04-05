@@ -328,6 +328,75 @@ body{
 
 
 /* ═══════════════════════════════════════════════════════════════
+   ATMOSPHERE LAYERS — structural containers for bg assets
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Base atmosphere: positioned behind content, ready for bg images/gradients */
+.ob-atmosphere{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.ob-atmosphere-content{position:relative;z-index:1}
+
+/* Hero atmosphere — Agent homepage behind launcher */
+.ob-hero-atmosphere{position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 30%,rgba(255,61,0,0.03) 0%,transparent 70%)}
+.ob-launcher-atmosphere{position:relative}
+.ob-launcher-atmosphere::before{content:'';position:absolute;inset:-40px;z-index:0;pointer-events:none;
+  background:radial-gradient(circle at 50% 50%,rgba(255,61,0,0.04) 0%,transparent 60%);border-radius:50%}
+
+/* Chat atmosphere — conversation area depth */
+.ob-chat-atmosphere{position:relative}
+.ob-chat-atmosphere::before{content:'';position:absolute;top:0;left:0;right:0;height:120px;pointer-events:none;z-index:0;
+  background:linear-gradient(to bottom,rgba(255,61,0,0.015),transparent)}
+
+/* Mission atmosphere — execution phase area */
+.ob-mission-atmosphere{position:relative}
+
+/* Command atmosphere — workspace command center */
+.ob-command-atmosphere{position:relative}
+.ob-command-atmosphere::before{content:'';position:absolute;inset:-20px;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 100% 80% at 50% 0%,rgba(255,61,0,0.02),transparent 60%)}
+
+/* Fuel atmosphere — billing top area */
+.ob-fuel-atmosphere{position:relative}
+.ob-fuel-atmosphere::before{content:'';position:absolute;inset:-30px;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 50% at 50% 20%,rgba(255,61,0,0.025),transparent 60%)}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   PIXEL DETAIL HOOKS — status lights, node dots, indicator lamps
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Pixel status lamp: 4x4 square dot for minimal indicators */
+.ob-px-dot{width:4px;height:4px;border-radius:1px;flex-shrink:0;display:inline-block}
+.ob-px-dot--active{background:#FF3D00;box-shadow:0 0 6px rgba(255,61,0,0.4)}
+.ob-px-dot--success{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,0.3)}
+.ob-px-dot--danger{background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,0.3)}
+.ob-px-dot--warning{background:#f59e0b}
+.ob-px-dot--muted{background:#666666}
+.ob-px-dot--pulse{animation:statusCycle 1.5s ease-in-out infinite}
+
+/* Nav tail lamp: thin accent line at bottom of active nav item */
+.ob-nav-lamp{position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);width:12px;height:2px;background:#FF3D00;border-radius:1px;box-shadow:0 0 8px rgba(255,61,0,0.4)}
+
+/* Notification signal lamp (replaces plain red dot) */
+.ob-signal-lamp{background:#FF3D00;box-shadow:0 0 8px rgba(255,61,0,0.5),0 0 2px rgba(255,61,0,0.8)}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   CONTRAST & BREATHING — readability fixes
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Ensure muted text is readable on dark surfaces */
+.ob-text-muted{color:#999 !important}
+.ob-text-faint{color:#777 !important}
+
+/* Breathing space utilities */
+.ob-breathe-sm{padding-top:8px;padding-bottom:8px}
+.ob-breathe-md{padding-top:16px;padding-bottom:16px}
+.ob-breathe-lg{padding-top:32px;padding-bottom:32px}
+.ob-breathe-xl{padding-top:48px;padding-bottom:48px}
+
+
+/* ═══════════════════════════════════════════════════════════════
    FIRST IMPRESSION — Task Launcher & Mission Control
    ═══════════════════════════════════════════════════════════════ */
 

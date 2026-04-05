@@ -146,8 +146,10 @@ export default function WorkspacePage() {
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
       <AppHeader />
       <WorkspaceSubNav />
-      <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 32px 60px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }} className="custom-scrollbar">
+        {/* Command center atmosphere */}
+        <div className="ob-command-atmosphere" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 200, pointerEvents: 'none', zIndex: 0 }} />
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px', position: 'relative', zIndex: 1 }}>
           {/* Title + new task */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
             <div>
