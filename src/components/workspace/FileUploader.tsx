@@ -53,7 +53,7 @@ export function FileUploader({ files, onChange, disabled, label }: FileUploaderP
 
   return (
     <div>
-      {label && <p style={{ fontSize: 14, fontWeight: 500, color: '#171717', marginBottom: 8 }}>{label}</p>}
+      {label && <p style={{ fontSize: 14, fontWeight: 500, color: '#F0EDE8', marginBottom: 8 }}>{label}</p>}
 
       {/* File list */}
       {files.length > 0 && (
@@ -62,13 +62,13 @@ export function FileUploader({ files, onChange, disabled, label }: FileUploaderP
             <div key={f.id || i} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '8px 12px', borderRadius: 10,
-              background: '#F7F7F4', border: '1px solid #F0EDE8',
+              background: '#121210', border: '1px solid rgba(255,255,255,0.04)',
             }}>
               <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
                 </svg>
-                <span style={{ fontSize: 13, color: '#171717', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 13, color: '#F0EDE8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {f.name}
                 </span>
                 <span style={{ fontSize: 11, color: '#9CA3AF', flexShrink: 0 }}>{formatSize(f.size)}</span>
@@ -102,12 +102,12 @@ export function FileUploader({ files, onChange, disabled, label }: FileUploaderP
               display: 'inline-flex', alignItems: 'center', gap: 6,
               height: 32, padding: '0 14px', borderRadius: 9999,
               fontSize: 13, fontWeight: 500,
-              border: '1px solid #E7E5E1', background: '#FFFFFF',
+              border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17',
               color: uploading ? '#9CA3AF' : '#6B7280', cursor: uploading ? 'wait' : 'pointer',
               transition: 'border-color .2s, color .2s',
             }}
             onMouseEnter={e => { if (!uploading) { e.currentTarget.style.borderColor = 'rgba(255,107,44,0.3)'; e.currentTarget.style.color = '#FF6B2C'; }}}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.color = '#6B7280'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#6B7280'; }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
@@ -131,13 +131,13 @@ export function AttachmentList({ files, title }: { files: UploadedFile[]; title?
           <div key={f.id || i} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '8px 12px', borderRadius: 10,
-            background: '#F7F7F4', border: '1px solid #F0EDE8',
+            background: '#121210', border: '1px solid rgba(255,255,255,0.04)',
           }}>
             <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
               </svg>
-              <span style={{ fontSize: 13, color: '#171717', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+              <span style={{ fontSize: 13, color: '#F0EDE8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
               <span style={{ fontSize: 11, color: '#9CA3AF', flexShrink: 0 }}>{formatSize(f.size)}</span>
             </div>
             <a href={f.url} target="_blank" rel="noopener noreferrer"

@@ -167,7 +167,7 @@ export default function MyTasksPage() {
   });
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
@@ -176,7 +176,7 @@ export default function MyTasksPage() {
           {/* ── Top area: title + search ── */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
             <div>
-              <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', lineHeight: 1.2, margin: 0 }}>任务</h1>
+              <h1 style={{ fontSize: 32, fontWeight: 600, color: '#F0EDE8', lineHeight: 1.2, margin: 0 }}>任务</h1>
             </div>
             {/* Search box */}
             <div style={{ position: 'relative' }}>
@@ -190,22 +190,22 @@ export default function MyTasksPage() {
                 onChange={(e) => setSearch(e.target.value)}
                 style={{
                   width: 220, height: 36, borderRadius: 12,
-                  border: '1px solid #E7E5E1', background: '#FFFFFF',
+                  border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17',
                   padding: '0 12px 0 34px', fontSize: 13,
-                  color: '#171717', outline: 'none',
+                  color: '#F0EDE8', outline: 'none',
                   transition: 'border-color .2s, box-shadow .2s',
                 }}
                 onFocus={(e) => { e.currentTarget.style.borderColor = '#FF6B2C'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255,107,44,0.12)'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.boxShadow = 'none'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}
               />
             </div>
           </div>
 
-          <p style={{ fontSize: 14, color: '#7A7A7A', margin: '0 0 16px' }}>查看你的 AI 执行记录与结果</p>
+          <p style={{ fontSize: 14, color: '#9CA3AF', margin: '0 0 16px' }}>查看你的 AI 执行记录与结果</p>
 
           {/* ── View mode tabs ── */}
           {hasWorkspace && (
-            <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid #E7E5E1' }}>
+            <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               {([['personal', '个人'], ['team', '团队']] as const).map(([value, label]) => (
                 <button key={value} onClick={() => { setViewMode(value); setFilter('all'); }}
                   style={{
@@ -232,8 +232,8 @@ export default function MyTasksPage() {
                   style={{
                     height: 32, padding: '0 14px',
                     borderRadius: 9999, fontSize: 13, fontWeight: active ? 500 : 400,
-                    border: active ? 'none' : '1px solid #E7E5E1',
-                    background: active ? 'rgba(255,107,44,0.10)' : '#FFFFFF',
+                    border: active ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                    background: active ? 'rgba(255,107,44,0.10)' : '#1A1A17',
                     color: active ? '#FF6B2C' : '#6B7280',
                     cursor: 'pointer',
                     transition: 'all .2s ease',
@@ -261,13 +261,13 @@ export default function MyTasksPage() {
           ) : filtered.length === 0 ? (
             /* ── Empty state ── */
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 16, background: '#FFFFFF', border: '1px solid #E7E5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 16, background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="16" x2="12" y2="16"/>
                 </svg>
               </div>
-              <p style={{ fontSize: 16, fontWeight: 600, color: '#171717', marginBottom: 6 }}>还没有任务记录</p>
-              <p style={{ fontSize: 14, color: '#7A7A7A', marginBottom: 20 }}>去 Agent 交给 ORANGEBENCH 一个任务吧</p>
+              <p style={{ fontSize: 16, fontWeight: 600, color: '#F0EDE8', marginBottom: 6 }}>还没有任务记录</p>
+              <p style={{ fontSize: 14, color: '#9CA3AF', marginBottom: 20 }}>去 Agent 交给 ORANGEBENCH 一个任务吧</p>
               <a
                 href="/agent"
                 style={{
@@ -299,7 +299,7 @@ export default function MyTasksPage() {
                 const actionBtnStyle: React.CSSProperties = {
                   height: 30, padding: '0 12px',
                   borderRadius: 9999, fontSize: 12, fontWeight: 500,
-                  border: '1px solid #E7E5E1', background: '#FFFFFF',
+                  border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17',
                   color: '#6B7280', textDecoration: 'none', cursor: 'pointer',
                   display: 'inline-flex', alignItems: 'center',
                   transition: 'border-color .2s, background .2s, color .2s',
@@ -310,7 +310,7 @@ export default function MyTasksPage() {
                   e.currentTarget.style.color = '#FF6B2C';
                 };
                 const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
-                  e.currentTarget.style.borderColor = '#E7E5E1';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
                   e.currentTarget.style.background = '#FFFFFF';
                   e.currentTarget.style.color = '#6B7280';
                 };
@@ -319,8 +319,8 @@ export default function MyTasksPage() {
                   <div
                     key={t.id}
                     style={{
-                      background: '#FFFFFF',
-                      border: '1px solid #E7E5E1',
+                      background: '#1A1A17',
+                      border: '1px solid rgba(255,255,255,0.06)',
                       borderRadius: 16,
                       padding: 18,
                       minHeight: 96,
@@ -338,7 +338,7 @@ export default function MyTasksPage() {
                         {/* Title row */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: displayInput ? 6 : 0 }}>
                           <p style={{
-                            fontSize: 17, fontWeight: 600, color: '#171717',
+                            fontSize: 17, fontWeight: 600, color: '#F0EDE8',
                             margin: 0, overflow: 'hidden', textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap', flex: 1, minWidth: 0,
                           }}>
@@ -359,7 +359,7 @@ export default function MyTasksPage() {
                         )}
 
                         {/* Time — fixed below, 8px gap from summary */}
-                        <span style={{ display: 'block', fontSize: 12, color: '#A3A3A3', marginTop: 8 }}>
+                        <span style={{ display: 'block', fontSize: 12, color: '#6B7280', marginTop: 8 }}>
                           {timeAgo(t.updatedAt || t.createdAt)}
                         </span>
 

@@ -51,10 +51,10 @@ export default function SettingsPage() {
 
   // ── Shared styles ──
   const cardStyle: React.CSSProperties = {
-    background: '#FFFFFF', border: '1px solid #E7E5E1', borderRadius: 16, padding: 20,
+    background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 20,
   };
   const sectionTitle: React.CSSProperties = {
-    fontSize: 17, fontWeight: 600, color: '#171717', margin: '0 0 4px',
+    fontSize: 17, fontWeight: 600, color: '#F0EDE8', margin: '0 0 4px',
   };
   const sectionDesc: React.CSSProperties = {
     fontSize: 13, color: '#6B7280', margin: '0 0 16px',
@@ -64,10 +64,10 @@ export default function SettingsPage() {
     minHeight: 56, padding: '12px 0',
   };
   const rowBorder: React.CSSProperties = {
-    borderBottom: '1px solid #F0EDE8',
+    borderBottom: '1px solid rgba(255,255,255,0.04)',
   };
   const labelStyle: React.CSSProperties = {
-    fontSize: 14, fontWeight: 500, color: '#171717',
+    fontSize: 14, fontWeight: 500, color: '#F0EDE8',
   };
   const sublabelStyle: React.CSSProperties = {
     fontSize: 12, color: '#9CA3AF', marginTop: 2,
@@ -78,7 +78,7 @@ export default function SettingsPage() {
   const actionBtnStyle: React.CSSProperties = {
     height: 30, padding: '0 12px', borderRadius: 9999,
     fontSize: 12, fontWeight: 500,
-    border: '1px solid #E7E5E1', background: '#FFFFFF',
+    border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17',
     color: '#6B7280', cursor: 'pointer',
     display: 'inline-flex', alignItems: 'center',
     transition: 'border-color .2s, background .2s, color .2s',
@@ -89,15 +89,15 @@ export default function SettingsPage() {
     e.currentTarget.style.color = '#FF6B2C';
   };
   const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.borderColor = '#E7E5E1';
-    e.currentTarget.style.background = '#FFFFFF';
+    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+    e.currentTarget.style.background = '#1A1A17';
     e.currentTarget.style.color = '#6B7280';
   };
   const placeholderTag: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center',
     height: 22, fontSize: 11, fontWeight: 500, color: '#9CA3AF',
-    background: '#F7F7F4', borderRadius: 9999, padding: '0 10px',
-    border: '1px solid #E7E5E1',
+    background: '#121210', borderRadius: 9999, padding: '0 10px',
+    border: '1px solid rgba(255,255,255,0.06)',
   };
   const switchStyle = (on: boolean): React.CSSProperties => ({
     width: 44, height: 24, borderRadius: 12, border: 'none',
@@ -107,7 +107,7 @@ export default function SettingsPage() {
   });
   const switchDot = (on: boolean): React.CSSProperties => ({
     position: 'absolute', top: 2, left: on ? 22 : 2,
-    width: 20, height: 20, borderRadius: '50%', background: '#FFFFFF',
+    width: 20, height: 20, borderRadius: '50%', background: '#1A1A17',
     transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
   });
 
@@ -267,9 +267,9 @@ export default function SettingsPage() {
             </div>
             <button
               onClick={handleLogout}
-              style={{ height: 30, padding: '0 12px', borderRadius: 9999, fontSize: 12, fontWeight: 500, border: '1px solid rgba(185,28,28,0.18)', background: '#FFFFFF', color: '#B91C1C', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', transition: 'background .2s' }}
+              style={{ height: 30, padding: '0 12px', borderRadius: 9999, fontSize: 12, fontWeight: 500, border: '1px solid rgba(185,28,28,0.18)', background: '#1A1A17', color: '#B91C1C', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', transition: 'background .2s' }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.06)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#1A1A17'; }}
               aria-label="登出所有设备"
             >
               退出登录
@@ -305,7 +305,7 @@ export default function SettingsPage() {
         <div style={rowStyle}>
           <div style={{ flex: 1 }}>
             <div style={labelStyle}>更多集成</div>
-            <div style={{ fontSize: 13, color: '#7A7A7A', marginTop: 4, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 13, color: '#9CA3AF', marginTop: 4, lineHeight: 1.5 }}>
               Zapier、Slack、飞书等更多集成即将开放，敬请期待。
             </div>
           </div>
@@ -323,7 +323,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
@@ -331,8 +331,8 @@ export default function SettingsPage() {
 
           {/* Top area */}
           <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', lineHeight: 1.2, margin: '0 0 8px' }}>设置</h1>
-            <p style={{ fontSize: 14, color: '#7A7A7A', margin: 0 }}>管理你的账号、偏好与产品设置</p>
+            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#F0EDE8', lineHeight: 1.2, margin: '0 0 8px' }}>设置</h1>
+            <p style={{ fontSize: 14, color: '#9CA3AF', margin: 0 }}>管理你的账号、偏好与产品设置</p>
           </div>
 
           {/* Two-column layout */}
@@ -358,7 +358,7 @@ export default function SettingsPage() {
                         transition: 'all .2s',
                         width: '100%', textAlign: 'left',
                       }}
-                      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = '#FFFFFF'; }}
+                      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = '#1A1A17'; }}
                       onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
                     >
                       <NavIcon name={item.icon} />

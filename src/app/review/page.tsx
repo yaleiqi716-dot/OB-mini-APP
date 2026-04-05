@@ -182,7 +182,7 @@ export default function ReviewPage() {
   const actionBtnStyle: React.CSSProperties = {
     height: 30, padding: '0 12px', borderRadius: 9999,
     fontSize: 12, fontWeight: 500,
-    border: '1px solid #E7E5E1', background: '#FFFFFF',
+    border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17',
     color: '#6B7280', textDecoration: 'none', cursor: 'pointer',
     display: 'inline-flex', alignItems: 'center',
     transition: 'border-color .2s, background .2s, color .2s',
@@ -193,13 +193,13 @@ export default function ReviewPage() {
     e.currentTarget.style.color = '#FF6B2C';
   };
   const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.borderColor = '#E7E5E1';
+    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
     e.currentTarget.style.background = '#FFFFFF';
     e.currentTarget.style.color = '#6B7280';
   };
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F4' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
@@ -207,7 +207,7 @@ export default function ReviewPage() {
 
           {/* Top area */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
-            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#171717', lineHeight: 1.2, margin: 0 }}>处理</h1>
+            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#F0EDE8', lineHeight: 1.2, margin: 0 }}>处理</h1>
             <div style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', pointerEvents: 'none' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -220,21 +220,21 @@ export default function ReviewPage() {
                 aria-label="搜索任务"
                 style={{
                   width: 220, height: 36, borderRadius: 12,
-                  border: '1px solid #E7E5E1', background: '#FFFFFF',
+                  border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17',
                   padding: '0 12px 0 34px', fontSize: 13,
-                  color: '#171717', outline: 'none',
+                  color: '#F0EDE8', outline: 'none',
                   transition: 'border-color .2s, box-shadow .2s',
                 }}
                 onFocus={e => { e.currentTarget.style.borderColor = '#FF6B2C'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255,107,44,0.12)'; }}
-                onBlur={e => { e.currentTarget.style.borderColor = '#E7E5E1'; e.currentTarget.style.boxShadow = 'none'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}
               />
             </div>
           </div>
-          <p style={{ fontSize: 14, color: '#7A7A7A', margin: '0 0 16px' }}>查看需要你确认、继续或处理的任务</p>
+          <p style={{ fontSize: 14, color: '#9CA3AF', margin: '0 0 16px' }}>查看需要你确认、继续或处理的任务</p>
 
           {/* View mode tabs */}
           {hasWorkspace && (
-            <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid #E7E5E1' }}>
+            <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               {([['personal', '个人'], ['team', '团队']] as const).map(([value, label]) => (
                 <button key={value} onClick={() => { setViewMode(value); setFilter('all'); }}
                   style={{
@@ -258,8 +258,8 @@ export default function ReviewPage() {
                 style={{
                   height: 32, padding: '0 14px', borderRadius: 9999,
                   fontSize: 13, fontWeight: filter === f.value ? 500 : 400,
-                  border: filter === f.value ? 'none' : '1px solid #E7E5E1',
-                  background: filter === f.value ? 'rgba(255,107,44,0.10)' : '#FFFFFF',
+                  border: filter === f.value ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                  background: filter === f.value ? 'rgba(255,107,44,0.10)' : '#1A1A17',
                   color: filter === f.value ? '#FF6B2C' : '#6B7280',
                   cursor: 'pointer', transition: 'all .2s',
                 }}
@@ -277,13 +277,13 @@ export default function ReviewPage() {
           ) : filtered.length === 0 ? (
             /* Empty state */
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 16, background: '#FFFFFF', border: '1px solid #E7E5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 16, background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               </div>
-              <p style={{ fontSize: 16, fontWeight: 600, color: '#171717', marginBottom: 6 }}>当前没有需要处理的任务</p>
-              <p style={{ fontSize: 14, color: '#7A7A7A', marginBottom: 20 }}>新的完成结果、失败任务或执行中的项目会出现在这里</p>
+              <p style={{ fontSize: 16, fontWeight: 600, color: '#F0EDE8', marginBottom: 6 }}>当前没有需要处理的任务</p>
+              <p style={{ fontSize: 14, color: '#9CA3AF', marginBottom: 20 }}>新的完成结果、失败任务或执行中的项目会出现在这里</p>
               <a
                 href="/tasks"
                 style={{
@@ -318,7 +318,7 @@ export default function ReviewPage() {
                   <div
                     key={t.id}
                     style={{
-                      background: '#FFFFFF', border: '1px solid #E7E5E1',
+                      background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)',
                       borderRadius: 16, padding: 18, minHeight: 124,
                       transition: 'transform .2s, box-shadow .2s',
                     }}
@@ -329,7 +329,7 @@ export default function ReviewPage() {
                       {/* Left: info */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                          <p style={{ fontSize: 17, fontWeight: 600, color: '#171717', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 17, fontWeight: 600, color: '#F0EDE8', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
                             {title}
                           </p>
                           <StatusBadge status={t.status} />
@@ -341,7 +341,7 @@ export default function ReviewPage() {
                           </p>
                         )}
 
-                        <span style={{ display: 'block', fontSize: 12, color: '#A3A3A3', marginTop: 4 }}>
+                        <span style={{ display: 'block', fontSize: 12, color: '#6B7280', marginTop: 4 }}>
                           {timeAgo(t.updatedAt || t.createdAt)}
                         </span>
 
@@ -350,7 +350,7 @@ export default function ReviewPage() {
                           <div style={{
                             background: '#FBFBFA', borderRadius: 12,
                             padding: '12px 14px', marginTop: 10,
-                            fontSize: 13, color: '#404040', lineHeight: 1.7,
+                            fontSize: 13, color: '#D1D5DB', lineHeight: 1.7,
                             overflow: 'hidden', display: '-webkit-box',
                             WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
                           }}>
