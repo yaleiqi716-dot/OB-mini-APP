@@ -175,11 +175,11 @@ export default function BillingPage() {
         <div style={{ maxWidth: 980, margin: '0 auto', padding: '48px 32px 60px', position: 'relative', zIndex: 1 }}>
 
           {/* Hero */}
-          <div style={{ marginBottom: 32 }}>
-            <h1 className="ob-hero-title" style={{ fontSize: 32, textAlign: 'left' }}>
+          <div style={{ marginBottom: 24 }}>
+            <h1 className="ob-hero-title" style={{ fontSize: 32, textAlign: 'left', marginBottom: 8 }}>
               执行<span className="ob-hero-accent">燃料</span>补给
             </h1>
-            <p style={{ fontSize: 15, color: 'rgba(224,216,208,0.28)', margin: 0 }}>订阅解锁长期能力，额度包补给高强度执行</p>
+            <p style={{ fontSize: 15, color: 'rgba(224,216,208,0.45)', margin: 0 }}>订阅解锁长期能力，额度包补给高强度执行</p>
           </div>
 
           {/* Fuel status card */}

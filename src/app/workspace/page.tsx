@@ -148,7 +148,7 @@ export default function WorkspacePage() {
       <WorkspaceSubNav />
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }} className="custom-scrollbar">
         {/* Command center atmosphere */}
-        <div className="ob-command-atmosphere" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 360, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }} />
+        <div className="ob-command-atmosphere" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 480, pointerEvents: 'none', zIndex: 0 }} />
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px', position: 'relative', zIndex: 1 }}>
           {/* Title + new task */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -250,7 +250,7 @@ export default function WorkspacePage() {
                 return (
                   <div key={group.key} style={{ marginBottom: 20 }}>
                     <p style={{ fontSize: 13, fontWeight: 500, color: 'rgba(224,216,208,0.55)', marginBottom: 10 }}>{group.label} ({groupTasks.length})</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {groupTasks.map(t => <TaskCard key={t.id} task={t} />)}
                     </div>
                   </div>
@@ -258,7 +258,7 @@ export default function WorkspacePage() {
               })
             ) : (
               // Flat list when filtering or searching
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {filtered.map(t => <TaskCard key={t.id} task={t} />)}
               </div>
             )

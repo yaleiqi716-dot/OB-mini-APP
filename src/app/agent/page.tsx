@@ -598,13 +598,13 @@ function AgentPageInner() {
               {/* Atmosphere layer — hero ambient glow */}
               <div className="ob-hero-atmosphere" />
 
-              <div className="ob-atmosphere-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '72px 24px 48px', maxWidth: 800, margin: '0 auto', width: '100%' }}>
+              <div className="ob-atmosphere-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '56px 24px 48px', maxWidth: 800, margin: '0 auto', width: '100%' }}>
 
                 {/* Live status pulse */}
-                <LiveStatusCycle />
+                <div style={{ marginBottom: 20 }}><LiveStatusCycle /></div>
 
                 {/* Hero */}
-                <h1 className="ob-hero-title">
+                <h1 className="ob-hero-title" style={{ marginBottom: 12 }}>
                   告诉我任务，<span className="ob-hero-accent">推进到完成</span>
                 </h1>
                 <p className="ob-hero-sub">

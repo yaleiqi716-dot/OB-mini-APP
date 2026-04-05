@@ -197,8 +197,8 @@ body{
 /* Conversation items */
 .ob-session-row,.sidebar-task-row{width:100%;text-align:left;padding:0;border:none;background:transparent;cursor:pointer;border-radius:10px;transition:background .2s ease;display:block;margin-bottom:1px}
 .ob-session-row:hover:not(.ob-session-row--active),.sidebar-task-row--idle:hover{background:var(--bg-hover)}
-.ob-session-row--active{background:rgba(255,61,0,.08);border-left:2px solid var(--accent)}
-.ob-session-inner,.sidebar-task-row-inner{padding:0 12px;display:flex;align-items:center;gap:6px;height:36px}
+.ob-session-row--active{background:rgba(255,61,0,.10);border-left:3px solid var(--accent)}
+.ob-session-inner,.sidebar-task-row-inner{padding:0 12px;display:flex;align-items:center;gap:6px;height:34px}
 .ob-session-title,.sidebar-task-title{font-size:12.5px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;flex:1;min-width:0}
 .ob-session-row--active .ob-session-title{font-weight:550;color:#F5F5F5}
 
@@ -240,8 +240,8 @@ body{
 
 /* Chips */
 .ob-chips,.agent-examples{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:600px;width:100%;margin-top:16px}
-.ob-chip,.agent-example-btn{display:inline-flex;align-items:center;gap:6px;height:32px;font-size:13px;color:var(--text-secondary);background:var(--bg-card);border:1px solid var(--border);border-radius:9999px;padding:0 16px;cursor:pointer;transition:background .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease;white-space:nowrap}
-.ob-chip:hover:not(:disabled),.agent-example-btn:hover:not(:disabled){background:var(--accent-subtle);border-color:rgba(255,61,0,.25);color:var(--accent)}
+.ob-chip,.agent-example-btn{display:inline-flex;align-items:center;gap:6px;height:30px;font-size:13px;color:rgba(224,216,208,0.62);background:var(--bg-card);border:1px solid rgba(255,255,255,0.10);border-radius:9999px;padding:0 16px;cursor:pointer;transition:all .12s ease;white-space:nowrap}
+.ob-chip:hover:not(:disabled),.agent-example-btn:hover:not(:disabled){background:rgba(255,61,0,0.06);border-color:rgba(255,61,0,0.24);color:rgba(224,216,208,0.85)}
 .ob-chip:disabled,.agent-example-btn:disabled{opacity:.45;cursor:not-allowed}
 
 /* Capability cards */
@@ -280,7 +280,7 @@ body{
 .ob-step-block--active .ob-step-text{color:var(--text-primary)}
 
 /* Result card — white bg */
-.ob-result-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.ob-result-card{background:var(--bg-card);border:1px solid rgba(255,255,255,0.10);border-radius:16px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .ob-result-card-header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border)}
 .ob-result-card-body{padding:24px}
 .ob-result-card-inner{background:var(--bg-tertiary);border-radius:12px;padding:18px}
@@ -351,39 +351,39 @@ body{
 .ob-atmosphere{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
 .ob-atmosphere-content{position:relative;z-index:1}
 
-/* Hero atmosphere — Agent homepage */
+/* Hero atmosphere — Agent homepage: high visibility per target图 */
 .ob-hero-atmosphere{position:absolute;inset:0;pointer-events:none;z-index:0;
-  background:url('/assets/bg/hero_bg_v3.png') center/cover no-repeat;opacity:0.92;mix-blend-mode:normal}
+  background:url('/assets/bg/hero_bg_v3.png') center top/cover no-repeat;opacity:0.96}
 .ob-hero-atmosphere::before{content:'';position:absolute;inset:0;
-  background:linear-gradient(180deg,rgba(30,28,26,0.16) 0%,rgba(30,28,26,0.06) 28%,rgba(30,28,26,0.00) 52%,rgba(30,28,26,0.08) 76%,rgba(30,28,26,0.20) 100%)}
+  background:linear-gradient(180deg,rgba(30,28,26,0.18) 0%,rgba(30,28,26,0.04) 30%,rgba(30,28,26,0.00) 50%,rgba(30,28,26,0.06) 75%,rgba(30,28,26,0.22) 100%)}
 .ob-hero-atmosphere::after{content:'';position:absolute;inset:0;
-  background:linear-gradient(to bottom,rgba(30,28,26,0.5) 0%,transparent 72px,transparent calc(100% - 96px),rgba(30,28,26,0.6) 100%)}
+  background:linear-gradient(to bottom,rgba(30,28,26,0.3) 0%,transparent 56px,transparent calc(100% - 72px),rgba(30,28,26,0.4) 100%)}
 .ob-launcher-atmosphere{position:relative}
 .ob-launcher-atmosphere::before{content:'';position:absolute;top:-60px;left:-80px;right:-80px;bottom:-60px;z-index:0;pointer-events:none;
-  background:radial-gradient(ellipse 58% 44% at center,rgba(255,61,0,0.24) 0%,rgba(255,61,0,0.14) 24%,rgba(255,61,0,0.06) 46%,rgba(255,61,0,0.00) 72%);
-  opacity:0.34;filter:blur(56px)}
+  background:radial-gradient(ellipse 62% 48% at center,rgba(255,61,0,0.24) 0%,rgba(255,61,0,0.14) 24%,rgba(255,61,0,0.06) 46%,rgba(255,61,0,0.00) 72%);
+  opacity:0.40;filter:blur(56px)}
 
-/* Chat/exec atmosphere — execution area: texture must be visible */
+/* Chat/exec atmosphere — full visibility, no extra darkening */
 .ob-chat-atmosphere{position:relative}
 .ob-chat-atmosphere::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
-  background:url('/assets/bg/exec_bg_v3.png') center/cover no-repeat;opacity:0.96}
+  background:url('/assets/bg/exec_bg_v3.png') center/cover no-repeat;opacity:1}
 
 /* Mission atmosphere */
 .ob-mission-atmosphere{position:relative}
 
-/* Command atmosphere — workspace: control-room field, 360px coverage */
-.ob-command-atmosphere{position:relative}
+/* Command atmosphere — workspace: 480px coverage, near-full visibility */
+.ob-command-atmosphere{position:relative;overflow:hidden}
 .ob-command-atmosphere::before{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:url('/assets/bg/workspace_cmd_bg_v3.png') center top/cover no-repeat;opacity:0.94}
+  background:url('/assets/bg/workspace_cmd_bg_v3.png') center top/cover no-repeat;opacity:0.98}
 .ob-command-atmosphere::after{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:linear-gradient(to bottom,transparent 70%,rgba(30,28,26,0.6) 88%,rgba(30,28,26,1) 100%)}
+  background:linear-gradient(to bottom,transparent 65%,rgba(30,28,26,0.5) 85%,rgba(30,28,26,1) 100%)}
 
-/* Fuel atmosphere — billing: energy station, 420px coverage */
-.ob-fuel-atmosphere{position:relative}
+/* Fuel atmosphere — billing: 420px coverage */
+.ob-fuel-atmosphere{position:relative;overflow:hidden}
 .ob-fuel-atmosphere::before{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:url('/assets/bg/billing_bg_v3.png') center top/cover no-repeat;opacity:0.92}
+  background:url('/assets/bg/billing_bg_v3.png') center top/cover no-repeat;opacity:0.96}
 .ob-fuel-atmosphere::after{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:linear-gradient(to bottom,rgba(30,28,26,0.08) 0%,transparent 30%,transparent 72%,rgba(30,28,26,0.7) 92%,rgba(30,28,26,1) 100%)}
+  background:linear-gradient(to bottom,rgba(30,28,26,0.06) 0%,transparent 25%,transparent 68%,rgba(30,28,26,0.6) 88%,rgba(30,28,26,1) 100%)}
 
 
 /* ═══════════════════════════════════════════════════════════════
@@ -436,7 +436,8 @@ body{
 .ob-hero-sub{font-size:17px;color:#6B7280;text-align:center;line-height:1.6;max-width:520px;margin:0 auto 32px}
 
 /* Task launcher input */
-.ob-launcher{width:100%;max-width:640px;background:var(--card-bg);border:1px solid var(--border-orange);border-radius:6px;padding:20px;transition:border-color .2s,box-shadow .3s}
+.ob-launcher{width:100%;max-width:640px;background:var(--card-bg);border:1px solid rgba(255,61,0,0.22);border-radius:6px;padding:20px;transition:border-color .2s,box-shadow .3s;
+  box-shadow:0 0 0 1px rgba(255,61,0,0.08),0 0 32px rgba(255,61,0,0.10)}
 .ob-launcher:focus-within{border-color:rgba(255,61,0,0.5);box-shadow:0 0 0 4px rgba(255,61,0,.12),var(--accent-glow)}
 .ob-launcher:hover:not(:focus-within){box-shadow:0 8px 24px rgba(0,0,0,.04)}
 
@@ -466,7 +467,7 @@ body{
 .ob-mission-sub{font-size:12px;color:#9CA3AF}
 
 /* Result node (not just a reply block) */
-.ob-result-node{position:relative;background:var(--bg-elevated);border:none;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.25);margin-top:8px}
+.ob-result-node{position:relative;background:var(--bg-elevated);border:1px solid rgba(255,255,255,0.10);border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.3);margin-top:8px}
 .ob-result-node::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#FF3D00,#22c55e)}
 .ob-result-node-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.04)}
 .ob-result-node-body{padding:20px}
