@@ -52,32 +52,32 @@ export default function NewWorkspaceTaskPage() {
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', height: 40, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)',
-    background: '#1A1A17', padding: '0 14px', fontSize: 14, color: '#F0EDE8', outline: 'none',
+    width: '100%', height: 40, borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)',
+    background: '#252321', padding: '0 14px', fontSize: 14, color: '#F5F5F5', outline: 'none',
     transition: 'border-color .2s',
   };
-  const labelStyle: React.CSSProperties = { fontSize: 14, fontWeight: 500, color: '#F0EDE8', marginBottom: 6, display: 'block' };
+  const labelStyle: React.CSSProperties = { fontSize: 14, fontWeight: 500, color: '#F5F5F5', marginBottom: 6, display: 'block' };
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '40px 32px 60px' }}>
-          <h1 style={{ fontSize: 28, fontWeight: 600, color: '#F0EDE8', margin: '0 0 24px' }}>新建任务</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 600, color: '#F5F5F5', margin: '0 0 24px' }}>新建任务</h1>
 
-          <div style={{ background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24 }}>
+          <div style={{ background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 24 }}>
             <div style={{ marginBottom: 20 }}>
               <label style={labelStyle}>任务标题 *</label>
               <input value={title} onChange={e => setTitle(e.target.value)} placeholder="例如：写季度总结报告" style={inputStyle}
-                onFocus={e => (e.currentTarget.style.borderColor = '#FF6B2C')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')} />
+                onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
             </div>
 
             <div style={{ marginBottom: 20 }}>
               <label style={labelStyle}>任务描述</label>
               <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="详细描述任务要求..." rows={4}
                 style={{ ...inputStyle, height: 'auto', padding: '10px 14px', resize: 'vertical', minHeight: 100, fontFamily: 'inherit', lineHeight: 1.6 }}
-                onFocus={e => (e.currentTarget.style.borderColor = '#FF6B2C')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')} />
+                onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
@@ -116,11 +116,11 @@ export default function NewWorkspaceTaskPage() {
 
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={handleCreate} disabled={!title.trim() || submitting}
-                style={{ height: 40, padding: '0 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, border: 'none', background: '#FF6B2C', color: '#fff', cursor: 'pointer', opacity: (!title.trim() || submitting) ? 0.5 : 1 }}>
+                style={{ height: 40, padding: '0 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, border: 'none', background: '#FF3D00', color: '#fff', cursor: 'pointer', opacity: (!title.trim() || submitting) ? 0.5 : 1 }}>
                 {submitting ? '创建中...' : '创建任务'}
               </button>
               <button onClick={() => router.back()}
-                style={{ height: 40, padding: '0 20px', borderRadius: 12, fontSize: 14, border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17', color: '#6B7280', cursor: 'pointer' }}>
+                style={{ height: 40, padding: '0 20px', borderRadius: 12, fontSize: 14, border: '1px solid rgba(255,255,255,0.04)', background: '#252321', color: '#888888', cursor: 'pointer' }}>
                 取消
               </button>
             </div>

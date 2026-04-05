@@ -56,25 +56,25 @@ export default function AccountPage() {
 
   // ── Shared styles ──
   const cardStyle: React.CSSProperties = {
-    background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 20,
+    background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20,
   };
   const actionBtnStyle: React.CSSProperties = {
     height: 30, padding: '0 12px', borderRadius: 9999,
     fontSize: 12, fontWeight: 500,
-    border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17',
-    color: '#6B7280', cursor: 'pointer', textDecoration: 'none',
+    border: '1px solid rgba(255,255,255,0.04)', background: '#252321',
+    color: '#888888', cursor: 'pointer', textDecoration: 'none',
     display: 'inline-flex', alignItems: 'center',
     transition: 'border-color .2s, background .2s, color .2s',
   };
   const hoverIn = (e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.borderColor = 'rgba(255,107,44,0.3)';
-    e.currentTarget.style.background = 'rgba(255,107,44,0.06)';
-    e.currentTarget.style.color = '#FF6B2C';
+    e.currentTarget.style.borderColor = 'rgba(255,61,0,0.3)';
+    e.currentTarget.style.background = 'rgba(255,61,0,0.06)';
+    e.currentTarget.style.color = '#FF3D00';
   };
   const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-    e.currentTarget.style.background = '#FFFFFF';
-    e.currentTarget.style.color = '#6B7280';
+    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)';
+    e.currentTarget.style.background = '#252321';
+    e.currentTarget.style.color = '#888888';
   };
   const rowStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -83,24 +83,24 @@ export default function AccountPage() {
   const rowBorder: React.CSSProperties = { borderBottom: '1px solid rgba(255,255,255,0.04)' };
   const placeholderTag: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center',
-    height: 22, fontSize: 11, fontWeight: 500, color: '#9CA3AF',
-    background: '#121210', borderRadius: 9999, padding: '0 10px',
-    border: '1px solid rgba(255,255,255,0.06)',
+    height: 22, fontSize: 11, fontWeight: 500, color: '#CCCCCC',
+    background: '#1E1C1A', borderRadius: 9999, padding: '0 10px',
+    border: '1px solid rgba(255,255,255,0.04)',
   };
 
   if (loading) {
     return (
-      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 20, height: 20, border: '2px solid #FF6B2C', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+          <div style={{ width: 20, height: 20, border: '2px solid #FF3D00', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
@@ -108,8 +108,8 @@ export default function AccountPage() {
 
           {/* ── Top area ── */}
           <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#F0EDE8', lineHeight: 1.2, margin: '0 0 8px' }}>账户</h1>
-            <p style={{ fontSize: 14, color: '#9CA3AF', margin: 0, maxWidth: 520 }}>查看你的账号信息、套餐与使用权益</p>
+            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#F5F5F5', lineHeight: 1.2, margin: '0 0 8px' }}>账户</h1>
+            <p style={{ fontSize: 14, color: '#CCCCCC', margin: 0, maxWidth: 520 }}>查看你的账号信息、套餐与使用权益</p>
           </div>
 
           {/* ── Account overview card ── */}
@@ -118,7 +118,7 @@ export default function AccountPage() {
               {/* Avatar */}
               <div style={{
                 width: 56, height: 56, borderRadius: '50%',
-                background: 'rgba(255,107,44,0.12)', color: '#FF6B2C',
+                background: 'rgba(255,61,0,0.12)', color: '#FF3D00',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 18, fontWeight: 600, flexShrink: 0,
               }}>
@@ -128,13 +128,13 @@ export default function AccountPage() {
               {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 18, fontWeight: 600, color: '#F0EDE8' }}>{userName}</span>
+                  <span style={{ fontSize: 18, fontWeight: 600, color: '#F5F5F5' }}>{userName}</span>
                   {/* Plan badge */}
                   <span style={{
                     display: 'inline-flex', alignItems: 'center',
                     height: 24, padding: '0 10px', borderRadius: 9999,
                     fontSize: 11, fontWeight: 500,
-                    background: 'rgba(255,107,44,0.10)', color: '#C2410C',
+                    background: 'rgba(255,61,0,0.10)', color: '#C2410C',
                   }}>
                     {planLabel}
                   </span>
@@ -148,7 +148,7 @@ export default function AccountPage() {
                     {statusLabel}
                   </span>
                 </div>
-                <span style={{ fontSize: 13, color: '#6B7280' }}>{userId}</span>
+                <span style={{ fontSize: 13, color: '#888888' }}>{userId}</span>
               </div>
 
               {/* Action */}
@@ -162,33 +162,33 @@ export default function AccountPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
             {/* Credits */}
             <div style={{ ...cardStyle, height: 104, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 6px' }}>月度额度</p>
-              <p style={{ fontSize: 24, fontWeight: 650, color: '#F0EDE8', margin: '0 0 4px', lineHeight: 1 }}>{credits}</p>
-              <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>剩余可用 credits</p>
+              <p style={{ fontSize: 13, color: '#888888', margin: '0 0 6px' }}>月度额度</p>
+              <p style={{ fontSize: 24, fontWeight: 650, color: '#F5F5F5', margin: '0 0 4px', lineHeight: 1 }}>{credits}</p>
+              <p style={{ fontSize: 12, color: '#888888', margin: 0 }}>剩余可用 credits</p>
             </div>
 
             {/* Permissions */}
             <div style={{ ...cardStyle, height: 104, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 6px' }}>当前权限</p>
-              <p style={{ fontSize: 24, fontWeight: 650, color: '#F0EDE8', margin: '0 0 4px', lineHeight: 1 }}>基础</p>
-              <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>文本生成、邮件、PPT</p>
+              <p style={{ fontSize: 13, color: '#888888', margin: '0 0 6px' }}>当前权限</p>
+              <p style={{ fontSize: 24, fontWeight: 650, color: '#F5F5F5', margin: '0 0 4px', lineHeight: 1 }}>基础</p>
+              <p style={{ fontSize: 12, color: '#888888', margin: 0 }}>文本生成、邮件、PPT</p>
             </div>
 
             {/* Capabilities */}
             <div style={{ ...cardStyle, height: 104, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 6px' }}>已启用能力</p>
-              <p style={{ fontSize: 24, fontWeight: 650, color: '#F0EDE8', margin: '0 0 4px', lineHeight: 1 }}>3</p>
-              <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>文本 / 搜索 / 结构化</p>
+              <p style={{ fontSize: 13, color: '#888888', margin: '0 0 6px' }}>已启用能力</p>
+              <p style={{ fontSize: 24, fontWeight: 650, color: '#F5F5F5', margin: '0 0 4px', lineHeight: 1 }}>3</p>
+              <p style={{ fontSize: 12, color: '#888888', margin: 0 }}>文本 / 搜索 / 结构化</p>
             </div>
           </div>
 
           {/* ── Plan benefits ── */}
           <div style={{ ...cardStyle, marginBottom: 20 }}>
-            <p style={{ fontSize: 17, fontWeight: 600, color: '#F0EDE8', margin: '0 0 16px' }}>当前套餐权益</p>
+            <p style={{ fontSize: 17, fontWeight: 600, color: '#F5F5F5', margin: '0 0 16px' }}>当前套餐权益</p>
             <div style={{ display: 'flex', gap: 40 }}>
               {/* Enabled */}
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: 500, color: '#F0EDE8', margin: '0 0 10px' }}>已启用</p>
+                <p style={{ fontSize: 13, fontWeight: 500, color: '#F5F5F5', margin: '0 0 10px' }}>已启用</p>
                 {[
                   'AI 文本生成与优化',
                   '邮件自动撰写',
@@ -205,7 +205,7 @@ export default function AccountPage() {
               </div>
               {/* Coming soon */}
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: 500, color: '#F0EDE8', margin: '0 0 10px' }}>即将开放</p>
+                <p style={{ fontSize: 13, fontWeight: 500, color: '#F5F5F5', margin: '0 0 10px' }}>即将开放</p>
                 {[
                   '图片生成 (Leonardo)',
                   '视频生成 (MiniMax)',
@@ -214,7 +214,7 @@ export default function AccountPage() {
                   'Zapier 自动化集成',
                   '团队协作空间',
                 ].map((item, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#9CA3AF', lineHeight: 1.8 }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#CCCCCC', lineHeight: 1.8 }}>
                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#D5D3CE', flexShrink: 0 }} />
                     {item}
                   </div>
@@ -225,28 +225,28 @@ export default function AccountPage() {
 
           {/* ── Account actions ── */}
           <div style={cardStyle}>
-            <p style={{ fontSize: 17, fontWeight: 600, color: '#F0EDE8', margin: '0 0 12px' }}>账号操作</p>
+            <p style={{ fontSize: 17, fontWeight: 600, color: '#F5F5F5', margin: '0 0 12px' }}>账号操作</p>
 
             <div style={{ ...rowStyle, ...rowBorder }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: '#F0EDE8' }}>设置</div>
-                <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>偏好、通知、安全与集成</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#F5F5F5' }}>设置</div>
+                <div style={{ fontSize: 12, color: '#CCCCCC', marginTop: 2 }}>偏好、通知、安全与集成</div>
               </div>
               <a href="/settings" style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>前往设置</a>
             </div>
 
             <div style={{ ...rowStyle, ...rowBorder }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: '#F0EDE8' }}>导出数据</div>
-                <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>导出你的任务记录与结果</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#F5F5F5' }}>导出数据</div>
+                <div style={{ fontSize: 12, color: '#CCCCCC', marginTop: 2 }}>导出你的任务记录与结果</div>
               </div>
               <span style={placeholderTag}>即将开放</span>
             </div>
 
             <div style={{ ...rowStyle, ...rowBorder }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: '#F0EDE8' }}>订阅与充值</div>
-                <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>管理套餐与额度</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#F5F5F5' }}>订阅与充值</div>
+                <div style={{ fontSize: 12, color: '#CCCCCC', marginTop: 2 }}>管理套餐与额度</div>
               </div>
               <a href="/billing" style={actionBtnStyle}
                 onMouseEnter={hoverIn} onMouseLeave={hoverOut}>前往充值</a>
@@ -254,8 +254,8 @@ export default function AccountPage() {
 
             <div style={rowStyle}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: '#F0EDE8' }}>退出登录</div>
-                <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>退出当前账号</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#F5F5F5' }}>退出登录</div>
+                <div style={{ fontSize: 12, color: '#CCCCCC', marginTop: 2 }}>退出当前账号</div>
               </div>
               <button
                 onClick={handleLogout}
@@ -263,13 +263,13 @@ export default function AccountPage() {
                 style={{
                   height: 30, padding: '0 12px', borderRadius: 9999,
                   fontSize: 12, fontWeight: 500,
-                  border: '1px solid rgba(185,28,28,0.18)', background: '#1A1A17',
+                  border: '1px solid rgba(185,28,28,0.18)', background: '#252321',
                   color: '#B91C1C', cursor: 'pointer',
                   display: 'inline-flex', alignItems: 'center',
                   transition: 'background .2s',
                 }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.06)')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#FFFFFF')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#252321')}
               >
                 退出登录
               </button>

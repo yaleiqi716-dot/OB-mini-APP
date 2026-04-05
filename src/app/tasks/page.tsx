@@ -54,8 +54,8 @@ function StatusBadge({ status }: { status: string }) {
   const isReview = ['submitted', 'revision'].includes(status);
 
   let bg = 'rgba(156,163,175,0.10)';
-  let color = '#6B7280';
-  if (isRunning)   { bg = 'rgba(255,107,44,0.10)'; color = '#C2410C'; }
+  let color = '#888888';
+  if (isRunning)   { bg = 'rgba(255,61,0,0.10)'; color = '#C2410C'; }
   if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = '#047857'; }
   if (isFailed)    { bg = 'rgba(239,68,68,0.10)';  color = '#B91C1C'; }
   if (isReview)    { bg = 'rgba(59,130,246,0.10)';  color = '#1D4ED8'; }
@@ -167,7 +167,7 @@ export default function MyTasksPage() {
   });
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
@@ -176,11 +176,11 @@ export default function MyTasksPage() {
           {/* ── Top area: title + search ── */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
             <div>
-              <h1 style={{ fontSize: 32, fontWeight: 600, color: '#F0EDE8', lineHeight: 1.2, margin: 0 }}>任务</h1>
+              <h1 style={{ fontSize: 32, fontWeight: 600, color: '#F5F5F5', lineHeight: 1.2, margin: 0 }}>任务</h1>
             </div>
             {/* Search box */}
             <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', pointerEvents: 'none' }}>
+              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#CCCCCC', pointerEvents: 'none' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               </span>
               <input
@@ -190,28 +190,28 @@ export default function MyTasksPage() {
                 onChange={(e) => setSearch(e.target.value)}
                 style={{
                   width: 220, height: 36, borderRadius: 12,
-                  border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17',
+                  border: '1px solid rgba(255,255,255,0.04)', background: '#252321',
                   padding: '0 12px 0 34px', fontSize: 13,
-                  color: '#F0EDE8', outline: 'none',
+                  color: '#F5F5F5', outline: 'none',
                   transition: 'border-color .2s, box-shadow .2s',
                 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#FF6B2C'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255,107,44,0.12)'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#FF3D00'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255,61,0,0.12)'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.boxShadow = 'none'; }}
               />
             </div>
           </div>
 
-          <p style={{ fontSize: 14, color: '#9CA3AF', margin: '0 0 16px' }}>查看你的 AI 执行记录与结果</p>
+          <p style={{ fontSize: 14, color: '#CCCCCC', margin: '0 0 16px' }}>查看你的 AI 执行记录与结果</p>
 
           {/* ── View mode tabs ── */}
           {hasWorkspace && (
-            <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
               {([['personal', '个人'], ['team', '团队']] as const).map(([value, label]) => (
                 <button key={value} onClick={() => { setViewMode(value); setFilter('all'); }}
                   style={{
                     padding: '8px 20px', fontSize: 14, fontWeight: viewMode === value ? 600 : 400,
-                    color: viewMode === value ? '#FF6B2C' : '#6B7280',
-                    borderBottom: viewMode === value ? '2px solid #FF6B2C' : '2px solid transparent',
+                    color: viewMode === value ? '#FF3D00' : '#888888',
+                    borderBottom: viewMode === value ? '2px solid #FF3D00' : '2px solid transparent',
                     background: 'transparent', border: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none',
                     cursor: 'pointer', transition: 'color .2s',
                     marginBottom: -1,
@@ -232,9 +232,9 @@ export default function MyTasksPage() {
                   style={{
                     height: 32, padding: '0 14px',
                     borderRadius: 9999, fontSize: 13, fontWeight: active ? 500 : 400,
-                    border: active ? 'none' : '1px solid rgba(255,255,255,0.06)',
-                    background: active ? 'rgba(255,107,44,0.10)' : '#1A1A17',
-                    color: active ? '#FF6B2C' : '#6B7280',
+                    border: active ? 'none' : '1px solid rgba(255,255,255,0.04)',
+                    background: active ? 'rgba(255,61,0,0.10)' : '#252321',
+                    color: active ? '#FF3D00' : '#888888',
                     cursor: 'pointer',
                     transition: 'all .2s ease',
                   }}
@@ -255,31 +255,31 @@ export default function MyTasksPage() {
               <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(239,68,68,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
-              <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 12 }}>{error}</p>
-              <button onClick={fetchTasks} style={{ fontSize: 13, color: '#FF6B2C', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>重新加载</button>
+              <p style={{ fontSize: 14, color: '#888888', marginBottom: 12 }}>{error}</p>
+              <button onClick={fetchTasks} style={{ fontSize: 13, color: '#FF3D00', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>重新加载</button>
             </div>
           ) : filtered.length === 0 ? (
             /* ── Empty state ── */
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 16, background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <div style={{ width: 48, height: 48, borderRadius: 16, background: '#252321', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CCCCCC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="16" x2="12" y2="16"/>
                 </svg>
               </div>
-              <p style={{ fontSize: 16, fontWeight: 600, color: '#F0EDE8', marginBottom: 6 }}>还没有任务记录</p>
-              <p style={{ fontSize: 14, color: '#9CA3AF', marginBottom: 20 }}>去 Agent 交给 ORANGEBENCH 一个任务吧</p>
+              <p style={{ fontSize: 16, fontWeight: 600, color: '#F5F5F5', marginBottom: 6 }}>还没有任务记录</p>
+              <p style={{ fontSize: 14, color: '#CCCCCC', marginBottom: 20 }}>去 Agent 交给 ORANGEBENCH 一个任务吧</p>
               <a
                 href="/agent"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 6,
                   height: 36, padding: '0 18px',
                   borderRadius: 9999, fontSize: 14, fontWeight: 500,
-                  background: '#FF6B2C', color: '#fff',
+                  background: '#FF3D00', color: '#fff',
                   textDecoration: 'none',
                   transition: 'background .2s',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#E85A1A')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = '#FF6B2C')}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#E63600')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#FF3D00')}
               >
                 去 Agent
               </a>
@@ -299,28 +299,28 @@ export default function MyTasksPage() {
                 const actionBtnStyle: React.CSSProperties = {
                   height: 30, padding: '0 12px',
                   borderRadius: 9999, fontSize: 12, fontWeight: 500,
-                  border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17',
-                  color: '#6B7280', textDecoration: 'none', cursor: 'pointer',
+                  border: '1px solid rgba(255,255,255,0.04)', background: '#252321',
+                  color: '#888888', textDecoration: 'none', cursor: 'pointer',
                   display: 'inline-flex', alignItems: 'center',
                   transition: 'border-color .2s, background .2s, color .2s',
                 };
                 const hoverIn = (e: React.MouseEvent<HTMLElement>) => {
-                  e.currentTarget.style.borderColor = 'rgba(255,107,44,0.3)';
-                  e.currentTarget.style.background = 'rgba(255,107,44,0.06)';
-                  e.currentTarget.style.color = '#FF6B2C';
+                  e.currentTarget.style.borderColor = 'rgba(255,61,0,0.3)';
+                  e.currentTarget.style.background = 'rgba(255,61,0,0.06)';
+                  e.currentTarget.style.color = '#FF3D00';
                 };
                 const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)';
                   e.currentTarget.style.background = '#FFFFFF';
-                  e.currentTarget.style.color = '#6B7280';
+                  e.currentTarget.style.color = '#888888';
                 };
 
                 return (
                   <div
                     key={t.id}
                     style={{
-                      background: '#1A1A17',
-                      border: '1px solid rgba(255,255,255,0.06)',
+                      background: '#252321',
+                      border: '1px solid rgba(255,255,255,0.04)',
                       borderRadius: 16,
                       padding: 18,
                       minHeight: 96,
@@ -338,7 +338,7 @@ export default function MyTasksPage() {
                         {/* Title row */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: displayInput ? 6 : 0 }}>
                           <p style={{
-                            fontSize: 17, fontWeight: 600, color: '#F0EDE8',
+                            fontSize: 17, fontWeight: 600, color: '#F5F5F5',
                             margin: 0, overflow: 'hidden', textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap', flex: 1, minWidth: 0,
                           }}>
@@ -350,7 +350,7 @@ export default function MyTasksPage() {
                         {/* Input summary — max 2 lines */}
                         {displayInput && (
                           <p style={{
-                            fontSize: 13, color: '#6B7280', margin: 0, lineHeight: 1.5,
+                            fontSize: 13, color: '#888888', margin: 0, lineHeight: 1.5,
                             overflow: 'hidden', display: '-webkit-box',
                             WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
                           }}>
@@ -359,7 +359,7 @@ export default function MyTasksPage() {
                         )}
 
                         {/* Time — fixed below, 8px gap from summary */}
-                        <span style={{ display: 'block', fontSize: 12, color: '#6B7280', marginTop: 8 }}>
+                        <span style={{ display: 'block', fontSize: 12, color: '#888888', marginTop: 8 }}>
                           {timeAgo(t.updatedAt || t.createdAt)}
                         </span>
 

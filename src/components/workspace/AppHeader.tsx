@@ -105,12 +105,12 @@ export function AppHeader() {
     <header style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       height: 52, padding: '0 32px',
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
-      background: '#0E0E0C', flexShrink: 0,
+      borderBottom: '1px solid rgba(255,255,255,0.04)',
+      background: '#1A1816', flexShrink: 0,
     }}>
       <a href="/agent" style={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}>
-        <span style={{ color: '#FF6B2C', fontWeight: 700, fontSize: 15, textShadow: '0 0 12px rgba(255,107,44,0.3)' }}>ORANGE</span>
-        <span style={{ color: '#F0EDE8', fontWeight: 700, fontSize: 15 }}>BENCH</span>
+        <span style={{ color: '#FF3D00', fontWeight: 700, fontSize: 15, textShadow: '0 0 12px rgba(255,61,0,0.3)' }}>ORANGE</span>
+        <span style={{ color: '#F5F5F5', fontWeight: 700, fontSize: 15 }}>BENCH</span>
       </a>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -120,9 +120,9 @@ export function AppHeader() {
               <a key={n.href} href={n.href} style={{
                 fontSize: 13, textDecoration: 'none', padding: '5px 10px', borderRadius: 8,
                 fontWeight: active ? 600 : 400,
-                color: active ? '#FF6B2C' : '#6B7280',
-                background: active ? 'rgba(255,107,44,0.10)' : 'transparent',
-                borderBottom: active ? '2px solid #FF6B2C' : '2px solid transparent',
+                color: active ? '#FF3D00' : '#888888',
+                background: active ? 'rgba(255,61,0,0.10)' : 'transparent',
+                borderBottom: active ? '2px solid #FF3D00' : '2px solid transparent',
                 transition: 'color .15s, background .15s',
               }}>{n.label}</a>
             );
@@ -136,12 +136,12 @@ export function AppHeader() {
             aria-label="通知"
             style={{
               width: 32, height: 32, borderRadius: 8, border: 'none',
-              background: dropdownOpen ? 'rgba(255,107,44,0.10)' : 'transparent',
+              background: dropdownOpen ? 'rgba(255,61,0,0.10)' : 'transparent',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               position: 'relative', transition: 'background .2s',
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dropdownOpen ? '#FF6B2C' : '#9CA3AF'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dropdownOpen ? '#FF3D00' : '#CCCCCC'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
             {unreadCount > 0 && (
@@ -163,15 +163,15 @@ export function AppHeader() {
             <div style={{
               position: 'absolute', top: 40, right: 0,
               width: 340, maxHeight: 420, overflowY: 'auto',
-              background: '#1A1A17', border: '1px solid rgba(255,255,255,0.08)',
+              background: '#252321', border: '1px solid rgba(255,255,255,0.06)',
               borderRadius: 16, boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
               zIndex: 100,
             }}>
               {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#F0EDE8' }}>通知</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 10px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#F5F5F5' }}>通知</span>
                 {unreadCount > 0 && (
-                  <button onClick={handleMarkAllRead} style={{ fontSize: 12, color: '#FF6B2C', background: 'none', border: 'none', cursor: 'pointer' }}>
+                  <button onClick={handleMarkAllRead} style={{ fontSize: 12, color: '#FF3D00', background: 'none', border: 'none', cursor: 'pointer' }}>
                     全部已读
                   </button>
                 )}
@@ -180,7 +180,7 @@ export function AppHeader() {
               {/* List */}
               {notifications.length === 0 ? (
                 <div style={{ padding: '32px 16px', textAlign: 'center' }}>
-                  <p style={{ fontSize: 13, color: '#9CA3AF' }}>暂无通知</p>
+                  <p style={{ fontSize: 13, color: '#CCCCCC' }}>暂无通知</p>
                 </div>
               ) : (
                 <div>
@@ -191,21 +191,21 @@ export function AppHeader() {
                       style={{
                         width: '100%', display: 'flex', alignItems: 'flex-start', gap: 10,
                         padding: '12px 16px', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)',
-                        background: n.read ? 'transparent' : 'rgba(255,107,44,0.04)',
+                        background: n.read ? 'transparent' : 'rgba(255,61,0,0.04)',
                         cursor: 'pointer', textAlign: 'left', transition: 'background .15s',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(255,107,44,0.04)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(255,61,0,0.04)')}
                     >
                       {/* Unread dot */}
                       <span style={{
                         width: 6, height: 6, borderRadius: '50%', flexShrink: 0, marginTop: 6,
-                        background: n.read ? 'transparent' : '#FF6B2C',
+                        background: n.read ? 'transparent' : '#FF3D00',
                       }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: n.read ? 400 : 500, color: '#F0EDE8', margin: '0 0 2px', lineHeight: 1.4 }}>{n.title}</p>
-                        {n.body && <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</p>}
-                        <span style={{ fontSize: 11, color: '#9CA3AF' }}>{timeAgo(n.createdAt)}</span>
+                        <p style={{ fontSize: 13, fontWeight: n.read ? 400 : 500, color: '#F5F5F5', margin: '0 0 2px', lineHeight: 1.4 }}>{n.title}</p>
+                        {n.body && <p style={{ fontSize: 12, color: '#888888', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</p>}
+                        <span style={{ fontSize: 11, color: '#CCCCCC' }}>{timeAgo(n.createdAt)}</span>
                       </div>
                     </button>
                   ))}
@@ -230,14 +230,14 @@ export function WorkspaceSubNav() {
       display: 'flex', alignItems: 'center', gap: 6,
       padding: '0 32px', height: 40,
       borderBottom: '1px solid rgba(255,255,255,0.04)',
-      background: '#0E0E0C',
+      background: '#1A1816',
     }}>
       {WS_NAV.map(n => {
         const active = n.href === activeHref;
         return (
           <a key={n.href} href={n.href} style={{
             fontSize: 13, fontWeight: active ? 500 : 400,
-            color: active ? '#F0EDE8' : '#6B7280',
+            color: active ? '#F5F5F5' : '#888888',
             textDecoration: 'none', padding: '6px 12px', borderRadius: 8,
             background: active ? 'rgba(255,255,255,0.04)' : 'transparent',
             transition: 'all .2s',

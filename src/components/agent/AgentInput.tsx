@@ -101,7 +101,7 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
               <span key={f.id} style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
                 height: 26, padding: '0 8px 0 10px', borderRadius: 9999,
-                fontSize: 12, color: '#6B7280',
+                fontSize: 12, color: '#888888',
                 background: '#F7F7F4', border: '1px solid #E7E5E1',
               }}>
                 {f.name.length > 20 ? f.name.slice(0, 17) + '...' : f.name}
@@ -109,7 +109,7 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
                   type="button"
                   onClick={() => removeAttachment(f.id)}
                   aria-label={`移除 ${f.name}`}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 0, lineHeight: 1, fontSize: 14 }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CCCCCC', padding: 0, lineHeight: 1, fontSize: 14 }}
                 >
                   x
                 </button>

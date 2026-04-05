@@ -23,9 +23,9 @@ const STATUS_LABEL: Record<string, string> = {
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, { bg: string; color: string }> = {
-    draft: { bg: 'rgba(156,163,175,0.10)', color: '#6B7280' },
-    assigned: { bg: 'rgba(255,107,44,0.10)', color: '#C2410C' },
-    in_progress: { bg: 'rgba(255,107,44,0.10)', color: '#C2410C' },
+    draft: { bg: 'rgba(156,163,175,0.10)', color: '#888888' },
+    assigned: { bg: 'rgba(255,61,0,0.10)', color: '#C2410C' },
+    in_progress: { bg: 'rgba(255,61,0,0.10)', color: '#C2410C' },
     submitted: { bg: 'rgba(59,130,246,0.10)', color: '#1D4ED8' },
     revision: { bg: 'rgba(239,68,68,0.10)', color: '#B91C1C' },
     completed: { bg: 'rgba(16,185,129,0.10)', color: '#047857' },
@@ -163,22 +163,22 @@ export default function WorkspaceTaskDetailPage() {
     finally { setSendingComment(false); }
   }
 
-  const cardStyle: React.CSSProperties = { background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 20, marginBottom: 16 };
+  const cardStyle: React.CSSProperties = { background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20, marginBottom: 16 };
   const actionBtn: React.CSSProperties = { height: 36, padding: '0 18px', borderRadius: 12, fontSize: 14, fontWeight: 500, border: 'none', cursor: 'pointer', transition: 'background .2s' };
 
   if (loading || !task) {
     return (
-      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 20, height: 20, border: '2px solid #FF6B2C', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+          <div style={{ width: 20, height: 20, border: '2px solid #FF3D00', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
@@ -187,11 +187,11 @@ export default function WorkspaceTaskDetailPage() {
           {/* Title + meta */}
           <div style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <h1 style={{ fontSize: 24, fontWeight: 600, color: '#F0EDE8', margin: 0 }}>{task.title}</h1>
+              <h1 style={{ fontSize: 24, fontWeight: 600, color: '#F5F5F5', margin: 0 }}>{task.title}</h1>
               <StatusBadge status={task.businessStatus} />
             </div>
-            <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#9CA3AF' }}>
-              {task.assigneeId && <span>负责人：<strong style={{ color: '#F0EDE8', fontWeight: 500 }}>{memberNames[task.assigneeId] || task.assigneeId}</strong></span>}
+            <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#CCCCCC' }}>
+              {task.assigneeId && <span>负责人：<strong style={{ color: '#F5F5F5', fontWeight: 500 }}>{memberNames[task.assigneeId] || task.assigneeId}</strong></span>}
               <span>创建于 {new Date(task.createdAt).toLocaleDateString('zh-CN')}</span>
               {task.dueAt && <span>截止 {new Date(task.dueAt).toLocaleDateString('zh-CN')}</span>}
               {task.priority >= 2 && <span style={{ color: '#B91C1C', fontWeight: 500 }}>紧急</span>}
@@ -201,8 +201,8 @@ export default function WorkspaceTaskDetailPage() {
           {/* Description */}
           {task.description && (
             <div style={cardStyle}>
-              <p style={{ fontSize: 13, fontWeight: 500, color: '#9CA3AF', margin: '0 0 8px' }}>任务描述</p>
-              <p style={{ fontSize: 14, color: '#404040', lineHeight: 1.75, margin: 0, whiteSpace: 'pre-wrap' }}>{task.description}</p>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#CCCCCC', margin: '0 0 8px' }}>任务描述</p>
+              <p style={{ fontSize: 14, color: '#D1D5DB', lineHeight: 1.75, margin: 0, whiteSpace: 'pre-wrap' }}>{task.description}</p>
             </div>
           )}
 
@@ -217,27 +217,27 @@ export default function WorkspaceTaskDetailPage() {
           {task.feedback && task.businessStatus === 'revision' && (
             <div style={{ ...cardStyle, background: '#FFF7F5', borderColor: '#F5D0C5' }}>
               <p style={{ fontSize: 13, fontWeight: 500, color: '#C2410C', margin: '0 0 8px' }}>修改意见</p>
-              <p style={{ fontSize: 14, color: '#404040', lineHeight: 1.6, margin: 0 }}>{task.feedback}</p>
+              <p style={{ fontSize: 14, color: '#D1D5DB', lineHeight: 1.6, margin: 0 }}>{task.feedback}</p>
             </div>
           )}
 
           {/* Agent execution history */}
           {task.agentTasks.length > 0 && (
             <div style={cardStyle}>
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#F0EDE8', margin: '0 0 12px' }}>执行记录</p>
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#F5F5F5', margin: '0 0 12px' }}>执行记录</p>
               {task.agentTasks.map((at, i) => {
                 const link = task.links.find(l => l.agentTaskId === at.id);
                 return (
-                  <div key={at.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < task.agentTasks.length - 1 ? '1px solid #F0EDE8' : 'none' }}>
+                  <div key={at.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < task.agentTasks.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: at.status === 'completed' ? '#22c55e' : at.status === 'failed' ? '#ef4444' : '#FF6B2C', flexShrink: 0 }} />
-                      <span style={{ fontSize: 14, color: '#F0EDE8' }}>{at.title || 'Agent 任务'}</span>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: at.status === 'completed' ? '#22c55e' : at.status === 'failed' ? '#ef4444' : '#FF3D00', flexShrink: 0 }} />
+                      <span style={{ fontSize: 14, color: '#F5F5F5' }}>{at.title || 'Agent 任务'}</span>
                       {link?.purpose === 'final' && <span style={{ fontSize: 11, color: '#047857', fontWeight: 500 }}>已提交</span>}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 12, color: '#9CA3AF' }}>{new Date(at.createdAt).toLocaleDateString('zh-CN')}</span>
+                      <span style={{ fontSize: 12, color: '#CCCCCC' }}>{new Date(at.createdAt).toLocaleDateString('zh-CN')}</span>
                       {at.conversationId && (
-                        <a href={`/agent?conversationId=${at.conversationId}`} style={{ height: 26, padding: '0 10px', borderRadius: 9999, fontSize: 12, fontWeight: 500, border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17', color: '#6B7280', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>查看</a>
+                        <a href={`/agent?conversationId=${at.conversationId}`} style={{ height: 26, padding: '0 10px', borderRadius: 9999, fontSize: 12, fontWeight: 500, border: '1px solid rgba(255,255,255,0.04)', background: '#252321', color: '#888888', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>查看</a>
                       )}
                     </div>
                   </div>
@@ -251,8 +251,8 @@ export default function WorkspaceTaskDetailPage() {
             <div style={cardStyle}>
               {task.submissionSummary && (
                 <>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: '#9CA3AF', margin: '0 0 8px' }}>交付说明</p>
-                  <p style={{ fontSize: 14, color: '#404040', lineHeight: 1.6, margin: '0 0 12px' }}>{task.submissionSummary}</p>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: '#CCCCCC', margin: '0 0 8px' }}>交付说明</p>
+                  <p style={{ fontSize: 14, color: '#D1D5DB', lineHeight: 1.6, margin: '0 0 12px' }}>{task.submissionSummary}</p>
                 </>
               )}
               {task.submissionAttachments && task.submissionAttachments.length > 0 && (
@@ -263,17 +263,17 @@ export default function WorkspaceTaskDetailPage() {
 
           {/* ── Comments / Discussion ── */}
           <div style={cardStyle}>
-            <p style={{ fontSize: 15, fontWeight: 600, color: '#F0EDE8', margin: '0 0 12px' }}>讨论</p>
+            <p style={{ fontSize: 15, fontWeight: 600, color: '#F5F5F5', margin: '0 0 12px' }}>讨论</p>
 
             {comments.length === 0 ? (
-              <p style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 12 }}>暂无讨论，发条消息开始</p>
+              <p style={{ fontSize: 13, color: '#CCCCCC', marginBottom: 12 }}>暂无讨论，发条消息开始</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
                 {comments.map(c => (
                   <div key={c.id} style={{ display: 'flex', gap: 10 }}>
                     <div style={{
                       width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                      background: 'rgba(255,107,44,0.10)', color: '#FF6B2C',
+                      background: 'rgba(255,61,0,0.10)', color: '#FF3D00',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 12, fontWeight: 600, marginTop: 2,
                     }}>
@@ -281,12 +281,12 @@ export default function WorkspaceTaskDetailPage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: '#F0EDE8' }}>{c.userName}</span>
-                        <span style={{ fontSize: 11, color: '#9CA3AF' }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: '#F5F5F5' }}>{c.userName}</span>
+                        <span style={{ fontSize: 11, color: '#CCCCCC' }}>
                           {new Date(c.createdAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      <p style={{ fontSize: 14, color: '#404040', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>{c.content}</p>
+                      <p style={{ fontSize: 14, color: '#D1D5DB', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>{c.content}</p>
                     </div>
                   </div>
                 ))}
@@ -302,13 +302,13 @@ export default function WorkspaceTaskDetailPage() {
                 placeholder="输入讨论内容..."
                 rows={2}
                 style={{
-                  flex: 1, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)',
-                  padding: '10px 14px', fontSize: 14, color: '#F0EDE8',
+                  flex: 1, borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)',
+                  padding: '10px 14px', fontSize: 14, color: '#F5F5F5',
                   outline: 'none', resize: 'none', minHeight: 44, fontFamily: 'inherit',
                   transition: 'border-color .2s',
                 }}
-                onFocus={e => (e.currentTarget.style.borderColor = '#FF6B2C')}
-                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
+                onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')}
               />
               <button
                 onClick={handleSendComment}
@@ -316,7 +316,7 @@ export default function WorkspaceTaskDetailPage() {
                 style={{
                   height: 44, padding: '0 16px', borderRadius: 12,
                   fontSize: 14, fontWeight: 500, border: 'none',
-                  background: (!commentText.trim() || sendingComment) ? '#D5D3CE' : '#FF6B2C',
+                  background: (!commentText.trim() || sendingComment) ? '#D5D3CE' : '#FF3D00',
                   color: '#fff', cursor: (!commentText.trim() || sendingComment) ? 'not-allowed' : 'pointer',
                   flexShrink: 0, transition: 'background .2s',
                 }}
@@ -333,7 +333,7 @@ export default function WorkspaceTaskDetailPage() {
             {canExecute && (
               <div style={{ marginBottom: 16 }}>
                 <button onClick={handleUseAgent} disabled={actionLoading === 'agent'}
-                  style={{ ...actionBtn, background: '#FF6B2C', color: '#fff', opacity: actionLoading === 'agent' ? 0.5 : 1 }}>
+                  style={{ ...actionBtn, background: '#FF3D00', color: '#fff', opacity: actionLoading === 'agent' ? 0.5 : 1 }}>
                   {actionLoading === 'agent' ? '创建中...' : '用 Agent 执行'}
                 </button>
               </div>
@@ -341,12 +341,12 @@ export default function WorkspaceTaskDetailPage() {
 
             {/* Member: Submit */}
             {canSubmit && (
-              <div style={{ borderTop: canExecute ? '1px solid #F0EDE8' : 'none', paddingTop: canExecute ? 16 : 0 }}>
-                <p style={{ fontSize: 14, fontWeight: 500, color: '#F0EDE8', margin: '0 0 8px' }}>提交交付物</p>
+              <div style={{ borderTop: canExecute ? '1px solid rgba(255,255,255,0.04)' : 'none', paddingTop: canExecute ? 16 : 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 500, color: '#F5F5F5', margin: '0 0 8px' }}>提交交付物</p>
                 <textarea value={submitSummary} onChange={e => setSubmitSummary(e.target.value)}
                   placeholder="简要说明你的交付内容（可选）" rows={2}
-                  style={{ width: '100%', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', padding: '10px 14px', fontSize: 14, color: '#F0EDE8', outline: 'none', resize: 'vertical', minHeight: 60, fontFamily: 'inherit', marginBottom: 10 }}
-                  onFocus={e => (e.currentTarget.style.borderColor = '#FF6B2C')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')} />
+                  style={{ width: '100%', borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)', padding: '10px 14px', fontSize: 14, color: '#F5F5F5', outline: 'none', resize: 'vertical', minHeight: 60, fontFamily: 'inherit', marginBottom: 10 }}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
                 <div style={{ marginBottom: 12 }}>
                   <FileUploader files={submitFiles} onChange={setSubmitFiles} label="附加文件（可选）" />
                 </div>
@@ -360,7 +360,7 @@ export default function WorkspaceTaskDetailPage() {
             {/* Owner: Review */}
             {canReview && (
               <div>
-                <p style={{ fontSize: 15, fontWeight: 600, color: '#F0EDE8', margin: '0 0 12px' }}>审核</p>
+                <p style={{ fontSize: 15, fontWeight: 600, color: '#F5F5F5', margin: '0 0 12px' }}>审核</p>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
                   <button onClick={() => handleReview('approve')} disabled={!!actionLoading}
                     style={{ ...actionBtn, background: '#047857', color: '#fff', opacity: actionLoading ? 0.5 : 1 }}>
@@ -370,10 +370,10 @@ export default function WorkspaceTaskDetailPage() {
                 <div>
                   <textarea value={reviewFeedback} onChange={e => setReviewFeedback(e.target.value)}
                     placeholder="填写修改意见后点击退回..." rows={2}
-                    style={{ width: '100%', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', padding: '10px 14px', fontSize: 14, color: '#F0EDE8', outline: 'none', resize: 'vertical', minHeight: 60, fontFamily: 'inherit', marginBottom: 10 }}
-                    onFocus={e => (e.currentTarget.style.borderColor = '#FF6B2C')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')} />
+                    style={{ width: '100%', borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)', padding: '10px 14px', fontSize: 14, color: '#F5F5F5', outline: 'none', resize: 'vertical', minHeight: 60, fontFamily: 'inherit', marginBottom: 10 }}
+                    onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
                   <button onClick={() => handleReview('revision')} disabled={!!actionLoading || !reviewFeedback.trim()}
-                    style={{ ...actionBtn, background: '#1A1A17', border: '1px solid rgba(185,28,28,0.18)', color: '#B91C1C', opacity: (actionLoading || !reviewFeedback.trim()) ? 0.5 : 1 }}>
+                    style={{ ...actionBtn, background: '#252321', border: '1px solid rgba(185,28,28,0.18)', color: '#B91C1C', opacity: (actionLoading || !reviewFeedback.trim()) ? 0.5 : 1 }}>
                     {actionLoading === 'revision' ? '处理中...' : '退回修改'}
                   </button>
                 </div>
@@ -389,7 +389,7 @@ export default function WorkspaceTaskDetailPage() {
 
             {/* No actions available */}
             {!canExecute && !canSubmit && !canReview && task.businessStatus !== 'completed' && task.businessStatus !== 'submitted' && (
-              <p style={{ fontSize: 14, color: '#9CA3AF', textAlign: 'center' }}>等待任务负责人处理</p>
+              <p style={{ fontSize: 14, color: '#CCCCCC', textAlign: 'center' }}>等待任务负责人处理</p>
             )}
 
             {/* Submitted waiting for owner */}

@@ -77,20 +77,20 @@ export default function InviteAcceptPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#121210', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+    <div style={{ minHeight: '100dvh', background: '#1E1C1A', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ width: '100%', maxWidth: 420, textAlign: 'center' }}>
         {/* Brand */}
         <div style={{ marginBottom: 32 }}>
-          <span style={{ color: '#FF6B2C', fontWeight: 700, fontSize: 20 }}>ORANGE</span>
-          <span style={{ color: '#F0EDE8', fontWeight: 700, fontSize: 20 }}>BENCH</span>
+          <span style={{ color: '#FF3D00', fontWeight: 700, fontSize: 20 }}>ORANGE</span>
+          <span style={{ color: '#F5F5F5', fontWeight: 700, fontSize: 20 }}>BENCH</span>
         </div>
 
-        <div style={{ background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 32 }}>
+        <div style={{ background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 32 }}>
           {/* Loading */}
           {state === 'loading' && (
             <div style={{ padding: '24px 0' }}>
-              <div style={{ width: 24, height: 24, border: '2px solid #FF6B2C', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto 16px' }} />
-              <p style={{ fontSize: 14, color: '#6B7280' }}>验证邀请链接...</p>
+              <div style={{ width: 24, height: 24, border: '2px solid #FF3D00', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto 16px' }} />
+              <p style={{ fontSize: 14, color: '#888888' }}>验证邀请链接...</p>
             </div>
           )}
 
@@ -102,12 +102,12 @@ export default function InviteAcceptPage() {
                   <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
                 </svg>
               </div>
-              <p style={{ fontSize: 18, fontWeight: 600, color: '#F0EDE8', marginBottom: 8 }}>邀请链接已失效</p>
-              <p style={{ fontSize: 14, color: '#9CA3AF', marginBottom: 24 }}>{errorMsg || '请联系管理员重新发送邀请'}</p>
+              <p style={{ fontSize: 18, fontWeight: 600, color: '#F5F5F5', marginBottom: 8 }}>邀请链接已失效</p>
+              <p style={{ fontSize: 14, color: '#CCCCCC', marginBottom: 24 }}>{errorMsg || '请联系管理员重新发送邀请'}</p>
               <a href="/agent" style={{
                 display: 'inline-flex', alignItems: 'center', height: 36, padding: '0 18px',
                 borderRadius: 9999, fontSize: 14, fontWeight: 500,
-                background: '#FF6B2C', color: '#fff', textDecoration: 'none',
+                background: '#FF3D00', color: '#fff', textDecoration: 'none',
               }}>返回首页</a>
             </div>
           )}
@@ -115,15 +115,15 @@ export default function InviteAcceptPage() {
           {/* Valid — logged in */}
           {state === 'valid' && isLoggedIn && info && (
             <div>
-              <div style={{ width: 48, height: 48, borderRadius: 16, background: 'rgba(255,107,44,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B2C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div style={{ width: 48, height: 48, borderRadius: 16, background: 'rgba(255,61,0,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF3D00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
                 </svg>
               </div>
-              <p style={{ fontSize: 18, fontWeight: 600, color: '#F0EDE8', marginBottom: 6 }}>
+              <p style={{ fontSize: 18, fontWeight: 600, color: '#F5F5F5', marginBottom: 6 }}>
                 加入 {info.workspaceName}
               </p>
-              <p style={{ fontSize: 14, color: '#9CA3AF', marginBottom: 24 }}>
+              <p style={{ fontSize: 14, color: '#CCCCCC', marginBottom: 24 }}>
                 你被邀请作为{info.role === 'owner' ? '管理员' : '成员'}加入此工作区
               </p>
               <button
@@ -132,11 +132,11 @@ export default function InviteAcceptPage() {
                 style={{
                   display: 'inline-flex', alignItems: 'center', height: 40, padding: '0 24px',
                   borderRadius: 9999, fontSize: 15, fontWeight: 600, border: 'none',
-                  background: '#FF6B2C', color: '#fff', cursor: 'pointer',
+                  background: '#FF3D00', color: '#fff', cursor: 'pointer',
                   transition: 'background .2s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#E85A1A')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#FF6B2C')}
+                onMouseEnter={e => (e.currentTarget.style.background = '#E63600')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#FF3D00')}
               >
                 接受邀请
               </button>
@@ -146,15 +146,15 @@ export default function InviteAcceptPage() {
           {/* Valid — not logged in */}
           {state === 'valid' && !isLoggedIn && info && (
             <div>
-              <div style={{ width: 48, height: 48, borderRadius: 16, background: 'rgba(255,107,44,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B2C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div style={{ width: 48, height: 48, borderRadius: 16, background: 'rgba(255,61,0,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF3D00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
                 </svg>
               </div>
-              <p style={{ fontSize: 18, fontWeight: 600, color: '#F0EDE8', marginBottom: 6 }}>
+              <p style={{ fontSize: 18, fontWeight: 600, color: '#F5F5F5', marginBottom: 6 }}>
                 加入 {info.workspaceName}
               </p>
-              <p style={{ fontSize: 14, color: '#9CA3AF', marginBottom: 24 }}>
+              <p style={{ fontSize: 14, color: '#CCCCCC', marginBottom: 24 }}>
                 请先登录或注册，即可加入工作区
               </p>
               <button
@@ -163,11 +163,11 @@ export default function InviteAcceptPage() {
                 style={{
                   display: 'inline-flex', alignItems: 'center', height: 40, padding: '0 24px',
                   borderRadius: 9999, fontSize: 15, fontWeight: 600, border: 'none',
-                  background: '#FF6B2C', color: '#fff', cursor: 'pointer',
+                  background: '#FF3D00', color: '#fff', cursor: 'pointer',
                   transition: 'background .2s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#E85A1A')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#FF6B2C')}
+                onMouseEnter={e => (e.currentTarget.style.background = '#E63600')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#FF3D00')}
               >
                 去登录
               </button>
@@ -177,8 +177,8 @@ export default function InviteAcceptPage() {
           {/* Accepting */}
           {state === 'accepting' && (
             <div style={{ padding: '24px 0' }}>
-              <div style={{ width: 24, height: 24, border: '2px solid #FF6B2C', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto 16px' }} />
-              <p style={{ fontSize: 14, color: '#6B7280' }}>正在加入工作区...</p>
+              <div style={{ width: 24, height: 24, border: '2px solid #FF3D00', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto 16px' }} />
+              <p style={{ fontSize: 14, color: '#888888' }}>正在加入工作区...</p>
             </div>
           )}
 
@@ -190,8 +190,8 @@ export default function InviteAcceptPage() {
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               </div>
-              <p style={{ fontSize: 18, fontWeight: 600, color: '#F0EDE8', marginBottom: 8 }}>已加入工作区</p>
-              <p style={{ fontSize: 14, color: '#9CA3AF' }}>正在跳转...</p>
+              <p style={{ fontSize: 18, fontWeight: 600, color: '#F5F5F5', marginBottom: 8 }}>已加入工作区</p>
+              <p style={{ fontSize: 14, color: '#CCCCCC' }}>正在跳转...</p>
             </div>
           )}
 
@@ -203,11 +203,11 @@ export default function InviteAcceptPage() {
                   <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
               </div>
-              <p style={{ fontSize: 18, fontWeight: 600, color: '#F0EDE8', marginBottom: 8 }}>加入失败</p>
-              <p style={{ fontSize: 14, color: '#9CA3AF', marginBottom: 24 }}>{errorMsg}</p>
+              <p style={{ fontSize: 18, fontWeight: 600, color: '#F5F5F5', marginBottom: 8 }}>加入失败</p>
+              <p style={{ fontSize: 14, color: '#CCCCCC', marginBottom: 24 }}>{errorMsg}</p>
               <button onClick={() => setState('valid')} style={{
                 height: 30, padding: '0 14px', borderRadius: 9999, fontSize: 13, fontWeight: 500,
-                border: '1px solid rgba(255,255,255,0.06)', background: '#1A1A17', color: '#6B7280', cursor: 'pointer',
+                border: '1px solid rgba(255,255,255,0.04)', background: '#252321', color: '#888888', cursor: 'pointer',
               }}>重试</button>
             </div>
           )}

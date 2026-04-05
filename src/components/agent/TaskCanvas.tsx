@@ -391,9 +391,9 @@ export function TaskCanvas({
                   <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
                 </svg>
               </div>
-              <span style={{ fontSize: 12, fontWeight: 500, color: '#6B7280' }}>ORANGEBENCH</span>
+              <span style={{ fontSize: 12, fontWeight: 500, color: '#888888' }}>ORANGEBENCH</span>
               {isActive ? (
-                <span style={{ fontSize: 11, color: '#C2410C', fontWeight: 500, background: 'rgba(255,107,44,0.08)', padding: '2px 8px', borderRadius: 9999 }}>执行中</span>
+                <span style={{ fontSize: 11, color: '#C2410C', fontWeight: 500, background: 'rgba(255,61,0,0.08)', padding: '2px 8px', borderRadius: 9999 }}>执行中</span>
               ) : mode === 'result' ? (
                 <span style={{ fontSize: 11, color: '#047857', fontWeight: 500, background: 'rgba(16,185,129,0.08)', padding: '2px 8px', borderRadius: 9999 }}>已完成</span>
               ) : null}
@@ -445,7 +445,7 @@ export function TaskCanvas({
                         <span className="ob-step-text">
                           {step.text}
                           {step.current !== undefined && step.total !== undefined ? (
-                            <span style={{ color: '#9CA3AF', fontSize: 12, marginLeft: 6, fontVariantNumeric: 'tabular-nums' }}>{step.current}/{step.total}</span>
+                            <span style={{ color: '#CCCCCC', fontSize: 12, marginLeft: 6, fontVariantNumeric: 'tabular-nums' }}>{step.current}/{step.total}</span>
                           ) : null}
                         </span>
                       </div>
@@ -1032,7 +1032,7 @@ function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { titl
       {/* Result body */}
       <div className="ob-result-card-body">
         <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 16 }}>{title}</p>
-        <div className="ob-result-card-inner" style={{ color: '#404040', lineHeight: 1.75 }}>
+        <div className="ob-result-card-inner" style={{ color: '#D1D5DB', lineHeight: 1.75 }}>
           <div className="space-y-3" ref={contentRef}>{children}</div>
         </div>
       </div>

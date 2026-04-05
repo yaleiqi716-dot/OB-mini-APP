@@ -37,31 +37,31 @@ export default function WorkspaceSettingsPage() {
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', height: 40, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)',
-    background: '#1A1A17', padding: '0 14px', fontSize: 14, color: '#F0EDE8', outline: 'none',
+    width: '100%', height: 40, borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)',
+    background: '#252321', padding: '0 14px', fontSize: 14, color: '#F5F5F5', outline: 'none',
   };
-  const labelStyle: React.CSSProperties = { fontSize: 14, fontWeight: 500, color: '#F0EDE8', marginBottom: 6, display: 'block' };
-  const descStyle: React.CSSProperties = { fontSize: 12, color: '#9CA3AF', marginTop: 4 };
+  const labelStyle: React.CSSProperties = { fontSize: 14, fontWeight: 500, color: '#F5F5F5', marginBottom: 6, display: 'block' };
+  const descStyle: React.CSSProperties = { fontSize: 12, color: '#CCCCCC', marginTop: 4 };
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#121210' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
       <AppHeader />
       <WorkspaceSubNav />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '40px 32px 60px' }}>
-          <h1 style={{ fontSize: 28, fontWeight: 600, color: '#F0EDE8', margin: '0 0 24px' }}>工作区设置</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 600, color: '#F5F5F5', margin: '0 0 24px' }}>工作区设置</h1>
 
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <div style={{ width: 20, height: 20, border: '2px solid #FF6B2C', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto' }} />
+              <div style={{ width: 20, height: 20, border: '2px solid #FF3D00', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto' }} />
             </div>
           ) : (
-            <div style={{ background: '#1A1A17', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24 }}>
+            <div style={{ background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 24 }}>
               <div style={{ marginBottom: 24 }}>
                 <label style={labelStyle}>工作区名称</label>
                 <input value={name} onChange={e => setName(e.target.value)} style={inputStyle}
-                  onFocus={e => (e.currentTarget.style.borderColor = '#FF6B2C')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')} />
+                  onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
               </div>
 
               <div style={{ marginBottom: 24 }}>
@@ -69,12 +69,12 @@ export default function WorkspaceSettingsPage() {
                 <input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)}
                   placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..."
                   style={inputStyle}
-                  onFocus={e => (e.currentTarget.style.borderColor = '#FF6B2C')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')} />
+                  onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
                 <p style={descStyle}>配置后，任务分配、提交、审核等关键节点会推送通知到企业微信群</p>
               </div>
 
               <button onClick={handleSave} disabled={!name.trim() || saving}
-                style={{ height: 40, padding: '0 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, border: 'none', background: '#FF6B2C', color: '#fff', cursor: 'pointer', opacity: (!name.trim() || saving) ? 0.5 : 1 }}>
+                style={{ height: 40, padding: '0 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, border: 'none', background: '#FF3D00', color: '#fff', cursor: 'pointer', opacity: (!name.trim() || saving) ? 0.5 : 1 }}>
                 {saving ? '保存中...' : '保存'}
               </button>
             </div>

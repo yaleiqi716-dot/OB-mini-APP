@@ -627,7 +627,7 @@ function AgentPageInner() {
                   {QUICK_ACTIONS.map((a, i) => (
                     a.href ? (
                       <a key={i} href={a.href} className="ob-action-card">
-                        <div className="ob-action-icon" style={{ background: 'rgba(255,107,44,0.08)', color: '#FF6B2C' }}>
+                        <div className="ob-action-icon" style={{ background: 'rgba(255,61,0,0.08)', color: '#FF3D00' }}>
                           <ActionIcon name={a.icon} />
                         </div>
                         <div>
@@ -636,8 +636,8 @@ function AgentPageInner() {
                         </div>
                       </a>
                     ) : (
-                      <button key={i} onClick={() => a.action && handleSubmit(a.action, a.type)} disabled={isSubmitting} className="ob-action-card" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
-                        <div className="ob-action-icon" style={{ background: 'rgba(255,107,44,0.08)', color: '#FF6B2C' }}>
+                      <button key={i} onClick={() => a.action && handleSubmit(a.action, a.type)} disabled={isSubmitting} className="ob-action-card" style={{ border: '1px solid rgba(255,255,255,0.04)' }}>
+                        <div className="ob-action-icon" style={{ background: 'rgba(255,61,0,0.08)', color: '#FF3D00' }}>
                           <ActionIcon name={a.icon} />
                         </div>
                         <div style={{ textAlign: 'left' }}>
