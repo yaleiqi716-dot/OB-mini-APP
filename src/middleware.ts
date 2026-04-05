@@ -3,11 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 // 不需要登录即可访问的路径
 const PUBLIC_PATHS = [
   '/login',
+  '/invite',
   '/api/auth/email-code',
   '/api/auth/verify-code',
   '/api/auth/google',
   '/api/auth/logout',
   '/api/auth/me',
+  '/api/workspace/invite/',
   '/_next',
   '/favicon.ico',
   '/icons',
@@ -33,7 +35,7 @@ export function middleware(req: NextRequest) {
       return NextResponse.json({ error: '未登录' }, { status: 401 })
     }
     const loginUrl = new URL('/login', req.url)
-    loginUrl.searchParams.set('from', pathname)
+    loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }
 

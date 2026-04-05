@@ -321,7 +321,7 @@ function AgentPageInner() {
   }
 
   // ── Handle task submission ──
-  async function handleSubmit(input: string, type?: string) {
+  async function handleSubmit(input: string, type?: string, attachments?: { id: string; name: string; size: number; type: string }[]) {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
@@ -344,7 +344,7 @@ function AgentPageInner() {
       const r = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input, type, conversationId: convId }),
+        body: JSON.stringify({ input, type, conversationId: convId, attachments: attachments || undefined }),
       });
       if (!r.ok) {
         const errData = await r.json().catch(() => ({}));
@@ -355,16 +355,22 @@ function AgentPageInner() {
       const data = await r.json();
       if (data.taskId) {
         const now = new Date().toISOString();
-        const dr = await fetch(`/api/tasks/${data.taskId}`); const dd = await dr.json();
         let nt: TaskState;
-        if (dd && !dd.error) { nt = parseTaskFromAPI(dd); }
-        else { nt = { id: data.taskId, type: data.type || 'unknown', status: 'pending', title: input.slice(0, 50), input, source: 'agent', createdAt: now, updatedAt: now, events: [], eventsLoaded: false, currentInteraction: null, result: null, lastSeenUpdatedAt: now, context: {}, conversationId: convId || undefined }; }
+        try {
+          const dr = await fetch(`/api/tasks/${data.taskId}`);
+          const dd = await dr.json();
+          if (dd && !dd.error) { nt = parseTaskFromAPI(dd); }
+          else { nt = { id: data.taskId, type: data.type || 'unknown', status: 'pending', title: input.slice(0, 50), input, source: 'agent', createdAt: now, updatedAt: now, events: [], eventsLoaded: false, currentInteraction: null, result: null, lastSeenUpdatedAt: now, context: {}, conversationId: convId || undefined }; }
+        } catch {
+          // Task fetch failed — use fallback task state
+          nt = { id: data.taskId, type: data.type || 'unknown', status: 'pending', title: input.slice(0, 50), input, source: 'agent', createdAt: now, updatedAt: now, events: [], eventsLoaded: false, currentInteraction: null, result: null, lastSeenUpdatedAt: now, context: {}, conversationId: convId || undefined };
+        }
         setTasks(prev => [...prev, nt]);
         setActiveTaskId(data.taskId);
         fetchQuota();
         fetchConversations();
       }
-    } catch (e) { console.error(e); } finally { setIsSubmitting(false); }
+    } catch (e) { console.error(e); showError('提交失败'); } finally { setIsSubmitting(false); }
   }
 
   async function handleInteractionSubmit(stepId: string, value: unknown) {
@@ -577,13 +583,13 @@ function AgentPageInner() {
               {/* Fixed bottom input */}
               <div className="ob-input-area agent-input-area">
                 <AgentInput
-                  onSubmit={input => {
+                  onSubmit={(input, attachments) => {
                     const ci = activeTask?.currentInteraction;
                     if (ci && activeTask?.status === 'interacting' &&
                       (ci.type === 'text_input' || ci.type === 'confirm')) {
                       handleInteractionSubmit(ci.stepId, input);
                     } else {
-                      handleSubmit(input);
+                      handleSubmit(input, undefined, attachments);
                     }
                   }}
                   disabled={isSubmitting || interactingTaskId === activeTask?.id}
@@ -643,7 +649,7 @@ function AgentPageInner() {
                 {/* Task launcher input */}
                 <div className="ob-launcher ob-launcher-atmosphere" style={{ marginBottom: 8 }}>
                   <AgentInput
-                    onSubmit={input => handleSubmit(input)}
+                    onSubmit={(input, attachments) => handleSubmit(input, undefined, attachments)}
                     disabled={isSubmitting}
                     placeholder="输入任务：写一份行业调研报告、整理季度 PPT、帮我跟进客户邮件..."
                     prominent

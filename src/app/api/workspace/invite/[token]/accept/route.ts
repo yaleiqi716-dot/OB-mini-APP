@@ -27,26 +27,24 @@ export async function POST(
       return NextResponse.json({ error: '邀请已过期，请联系管理员重新邀请' }, { status: 400 });
     }
 
-    // Check if already a member
-    const existingMember = await prisma.workspaceMember.findFirst({
-      where: { workspaceId: invite.workspaceId, userId: ctx.userId, status: 'active' },
-    });
-    if (existingMember) {
-      // Already a member — mark invite as accepted and return success
-      await prisma.workspaceInvite.update({
+    // Atomic: check membership + accept invite + create membership — all inside transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Check if already a member INSIDE transaction to prevent race condition
+      const existingMember = await tx.workspaceMember.findFirst({
+        where: { workspaceId: invite.workspaceId, userId: ctx.userId, status: 'active' },
+      });
+
+      // Mark invite as accepted regardless
+      await tx.workspaceInvite.update({
         where: { id: invite.id },
         data: { status: 'accepted', acceptedUserId: ctx.userId },
       });
-      return NextResponse.json({ success: true, workspaceId: invite.workspaceId, alreadyMember: true });
-    }
 
-    // Atomic: accept invite + create membership
-    await prisma.$transaction([
-      prisma.workspaceInvite.update({
-        where: { id: invite.id },
-        data: { status: 'accepted', acceptedUserId: ctx.userId },
-      }),
-      prisma.workspaceMember.create({
+      if (existingMember) {
+        return { alreadyMember: true };
+      }
+
+      await tx.workspaceMember.create({
         data: {
           workspaceId: invite.workspaceId,
           userId: ctx.userId,
@@ -54,10 +52,12 @@ export async function POST(
           status: 'active',
           joinedAt: new Date(),
         },
-      }),
-    ]);
+      });
 
-    return NextResponse.json({ success: true, workspaceId: invite.workspaceId });
+      return { alreadyMember: false };
+    });
+
+    return NextResponse.json({ success: true, workspaceId: invite.workspaceId, alreadyMember: result.alreadyMember });
   } catch (error) {
     console.error('[INVITE_ACCEPT_ERROR]', error);
     return NextResponse.json({ error: '加入失败' }, { status: 500 });
