@@ -157,6 +157,7 @@ function AgentPageInner() {
   const [quota, setQuota] = useState<{ credits: number; plan: string; limits: { maxConcurrent: number; allowedTypes: string[] } } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [taskLoadError, setTaskLoadError] = useState(false);
   const canvasEndRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<string | null>(null);
@@ -219,15 +220,26 @@ function AgentPageInner() {
 
   // ── Fetch tasks for current conversation ──
   function fetchConversationTasks(convId: string) {
-    fetch(`/api/conversations/${convId}/tasks`).then(r => r.json()).then(data => {
-      if (Array.isArray(data)) {
-        const parsed = data.map((d: Record<string, unknown>) => parseTaskFromAPI(d));
-        setTasks(parsed);
-        if (parsed.length > 0) {
-          setActiveTaskId(parsed[parsed.length - 1].id);
+    setTaskLoadError(false);
+    fetch(`/api/conversations/${convId}/tasks`)
+      .then(r => { if (!r.ok) throw new Error('fetch failed'); return r.json(); })
+      .then(data => {
+        if (Array.isArray(data)) {
+          const parsed = data.map((d: Record<string, unknown>) => parseTaskFromAPI(d));
+          setTasks(parsed);
+          if (parsed.length > 0) {
+            setActiveTaskId(parsed[parsed.length - 1].id);
+          }
+        } else {
+          // Non-array response — treat as empty conversation
+          setTasks([]);
+          setTaskLoadError(true);
         }
-      }
-    }).catch(() => {});
+      })
+      .catch(() => {
+        setTasks([]);
+        setTaskLoadError(true);
+      });
   }
 
   useEffect(() => {
@@ -288,6 +300,7 @@ function AgentPageInner() {
     setActiveTaskId(null);
     activeRef.current = null;
     setTasks([]);
+    setTaskLoadError(false);
     setCurrentConversationId(null);
     currentConvRef.current = null;
     window.history.pushState(null, '', '/agent');
@@ -300,6 +313,7 @@ function AgentPageInner() {
     setActiveTaskId(null);
     activeRef.current = null;
     setTasks([]);
+    setTaskLoadError(false);
     setCurrentConversationId(convId);
     currentConvRef.current = convId;
     window.history.pushState(null, '', `/agent?conversationId=${convId}`);
@@ -590,6 +604,11 @@ function AgentPageInner() {
                 )}
               </div>
             </>
+            ) : taskLoadError ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.55)' }}>对话加载失败</p>
+                <button onClick={() => currentConversationId && fetchConversationTasks(currentConversationId)} style={{ fontSize: 13, color: '#FF3D00', background: 'none', border: 'none', cursor: 'pointer' }}>重试</button>
+              </div>
             ) : (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Spinner size="sm" />

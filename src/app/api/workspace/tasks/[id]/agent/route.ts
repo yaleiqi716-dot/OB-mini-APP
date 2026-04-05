@@ -70,14 +70,13 @@ export async function POST(
       },
     });
 
-    // Auto-transition to in_progress if currently assigned
-    if (wsTask.businessStatus === 'assigned') {
+    // Auto-transition to in_progress if currently assigned or revision
+    if (wsTask.businessStatus === 'assigned' || wsTask.businessStatus === 'revision') {
       await prisma.workspaceTask.update({
         where: { id: wsTask.id },
         data: { businessStatus: 'in_progress' },
       });
     }
-    // revision stays as revision until member submits again
 
     return NextResponse.json({
       success: true,

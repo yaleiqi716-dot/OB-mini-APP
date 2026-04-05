@@ -50,11 +50,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: 'SUCCESS', message: 'OK' });
     }
 
-    // Atomic transaction: update order + fulfill in one go
+    // Atomic transaction: idempotency gate + fulfill in one go
     const product = getProduct(order.productCode);
 
-    await prisma.$transaction(async (tx) => {
-      // 1. Mark order as paid
+    const result = await prisma.$transaction(async (tx) => {
+      // Re-read order inside transaction to prevent concurrent double-credit
+      const freshOrder = await tx.order.findUnique({ where: { id: order!.id } });
+      if (!freshOrder || freshOrder.status === 'paid') {
+        // Another webhook already processed this — idempotent exit
+        return { alreadyPaid: true };
+      }
+
+      // 1. Mark order as paid FIRST (this is the idempotency gate)
       await tx.order.update({
         where: { id: order!.id },
         data: {
@@ -94,7 +101,14 @@ export async function POST(req: NextRequest) {
 
         console.log(`[WECHAT_WEBHOOK] Credits: ${order!.userId} +${order!.credits}`);
       }
+
+      return { alreadyPaid: false };
     });
+
+    // If already processed by concurrent webhook, return success
+    if (result.alreadyPaid) {
+      return NextResponse.json({ code: 'SUCCESS', message: 'OK' });
+    }
 
     // Requeue blocked tasks (outside transaction — best effort)
     await requeueBlockedTasks(order.userId);
