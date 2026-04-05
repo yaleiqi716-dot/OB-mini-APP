@@ -12,6 +12,7 @@ const PUBLIC_PATHS = [
   '/favicon.ico',
   '/icons',
   '/images',
+  '/assets',
 ]
 
 export function middleware(req: NextRequest) {
