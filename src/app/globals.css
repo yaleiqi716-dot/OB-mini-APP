@@ -351,32 +351,39 @@ body{
 .ob-atmosphere{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
 .ob-atmosphere-content{position:relative;z-index:1}
 
-/* Hero atmosphere — Agent homepage: MUST be visually prominent */
+/* Hero atmosphere — Agent homepage */
 .ob-hero-atmosphere{position:absolute;inset:0;pointer-events:none;z-index:0;
-  background:url('/assets/bg/hero_bg_v3.png') center/cover no-repeat}
+  background:url('/assets/bg/hero_bg_v3.png') center/cover no-repeat;opacity:0.92;mix-blend-mode:normal}
+.ob-hero-atmosphere::before{content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(30,28,26,0.16) 0%,rgba(30,28,26,0.06) 28%,rgba(30,28,26,0.00) 52%,rgba(30,28,26,0.08) 76%,rgba(30,28,26,0.20) 100%)}
 .ob-hero-atmosphere::after{content:'';position:absolute;inset:0;
-  background:linear-gradient(to bottom,rgba(30,28,26,0.3) 0%,transparent 80px,transparent calc(100% - 100px),rgba(30,28,26,0.7) 100%)}
+  background:linear-gradient(to bottom,rgba(30,28,26,0.5) 0%,transparent 72px,transparent calc(100% - 96px),rgba(30,28,26,0.6) 100%)}
 .ob-launcher-atmosphere{position:relative}
-.ob-launcher-atmosphere::before{content:'';position:absolute;inset:-60px;z-index:0;pointer-events:none;
-  background:radial-gradient(circle at 50% 50%,rgba(255,61,0,0.08) 0%,transparent 55%);border-radius:50%}
+.ob-launcher-atmosphere::before{content:'';position:absolute;top:-60px;left:-80px;right:-80px;bottom:-60px;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 58% 44% at center,rgba(255,61,0,0.24) 0%,rgba(255,61,0,0.14) 24%,rgba(255,61,0,0.06) 46%,rgba(255,61,0,0.00) 72%);
+  opacity:0.34;filter:blur(56px)}
 
-/* Chat/exec atmosphere — conversation area: clearly visible texture */
+/* Chat/exec atmosphere — execution area: texture must be visible */
 .ob-chat-atmosphere{position:relative}
 .ob-chat-atmosphere::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
-  background:url('/assets/bg/exec_bg_v3.png') center top/cover no-repeat;opacity:0.85}
+  background:url('/assets/bg/exec_bg_v3.png') center/cover no-repeat;opacity:0.96}
 
-/* Mission atmosphere — execution phase area */
+/* Mission atmosphere */
 .ob-mission-atmosphere{position:relative}
 
-/* Command atmosphere — workspace: strong control-room feel */
+/* Command atmosphere — workspace: control-room field, 360px coverage */
 .ob-command-atmosphere{position:relative}
-.ob-command-atmosphere::before{content:'';position:absolute;inset:-20px;z-index:0;pointer-events:none;
-  background:url('/assets/bg/workspace_cmd_bg_v3.png') center/cover no-repeat;opacity:0.85}
+.ob-command-atmosphere::before{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:url('/assets/bg/workspace_cmd_bg_v3.png') center top/cover no-repeat;opacity:0.94}
+.ob-command-atmosphere::after{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(to bottom,transparent 70%,rgba(30,28,26,0.6) 88%,rgba(30,28,26,1) 100%)}
 
-/* Fuel atmosphere — billing: visible energy station feel */
+/* Fuel atmosphere — billing: energy station, 420px coverage */
 .ob-fuel-atmosphere{position:relative}
-.ob-fuel-atmosphere::before{content:'';position:absolute;inset:-40px;z-index:0;pointer-events:none;
-  background:url('/assets/bg/billing_bg_v3.png') center/cover no-repeat;opacity:0.85}
+.ob-fuel-atmosphere::before{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:url('/assets/bg/billing_bg_v3.png') center top/cover no-repeat;opacity:0.92}
+.ob-fuel-atmosphere::after{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(to bottom,rgba(30,28,26,0.08) 0%,transparent 30%,transparent 72%,rgba(30,28,26,0.7) 92%,rgba(30,28,26,1) 100%)}
 
 
 /* ═══════════════════════════════════════════════════════════════
