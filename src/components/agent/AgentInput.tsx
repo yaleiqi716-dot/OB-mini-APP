@@ -28,6 +28,7 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
   const canSend = (!!value.trim() || attachments.length > 0) && !disabled && !uploading;
 
   const autoResize = useCallback(() => {
+    if (prominent) return; // Don't resize in launcher mode
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
@@ -93,6 +94,7 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
           prominent && 'ob-input-box--prominent agent-input-box--prominent',
           chatMode && 'ob-input-box--chat agent-input-box--chat'
         )}
+        style={prominent ? { position: 'relative' as const } : undefined}
       >
         {/* Attachment preview */}
         {attachments.length > 0 && (
@@ -130,7 +132,11 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
           placeholder={placeholder || '描述你的任务...'}
           disabled={disabled}
           className="ob-textarea agent-input-textarea w-full"
-          style={{ fontFamily: 'inherit', padding: chatMode ? '14px 14px 6px' : undefined }}
+          style={{
+            fontFamily: 'inherit',
+            ...(chatMode ? { padding: '14px 14px 6px' } : {}),
+            ...(prominent ? { height: 56, minHeight: 56, maxHeight: 56, lineHeight: '56px', padding: '0 20px', resize: 'none' as const } : {}),
+          }}
         />
 
         {/* Hidden file input */}
@@ -142,9 +148,12 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
           style={{ display: 'none' }}
         />
 
-        {/* Bottom toolbar */}
-        <div className="ob-input-toolbar" style={chatMode ? { padding: '2px 14px 10px' } : undefined}>
-          <div className="ob-input-toolbar-left">
+        {/* Bottom toolbar — hidden in prominent/launcher mode */}
+        <div className="ob-input-toolbar" style={{
+          ...(chatMode ? { padding: '2px 14px 10px' } : {}),
+          ...(prominent ? { position: 'absolute' as const, right: 8, top: '50%', transform: 'translateY(-50%)', padding: 0, border: 'none', background: 'none' } : {}),
+        }}>
+          <div className="ob-input-toolbar-left" style={prominent ? { display: 'none' } : undefined}>
             <button
               type="button"
               className="ob-toolbar-btn"
@@ -174,7 +183,7 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
           </div>
 
           <div className="ob-input-toolbar-right" style={{ gap: 12 }}>
-            <span className="ob-auto-badge" aria-label="Auto mode">Auto</span>
+            {!prominent && <span className="ob-auto-badge" aria-label="Auto mode">Auto</span>}
             <button
               type="button"
               onClick={handleSubmit}

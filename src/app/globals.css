@@ -377,7 +377,7 @@ body{
 .ob-command-atmosphere::before{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
   background:url('/assets/bg/workspace_cmd_bg_v3.png') center top/cover no-repeat;opacity:0.98}
 .ob-command-atmosphere::after{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:linear-gradient(to bottom,transparent 75%,rgba(30,28,26,0.4) 88%,rgba(30,28,26,0.9) 100%)}
+  background:linear-gradient(to bottom,transparent 80%,rgba(30,28,26,0.3) 90%,rgba(30,28,26,0.8) 100%)}
 
 /* Fuel atmosphere — billing: 420px coverage */
 .ob-fuel-atmosphere{position:relative;overflow:hidden}
@@ -391,7 +391,7 @@ body{
    DOT GRID OVERLAYS — per-page uniform dot matrix
    ═══════════════════════════════════════════════════════════════ */
 /* Dot grid — standalone overlay divs, not pseudo-elements */
-.ob-dotgrid{position:absolute;inset:0;pointer-events:none;z-index:1}
+.ob-dotgrid{position:absolute;top:0;left:0;right:0;pointer-events:none;z-index:1}
 .ob-dotgrid--hero{background-image:radial-gradient(circle,rgba(255,61,0,0.09) 1px,transparent 1px);background-size:28px 28px}
 .ob-dotgrid--exec{background-image:radial-gradient(circle,rgba(255,61,0,0.07) 1px,transparent 1px);background-size:16px 16px}
 .ob-dotgrid--ws{background-image:radial-gradient(circle,rgba(255,61,0,0.09) 1px,transparent 1px);background-size:20px 20px}

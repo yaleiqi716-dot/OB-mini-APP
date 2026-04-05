@@ -523,7 +523,7 @@ function AgentPageInner() {
               <div ref={scrollRef} className="ob-scroll agent-scroll custom-scrollbar ob-chat-atmosphere" key={currentConversationId} style={{ position: 'relative' }}>
                 {/* Exec overlays — left vertical lines + right dot grid */}
                 <div className="ob-exec-vlines" />
-                <div className="ob-dotgrid ob-dotgrid--exec" />
+                <div className="ob-dotgrid ob-dotgrid--exec" style={{ bottom: 0 }} />
                 <div className="ob-messages agent-content-wrap" style={{ position: 'relative', zIndex: 2 }}>
                   {tasks.map((task) => (
                     <div key={task.id}>
@@ -601,7 +601,7 @@ function AgentPageInner() {
               {/* Atmosphere layer */}
               <div className="ob-hero-atmosphere" />
               {/* Full-page dot grid — separate div so it covers entire area */}
-              <div className="ob-dotgrid ob-dotgrid--hero" />
+              <div className="ob-dotgrid ob-dotgrid--hero" style={{ bottom: 0 }} />
 
               <div className="ob-atmosphere-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '56px 24px 48px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
 
