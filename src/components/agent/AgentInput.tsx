@@ -120,7 +120,7 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
 
         <textarea
           ref={textareaRef}
-          rows={prominent ? 4 : 2}
+          rows={prominent ? 1 : 2}
           value={value}
           onChange={(e) => {
             setValue(e.target.value);

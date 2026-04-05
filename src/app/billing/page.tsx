@@ -171,7 +171,9 @@ export default function BillingPage() {
 
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }} className="custom-scrollbar">
         {/* Fuel station atmosphere */}
-        <div className="ob-fuel-atmosphere ob-dotgrid-billing" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 420, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }} />
+        {/* Fuel atmosphere + dot grid — separate layers */}
+        <div className="ob-fuel-atmosphere" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 420, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }} />
+        <div className="ob-dotgrid ob-dotgrid--billing" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 420, zIndex: 0 }} />
         <div style={{ maxWidth: 980, margin: '0 auto', padding: '48px 32px 60px', position: 'relative', zIndex: 1 }}>
 
           {/* Eyebrow + Hero */}
