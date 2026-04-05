@@ -110,7 +110,7 @@ export function AppHeader() {
     }}>
       <a href="/agent" style={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}>
         <span style={{ color: '#FF3D00', fontWeight: 700, fontSize: 15, textShadow: '0 0 12px rgba(255,61,0,0.3)' }}>ORANGE</span>
-        <span style={{ color: '#F5F5F5', fontWeight: 700, fontSize: 15 }}>BENCH</span>
+        <span style={{ color: '#E0D8D0', fontWeight: 700, fontSize: 15 }}>BENCH</span>
       </a>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -182,7 +182,7 @@ export function AppHeader() {
             }}>
               {/* Header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 10px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#F5F5F5' }}>通知</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#E0D8D0' }}>通知</span>
                 {unreadCount > 0 && (
                   <button onClick={handleMarkAllRead} style={{ fontSize: 12, color: '#FF3D00', background: 'none', border: 'none', cursor: 'pointer' }}>
                     全部已读
@@ -193,7 +193,7 @@ export function AppHeader() {
               {/* List */}
               {notifications.length === 0 ? (
                 <div style={{ padding: '32px 16px', textAlign: 'center' }}>
-                  <p style={{ fontSize: 13, color: '#CCCCCC' }}>暂无通知</p>
+                  <p style={{ fontSize: 13, color: 'rgba(224,216,208,0.55)' }}>暂无通知</p>
                 </div>
               ) : (
                 <div>
@@ -216,9 +216,9 @@ export function AppHeader() {
                         background: n.read ? 'transparent' : '#FF3D00',
                       }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: n.read ? 400 : 500, color: '#F5F5F5', margin: '0 0 2px', lineHeight: 1.4 }}>{n.title}</p>
-                        {n.body && <p style={{ fontSize: 12, color: '#888888', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</p>}
-                        <span style={{ fontSize: 11, color: '#CCCCCC' }}>{timeAgo(n.createdAt)}</span>
+                        <p style={{ fontSize: 13, fontWeight: n.read ? 400 : 500, color: '#E0D8D0', margin: '0 0 2px', lineHeight: 1.4 }}>{n.title}</p>
+                        {n.body && <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.28)', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</p>}
+                        <span style={{ fontSize: 11, color: 'rgba(224,216,208,0.55)' }}>{timeAgo(n.createdAt)}</span>
                       </div>
                     </button>
                   ))}

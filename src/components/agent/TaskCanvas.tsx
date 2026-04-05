@@ -391,7 +391,7 @@ export function TaskCanvas({
                   <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
                 </svg>
               </div>
-              <span style={{ fontSize: 12, fontWeight: 500, color: '#888888' }}>ORANGEBENCH</span>
+              <span style={{ fontSize: 12, fontWeight: 500, color: 'rgba(224,216,208,0.28)' }}>ORANGEBENCH</span>
               {isActive ? (
                 <span style={{ fontSize: 11, color: '#C2410C', fontWeight: 500, background: 'rgba(255,61,0,0.08)', padding: '2px 8px', borderRadius: 9999 }}>执行中</span>
               ) : mode === 'result' ? (
@@ -403,7 +403,7 @@ export function TaskCanvas({
             {isActive && (
               <div className="ob-mission-phase" style={{ marginLeft: 36 }}>
                 <span className={`ob-mission-dot ${status === 'understanding' || status === 'structuring' ? 'ob-mission-dot--active' : status === 'executing' || status === 'completed' ? 'ob-mission-dot--done' : 'ob-mission-dot--active'}`} />
-                <span style={{ fontSize: 10, color: '#888888', letterSpacing: '0.06em', flexShrink: 0 }}>
+                <span style={{ fontSize: 10, color: 'rgba(224,216,208,0.28)', letterSpacing: '0.06em', flexShrink: 0 }}>
                   {status === 'queued' || status === 'pending' ? 'READY' :
                    status === 'understanding' ? 'SIGNAL' :
                    status === 'structuring' ? 'PLAN' :
@@ -452,7 +452,7 @@ export function TaskCanvas({
                         <span className="ob-step-text">
                           {step.text}
                           {step.current !== undefined && step.total !== undefined ? (
-                            <span style={{ color: '#CCCCCC', fontSize: 12, marginLeft: 6, fontVariantNumeric: 'tabular-nums' }}>{step.current}/{step.total}</span>
+                            <span style={{ color: 'rgba(224,216,208,0.55)', fontSize: 12, marginLeft: 6, fontVariantNumeric: 'tabular-nums' }}>{step.current}/{step.total}</span>
                           ) : null}
                         </span>
                       </div>
@@ -1039,7 +1039,7 @@ function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { titl
       {/* Result body */}
       <div className="ob-result-card-body">
         <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 16 }}>{title}</p>
-        <div className="ob-result-card-inner" style={{ color: '#D1D5DB', lineHeight: 1.75 }}>
+        <div className="ob-result-card-inner" style={{ color: 'rgba(224,216,208,0.55)', lineHeight: 1.75 }}>
           <div className="space-y-3" ref={contentRef}>{children}</div>
         </div>
       </div>

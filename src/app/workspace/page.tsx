@@ -50,7 +50,7 @@ const FILTER_OPTIONS = [
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, { bg: string; color: string }> = {
-    draft: { bg: 'rgba(156,163,175,0.10)', color: '#888888' },
+    draft: { bg: 'rgba(156,163,175,0.10)', color: 'rgba(224,216,208,0.28)' },
     assigned: { bg: 'rgba(255,61,0,0.10)', color: '#C2410C' },
     in_progress: { bg: 'rgba(255,61,0,0.10)', color: '#C2410C' },
     submitted: { bg: 'rgba(59,130,246,0.10)', color: '#1D4ED8' },
@@ -117,7 +117,7 @@ export default function WorkspacePage() {
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
           <div style={{ width: 24, height: 24, border: '2px solid #FF3D00', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
-          <p style={{ fontSize: 14, color: '#CCCCCC' }}>加载工作区...</p>
+          <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.55)' }}>加载工作区...</p>
         </div>
       </div>
     );
@@ -129,8 +129,8 @@ export default function WorkspacePage() {
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: 18, fontWeight: 600, color: '#F5F5F5', marginBottom: 8 }}>还没有工作区</p>
-            <p style={{ fontSize: 14, color: '#CCCCCC', marginBottom: 24 }}>创建一个工作区开始团队协作</p>
+            <p style={{ fontSize: 18, fontWeight: 600, color: '#E0D8D0', marginBottom: 8 }}>还没有工作区</p>
+            <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.55)', marginBottom: 24 }}>创建一个工作区开始团队协作</p>
             <a href="/workspace/new" style={{
               display: 'inline-flex', alignItems: 'center', height: 40, padding: '0 24px',
               borderRadius: 9999, fontSize: 15, fontWeight: 600,
@@ -153,8 +153,8 @@ export default function WorkspacePage() {
           {/* Title + new task */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
             <div>
-              <h1 style={{ fontSize: 28, fontWeight: 600, color: '#F5F5F5', margin: '0 0 6px' }}>{ws.name}</h1>
-              <p style={{ fontSize: 13, color: '#CCCCCC', margin: 0 }}>{ws.memberCount} 位成员 · {ws.taskCount} 个任务</p>
+              <h1 style={{ fontSize: 28, fontWeight: 600, color: '#E0D8D0', margin: '0 0 6px' }}>{ws.name}</h1>
+              <p style={{ fontSize: 13, color: 'rgba(224,216,208,0.55)', margin: 0 }}>{ws.memberCount} 位成员 · {ws.taskCount} 个任务</p>
             </div>
             {ws.role === 'owner' && (
               <a href="/workspace/tasks/new" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 9999, fontSize: 14, fontWeight: 500, background: '#FF3D00', color: '#fff', textDecoration: 'none' }}>
@@ -187,8 +187,8 @@ export default function WorkspacePage() {
                   </div>
                 )}
                 <div style={{ flex: 1 }} />
-                <span style={{ fontSize: 10, color: '#888888', letterSpacing: '0.05em' }}>ACTIVE</span>
-                <span style={{ fontSize: 12, color: '#CCCCCC' }}>{ws?.memberCount} 位成员协作中</span>
+                <span style={{ fontSize: 10, color: 'rgba(224,216,208,0.28)', letterSpacing: '0.05em' }}>ACTIVE</span>
+                <span style={{ fontSize: 12, color: 'rgba(224,216,208,0.55)' }}>{ws?.memberCount} 位成员协作中</span>
               </div>
             );
           })()}
@@ -196,13 +196,13 @@ export default function WorkspacePage() {
           {/* Search + filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <div style={{ position: 'relative', flex: 1, maxWidth: 260 }}>
-              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#CCCCCC', pointerEvents: 'none' }}>
+              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'rgba(224,216,208,0.55)', pointerEvents: 'none' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               </span>
               <input
                 type="text" placeholder="搜索任务..." value={search}
                 onChange={e => setSearch(e.target.value)}
-                style={{ width: '100%', height: 36, borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)', background: '#252321', padding: '0 12px 0 34px', fontSize: 13, color: '#F5F5F5', outline: 'none', transition: 'border-color .2s' }}
+                style={{ width: '100%', height: 36, borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)', background: '#252321', padding: '0 12px 0 34px', fontSize: 13, color: '#E0D8D0', outline: 'none', transition: 'border-color .2s' }}
                 onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')}
                 onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')}
               />
@@ -229,10 +229,10 @@ export default function WorkspacePage() {
                   <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="16" x2="12" y2="16"/>
                 </svg>
               </div>
-              <p style={{ fontSize: 16, fontWeight: 600, color: '#F5F5F5', marginBottom: 6 }}>
+              <p style={{ fontSize: 16, fontWeight: 600, color: '#E0D8D0', marginBottom: 6 }}>
                 {search || filter !== 'all' ? '没有匹配的任务' : '还没有任务'}
               </p>
-              <p style={{ fontSize: 14, color: '#CCCCCC', marginBottom: search || filter !== 'all' ? 0 : 20 }}>
+              <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.55)', marginBottom: search || filter !== 'all' ? 0 : 20 }}>
                 {search || filter !== 'all' ? '换个条件试试' : '创建第一个任务，分配给团队成员'}
               </p>
               {!(search || filter !== 'all') && ws?.role === 'owner' && (
@@ -249,7 +249,7 @@ export default function WorkspacePage() {
                 if (groupTasks.length === 0) return null;
                 return (
                   <div key={group.key} style={{ marginBottom: 20 }}>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: '#CCCCCC', marginBottom: 10 }}>{group.label} ({groupTasks.length})</p>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: 'rgba(224,216,208,0.55)', marginBottom: 10 }}>{group.label} ({groupTasks.length})</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {groupTasks.map(t => <TaskCard key={t.id} task={t} />)}
                     </div>
@@ -298,7 +298,7 @@ function TaskCard({ task }: { task: WsTask }) {
       ) : (
         <div style={{
           width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-          background: '#F5F5F5', color: '#CCCCCC',
+          background: '#F5F5F5', color: 'rgba(224,216,208,0.55)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 12,
         }}>?</div>
@@ -308,13 +308,13 @@ function TaskCard({ task }: { task: WsTask }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* Title row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span style={{ fontSize: 14, fontWeight: 500, color: '#F5F5F5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>{task.title}</span>
+          <span style={{ fontSize: 14, fontWeight: 500, color: '#E0D8D0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>{task.title}</span>
           <StatusBadge status={task.businessStatus} />
           {task.priority >= 2 && <span style={{ fontSize: 11, color: '#B91C1C', fontWeight: 500 }}>紧急</span>}
         </div>
 
         {/* Meta row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: '#CCCCCC' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'rgba(224,216,208,0.55)' }}>
           {task.assigneeName && <span>{task.assigneeName}</span>}
           <span>{timeAgo(task.updatedAt)}</span>
           {hasDue && (

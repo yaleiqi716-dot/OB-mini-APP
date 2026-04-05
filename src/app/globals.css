@@ -6,10 +6,15 @@
    DESIGN TOKENS — ORANGEBENCH Dark-First AI Work System
    ═══════════════════════════════════════════════════════════════ */
 :root{
-  /* Backgrounds — handoff warm dark, not too black */
+  /* Backgrounds — per施工单 final spec */
   --bg:           #1E1C1A;
+  --bg-hero:      #1E1C1A;
+  --bg-exec:      #252321;
+  --bg-ws:        #2A2826;
+  --bg-billing:   #2C2A28;
+  --bg-mission:   #1E1C1A;
   --bg-sidebar:   #1A1816;
-  --bg-card:      #252321;
+  --bg-card:      rgba(37,35,33,0.88);
   --bg-secondary: #252321;
   --bg-tertiary:  #2A2826;
   --bg-input:     #252321;
@@ -17,17 +22,28 @@
   --bg-elevated:  #2C2A28;
   --bg-conv:      #23211F;
 
-  /* Text — high contrast, not washed */
-  --text-primary:   #F5F5F5;
-  --text-secondary: #CCCCCC;
-  --text-muted:     #888888;
-  --text-faint:     #666666;
+  /* Text — per施工单 */
+  --text-primary:   #E0D8D0;
+  --text-secondary: rgba(224,216,208,0.55);
+  --text-muted:     rgba(224,216,208,0.28);
+  --text-label:     rgba(224,216,208,0.35);
+  --text-faint:     rgba(224,216,208,0.18);
 
-  /* Border — mostly gone, only for inputs/errors */
-  --border:        rgba(255,255,255,0.04);
+  /* Dots — per施工单 */
+  --dot-online:  #22C55E;
+  --dot-active:  #FF3D00;
+  --dot-idle:    rgba(224,216,208,0.18);
+
+  /* Card — per施工单 */
+  --card-bg:     rgba(37,35,33,0.88);
+  --card-border: rgba(255,255,255,0.06);
+  --border-orange: rgba(255,61,0,0.15);
+
+  /* Border */
+  --border:        rgba(255,255,255,0.06);
   --border-strong: rgba(255,255,255,0.08);
 
-  /* Brand — bright electric red-orange */
+  /* Brand — per施工单 */
   --accent:        #FF3D00;
   --accent-hover:  #E63600;
   --accent-subtle: rgba(255,61,0,0.08);
@@ -50,7 +66,7 @@
   --send-bg-off:   #3A3836;
 
   /* Layout */
-  --sidebar-w:    232px;
+  --sidebar-w:    220px;
   --content-max:  760px;
   --chat-max:     780px;
   --header-h:     52px;
@@ -59,12 +75,12 @@
   --surface-primary:   #1E1C1A;
   --surface-secondary: #252321;
   --surface-tertiary:  #2A2826;
-  --content-primary:   #F5F5F5;
-  --content-secondary: #CCCCCC;
-  --content-tertiary:  #888888;
+  --content-primary:   #E0D8D0;
+  --content-secondary: rgba(224,216,208,0.55);
+  --content-tertiary:  rgba(224,216,208,0.28);
   --border-color:      rgba(255,255,255,0.04);
   --sidebar-bg:        #1A1816;
-  --sidebar-width:     232px;
+  --sidebar-width:     220px;
 }
 
 html{color-scheme:dark}
@@ -335,17 +351,20 @@ body{
 .ob-atmosphere{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
 .ob-atmosphere-content{position:relative;z-index:1}
 
-/* Hero atmosphere — Agent homepage behind launcher */
+/* Hero atmosphere — Agent homepage */
 .ob-hero-atmosphere{position:absolute;inset:0;pointer-events:none;z-index:0;
-  background:radial-gradient(ellipse 80% 60% at 50% 30%,rgba(255,61,0,0.03) 0%,transparent 70%)}
+  background:url('/assets/bg/hero_bg_v3.png') center/cover no-repeat,
+    radial-gradient(ellipse 80% 60% at 50% 30%,rgba(255,61,0,0.03) 0%,transparent 70%)}
+.ob-hero-atmosphere::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(to bottom,rgba(30,28,26,0.6) 0%,transparent 100px,transparent calc(100% - 140px),rgba(30,28,26,0.85) 100%)}
 .ob-launcher-atmosphere{position:relative}
 .ob-launcher-atmosphere::before{content:'';position:absolute;inset:-40px;z-index:0;pointer-events:none;
   background:radial-gradient(circle at 50% 50%,rgba(255,61,0,0.04) 0%,transparent 60%);border-radius:50%}
 
-/* Chat atmosphere — conversation area depth */
+/* Chat/exec atmosphere — conversation + execution area */
 .ob-chat-atmosphere{position:relative}
-.ob-chat-atmosphere::before{content:'';position:absolute;top:0;left:0;right:0;height:120px;pointer-events:none;z-index:0;
-  background:linear-gradient(to bottom,rgba(255,61,0,0.015),transparent)}
+.ob-chat-atmosphere::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:url('/assets/bg/exec_bg_v3.png') center top/cover no-repeat;opacity:0.5}
 
 /* Mission atmosphere — execution phase area */
 .ob-mission-atmosphere{position:relative}
@@ -353,12 +372,12 @@ body{
 /* Command atmosphere — workspace command center */
 .ob-command-atmosphere{position:relative}
 .ob-command-atmosphere::before{content:'';position:absolute;inset:-20px;z-index:0;pointer-events:none;
-  background:radial-gradient(ellipse 100% 80% at 50% 0%,rgba(255,61,0,0.02),transparent 60%)}
+  background:url('/assets/bg/workspace_cmd_bg_v3.png') center/cover no-repeat;opacity:0.6}
 
 /* Fuel atmosphere — billing top area */
 .ob-fuel-atmosphere{position:relative}
 .ob-fuel-atmosphere::before{content:'';position:absolute;inset:-30px;z-index:0;pointer-events:none;
-  background:radial-gradient(ellipse 80% 50% at 50% 20%,rgba(255,61,0,0.025),transparent 60%)}
+  background:url('/assets/bg/billing_bg_v3.png') center/cover no-repeat;opacity:0.5}
 
 
 /* ═══════════════════════════════════════════════════════════════
@@ -411,7 +430,7 @@ body{
 .ob-hero-sub{font-size:17px;color:#6B7280;text-align:center;line-height:1.6;max-width:520px;margin:0 auto 32px}
 
 /* Task launcher input */
-.ob-launcher{width:100%;max-width:720px;background:var(--bg-card);border:1.5px solid var(--border);border-radius:20px;padding:20px;transition:border-color .2s,box-shadow .3s}
+.ob-launcher{width:100%;max-width:640px;background:var(--card-bg);border:1px solid var(--border-orange);border-radius:6px;padding:20px;transition:border-color .2s,box-shadow .3s}
 .ob-launcher:focus-within{border-color:rgba(255,61,0,0.5);box-shadow:0 0 0 4px rgba(255,61,0,.12),var(--accent-glow)}
 .ob-launcher:hover:not(:focus-within){box-shadow:0 8px 24px rgba(0,0,0,.04)}
 
