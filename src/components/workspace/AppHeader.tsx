@@ -118,13 +118,24 @@ export function AppHeader() {
             const active = isNavActive(n.href);
             return (
               <a key={n.href} href={n.href} style={{
-                fontSize: 13, textDecoration: 'none', padding: '5px 10px', borderRadius: 8,
+                fontSize: 13, textDecoration: 'none', padding: '6px 10px', borderRadius: 8,
                 fontWeight: active ? 600 : 400,
                 color: active ? '#FF3D00' : '#888888',
-                background: active ? 'rgba(255,61,0,0.10)' : 'transparent',
-                borderBottom: active ? '2px solid #FF3D00' : '2px solid transparent',
-                transition: 'color .15s, background .15s',
-              }}>{n.label}</a>
+                background: active ? 'rgba(255,61,0,0.08)' : 'transparent',
+                transition: 'color .12s, background .12s',
+                position: 'relative',
+              }}>
+                {n.label}
+                {/* Signal lamp — active nav indicator */}
+                {active && (
+                  <span style={{
+                    position: 'absolute', bottom: -1, left: '50%', transform: 'translateX(-50%)',
+                    width: 12, height: 2, borderRadius: 1,
+                    background: '#FF3D00',
+                    boxShadow: '0 0 18px rgba(255,61,0,0.22)',
+                  }} />
+                )}
+              </a>
             );
           })}
         </nav>
@@ -146,14 +157,16 @@ export function AppHeader() {
             </svg>
             {unreadCount > 0 && (
               <span style={{
-                position: 'absolute', top: 2, right: 2,
-                width: unreadCount > 9 ? 18 : 14, height: 14,
-                borderRadius: 7, background: '#ef4444',
-                color: '#fff', fontSize: 10, fontWeight: 600,
+                position: 'absolute', top: 3, right: 3,
+                width: unreadCount > 9 ? 16 : 7, height: 7,
+                borderRadius: 2,
+                background: '#FF3D00',
+                boxShadow: '0 0 8px rgba(255,61,0,0.5), 0 0 2px rgba(255,61,0,0.8)',
+                color: '#fff', fontSize: 9, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 lineHeight: 1,
               }}>
-                {unreadCount > 9 ? '9+' : unreadCount}
+                {unreadCount > 9 ? '9+' : unreadCount > 1 ? unreadCount : ''}
               </span>
             )}
           </button>

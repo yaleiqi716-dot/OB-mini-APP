@@ -432,16 +432,17 @@ body{
 
 /* Mission progress bar */
 .ob-mission-phase{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-elevated);border:none;border-radius:12px;margin-bottom:12px}
-.ob-mission-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.ob-mission-dot--active{background:#FF3D00;animation:statusCycle 1.5s ease-in-out infinite}
-.ob-mission-dot--done{background:#22c55e}
-.ob-mission-dot--pending{background:#3A3836}
+/* Square pixel mission dots */
+.ob-mission-dot{width:4px;height:4px;border-radius:1px;flex-shrink:0}
+.ob-mission-dot--active{background:#FF3D00;box-shadow:0 0 6px rgba(255,61,0,0.4);animation:statusCycle 1.5s ease-in-out infinite}
+.ob-mission-dot--done{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,0.3)}
+.ob-mission-dot--pending{background:#666666}
 .ob-mission-label{font-size:13px;font-weight:500;color:#F5F5F5}
 .ob-mission-sub{font-size:12px;color:#9CA3AF}
 
 /* Result node (not just a reply block) */
 .ob-result-node{position:relative;background:var(--bg-elevated);border:none;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.25);margin-top:8px}
-.ob-result-node::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#FF3D00,#22c55e)}
+.ob-result-node::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#FF3D00,#22c55e)}
 .ob-result-node-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.04)}
 .ob-result-node-body{padding:20px}
 
@@ -460,7 +461,7 @@ body{
 
 /* Billing tier card highlight */
 .ob-tier-recommended{border:2px solid #FF3D00;position:relative}
-.ob-tier-badge{position:absolute;top:-1px;right:16px;background:#FF3D00;color:#fff;font-size:11px;font-weight:600;padding:2px 10px;border-radius:0 0 8px 8px}
+.ob-tier-badge{position:absolute;top:-1px;right:16px;background:#FF3D00;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:0 0 6px 6px;letter-spacing:0.04em;box-shadow:0 0 12px rgba(255,61,0,0.25)}
 
 @media(max-width:768px){
   .ob-hero-title{font-size:28px}

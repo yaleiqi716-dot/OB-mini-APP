@@ -82,7 +82,9 @@ function LiveStatusCycle() {
   return (
     <div className="ob-live-status">
       <span className="ob-live-dot" />
-      <span>Agent {STATUS_WORDS[idx]}</span>
+      <span style={{ color: '#CCCCCC', fontSize: 11, letterSpacing: '0.04em' }}>READY</span>
+      <span style={{ width: 1, height: 10, background: 'rgba(255,255,255,0.08)' }} />
+      <span>{STATUS_WORDS[idx]}</span>
     </div>
   );
 }

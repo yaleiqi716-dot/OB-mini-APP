@@ -172,7 +172,7 @@ export default function WorkspacePage() {
             return (
               <div className="ob-command-bar">
                 <div className="ob-command-stat ob-command-stat--accent">
-                  <span className="ob-live-dot" style={{ width: 5, height: 5, animation: active > 0 ? 'statusCycle 2s ease-in-out infinite' : 'none', background: active > 0 ? '#FF3D00' : '#D5D3CE' }} />
+                  <span className="ob-px-dot ob-px-dot--active" style={{ animation: active > 0 ? 'statusCycle 2s ease-in-out infinite' : 'none', background: active > 0 ? '#FF3D00' : '#666666', boxShadow: active > 0 ? '0 0 6px rgba(255,61,0,0.4)' : 'none' }} />
                   <span><strong>{active}</strong> 进行中</span>
                 </div>
                 <div className="ob-command-stat" style={{ color: review > 0 ? '#1D4ED8' : undefined }}>
@@ -187,6 +187,7 @@ export default function WorkspacePage() {
                   </div>
                 )}
                 <div style={{ flex: 1 }} />
+                <span style={{ fontSize: 10, color: '#888888', letterSpacing: '0.05em' }}>ACTIVE</span>
                 <span style={{ fontSize: 12, color: '#CCCCCC' }}>{ws?.memberCount} 位成员协作中</span>
               </div>
             );

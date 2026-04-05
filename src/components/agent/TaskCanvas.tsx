@@ -403,6 +403,13 @@ export function TaskCanvas({
             {isActive && (
               <div className="ob-mission-phase" style={{ marginLeft: 36 }}>
                 <span className={`ob-mission-dot ${status === 'understanding' || status === 'structuring' ? 'ob-mission-dot--active' : status === 'executing' || status === 'completed' ? 'ob-mission-dot--done' : 'ob-mission-dot--active'}`} />
+                <span style={{ fontSize: 10, color: '#888888', letterSpacing: '0.06em', flexShrink: 0 }}>
+                  {status === 'queued' || status === 'pending' ? 'READY' :
+                   status === 'understanding' ? 'SIGNAL' :
+                   status === 'structuring' ? 'PLAN' :
+                   status === 'executing' ? 'RUNNING' :
+                   status === 'interacting' ? 'WAIT' : 'LIVE'}
+                </span>
                 <span className="ob-mission-label" style={{ flex: 1 }}>
                   {status === 'queued' || status === 'pending' ? '准备启动' :
                    status === 'understanding' ? '理解任务需求' :
@@ -412,7 +419,7 @@ export function TaskCanvas({
                    '推进中'}
                 </span>
                 <span className="ob-mission-sub">
-                  {completedSteps.length > 0 ? `${completedSteps.length} 步已完成` : ''}
+                  {completedSteps.length > 0 ? `${completedSteps.length} Done` : ''}
                 </span>
               </div>
             )}
