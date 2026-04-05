@@ -130,6 +130,7 @@ export async function POST(req: NextRequest) {
       userId,
       estimatedCost: creditCheck.estimatedCost,
       assigneeId: body.assigneeId || userId,
+      attachments: body.attachments,
     });
 
     // Set priority + move to queued (worker polls DB by priority)

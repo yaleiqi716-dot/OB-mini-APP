@@ -133,7 +133,7 @@ export function formatEvent(e: { id: string; taskId: string; type: string; data:
 export async function createTask(
   input: string,
   source: TaskSource = 'agent',
-  opts?: { userId?: string; estimatedCost?: number; assigneeId?: string }
+  opts?: { userId?: string; estimatedCost?: number; assigneeId?: string; attachments?: Array<{ id: string; name: string; size: number; type?: string }> }
 ) {
   const task = await prisma.task.create({
     data: {
@@ -145,6 +145,7 @@ export async function createTask(
       estimatedCost: opts?.estimatedCost || 0,
       assigneeId: opts?.assigneeId || null,
       businessStatus: opts?.assigneeId ? 'assigned' : 'assigned',
+      attachments: opts?.attachments ? JSON.stringify(opts.attachments) : null,
     },
   });
 

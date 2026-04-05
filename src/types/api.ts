@@ -8,6 +8,7 @@ export interface CreateTaskRequest {
   assigneeId?: string;
   parentTaskId?: string;
   conversationId?: string;
+  attachments?: Array<{ id: string; name: string; size: number; type?: string }>;
 }
 
 export interface CreateTaskResponse {
