@@ -7,6 +7,7 @@ import { startScheduler } from '@/services/scheduler';
 import { startMediaJobPoller } from '@/services/media-job-poller';
 import { CreateTaskRequest } from '@/types/api';
 import { prisma } from '@/lib/prisma';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 import '@/services/workflows';
 
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
+    const userId = req.headers.get('x-user-id') || await getUserIdFromRequest(req);
     if (!userId) {
       return NextResponse.json({ error: '未登录' }, { status: 401 });
     }
@@ -162,7 +163,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
+    const userId = req.headers.get('x-user-id') || await getUserIdFromRequest(req);
     if (userId) {
       const tasks = await prisma.task.findMany({
         where: { userId },
