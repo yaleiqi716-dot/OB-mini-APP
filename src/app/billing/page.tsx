@@ -37,9 +37,9 @@ interface UserStatus {
 type PayState = 'pending' | 'polling' | 'success' | 'failed';
 
 function QRModal({
-  qrUrl, amountLabel, orderId, onDone, onCancel,
+  qrUrl, amountLabel, orderId, product, onDone, onCancel,
 }: {
-  qrUrl: string; amountLabel: string; orderId: string;
+  qrUrl: string; amountLabel: string; orderId: string; product: Product | null;
   onDone: (success: boolean) => void; onCancel: () => void;
 }) {
   const [payState, setPayState] = useState<PayState>('pending');
@@ -87,7 +87,29 @@ function QRModal({
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#047857" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
             <p style={{ fontSize: 18, fontWeight: 600, color: '#E0D8D0' }}>支付成功</p>
-            <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.28)' }}>额度已到账，正在刷新...</p>
+            {product?.type === 'subscription' ? (
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 14, color: '#D1D5DB', margin: '0 0 4px' }}>
+                  已开通 <span style={{ color: '#FF3D00', fontWeight: 600 }}>{product.label}</span> 订阅
+                </p>
+                <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.45)', margin: 0 }}>
+                  +{product.credits} 订阅积分已到账 · 每日体验赠额 {product.dailyTrialCredits}/日
+                </p>
+              </div>
+            ) : product?.type === 'credits' ? (
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 14, color: '#D1D5DB', margin: '0 0 4px' }}>
+                  +<span style={{ color: '#FF3D00', fontWeight: 600 }}>{product.totalCredits}</span> 通用积分已到账
+                </p>
+                {(product.bonusCredits ?? 0) > 0 && (
+                  <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.45)', margin: 0 }}>
+                    含赠送 {product.bonusCredits}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.45)' }}>积分已到账，正在刷新...</p>
+            )}
           </div>
         ) : payState === 'failed' ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '16px 0' }}>
@@ -95,8 +117,15 @@ function QRModal({
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </div>
             <p style={{ fontSize: 18, fontWeight: 600, color: '#E0D8D0' }}>支付未完成</p>
-            <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.28)' }}>请重试或使用其他支付方式</p>
-            <button onClick={onCancel} style={{ height: 36, padding: '0 20px', borderRadius: 9999, fontSize: 14, border: '1px solid rgba(255,255,255,0.04)', background: '#252321', color: 'rgba(224,216,208,0.28)', cursor: 'pointer' }}>关闭</button>
+            <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.45)', margin: 0, textAlign: 'center' }}>
+              {product?.type === 'subscription'
+                ? `${product.label} 订阅未完成支付`
+                : product?.type === 'credits'
+                ? `${product.displayLabel || '通用积分包'}未完成支付`
+                : '未完成支付'}
+            </p>
+            <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.28)', margin: 0 }}>请重试或使用其他支付方式</p>
+            <button onClick={onCancel} style={{ height: 36, padding: '0 20px', borderRadius: 9999, fontSize: 14, border: '1px solid rgba(255,255,255,0.04)', background: '#252321', color: 'rgba(224,216,208,0.45)', cursor: 'pointer' }}>关闭</button>
           </div>
         ) : (
           <>
@@ -125,7 +154,7 @@ export default function BillingPage() {
   const [user, setUser] = useState<UserStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState<string | null>(null);
-  const [qrModal, setQrModal] = useState<{qrUrl:string;orderId:string;amountLabel:string}|null>(null);
+  const [qrModal, setQrModal] = useState<{qrUrl:string;orderId:string;amountLabel:string;product:Product|null}|null>(null);
   const [toast, setToast] = useState<{text:string;ok:boolean}|null>(null);
 
   useEffect(() => {
@@ -150,9 +179,19 @@ export default function BillingPage() {
   }, []);
 
   function handlePayDone(success: boolean) {
+    const product = qrModal?.product;
     setQrModal(null); setBuying(null);
-    if (success) { showToast('支付成功！额度已到账', true); fetchUser(); }
-    else showToast('支付未完成，请重试', false);
+    if (success) {
+      const msg = product?.type === 'subscription'
+        ? `${product.label} 订阅已开通，+${product.credits} 订阅积分到账`
+        : product?.type === 'credits'
+        ? `+${product.totalCredits} 通用积分已到账`
+        : '支付成功！积分已到账';
+      showToast(msg, true);
+      fetchUser();
+    } else {
+      showToast('支付未完成，请重试', false);
+    }
   }
 
   async function handleBuy(code: string) {
@@ -162,8 +201,8 @@ export default function BillingPage() {
       const res = await fetch('/api/billing/create-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productCode: code }) });
       const data = await res.json();
       if (!res.ok) { showToast(data.error || '创建订单失败', false); setBuying(null); return; }
-      const product = products.find(p => p.code === code);
-      setQrModal({ qrUrl: data.codeUrl, orderId: data.orderId, amountLabel: product?.amountLabel || '¥19' });
+      const product = products.find(p => p.code === code) || null;
+      setQrModal({ qrUrl: data.codeUrl, orderId: data.orderId, amountLabel: product?.amountLabel || '¥19', product });
     } catch { showToast('网络错误', false); setBuying(null); }
   }
 
@@ -344,7 +383,7 @@ export default function BillingPage() {
 
       {/* QR Modal */}
       {qrModal && (
-        <QRModal qrUrl={qrModal.qrUrl} amountLabel={qrModal.amountLabel} orderId={qrModal.orderId}
+        <QRModal qrUrl={qrModal.qrUrl} amountLabel={qrModal.amountLabel} orderId={qrModal.orderId} product={qrModal.product}
           onDone={handlePayDone} onCancel={() => { setQrModal(null); setBuying(null); }} />
       )}
 

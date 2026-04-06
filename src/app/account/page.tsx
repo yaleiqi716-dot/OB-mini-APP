@@ -3,18 +3,103 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/workspace/AppHeader';
 
-interface UserInfo {
+interface UserStatus {
   id: string;
   email?: string;
   name?: string;
   credits: number;
+  signupBonusCredits: number;
+  dailyTrialCredits: number;
+  subscriptionCredits: number;
+  generalCredits: number;
+  rewardCredits: number;
   plan: string;
   expireAt: string | null;
+  limits: {
+    maxConcurrent: number;
+    allowedTypes: string[];
+    dailyTrialCredits: number;
+    monthlySubscriptionCredits: number;
+  };
 }
+
+interface OrderRecord {
+  id: string;
+  productType: string;
+  productCode: string;
+  amount: number;
+  credits: number;
+  status: string;
+  createdAt: string;
+  paidAt: string | null;
+}
+
+// Plan display config aligned with billing-config.ts v1
+const PLAN_DISPLAY: Record<string, { label: string; price: string; benefits: string[] }> = {
+  free: {
+    label: 'Free',
+    price: '免费',
+    benefits: [
+      '每日体验赠额 120/日',
+      '新人赠送 500（一次性）',
+      '并发任务 1',
+      '定时任务 2',
+    ],
+  },
+  basic: {
+    label: 'Basic',
+    price: '¥39/月',
+    benefits: [
+      '订阅积分 2,000/月',
+      '每日体验赠额 60/日',
+      '并发任务 3',
+      '定时任务 5',
+    ],
+  },
+  pro: {
+    label: 'Pro',
+    price: '¥89/月',
+    benefits: [
+      '订阅积分 5,500/月',
+      '每日体验赠额 120/日',
+      '并发任务 10',
+      '定时任务 15',
+    ],
+  },
+  team: {
+    label: 'Team',
+    price: '¥199/人/月',
+    benefits: [
+      '订阅积分 6,000/人/月',
+      '每日体验赠额 120/日',
+      '并发任务 10',
+      '定时任务 15',
+      '每位成员独立积分',
+      '老板可发奖励积分',
+    ],
+  },
+};
+
+const PRODUCT_NAMES: Record<string, string> = {
+  basic_monthly: 'Basic 订阅（月付）',
+  pro_monthly: 'Pro 订阅（月付）',
+  team_monthly: 'Team 订阅（月付）',
+  credits_1500: '通用积分包 1,500',
+  credits_5500: '通用积分包 5,500',
+  credits_20000: '通用积分包 20,000',
+};
+
+const STATUS_LABELS: Record<string, { text: string; color: string }> = {
+  paid: { text: '已完成', color: '#047857' },
+  pending: { text: '待支付', color: '#D97706' },
+  failed: { text: '失败', color: '#B91C1C' },
+  cancelled: { text: '已取消', color: '#888888' },
+};
 
 export default function AccountPage() {
   const router = useRouter();
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const [user, setUser] = useState<UserStatus | null>(null);
+  const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -26,13 +111,13 @@ export default function AccountPage() {
   useEffect(() => {
     const m = document.cookie.match(/ob-user-id=([^;]+)/);
     if (!m || !m[1]) { router.replace('/login'); return; }
-    fetch('/api/user')
-      .then(r => r.json())
-      .then(d => {
-        if (d && d.credits !== undefined) setUser(d);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch('/api/user').then(r => r.json()),
+      fetch('/api/billing/orders').then(r => r.json()).catch(() => []),
+    ]).then(([u, o]) => {
+      if (u && u.credits !== undefined) setUser(u);
+      if (Array.isArray(o)) setOrders(o);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [router]);
 
   function handleLogout() {
@@ -44,8 +129,12 @@ export default function AccountPage() {
   // Derive display values
   const userId = user?.email || user?.id || '';
   const userName = user?.name || userId.split('@')[0] || 'User';
-  const planLabel = user?.plan || 'Free';
-  const credits = user?.credits ?? 0;
+  const plan = user?.plan || 'free';
+  const planInfo = PLAN_DISPLAY[plan] || PLAN_DISPLAY.free;
+
+  // Legacy credits handling
+  const legacyCredits = user ? (user.credits - (user.signupBonusCredits + user.dailyTrialCredits + user.subscriptionCredits + user.generalCredits + user.rewardCredits)) : 0;
+  const hasLegacy = legacyCredits > 0;
 
   const isExpiringSoon = user?.expireAt
     ? new Date(user.expireAt).getTime() - Date.now() < 7 * 86400000
@@ -86,6 +175,9 @@ export default function AccountPage() {
     height: 22, fontSize: 11, fontWeight: 500, color: '#CCCCCC',
     background: '#1E1C1A', borderRadius: 9999, padding: '0 10px',
     border: '1px solid rgba(255,255,255,0.04)',
+  };
+  const sectionTitle: React.CSSProperties = {
+    fontSize: 17, fontWeight: 600, color: '#F5F5F5', margin: '0 0 16px',
   };
 
   if (loading) {
@@ -136,7 +228,7 @@ export default function AccountPage() {
                     fontSize: 11, fontWeight: 500,
                     background: 'rgba(255,61,0,0.10)', color: '#C2410C',
                   }}>
-                    {planLabel}
+                    {planInfo.label}
                   </span>
                   {/* Status badge */}
                   <span style={{
@@ -149,6 +241,11 @@ export default function AccountPage() {
                   </span>
                 </div>
                 <span style={{ fontSize: 13, color: '#888888' }}>{userId}</span>
+                {user?.expireAt && plan !== 'free' && (
+                  <span style={{ fontSize: 12, color: '#888888', marginLeft: 12 }}>
+                    到期 {new Date(user.expireAt).toLocaleDateString('zh-CN')}
+                  </span>
+                )}
               </div>
 
               {/* Action */}
@@ -158,74 +255,128 @@ export default function AccountPage() {
             </div>
           </div>
 
-          {/* ── 3 benefit cards ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
-            {/* Credits */}
-            <div style={{ ...cardStyle, height: 104, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <p style={{ fontSize: 13, color: '#888888', margin: '0 0 6px' }}>可用积分</p>
-              <p style={{ fontSize: 24, fontWeight: 650, color: '#F5F5F5', margin: '0 0 4px', lineHeight: 1 }}>{credits}</p>
-              <p style={{ fontSize: 12, color: '#888888', margin: 0 }}>订阅积分 + 通用积分</p>
+          {/* ── Total credits card ── */}
+          <div style={{ ...cardStyle, marginBottom: 20, padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div>
+                <p style={{ fontSize: 13, color: '#888888', margin: '0 0 6px' }}>总可用积分</p>
+                <p style={{ fontSize: 36, fontWeight: 700, color: '#FF3D00', margin: 0, lineHeight: 1 }}>
+                  {user?.credits ?? 0}
+                </p>
+              </div>
+              <a href="/billing" style={{
+                ...actionBtnStyle,
+                border: '1px solid #FF3D00', color: '#FF3D00',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,61,0,0.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#252321'; }}
+              >
+                充值
+              </a>
             </div>
 
-            {/* Permissions */}
-            <div style={{ ...cardStyle, height: 104, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <p style={{ fontSize: 13, color: '#888888', margin: '0 0 6px' }}>当前权限</p>
-              <p style={{ fontSize: 24, fontWeight: 650, color: '#F5F5F5', margin: '0 0 4px', lineHeight: 1 }}>基础</p>
-              <p style={{ fontSize: 12, color: '#888888', margin: 0 }}>文本生成、邮件、PPT</p>
+            {/* ── Credit bucket breakdown ── */}
+            <p style={{ fontSize: 13, fontWeight: 500, color: '#F5F5F5', margin: '0 0 12px' }}>积分明细</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+              {([
+                { label: '每日体验赠额', value: user?.dailyTrialCredits ?? 0, note: '每日刷新，不结转' },
+                { label: '新人赠送', value: user?.signupBonusCredits ?? 0, note: '一次性，用完为止' },
+                { label: '订阅积分', value: user?.subscriptionCredits ?? 0, note: '按月发放，不结转' },
+                { label: '通用积分', value: user?.generalCredits ?? 0, note: '购买到账，持续可用' },
+                { label: '奖励积分', value: user?.rewardCredits ?? 0, note: '管理员发放' },
+                ...(hasLegacy ? [{ label: '历史兼容积分', value: legacyCredits, note: '旧版遗留，优先级最低' }] : []),
+              ] as const).map((bucket, i) => (
+                <div key={i} style={{
+                  background: '#1E1C1A', borderRadius: 12, padding: '12px 14px',
+                  border: '1px solid rgba(255,255,255,0.03)',
+                }}>
+                  <p style={{ fontSize: 11, color: '#888888', margin: '0 0 4px' }}>{bucket.label}</p>
+                  <p style={{ fontSize: 20, fontWeight: 600, color: '#F5F5F5', margin: '0 0 2px', lineHeight: 1 }}>
+                    {bucket.value}
+                  </p>
+                  <p style={{ fontSize: 10, color: '#666666', margin: 0 }}>{bucket.note}</p>
+                </div>
+              ))}
             </div>
+            <p style={{ fontSize: 11, color: '#666666', margin: '12px 0 0' }}>
+              消耗顺序：每日体验赠额 → 新人赠送 → 订阅积分 → 通用积分 → 奖励积分{hasLegacy ? ' → 历史兼容积分' : ''}
+            </p>
+          </div>
 
-            {/* Capabilities */}
-            <div style={{ ...cardStyle, height: 104, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <p style={{ fontSize: 13, color: '#888888', margin: '0 0 6px' }}>已启用能力</p>
-              <p style={{ fontSize: 24, fontWeight: 650, color: '#F5F5F5', margin: '0 0 4px', lineHeight: 1 }}>3</p>
-              <p style={{ fontSize: 12, color: '#888888', margin: 0 }}>文本 / 搜索 / 结构化</p>
+          {/* ── Current plan benefits ── */}
+          <div style={{ ...cardStyle, marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <p style={sectionTitle}>当前套餐权益</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: '#FF3D00' }}>{planInfo.label}</span>
+                <span style={{ fontSize: 13, color: '#888888' }}>{planInfo.price}</span>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 24px' }}>
+              {planInfo.benefits.map((b, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
+                  <span style={{ fontSize: 14, color: '#D1D5DB' }}>{b}</span>
+                </div>
+              ))}
+            </div>
+            {plan !== 'free' && user?.expireAt && (
+              <p style={{ fontSize: 12, color: '#888888', margin: '12px 0 0' }}>
+                当前周期到期：{new Date(user.expireAt).toLocaleDateString('zh-CN')}
+              </p>
+            )}
+            <div style={{ marginTop: 16 }}>
+              <a href="/billing" style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
+                {plan === 'free' ? '升级套餐' : '管理订阅'}
+              </a>
             </div>
           </div>
 
-          {/* ── Plan benefits ── */}
+          {/* ── Recent orders ── */}
           <div style={{ ...cardStyle, marginBottom: 20 }}>
-            <p style={{ fontSize: 17, fontWeight: 600, color: '#F5F5F5', margin: '0 0 16px' }}>当前套餐权益</p>
-            <div style={{ display: 'flex', gap: 40 }}>
-              {/* Enabled */}
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: 500, color: '#F5F5F5', margin: '0 0 10px' }}>已启用</p>
-                {[
-                  'AI 文本生成与优化',
-                  '邮件自动撰写',
-                  'PPT 结构生成',
-                  '方案与报告撰写',
-                  '多轮对话上下文',
-                  'Brave 搜索集成',
-                ].map((item, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#D1D5DB', lineHeight: 1.8 }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
-                    {item}
-                  </div>
-                ))}
+            <p style={sectionTitle}>最近订单</p>
+            {orders.length === 0 ? (
+              <p style={{ fontSize: 14, color: '#888888', margin: 0 }}>暂无购买记录</p>
+            ) : (
+              <div>
+                {/* Table header */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px 80px 80px', gap: 8, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <span style={{ fontSize: 11, color: '#666666', fontWeight: 500 }}>时间</span>
+                  <span style={{ fontSize: 11, color: '#666666', fontWeight: 500 }}>商品</span>
+                  <span style={{ fontSize: 11, color: '#666666', fontWeight: 500 }}>类型</span>
+                  <span style={{ fontSize: 11, color: '#666666', fontWeight: 500, textAlign: 'right' }}>金额</span>
+                  <span style={{ fontSize: 11, color: '#666666', fontWeight: 500, textAlign: 'right' }}>状态</span>
+                </div>
+                {orders.slice(0, 10).map(order => {
+                  const statusInfo = STATUS_LABELS[order.status] || { text: order.status, color: '#888888' };
+                  return (
+                    <div key={order.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px 80px 80px', gap: 8, padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, color: '#CCCCCC' }}>
+                        {new Date(order.createdAt).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}{' '}
+                        {new Date(order.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span style={{ fontSize: 13, color: '#F5F5F5' }}>
+                        {PRODUCT_NAMES[order.productCode] || order.productCode}
+                      </span>
+                      <span style={{ fontSize: 12, color: '#888888' }}>
+                        {order.productType === 'subscription' ? '订阅' : '通用积分包'}
+                      </span>
+                      <span style={{ fontSize: 13, color: '#F5F5F5', textAlign: 'right' }}>
+                        ¥{(order.amount / 100).toFixed(order.amount % 100 === 0 ? 0 : 2)}
+                      </span>
+                      <span style={{ fontSize: 12, color: statusInfo.color, textAlign: 'right', fontWeight: 500 }}>
+                        {statusInfo.text}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-              {/* Coming soon */}
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: 500, color: '#F5F5F5', margin: '0 0 10px' }}>即将开放</p>
-                {[
-                  '图片生成 (Leonardo)',
-                  '视频生成 (MiniMax)',
-                  '数字人视频 (Akool)',
-                  '浏览器自动化 (Manus)',
-                  'Zapier 自动化集成',
-                  '团队协作 + 奖励积分',
-                ].map((item, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#CCCCCC', lineHeight: 1.8 }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#D5D3CE', flexShrink: 0 }} />
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
 
           {/* ── Account actions ── */}
           <div style={cardStyle}>
-            <p style={{ fontSize: 17, fontWeight: 600, color: '#F5F5F5', margin: '0 0 12px' }}>账号操作</p>
+            <p style={sectionTitle}>账号操作</p>
 
             <div style={{ ...rowStyle, ...rowBorder }}>
               <div>
