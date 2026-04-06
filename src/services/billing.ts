@@ -107,16 +107,19 @@ export async function getOrCreateUser(userId: string) {
       console.log(`[BILLING] Subscription cancelled for ${userId}, downgraded to free`);
     } else if (user.pendingPlan) {
       // User requested downgrade: switch to target plan
-      const targetConfig = getPlanConfig(user.pendingPlan);
+      // subscriptionCredits = 0: new credits only come with next payment
+      // subscriptionResetAt: keep aligned to old period start so the monthly
+      // reset check (subscriptionResetAt !== currentPeriodStart) does NOT
+      // trigger a free grant — user must pay for the new plan first.
       user = await prisma.user.update({
         where: { id: userId },
         data: {
           plan: user.pendingPlan,
           pendingPlan: null,
-          // Note: user still needs to pay for the new plan — expireAt stays as-is
-          // If they don't renew, next period check will downgrade to free
-          subscriptionCredits: 0, // Reset, new credits come with next payment
-          subscriptionResetAt: today(),
+          subscriptionCredits: 0,
+          subscriptionResetAt: user.currentPeriodStart
+            ? user.currentPeriodStart.toISOString().split('T')[0]
+            : today(),
         },
       });
       console.log(`[BILLING] Downgraded ${userId} to ${user.plan}`);
