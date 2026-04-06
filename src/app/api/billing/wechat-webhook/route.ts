@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
           data: {
             plan: subProduct.plan,
             expireAt,
-            credits: user.credits + subProduct.credits,
+            subscriptionCredits: (user.subscriptionCredits || 0) + subProduct.credits,
           },
         });
 
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
         // Credits purchase
         await tx.user.update({
           where: { id: order!.userId },
-          data: { credits: user.credits + order!.credits },
+          data: { generalCredits: (user.generalCredits || 0) + order!.credits },
         });
 
         console.log(`[WECHAT_WEBHOOK] Credits: ${order!.userId} +${order!.credits}`);

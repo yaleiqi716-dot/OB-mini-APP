@@ -14,11 +14,17 @@ model User {
   googleId       String?  @unique
   name           String?
   avatarUrl      String?
-  credits        Int      @default(100)
-  plan           String   @default("free")
-  expireAt       DateTime?
-  dailyTaskCount Int      @default(0)
-  dailyResetDate String   @default("")
+  credits              Int      @default(0)       // Legacy mixed field (kept for compat)
+  signupBonusCredits   Int      @default(0)       // 新人赠送 (one-time, 500 for new users)
+  dailyTrialCredits    Int      @default(0)       // 每日体验赠额 (refreshed daily)
+  subscriptionCredits  Int      @default(0)       // 订阅积分 (monthly, no carryover)
+  generalCredits       Int      @default(0)       // 通用积分 (purchased, persistent)
+  rewardCredits        Int      @default(0)       // 奖励积分 (boss-issued, future)
+  dailyCreditsGrantedAt String  @default("")      // Date string for daily grant tracking
+  plan                 String   @default("free")
+  expireAt             DateTime?
+  dailyTaskCount       Int      @default(0)
+  dailyResetDate       String   @default("")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   tasks          Task[]

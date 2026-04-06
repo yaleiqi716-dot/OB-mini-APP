@@ -2,13 +2,13 @@ import { prisma } from '@/lib/prisma';
 import { TaskType } from '@/types/task';
 import { estimateCost } from '@/lib/cost';
 
-// ---- Plan configuration (single source of truth) ----
+// ── Plan configuration (aligned with billing-config.ts v1) ──
 
 export interface PlanLimits {
   maxConcurrent: number;
   allowedTypes: TaskType[];
-  dailyCredits: number;      // free plan: daily reset
-  monthlyCredits: number;    // paid plans: monthly budget
+  dailyTrialCredits: number;    // 每日体验赠额
+  monthlySubscriptionCredits: number; // 订阅积分/月
 }
 
 const ALL_TYPES: TaskType[] = ['ppt', 'email', 'proposal', 'website', 'video', 'unknown'];
@@ -17,26 +17,26 @@ export const PLAN_CONFIG: Record<string, PlanLimits> = {
   free: {
     maxConcurrent: 1,
     allowedTypes: ['ppt', 'email', 'proposal', 'unknown'] as TaskType[],
-    dailyCredits: 20,
-    monthlyCredits: 0,
+    dailyTrialCredits: 120,
+    monthlySubscriptionCredits: 0,
   },
   basic: {
-    maxConcurrent: 2,
-    allowedTypes: ALL_TYPES,
-    dailyCredits: 0,
-    monthlyCredits: 500,
-  },
-  pro: {
     maxConcurrent: 3,
     allowedTypes: ALL_TYPES,
-    dailyCredits: 0,
-    monthlyCredits: 2000,
+    dailyTrialCredits: 60,
+    monthlySubscriptionCredits: 2000,
+  },
+  pro: {
+    maxConcurrent: 10,
+    allowedTypes: ALL_TYPES,
+    dailyTrialCredits: 120,
+    monthlySubscriptionCredits: 5500,
   },
   team: {
-    maxConcurrent: 5,
+    maxConcurrent: 10,
     allowedTypes: ALL_TYPES,
-    dailyCredits: 0,
-    monthlyCredits: 10000,
+    dailyTrialCredits: 120,
+    monthlySubscriptionCredits: 6000,
   },
 };
 
@@ -44,11 +44,20 @@ export function getPlanConfig(plan: string): PlanLimits {
   return PLAN_CONFIG[plan] || PLAN_CONFIG.free;
 }
 
-// ---- User management ----
+// ── Helpers ──
 
 function today(): string {
   return new Date().toISOString().split('T')[0];
 }
+
+// Total available credits across all buckets
+function totalCredits(user: { signupBonusCredits: number; dailyTrialCredits: number; subscriptionCredits: number; generalCredits: number; rewardCredits: number; credits: number }): number {
+  return user.dailyTrialCredits + user.signupBonusCredits + user.subscriptionCredits + user.generalCredits + user.rewardCredits + user.credits;
+}
+
+// ── User management with daily trial grant ──
+
+const SIGNUP_BONUS = 500;
 
 export async function getOrCreateUser(userId: string) {
   let user = await prisma.user.findUnique({ where: { id: userId } });
@@ -58,7 +67,13 @@ export async function getOrCreateUser(userId: string) {
     user = await prisma.user.create({
       data: {
         id: userId,
-        credits: config.dailyCredits,
+        credits: 0,
+        signupBonusCredits: SIGNUP_BONUS,
+        dailyTrialCredits: config.dailyTrialCredits,
+        subscriptionCredits: 0,
+        generalCredits: 0,
+        rewardCredits: 0,
+        dailyCreditsGrantedAt: today(),
         plan: 'free',
         dailyTaskCount: 0,
         dailyResetDate: today(),
@@ -66,7 +81,7 @@ export async function getOrCreateUser(userId: string) {
     });
   }
 
-  // Check subscription expiry: downgrade to free if expired
+  // Check subscription expiry
   if (user.plan !== 'free' && user.expireAt && user.expireAt < new Date()) {
     user = await prisma.user.update({
       where: { id: userId },
@@ -74,21 +89,20 @@ export async function getOrCreateUser(userId: string) {
     });
   }
 
-  // Daily reset for free plan — only reset task count, NOT credits
-  // Credits are managed separately (purchases persist across days)
-  if (user.plan === 'free' && user.dailyResetDate !== today()) {
+  // Daily reset — grant daily trial credits if new day
+  const config = getPlanConfig(user.plan);
+  if (user.dailyCreditsGrantedAt !== today()) {
     user = await prisma.user.update({
       where: { id: userId },
       data: {
+        dailyTrialCredits: config.dailyTrialCredits,
+        dailyCreditsGrantedAt: today(),
         dailyTaskCount: 0,
         dailyResetDate: today(),
-        // Do NOT reset credits here — credits persist
       },
     });
-  }
-
-  // Non-free: just reset daily count
-  if (user.plan !== 'free' && user.dailyResetDate !== today()) {
+  } else if (user.dailyResetDate !== today()) {
+    // Legacy compat: reset task count even if daily credits already granted
     user = await prisma.user.update({
       where: { id: userId },
       data: { dailyTaskCount: 0, dailyResetDate: today() },
@@ -98,7 +112,7 @@ export async function getOrCreateUser(userId: string) {
   return user;
 }
 
-// ---- Credits + capability check ----
+// ── Credits + capability check ──
 
 export function getEstimatedCost(taskType: TaskType | string): number {
   return estimateCost(taskType);
@@ -124,11 +138,12 @@ export async function checkCredits(userId: string, taskType: TaskType | string):
     };
   }
 
-  // Credits check
-  if (user.credits < cost) {
+  // Credits check — total across all buckets
+  const total = totalCredits(user);
+  if (total < cost) {
     return {
       allowed: false,
-      reason: `额度不足（需要 ${cost}，剩余 ${user.credits}），请充值`,
+      reason: `积分不足（需要 ${cost}，剩余 ${total}），请充值`,
       estimatedCost: cost,
     };
   }
@@ -136,7 +151,7 @@ export async function checkCredits(userId: string, taskType: TaskType | string):
   return { allowed: true, estimatedCost: cost };
 }
 
-// ---- Per-user concurrency check ----
+// ── Per-user concurrency check ──
 
 export async function checkUserConcurrency(userId: string): Promise<boolean> {
   const user = await getOrCreateUser(userId);
@@ -153,10 +168,71 @@ export async function checkUserConcurrency(userId: string): Promise<boolean> {
   return running < config.maxConcurrent;
 }
 
-// ---- Deduct credits (idempotent) ----
+// ── Five-level credit consumption ──
+// Order: dailyTrialCredits → signupBonusCredits → subscriptionCredits → generalCredits → rewardCredits
 
-// Charge credits — atomic, idempotent via charged flag.
-// Call BEFORE execution starts (in worker, not in completeTask).
+export interface ConsumeResult {
+  success: boolean;
+  totalDeducted: number;
+  breakdown: {
+    dailyTrial: number;
+    signupBonus: number;
+    subscription: number;
+    general: number;
+    reward: number;
+    legacy: number;
+  };
+  remaining: {
+    dailyTrial: number;
+    signupBonus: number;
+    subscription: number;
+    general: number;
+    reward: number;
+    legacy: number;
+  };
+}
+
+function consumeFromBuckets(
+  amount: number,
+  buckets: { dailyTrial: number; signupBonus: number; subscription: number; general: number; reward: number; legacy: number }
+): ConsumeResult {
+  let remaining = amount;
+  const deducted = { dailyTrial: 0, signupBonus: 0, subscription: 0, general: 0, reward: 0, legacy: 0 };
+
+  // 1. Daily trial credits
+  const d1 = Math.min(remaining, buckets.dailyTrial);
+  deducted.dailyTrial = d1; buckets.dailyTrial -= d1; remaining -= d1;
+
+  // 2. Signup bonus
+  const d2 = Math.min(remaining, buckets.signupBonus);
+  deducted.signupBonus = d2; buckets.signupBonus -= d2; remaining -= d2;
+
+  // 3. Subscription credits
+  const d3 = Math.min(remaining, buckets.subscription);
+  deducted.subscription = d3; buckets.subscription -= d3; remaining -= d3;
+
+  // 4. General credits
+  const d4 = Math.min(remaining, buckets.general);
+  deducted.general = d4; buckets.general -= d4; remaining -= d4;
+
+  // 5. Reward credits
+  const d5 = Math.min(remaining, buckets.reward);
+  deducted.reward = d5; buckets.reward -= d5; remaining -= d5;
+
+  // 6. Legacy credits (fallback for old users who still have mixed credits)
+  const d6 = Math.min(remaining, buckets.legacy);
+  deducted.legacy = d6; buckets.legacy -= d6; remaining -= d6;
+
+  return {
+    success: remaining === 0,
+    totalDeducted: amount - remaining,
+    breakdown: deducted,
+    remaining: { ...buckets },
+  };
+}
+
+// ── Charge credits (idempotent, five-level) ──
+
 export async function chargeCredits(userId: string, taskId: string, taskType: TaskType | string): Promise<number> {
   // Idempotency: check charged flag
   const task = await prisma.task.findUnique({ where: { id: taskId } });
@@ -167,41 +243,61 @@ export async function chargeCredits(userId: string, taskId: string, taskType: Ta
   }
 
   const user = await getOrCreateUser(userId);
-  const calculatedCost = Math.min(estimateCost(taskType), user.credits);
+  const calculatedCost = estimateCost(taskType);
 
-  // Deduct from user + mark task as charged in one go
+  // Five-level consumption
+  const result = consumeFromBuckets(calculatedCost, {
+    dailyTrial: user.dailyTrialCredits,
+    signupBonus: user.signupBonusCredits,
+    subscription: user.subscriptionCredits,
+    general: user.generalCredits,
+    reward: user.rewardCredits,
+    legacy: user.credits,
+  });
+
+  if (!result.success) {
+    // Not enough across all buckets — charge what we can
+    console.warn(`[BILLING] Insufficient credits for task ${taskId}: needed ${calculatedCost}, available ${result.totalDeducted}`);
+  }
+
+  // Update user balances
   await prisma.user.update({
     where: { id: userId },
     data: {
-      credits: Math.max(0, user.credits - calculatedCost),
+      dailyTrialCredits: result.remaining.dailyTrial,
+      signupBonusCredits: result.remaining.signupBonus,
+      subscriptionCredits: result.remaining.subscription,
+      generalCredits: result.remaining.general,
+      rewardCredits: result.remaining.reward,
+      credits: result.remaining.legacy,
       dailyTaskCount: user.dailyTaskCount + 1,
     },
   });
 
+  // Mark task as charged
   await prisma.task.update({
     where: { id: taskId },
     data: {
       charged: true,
-      cost: calculatedCost,
-      actualCost: calculatedCost,
+      cost: result.totalDeducted,
+      actualCost: result.totalDeducted,
     },
   });
 
-  console.log(`[BILLING] Charged ${calculatedCost} credits for task ${taskId}`);
-  return calculatedCost;
+  console.log(`[BILLING] Charged ${result.totalDeducted} for task ${taskId} (daily:${result.breakdown.dailyTrial} signup:${result.breakdown.signupBonus} sub:${result.breakdown.subscription} gen:${result.breakdown.general} reward:${result.breakdown.reward} legacy:${result.breakdown.legacy})`);
+  return result.totalDeducted;
 }
 
 // Legacy alias
 export const deductCredits = chargeCredits;
 
-// ---- Unified billing gateway ----
-// ALL task execution MUST go through this. No bypass allowed.
+// ── Billing gateway ──
 
 export class InsufficientCreditsError extends Error {
   required: number;
   current: number;
   constructor(required: number, current: number) {
-    super(`额度不足（需要 ${required}，剩余 ${current}），请充值`);
+    super(`积分不足（需要 ${required}，剩余 ${current}），请充值`);
     this.required = required;
     this.current = current;
   }
@@ -213,44 +309,48 @@ export async function executeWithBilling<T>(
   taskType: TaskType | string,
   fn: () => Promise<T>
 ): Promise<T> {
-  // 1. Check credits
   const user = await getOrCreateUser(userId);
   const cost = estimateCost(taskType);
+  const total = totalCredits(user);
 
-  if (user.credits < cost) {
-    throw new InsufficientCreditsError(cost, user.credits);
+  if (total < cost) {
+    throw new InsufficientCreditsError(cost, total);
   }
 
-  // 2. Charge FIRST (pre-pay model)
   await chargeCredits(userId, taskId, taskType);
-
-  // 3. Execute
   return fn();
 }
 
-// ---- Credits management ----
+// ── Credits management ──
 
 export async function addCredits(userId: string, amount: number) {
+  // New purchases go to generalCredits
   const user = await getOrCreateUser(userId);
   return prisma.user.update({
     where: { id: userId },
-    data: { credits: user.credits + amount },
+    data: { generalCredits: user.generalCredits + amount },
   });
 }
 
 export async function getUserStatus(userId: string) {
   const user = await getOrCreateUser(userId);
   const config = getPlanConfig(user.plan);
+  const total = totalCredits(user);
   return {
     id: user.id,
-    credits: user.credits,
+    credits: total, // Total for backward compat
+    signupBonusCredits: user.signupBonusCredits,
+    dailyTrialCredits: user.dailyTrialCredits,
+    subscriptionCredits: user.subscriptionCredits,
+    generalCredits: user.generalCredits,
+    rewardCredits: user.rewardCredits,
     plan: user.plan,
     expireAt: user.expireAt?.toISOString() || null,
     limits: {
       maxConcurrent: config.maxConcurrent,
       allowedTypes: config.allowedTypes,
-      dailyCredits: config.dailyCredits,
-      monthlyCredits: config.monthlyCredits,
+      dailyTrialCredits: config.dailyTrialCredits,
+      monthlySubscriptionCredits: config.monthlySubscriptionCredits,
     },
   };
 }
