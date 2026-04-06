@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createSession } from '@/lib/auth'
+import { getPlanConfig } from '@/services/billing'
+
+const SIGNUP_BONUS = 500;
+
+function today(): string {
+  return new Date().toISOString().split('T')[0];
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,11 +41,22 @@ export async function POST(req: NextRequest) {
     // 查找或创建用户
     let user = await prisma.user.findUnique({ where: { email } })
     if (!user) {
+      const config = getPlanConfig('free');
       user = await prisma.user.create({
         data: {
           email,
           emailVerified: true,
           name: email.split('@')[0],
+          credits: 0,
+          signupBonusCredits: SIGNUP_BONUS,
+          dailyTrialCredits: config.dailyTrialCredits,
+          subscriptionCredits: 0,
+          generalCredits: 0,
+          rewardCredits: 0,
+          dailyCreditsGrantedAt: today(),
+          plan: 'free',
+          dailyTaskCount: 0,
+          dailyResetDate: today(),
         },
       })
     } else if (!user.emailVerified) {
@@ -57,7 +75,12 @@ export async function POST(req: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
-        credits: user.credits,
+        credits: user.credits + user.signupBonusCredits + user.dailyTrialCredits + user.subscriptionCredits + user.generalCredits + user.rewardCredits,
+        signupBonusCredits: user.signupBonusCredits,
+        dailyTrialCredits: user.dailyTrialCredits,
+        subscriptionCredits: user.subscriptionCredits,
+        generalCredits: user.generalCredits,
+        rewardCredits: user.rewardCredits,
         plan: user.plan,
       },
     })
