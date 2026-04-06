@@ -50,6 +50,7 @@ function LoginPageInner() {
       setError('Google 登录暂未配置，请使用邮箱验证码登录');
       return;
     }
+    const stateObj = redirectUrl ? { redirect: redirectUrl } : {};
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: `${appUrl}/api/auth/google`,
@@ -57,6 +58,7 @@ function LoginPageInner() {
       scope: 'openid email profile',
       access_type: 'offline',
       prompt: 'select_account',
+      ...(Object.keys(stateObj).length > 0 ? { state: encodeURIComponent(JSON.stringify(stateObj)) } : {}),
     });
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
   }

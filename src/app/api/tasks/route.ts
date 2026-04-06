@@ -27,6 +27,18 @@ startMediaJobPoller(10_000);
 
 const lastSubmitByIp = new Map<string, number>();
 const RATE_LIMIT_MS = 2000;
+const RATE_LIMIT_MAX_ENTRIES = 10000;
+
+// Periodic cleanup to prevent unbounded memory growth
+function pruneRateLimitMap() {
+  if (lastSubmitByIp.size <= RATE_LIMIT_MAX_ENTRIES) return;
+  const cutoff = Date.now() - 60_000; // Remove entries older than 1 minute
+  for (const [ip, ts] of lastSubmitByIp) {
+    if (ts < cutoff) lastSubmitByIp.delete(ip);
+  }
+  // If still too large, clear entirely (safety valve)
+  if (lastSubmitByIp.size > RATE_LIMIT_MAX_ENTRIES) lastSubmitByIp.clear();
+}
 const ACTIVE_STATUSES = ['pending', 'queued', 'understanding', 'structuring', 'interacting', 'executing'];
 const MAX_ACTIVE_TASKS = 20; // Preview mode: higher limit per user
 
@@ -45,6 +57,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '请求过于频繁，请稍后再试' }, { status: 429 });
     }
     lastSubmitByIp.set(ip, now);
+    pruneRateLimitMap();
 
     const body: CreateTaskRequest = await req.json();
     if (!body.input?.trim()) {

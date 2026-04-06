@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createSession } from '@/lib/auth'
+import { getPlanConfig } from '@/services/billing'
+
+const SIGNUP_BONUS = 500;
+
+function today(): string {
+  return new Date().toISOString().split('T')[0];
+}
 
 // Google OAuth 配置（在 .env 中设置）
 // GOOGLE_CLIENT_ID=your_client_id
@@ -71,6 +78,7 @@ export async function GET(req: NextRequest) {
     })
 
     if (!user) {
+      const config = getPlanConfig('free');
       user = await prisma.user.create({
         data: {
           googleId: googleUser.id,
@@ -78,6 +86,16 @@ export async function GET(req: NextRequest) {
           emailVerified: true,
           name: googleUser.name || googleUser.email.split('@')[0],
           avatarUrl: googleUser.picture,
+          credits: 0,
+          signupBonusCredits: SIGNUP_BONUS,
+          dailyTrialCredits: config.dailyTrialCredits,
+          subscriptionCredits: 0,
+          generalCredits: 0,
+          rewardCredits: 0,
+          dailyCreditsGrantedAt: today(),
+          plan: 'free',
+          dailyTaskCount: 0,
+          dailyResetDate: today(),
         },
       })
     } else if (!user.googleId) {
@@ -95,7 +113,16 @@ export async function GET(req: NextRequest) {
     // 4. 创建 session
     const token = await createSession(user.id)
 
-    const response = NextResponse.redirect(new URL('/agent', appUrl))
+    // Honor redirect from state param or default to /agent
+    const state = searchParams.get('state')
+    let redirectTo = '/agent'
+    if (state) {
+      try {
+        const decoded = JSON.parse(decodeURIComponent(state))
+        if (decoded.redirect && decoded.redirect.startsWith('/')) redirectTo = decoded.redirect
+      } catch { /* ignore malformed state */ }
+    }
+    const response = NextResponse.redirect(new URL(redirectTo, appUrl))
 
     response.cookies.set('ob-session', token, {
       httpOnly: true,
