@@ -25,11 +25,12 @@ export function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // 检查 session cookie（新版）或 ob-user-id（旧版兼容）
+  // 检查 session cookie（新版）、ob-user-id（旧版兼容）、x-user-id（内部调用）
   const sessionToken = req.cookies.get('ob-session')?.value
   const legacyUserId = req.cookies.get('ob-user-id')?.value
+  const headerUserId = req.headers.get('x-user-id')
 
-  if (!sessionToken && !legacyUserId) {
+  if (!sessionToken && !legacyUserId && !headerUserId) {
     // 未登录：API 返回 401，页面跳转到 /login
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: '未登录' }, { status: 401 })

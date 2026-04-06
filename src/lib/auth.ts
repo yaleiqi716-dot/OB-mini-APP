@@ -64,8 +64,16 @@ export async function deleteSession(token: string) {
 // ─── 从请求中获取 userId（兼容新旧两种认证方式）────────────────────────────────
 
 export async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
+  // Priority 1: internal x-user-id header
+  const headerUserId = req.headers.get('x-user-id')
+  if (headerUserId) return headerUserId
+
+  // Priority 2: ob-session token → Session → userId
   const user = await getSessionUser(req)
-  return user?.id ?? null
+  if (user?.id) return user.id
+
+  // Priority 3: legacy ob-user-id cookie
+  return req.cookies.get('ob-user-id')?.value ?? null
 }
 
 // ─── 生成 6 位验证码 ─────────────────────────────────────────────────────────
