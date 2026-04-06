@@ -10,9 +10,22 @@ interface Product {
   label: string;
   amount: number;
   amountLabel: string;
-  credits: number;
+  // Subscription fields
   plan?: string;
+  credits?: number;
+  dailyTrialCredits?: number;
   durationDays?: number;
+  concurrency?: number;
+  scheduledTasks?: number;
+  features?: string[];
+  description?: string;
+  recommended?: boolean;
+  teamPerSeat?: boolean;
+  // Credits fields
+  baseCredits?: number;
+  bonusCredits?: number;
+  totalCredits?: number;
+  displayLabel?: string;
 }
 
 interface UserStatus {
@@ -228,8 +241,8 @@ export default function BillingPage() {
             <div style={{ marginBottom: 24 }}>
               <p style={{ fontSize: 17, fontWeight: 600, color: '#E0D8D0', margin: '0 0 14px' }}>订阅套餐</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                {subs.map((p, idx) => {
-                  const isRecommended = idx === 1; // Pro = middle tier
+                {subs.map((p) => {
+                  const isRecommended = p.recommended;
                   return (
                   <div key={p.code} className={isRecommended ? 'ob-tier-recommended' : ''} style={{
                     background: '#252321', border: isRecommended ? undefined : '1px solid rgba(255,255,255,0.04)', borderRadius: 16,
@@ -240,11 +253,13 @@ export default function BillingPage() {
                     onMouseLeave={e => { if (!isRecommended) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.boxShadow = 'none'; }}
                   >
                     {isRecommended && <span className="ob-tier-badge">推荐</span>}
-                    <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 600, color: '#E0D8D0', margin: '0 0 8px', textTransform: 'uppercase' as const, letterSpacing: '1.5px' }}>{p.label}</p>
+                    <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 600, color: '#E0D8D0', margin: '0 0 4px', textTransform: 'uppercase' as const, letterSpacing: '1.5px' }}>{p.label}</p>
+                    <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.45)', margin: '0 0 10px' }}>{p.description}{p.teamPerSeat ? ' · 按人/月' : ''}</p>
                     <p style={{ fontSize: 28, fontWeight: 700, color: '#FF3D00', margin: '0 0 4px' }}>
-                      {p.amountLabel}<span style={{ fontSize: 13, fontWeight: 400, color: 'rgba(224,216,208,0.55)' }}>/月</span>
+                      {p.amountLabel}<span style={{ fontSize: 13, fontWeight: 400, color: 'rgba(224,216,208,0.45)' }}>{p.teamPerSeat ? '/人/月' : '/月'}</span>
                     </p>
-                    <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: '#8A8078', margin: '0 0 16px' }}>{p.credits} CREDITS · {p.durationDays}D</p>
+                    <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: '#8A8078', margin: '0 0 4px' }}>{p.credits} 订阅积分/月 · {p.dailyTrialCredits} 体验赠额/日</p>
+                    <p style={{ fontSize: 11, color: 'rgba(224,216,208,0.35)', margin: '0 0 12px' }}>{p.concurrency} 并发 · {p.scheduledTasks} 定时任务</p>
                     <button
                       onClick={() => handleBuy(p.code)}
                       disabled={!!buying}
@@ -269,7 +284,8 @@ export default function BillingPage() {
           {/* Credits packs */}
           {creds.length > 0 && (
             <div>
-              <p style={{ fontSize: 17, fontWeight: 600, color: '#E0D8D0', margin: '0 0 14px' }}>额度补给包</p>
+              <p style={{ fontSize: 17, fontWeight: 600, color: '#E0D8D0', margin: '0 0 6px' }}>通用积分包</p>
+              <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.35)', margin: '0 0 14px' }}>用于重任务、超额使用和临时补量</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                 {creds.map(p => (
                   <div key={p.code} style={{
@@ -280,9 +296,9 @@ export default function BillingPage() {
                     onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,61,0,0.3)')}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')}
                   >
-                    <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 600, color: '#E0D8D0', margin: '0 0 8px', textTransform: 'uppercase' as const, letterSpacing: '1.5px' }}>{p.label}</p>
                     <p style={{ fontSize: 28, fontWeight: 700, color: '#E0D8D0', margin: '0 0 4px' }}>{p.amountLabel}</p>
-                    <p style={{ fontSize: 13, color: 'rgba(224,216,208,0.28)', margin: '0 0 16px' }}>+{p.credits} 额度</p>
+                    <p style={{ fontSize: 13, color: 'rgba(224,216,208,0.45)', margin: '0 0 4px' }}>{p.displayLabel || `+${p.totalCredits} 通用积分`}</p>
+                    {(p.bonusCredits ?? 0) > 0 && <p style={{ fontSize: 11, color: '#FF3D00', margin: '0 0 12px' }}>含赠送 {p.bonusCredits}</p>}
                     <button
                       onClick={() => handleBuy(p.code)}
                       disabled={!!buying}

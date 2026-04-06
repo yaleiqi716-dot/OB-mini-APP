@@ -162,9 +162,9 @@ export default function AccountPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
             {/* Credits */}
             <div style={{ ...cardStyle, height: 104, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <p style={{ fontSize: 13, color: '#888888', margin: '0 0 6px' }}>月度额度</p>
+              <p style={{ fontSize: 13, color: '#888888', margin: '0 0 6px' }}>可用积分</p>
               <p style={{ fontSize: 24, fontWeight: 650, color: '#F5F5F5', margin: '0 0 4px', lineHeight: 1 }}>{credits}</p>
-              <p style={{ fontSize: 12, color: '#888888', margin: 0 }}>剩余可用 credits</p>
+              <p style={{ fontSize: 12, color: '#888888', margin: 0 }}>订阅积分 + 通用积分</p>
             </div>
 
             {/* Permissions */}
