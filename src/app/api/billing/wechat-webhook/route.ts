@@ -78,6 +78,11 @@ export async function POST(req: NextRequest) {
       if (order!.productType === 'subscription' && product && product.type === 'subscription') {
         const subProduct = product as SubscriptionProduct;
         const now = new Date();
+        const periodStart = now;
+        const periodEnd = new Date(now);
+        periodEnd.setDate(periodEnd.getDate() + subProduct.durationDays);
+
+        // expireAt extends from current expiry if still valid, else from now
         const baseDate = user.expireAt && user.expireAt > now ? user.expireAt : now;
         const expireAt = new Date(baseDate);
         expireAt.setDate(expireAt.getDate() + subProduct.durationDays);
@@ -87,11 +92,19 @@ export async function POST(req: NextRequest) {
           data: {
             plan: subProduct.plan,
             expireAt,
-            subscriptionCredits: (user.subscriptionCredits || 0) + subProduct.credits,
+            currentPeriodStart: periodStart,
+            currentPeriodEnd: periodEnd,
+            // Reset subscription credits to new plan allowance (no carryover)
+            subscriptionCredits: subProduct.credits,
+            subscriptionResetAt: periodStart.toISOString().split('T')[0],
+            // Clear cancel/downgrade flags on renewal
+            cancelAtPeriodEnd: false,
+            canceledAt: null,
+            pendingPlan: null,
           },
         });
 
-        console.log(`[WECHAT_WEBHOOK] Subscription: ${order!.userId} → ${subProduct.plan}, +${subProduct.credits}cr, expires ${expireAt.toISOString()}`);
+        console.log(`[WECHAT_WEBHOOK] Subscription: ${order!.userId} → ${subProduct.plan}, ${subProduct.credits}cr (reset), period ${periodStart.toISOString()} → ${periodEnd.toISOString()}`);
       } else {
         // Credits purchase
         await tx.user.update({

@@ -15,6 +15,10 @@ interface UserStatus {
   rewardCredits: number;
   plan: string;
   expireAt: string | null;
+  cancelAtPeriodEnd: boolean;
+  canceledAt: string | null;
+  pendingPlan: string | null;
+  currentPeriodEnd: string | null;
   limits: {
     maxConcurrent: number;
     allowedTypes: string[];
@@ -102,6 +106,8 @@ export default function AccountPage() {
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+  const [subActing, setSubActing] = useState(false);
+  const [showDowngrade, setShowDowngrade] = useState(false);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -124,6 +130,30 @@ export default function AccountPage() {
     document.cookie = 'ob-user-id=; path=/; max-age=0';
     document.cookie = 'ob-session=; path=/; max-age=0';
     router.replace('/login');
+  }
+
+  function refreshUser() {
+    fetch('/api/user').then(r => r.json()).then(u => {
+      if (u && u.credits !== undefined) setUser(u);
+    }).catch(() => {});
+  }
+
+  async function subAction(action: string, targetPlan?: string) {
+    if (subActing) return;
+    setSubActing(true);
+    try {
+      const res = await fetch('/api/billing/subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, targetPlan }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error || '操作失败'); return; }
+      showToast(data.message);
+      refreshUser();
+      setShowDowngrade(false);
+    } catch { showToast('网络错误'); }
+    finally { setSubActing(false); }
   }
 
   // Derive display values
@@ -320,16 +350,129 @@ export default function AccountPage() {
                 </div>
               ))}
             </div>
-            {plan !== 'free' && user?.expireAt && (
-              <p style={{ fontSize: 12, color: '#888888', margin: '12px 0 0' }}>
-                当前周期到期：{new Date(user.expireAt).toLocaleDateString('zh-CN')}
-              </p>
+
+            {/* Subscription lifecycle status */}
+            {plan !== 'free' && (
+              <div style={{ marginTop: 16, padding: '12px 14px', background: '#1E1C1A', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
+                {user?.currentPeriodEnd && (
+                  <p style={{ fontSize: 12, color: '#888888', margin: '0 0 4px' }}>
+                    当前周期到期：{new Date(user.currentPeriodEnd).toLocaleDateString('zh-CN')}
+                  </p>
+                )}
+                {!user?.currentPeriodEnd && user?.expireAt && (
+                  <p style={{ fontSize: 12, color: '#888888', margin: '0 0 4px' }}>
+                    订阅到期：{new Date(user.expireAt).toLocaleDateString('zh-CN')}
+                  </p>
+                )}
+
+                {/* Cancel status */}
+                {user?.cancelAtPeriodEnd && (
+                  <p style={{ fontSize: 13, color: '#D97706', margin: '4px 0', fontWeight: 500 }}>
+                    已设置到期取消 — 到期后将降为 Free
+                  </p>
+                )}
+
+                {/* Pending downgrade status */}
+                {user?.pendingPlan && !user?.cancelAtPeriodEnd && (
+                  <p style={{ fontSize: 13, color: '#D97706', margin: '4px 0', fontWeight: 500 }}>
+                    已设置到期降级为 {(PLAN_DISPLAY[user.pendingPlan] || { label: user.pendingPlan }).label}
+                  </p>
+                )}
+
+                {/* Info note */}
+                {(user?.cancelAtPeriodEnd || user?.pendingPlan) && (
+                  <p style={{ fontSize: 11, color: '#666666', margin: '4px 0 0' }}>
+                    当前周期内仍可正常使用全部权益，通用积分不受影响
+                  </p>
+                )}
+              </div>
             )}
-            <div style={{ marginTop: 16 }}>
+
+            {/* Action buttons */}
+            <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <a href="/billing" style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
-                {plan === 'free' ? '升级套餐' : '管理订阅'}
+                {plan === 'free' ? '升级套餐' : '续费 / 升级'}
               </a>
+
+              {plan !== 'free' && !user?.cancelAtPeriodEnd && !user?.pendingPlan && (
+                <>
+                  <button
+                    onClick={() => { if (confirm('确定要在到期后取消订阅吗？当前周期内权益不受影响。')) subAction('cancel'); }}
+                    disabled={subActing}
+                    style={{ ...actionBtnStyle, color: '#B91C1C', borderColor: 'rgba(185,28,28,0.18)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.06)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#252321'; }}
+                  >
+                    取消订阅
+                  </button>
+                  {/* Downgrade: only show if plan > basic */}
+                  {(['pro', 'team'].includes(plan)) && (
+                    <button
+                      onClick={() => setShowDowngrade(!showDowngrade)}
+                      style={actionBtnStyle}
+                      onMouseEnter={hoverIn} onMouseLeave={hoverOut}
+                    >
+                      降级套餐
+                    </button>
+                  )}
+                </>
+              )}
+
+              {/* Undo cancel */}
+              {user?.cancelAtPeriodEnd && (
+                <button
+                  onClick={() => subAction('undo_cancel')}
+                  disabled={subActing}
+                  style={actionBtnStyle}
+                  onMouseEnter={hoverIn} onMouseLeave={hoverOut}
+                >
+                  撤销取消
+                </button>
+              )}
+
+              {/* Undo downgrade */}
+              {user?.pendingPlan && !user?.cancelAtPeriodEnd && (
+                <button
+                  onClick={() => subAction('undo_downgrade')}
+                  disabled={subActing}
+                  style={actionBtnStyle}
+                  onMouseEnter={hoverIn} onMouseLeave={hoverOut}
+                >
+                  撤销降级
+                </button>
+              )}
             </div>
+
+            {/* Downgrade target picker */}
+            {showDowngrade && plan !== 'free' && (
+              <div style={{ marginTop: 12, padding: '12px 14px', background: '#1E1C1A', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
+                <p style={{ fontSize: 12, color: '#888888', margin: '0 0 8px' }}>选择到期后的目标套餐：</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {(['free', 'basic', 'pro'] as const)
+                    .filter(p => {
+                      const PLAN_ORDER = ['free', 'basic', 'pro', 'team'];
+                      return PLAN_ORDER.indexOf(p) < PLAN_ORDER.indexOf(plan);
+                    })
+                    .map(target => (
+                      <button
+                        key={target}
+                        onClick={() => {
+                          if (target === 'free') {
+                            if (confirm('确定要在到期后取消订阅（降为 Free）吗？')) subAction('cancel');
+                          } else {
+                            if (confirm(`确定要在到期后降级为 ${PLAN_DISPLAY[target].label} 吗？当前周期内权益不受影响。`)) subAction('downgrade', target);
+                          }
+                        }}
+                        disabled={subActing}
+                        style={{ ...actionBtnStyle, fontSize: 13 }}
+                        onMouseEnter={hoverIn} onMouseLeave={hoverOut}
+                      >
+                        {PLAN_DISPLAY[target].label} {target === 'free' ? '（取消订阅）' : `(${PLAN_DISPLAY[target].price})`}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── Recent orders ── */}

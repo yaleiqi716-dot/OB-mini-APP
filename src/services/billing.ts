@@ -81,15 +81,82 @@ export async function getOrCreateUser(userId: string) {
     });
   }
 
-  // Check subscription expiry
-  if (user.plan !== 'free' && user.expireAt && user.expireAt < new Date()) {
-    user = await prisma.user.update({
-      where: { id: userId },
-      data: { plan: 'free', expireAt: null },
-    });
+  // ── Subscription period check ──
+  // Uses currentPeriodEnd (set by webhook) or falls back to expireAt
+  const now = new Date();
+  const periodEnd = user.currentPeriodEnd || user.expireAt;
+
+  if (user.plan !== 'free' && periodEnd && periodEnd < now) {
+    // Period has ended — determine what happens next
+    if (user.cancelAtPeriodEnd) {
+      // User cancelled: downgrade to free, clear subscription state
+      user = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          plan: 'free',
+          expireAt: null,
+          currentPeriodStart: null,
+          currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
+          canceledAt: null,
+          pendingPlan: null,
+          subscriptionCredits: 0,
+          subscriptionResetAt: today(),
+        },
+      });
+      console.log(`[BILLING] Subscription cancelled for ${userId}, downgraded to free`);
+    } else if (user.pendingPlan) {
+      // User requested downgrade: switch to target plan
+      const targetConfig = getPlanConfig(user.pendingPlan);
+      user = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          plan: user.pendingPlan,
+          pendingPlan: null,
+          // Note: user still needs to pay for the new plan — expireAt stays as-is
+          // If they don't renew, next period check will downgrade to free
+          subscriptionCredits: 0, // Reset, new credits come with next payment
+          subscriptionResetAt: today(),
+        },
+      });
+      console.log(`[BILLING] Downgraded ${userId} to ${user.plan}`);
+    } else {
+      // Normal expiry without cancel/downgrade: just downgrade to free
+      // (User didn't renew)
+      user = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          plan: 'free',
+          expireAt: null,
+          currentPeriodStart: null,
+          currentPeriodEnd: null,
+          subscriptionCredits: 0,
+          subscriptionResetAt: today(),
+        },
+      });
+      console.log(`[BILLING] Subscription expired for ${userId}, downgraded to free`);
+    }
   }
 
-  // Daily reset — grant daily trial credits if new day
+  // ── Subscription credits monthly reset (for active subscribers) ──
+  // If user is on a paid plan and we haven't reset this period yet
+  if (user.plan !== 'free' && user.currentPeriodStart) {
+    const periodStartStr = user.currentPeriodStart.toISOString().split('T')[0];
+    if (user.subscriptionResetAt !== periodStartStr) {
+      // New period started — reset subscription credits to plan allowance
+      const planConfig = getPlanConfig(user.plan);
+      user = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          subscriptionCredits: planConfig.monthlySubscriptionCredits,
+          subscriptionResetAt: periodStartStr,
+        },
+      });
+      console.log(`[BILLING] Reset subscription credits for ${userId}: ${planConfig.monthlySubscriptionCredits}`);
+    }
+  }
+
+  // ── Daily reset — grant daily trial credits if new day ──
   const config = getPlanConfig(user.plan);
   if (user.dailyCreditsGrantedAt !== today()) {
     user = await prisma.user.update({
@@ -102,7 +169,6 @@ export async function getOrCreateUser(userId: string) {
       },
     });
   } else if (user.dailyResetDate !== today()) {
-    // Legacy compat: reset task count even if daily credits already granted
     user = await prisma.user.update({
       where: { id: userId },
       data: { dailyTaskCount: 0, dailyResetDate: today() },
@@ -346,6 +412,10 @@ export async function getUserStatus(userId: string) {
     rewardCredits: user.rewardCredits,
     plan: user.plan,
     expireAt: user.expireAt?.toISOString() || null,
+    cancelAtPeriodEnd: user.cancelAtPeriodEnd,
+    canceledAt: user.canceledAt?.toISOString() || null,
+    pendingPlan: user.pendingPlan,
+    currentPeriodEnd: user.currentPeriodEnd?.toISOString() || null,
     limits: {
       maxConcurrent: config.maxConcurrent,
       allowedTypes: config.allowedTypes,

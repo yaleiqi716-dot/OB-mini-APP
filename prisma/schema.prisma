@@ -23,6 +23,12 @@ model User {
   dailyCreditsGrantedAt String  @default("")      // Date string for daily grant tracking
   plan                 String   @default("free")
   expireAt             DateTime?
+  cancelAtPeriodEnd    Boolean  @default(false)   // User requested cancel at period end
+  canceledAt           DateTime?                  // When user clicked cancel
+  pendingPlan          String?                    // Downgrade target plan (null = no change)
+  currentPeriodStart   DateTime?                  // Start of current billing period
+  currentPeriodEnd     DateTime?                  // End of current billing period
+  subscriptionResetAt  String   @default("")      // Date string: last subscription credits reset
   dailyTaskCount       Int      @default(0)
   dailyResetDate       String   @default("")
   createdAt      DateTime @default(now())
