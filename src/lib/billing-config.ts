@@ -75,8 +75,8 @@ export const SUBSCRIPTION_PRODUCTS: SubscriptionProduct[] = [
     durationDays: 30,
     concurrency: 10,
     scheduledTasks: 15,
-    features: ['完整团队协作能力', '成员邀请 / 分配 / 审核', '评论 / 通知', '管理员视角', '团队共享积分池'],
-    description: '适合老板和团队协作闭环',
+    features: ['完整团队协作权限', '成员邀请 / 任务分配', '审核 / 评论 / 通知', '管理员视角', '每位成员独立积分', '老板可发奖励积分'],
+    description: '适合老板和团队协作闭环，每位成员拥有独立积分，支持奖励机制',
     teamPerSeat: true,
   },
 ];
@@ -136,5 +136,19 @@ export const FREE_TIER = {
   description: '先体验 ORANGEBENCH 的基础能力',
 };
 
+// ── Credit types (5 types) ──
+// 1. 每日体验赠额 — 每日刷新，不结转，仅限轻任务
+// 2. 新人赠送 — 注册即送，用完为止
+// 3. 订阅积分 — 每月发放，不结转
+// 4. 通用积分 — 购买到账，有效期内持续可用
+// 5. 奖励积分 — 老板/管理员发放，员工可使用，未来可转赠/折现
+
 // ── Credit consumption order ──
-// 每日体验赠额 → 新人赠送 → 订阅积分 → 通用积分
+// 每日体验赠额 → 新人赠送 → 订阅积分 → 通用积分 → 奖励积分
+
+// ── Reward credits rules (future implementation) ──
+// - 由老板或管理员发放
+// - 员工可用于任务执行
+// - 未来可支持转赠
+// - 未来可按 8 折折现
+// - 赠送积分不可转赠、不可折现

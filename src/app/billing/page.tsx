@@ -316,6 +316,29 @@ export default function BillingPage() {
               </div>
             </div>
           )}
+
+          {/* Credit rules FAQ */}
+          <div style={{ marginTop: 32, padding: '24px 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+            <p style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: '#8A8078', letterSpacing: '1.5px', textTransform: 'uppercase' as const, margin: '0 0 16px' }}>CREDIT RULES</p>
+            <p style={{ fontSize: 13, color: 'rgba(224,216,208,0.45)', margin: '0 0 6px' }}>
+              消耗顺序：每日体验赠额 → 新人赠送 → 订阅积分 → 通用积分 → 奖励积分
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', marginTop: 12 }}>
+              {[
+                { q: '订阅积分', a: '按月发放，用于正式 Agent 任务和深度执行，不结转' },
+                { q: '通用积分', a: '购买到账，用于重任务、超额使用和临时补量' },
+                { q: '每日体验赠额', a: '每天刷新，仅限轻任务，不结转、不可提现' },
+                { q: '奖励积分', a: '由老板发放，员工可使用；赠送积分不可转赠、不可折现' },
+                { q: '任务失败扣积分吗', a: '因平台技术原因失败的任务会返还积分' },
+                { q: 'Team 是共享池吗', a: '不是。每位成员拥有独立积分，老板可发奖励积分' },
+              ].map((item, i) => (
+                <div key={i} style={{ padding: '8px 0' }}>
+                  <p style={{ fontSize: 12, fontWeight: 500, color: 'rgba(224,216,208,0.55)', margin: '0 0 2px' }}>{item.q}</p>
+                  <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.35)', margin: 0 }}>{item.a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 

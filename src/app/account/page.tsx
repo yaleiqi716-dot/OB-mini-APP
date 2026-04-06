@@ -212,7 +212,7 @@ export default function AccountPage() {
                   '数字人视频 (Akool)',
                   '浏览器自动化 (Manus)',
                   'Zapier 自动化集成',
-                  '团队协作空间',
+                  '团队协作 + 奖励积分',
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#CCCCCC', lineHeight: 1.8 }}>
                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#D5D3CE', flexShrink: 0 }} />
