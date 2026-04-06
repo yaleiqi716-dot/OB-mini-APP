@@ -6,7 +6,7 @@ async function sendViaResend(email: string, code: string): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) return false
 
-  const from = process.env.RESEND_FROM || 'ORANGEBENCH <noreply@orangebench.ai>'
+  const from = process.env.RESEND_FROM || 'ORANGEBENCH <noreply@orangebench.tech>'
 
   try {
     const resend = new Resend(apiKey)
@@ -96,7 +96,7 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   if (apiKey) {
     try {
       const resend = new Resend(apiKey)
-      const from = process.env.RESEND_FROM || 'ORANGEBENCH <noreply@orangebench.ai>'
+      const from = process.env.RESEND_FROM || 'ORANGEBENCH <noreply@orangebench.tech>'
       console.log(`[Mailer] Sending email via Resend, from=${from}, to=${to}, subject=${subject}`)
       const { error } = await resend.emails.send({ from, to: [to], subject, html })
       if (error) { console.error('[Mailer] Resend error:', error.message); return false }

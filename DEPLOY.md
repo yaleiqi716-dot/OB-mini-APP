@@ -67,7 +67,7 @@ SMTP_HOST="smtp.qq.com"
 SMTP_PORT="465"
 SMTP_USER="your@qq.com"
 SMTP_PASS="your-smtp-password"
-SMTP_FROM="ORANGEBENCH <noreply@orangebench.ai>"
+SMTP_FROM="ORANGEBENCH <noreply@orangebench.tech>"
 
 # ── 微信支付（填入后支付真实扣款）──────────────────────
 WECHAT_MCH_ID="1234567890"
@@ -77,8 +77,18 @@ WECHAT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
 WECHAT_SERIAL_NO="your-serial-number"
 WECHAT_NOTIFY_URL="https://your-domain.com/api/billing/wechat-webhook"
 
+# ── Resend 邮件（验证码发信）─────────────────────────────
+RESEND_API_KEY="re_xxx"
+RESEND_FROM="ORANGEBENCH <noreply@orangebench.tech>"
+
 # ── OpenRouter AI（已有）────────────────────────────────
 OPENROUTER_API_KEY="sk-or-xxx"
+# OPENROUTER_DEFAULT_MODEL="openai/gpt-4o"  # 可选，默认 gpt-4o
+
+# ── LLM Gateway（新加坡出口，大陆部署时启用）──────────────
+# 不配则直连 OpenRouter；配了则走 SG gateway 转发
+# LLM_GATEWAY_URL="http://207.148.70.106:3100/v1/chat/completions"
+# LLM_GATEWAY_KEY="your-internal-auth-key"
 ```
 
 ---

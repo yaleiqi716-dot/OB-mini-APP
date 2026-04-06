@@ -18,8 +18,24 @@ export interface OpenRouterResponse {
   usage: { prompt_tokens: number; completion_tokens: number };
 }
 
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+// ── LLM endpoint resolution ──
+// Mode 1 (direct):  call OpenRouter directly (default)
+// Mode 2 (gateway): call SG gateway which proxies to OpenRouter
+//
+// Set LLM_GATEWAY_URL to enable gateway mode, e.g.:
+//   LLM_GATEWAY_URL=http://207.148.70.106:3100/v1/chat/completions
+// Set LLM_GATEWAY_KEY for internal auth header (X-OB-Internal-Key)
+
+const OPENROUTER_DIRECT_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_TIMEOUT_MS = 150_000; // 150 seconds
+
+function getLLMEndpoint(): string {
+  return process.env.LLM_GATEWAY_URL || OPENROUTER_DIRECT_URL;
+}
+
+function isGatewayMode(): boolean {
+  return !!process.env.LLM_GATEWAY_URL;
+}
 
 function getApiKey(): string {
   const key = process.env.OPENROUTER_API_KEY;
@@ -33,13 +49,30 @@ function getDefaultModel(): string {
   return process.env.OPENROUTER_DEFAULT_MODEL || 'openai/gpt-4o';
 }
 
+function buildHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${getApiKey()}`,
+    'HTTP-Referer': 'https://orangebench.tech',
+    'X-Title': 'ORANGEBENCH',
+  };
+
+  // Add internal auth key when using gateway
+  const gatewayKey = process.env.LLM_GATEWAY_KEY;
+  if (isGatewayMode() && gatewayKey) {
+    headers['X-OB-Internal-Key'] = gatewayKey;
+  }
+
+  return headers;
+}
+
 export async function chatCompletion(
   messages: ChatMessage[],
   options: OpenRouterOptions = {}
 ): Promise<OpenRouterResponse> {
-  const apiKey = getApiKey();
   const model = options.model || getDefaultModel();
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const endpoint = getLLMEndpoint();
 
   const body: Record<string, unknown> = {
     model,
@@ -57,21 +90,16 @@ export async function chatCompletion(
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const res = await fetch(OPENROUTER_URL, {
+    const res = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://orangebench.app',
-        'X-Title': 'ORANGEBENCH',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify(body),
       signal: controller.signal,
     });
 
     if (!res.ok) {
       const errorText = await res.text().catch(() => 'unknown');
-      console.error('[LLM_ERROR]', res.status, errorText.slice(0, 200));
+      console.error('[LLM_ERROR]', res.status, errorText.slice(0, 200), isGatewayMode() ? '(via gateway)' : '(direct)');
       throw new Error(`AI 调用失败 (${res.status})`);
     }
 
@@ -90,7 +118,7 @@ export async function chatCompletion(
     };
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      console.error('[LLM_TIMEOUT]', timeoutMs, 'ms');
+      console.error('[LLM_TIMEOUT]', timeoutMs, 'ms', isGatewayMode() ? '(via gateway)' : '(direct)');
       throw new Error('AI 响应超时，请重试');
     }
     throw error;
@@ -113,8 +141,8 @@ export async function* streamChatCompletion(
   messages: ChatMessage[],
   options: OpenRouterOptions = {}
 ): AsyncGenerator<string, void, unknown> {
-  const apiKey = getApiKey();
   const model = options.model || getDefaultModel();
+  const endpoint = getLLMEndpoint();
 
   const body: Record<string, unknown> = {
     model,
@@ -124,14 +152,9 @@ export async function* streamChatCompletion(
     stream: true,
   };
 
-  const res = await fetch(OPENROUTER_URL, {
+  const res = await fetch(endpoint, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': 'https://orangebench.app',
-      'X-Title': 'ORANGEBENCH',
-    },
+    headers: buildHeaders(),
     body: JSON.stringify(body),
   });
 
