@@ -23,7 +23,7 @@ interface TaskListProps {
 function RunningDot({ status }: { status: TaskStatus }) {
   const isRunning = ['executing', 'understanding', 'structuring', 'pending', 'queued'].includes(status);
   if (!isRunning) return null;
-  return <span style={{ width:6, height:6, borderRadius:'50%', background:'#22c55e', flexShrink:0, animation:'pulse 1.5s ease-in-out infinite' }} />;
+  return <span style={{ width:6, height:6, borderRadius:'50%', background:'#C9B89E', flexShrink:0, animation:'pulse 1.5s ease-in-out infinite' }} />;
 }
 
 // ─── Time grouping ─────────────────────────────────────────────────────────────

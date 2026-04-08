@@ -268,7 +268,7 @@ export default function SettingsPage() {
             <button
               onClick={handleLogout}
               style={{ height: 30, padding: '0 12px', borderRadius: 9999, fontSize: 12, fontWeight: 500, border: '1px solid rgba(185,28,28,0.18)', background: '#252321', color: '#B91C1C', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', transition: 'background .2s' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.06)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(228,72,61,0.06)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = '#252321'; }}
               aria-label="登出所有设备"
             >
@@ -382,7 +382,7 @@ export default function SettingsPage() {
         <div className="animate-flow-in" style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
           zIndex: 60, padding: '10px 20px', borderRadius: 9999,
-          background: 'rgba(34,197,94,0.92)', color: '#fff', fontSize: 13,
+          background: 'rgba(201,184,158,0.92)', color: '#fff', fontSize: 13,
           boxShadow: '0 4px 20px rgba(0,0,0,0.12)', whiteSpace: 'nowrap', pointerEvents: 'none',
         }}>
           {toast}

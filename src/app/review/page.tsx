@@ -64,8 +64,8 @@ function StatusBadge({ status }: { status: string }) {
   let bg = 'rgba(156,163,175,0.10)'; let color = '#888888';
   if (isRunning)   { bg = 'rgba(255,90,31,0.10)'; color = '#C2410C'; }
   if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = '#047857'; }
-  if (isFailed)    { bg = 'rgba(239,68,68,0.10)';  color = '#B91C1C'; }
-  if (isReview)    { bg = 'rgba(59,130,246,0.10)';  color = '#1D4ED8'; }
+  if (isFailed)    { bg = 'rgba(228,72,61,0.10)';  color = '#B91C1C'; }
+  if (isReview)    { bg = 'rgba(154,149,145,0.10)';  color = '#1D4ED8'; }
   const label = WS_STATUS_LABEL[status] || STATUS_LABEL[status] || status;
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px', fontSize: 11, fontWeight: 500, borderRadius: 9999, background: bg, color, whiteSpace: 'nowrap' }}>
@@ -436,7 +436,7 @@ export default function ReviewPage() {
         <div className="animate-flow-in" style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
           zIndex: 60, padding: '10px 20px', borderRadius: 9999,
-          background: 'rgba(34,197,94,0.92)', color: '#fff', fontSize: 13,
+          background: 'rgba(201,184,158,0.92)', color: '#fff', fontSize: 13,
           boxShadow: '0 4px 20px rgba(0,0,0,0.12)', whiteSpace: 'nowrap', pointerEvents: 'none',
         }}>
           {toast}

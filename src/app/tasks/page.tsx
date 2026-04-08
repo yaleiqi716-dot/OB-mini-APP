@@ -57,8 +57,8 @@ function StatusBadge({ status }: { status: string }) {
   let color = '#888888';
   if (isRunning)   { bg = 'rgba(255,90,31,0.10)'; color = '#C2410C'; }
   if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = '#047857'; }
-  if (isFailed)    { bg = 'rgba(239,68,68,0.10)';  color = '#B91C1C'; }
-  if (isReview)    { bg = 'rgba(59,130,246,0.10)';  color = '#1D4ED8'; }
+  if (isFailed)    { bg = 'rgba(228,72,61,0.10)';  color = '#B91C1C'; }
+  if (isReview)    { bg = 'rgba(154,149,145,0.10)';  color = '#1D4ED8'; }
 
   return (
     <span style={{
@@ -252,7 +252,7 @@ export default function MyTasksPage() {
             </div>
           ) : error ? (
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
-              <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(239,68,68,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(228,72,61,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
               <p style={{ fontSize: 14, color: '#888888', marginBottom: 12 }}>{error}</p>

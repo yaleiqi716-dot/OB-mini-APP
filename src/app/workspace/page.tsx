@@ -53,8 +53,8 @@ function StatusBadge({ status }: { status: string }) {
     draft: { bg: 'rgba(156,163,175,0.10)', color: 'rgba(224,216,208,0.28)' },
     assigned: { bg: 'rgba(255,90,31,0.10)', color: '#C2410C' },
     in_progress: { bg: 'rgba(255,90,31,0.10)', color: '#C2410C' },
-    submitted: { bg: 'rgba(59,130,246,0.10)', color: '#1D4ED8' },
-    revision: { bg: 'rgba(239,68,68,0.10)', color: '#B91C1C' },
+    submitted: { bg: 'rgba(154,149,145,0.10)', color: '#1D4ED8' },
+    revision: { bg: 'rgba(228,72,61,0.10)', color: '#B91C1C' },
     completed: { bg: 'rgba(16,185,129,0.10)', color: '#047857' },
   };
   const c = colors[status] || colors.draft;

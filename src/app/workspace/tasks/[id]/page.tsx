@@ -26,8 +26,8 @@ function StatusBadge({ status }: { status: string }) {
     draft: { bg: 'rgba(156,163,175,0.10)', color: '#888888' },
     assigned: { bg: 'rgba(255,90,31,0.10)', color: '#C2410C' },
     in_progress: { bg: 'rgba(255,90,31,0.10)', color: '#C2410C' },
-    submitted: { bg: 'rgba(59,130,246,0.10)', color: '#1D4ED8' },
-    revision: { bg: 'rgba(239,68,68,0.10)', color: '#B91C1C' },
+    submitted: { bg: 'rgba(154,149,145,0.10)', color: '#1D4ED8' },
+    revision: { bg: 'rgba(228,72,61,0.10)', color: '#B91C1C' },
     completed: { bg: 'rgba(16,185,129,0.10)', color: '#047857' },
   };
   const c = colors[status] || colors.draft;
@@ -240,7 +240,7 @@ export default function WorkspaceTaskDetailPage() {
                 return (
                   <div key={at.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < task.agentTasks.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: at.status === 'completed' ? '#22c55e' : at.status === 'failed' ? '#ef4444' : '#FF5A1F', flexShrink: 0 }} />
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: at.status === 'completed' ? '#C9B89E' : at.status === 'failed' ? '#E4483D' : '#FF5A1F', flexShrink: 0 }} />
                       <span style={{ fontSize: 14, color: '#F5F5F5' }}>{at.title || 'Agent 任务'}</span>
                       {link?.purpose === 'final' && <span style={{ fontSize: 11, color: '#047857', fontWeight: 500 }}>已提交</span>}
                     </div>
@@ -411,7 +411,7 @@ export default function WorkspaceTaskDetailPage() {
       </div>
 
       {toast && (
-        <div className="animate-flow-in" style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 60, padding: '10px 20px', borderRadius: 9999, background: 'rgba(34,197,94,0.92)', color: '#fff', fontSize: 13, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+        <div className="animate-flow-in" style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 60, padding: '10px 20px', borderRadius: 9999, background: 'rgba(201,184,158,0.92)', color: '#fff', fontSize: 13, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
           {toast}
         </div>
       )}

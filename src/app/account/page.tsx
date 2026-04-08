@@ -170,7 +170,7 @@ export default function AccountPage() {
     ? new Date(user.expireAt).getTime() - Date.now() < 7 * 86400000
     : false;
   const statusLabel = !user ? '加载中' : isExpiringSoon ? '即将到期' : '正常';
-  const statusBg = isExpiringSoon ? 'rgba(239,68,68,0.10)' : 'rgba(16,185,129,0.10)';
+  const statusBg = isExpiringSoon ? 'rgba(228,72,61,0.10)' : 'rgba(16,185,129,0.10)';
   const statusColor = isExpiringSoon ? '#B91C1C' : '#047857';
 
   // ── Shared styles ──
@@ -345,7 +345,7 @@ export default function AccountPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 24px' }}>
               {planInfo.benefits.map((b, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
-                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#C9B89E', flexShrink: 0 }} />
                   <span style={{ fontSize: 14, color: '#D1D5DB' }}>{b}</span>
                 </div>
               ))}
@@ -400,7 +400,7 @@ export default function AccountPage() {
                     onClick={() => { if (confirm('确定要在到期后取消订阅吗？当前周期内权益不受影响。')) subAction('cancel'); }}
                     disabled={subActing}
                     style={{ ...actionBtnStyle, color: '#B91C1C', borderColor: 'rgba(185,28,28,0.18)' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.06)'; }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(228,72,61,0.06)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = '#252321'; }}
                   >
                     取消订阅
@@ -562,7 +562,7 @@ export default function AccountPage() {
                   display: 'inline-flex', alignItems: 'center',
                   transition: 'background .2s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.06)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(228,72,61,0.06)')}
                 onMouseLeave={e => (e.currentTarget.style.background = '#252321')}
               >
                 退出登录
@@ -578,7 +578,7 @@ export default function AccountPage() {
         <div className="animate-flow-in" style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
           zIndex: 60, padding: '10px 20px', borderRadius: 9999,
-          background: 'rgba(34,197,94,0.92)', color: '#fff', fontSize: 13,
+          background: 'rgba(201,184,158,0.92)', color: '#fff', fontSize: 13,
           boxShadow: '0 4px 20px rgba(0,0,0,0.12)', whiteSpace: 'nowrap', pointerEvents: 'none',
         }}>
           {toast}

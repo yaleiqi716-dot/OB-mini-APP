@@ -702,7 +702,7 @@ function AgentPageInner() {
       )}
       {/* Success toast */}
       {successToast && (
-        <div className="ob-toast animate-flow-in" style={{ background: 'rgba(34,197,94,0.92)', color: '#fff', bottom: errorToast ? '80px' : '24px' }}>
+        <div className="ob-toast animate-flow-in" style={{ background: 'rgba(201,184,158,0.92)', color: '#fff', bottom: errorToast ? '80px' : '24px' }}>
           {successToast}
         </div>
       )}

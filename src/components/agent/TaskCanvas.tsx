@@ -1018,8 +1018,8 @@ function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { titl
       {/* Result header — white card top bar */}
       <div className="ob-result-card-header">
         <div className="flex items-center gap-2">
-          <span style={{ display: 'inline-flex', width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, fontWeight: 600, color: '#22c55e', textTransform: 'uppercase' as const, letterSpacing: '1.5px' }}>RESULT</span>
+          <span style={{ display: 'inline-flex', width: 6, height: 6, borderRadius: '50%', background: '#C9B89E' }} />
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, fontWeight: 600, color: '#C9B89E', textTransform: 'uppercase' as const, letterSpacing: '1.5px' }}>RESULT</span>
           {subtitle && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>{subtitle}</span>}
         </div>
         <button
@@ -1030,7 +1030,7 @@ function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { titl
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
         >
           {copied ? (
-            <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span style={{ color: '#22c55e' }}>已复制</span></>
+            <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#C9B89E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span style={{ color: '#C9B89E' }}>已复制</span></>
           ) : (
             <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>复制</span></>
           )}

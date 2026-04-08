@@ -113,7 +113,7 @@ function QRModal({
           </div>
         ) : payState === 'failed' ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '16px 0' }}>
-            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(239,68,68,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(228,72,61,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </div>
             <p style={{ fontSize: 18, fontWeight: 600, color: '#E0D8D0' }}>支付未完成</p>
@@ -396,7 +396,7 @@ export default function BillingPage() {
         <div className="animate-flow-in" style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
           zIndex: 60, padding: '10px 20px', borderRadius: 9999,
-          background: toast.ok ? 'rgba(34,197,94,0.92)' : 'rgba(239,68,68,0.92)',
+          background: toast.ok ? 'rgba(201,184,158,0.92)' : 'rgba(228,72,61,0.92)',
           color: '#fff', fontSize: 13, boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
           whiteSpace: 'nowrap', pointerEvents: 'none',
         }}>
