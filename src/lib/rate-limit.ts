@@ -21,9 +21,12 @@ function ensurePrune() {
   if (pruneTimer) return
   pruneTimer = setInterval(() => {
     const now = Date.now()
-    for (const [k, b] of buckets) {
-      if (b.resetAt <= now) buckets.delete(k)
-    }
+    // Avoid for-of on Map to stay compatible with the project's TS target.
+    const expiredKeys: string[] = []
+    buckets.forEach((b, k) => {
+      if (b.resetAt <= now) expiredKeys.push(k)
+    })
+    for (let i = 0; i < expiredKeys.length; i++) buckets.delete(expiredKeys[i])
   }, 60_000)
   // Allow process to exit cleanly in tests / scripts
   if (typeof pruneTimer.unref === 'function') pruneTimer.unref()
