@@ -53,7 +53,7 @@ function StatusBadge({ status }: { status: string }) {
   const isCompleted = status === 'completed';
   const isFailed = status === 'failed';
   let bg = 'rgba(156,163,175,0.10)'; let color = '#888888';
-  if (isRunning)   { bg = 'rgba(255,61,0,0.10)'; color = '#C2410C'; }
+  if (isRunning)   { bg = 'rgba(255,90,31,0.10)'; color = '#C2410C'; }
   if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = '#047857'; }
   if (isFailed)    { bg = 'rgba(239,68,68,0.10)';  color = '#B91C1C'; }
   return (
@@ -140,7 +140,7 @@ export default function DashboardPage() {
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
           <p style={{ fontSize: 14, color: '#888888' }}>{error || '数据加载失败'}</p>
-          <button onClick={() => window.location.reload()} style={{ fontSize: 13, color: '#FF3D00', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>刷新页面</button>
+          <button onClick={() => window.location.reload()} style={{ fontSize: 13, color: '#FF5A1F', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>刷新页面</button>
         </div>
       </div>
     );
@@ -200,8 +200,8 @@ export default function DashboardPage() {
                     height: 32, padding: '0 14px', borderRadius: 9999,
                     fontSize: 13, fontWeight: timeRange === c.value ? 500 : 400,
                     border: timeRange === c.value ? 'none' : '1px solid rgba(255,255,255,0.04)',
-                    background: timeRange === c.value ? 'rgba(255,61,0,0.10)' : '#252321',
-                    color: timeRange === c.value ? '#FF3D00' : '#888888',
+                    background: timeRange === c.value ? 'rgba(255,90,31,0.10)' : '#252321',
+                    color: timeRange === c.value ? '#FF5A1F' : '#888888',
                     cursor: 'pointer', transition: 'all .2s',
                   }}
                 >
@@ -261,7 +261,7 @@ export default function DashboardPage() {
                 textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
                 transition: 'border-color .2s, color .2s',
               }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,61,0,0.3)'; e.currentTarget.style.color = '#FF3D00'; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)'; e.currentTarget.style.color = '#FF5A1F'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#888888'; }}
               >查看工作区</a>
             </div>
@@ -297,7 +297,7 @@ export default function DashboardPage() {
                       {t.status && <StatusBadge status={t.status} />}
                     </a>
                   ))}
-                  <a href="/tasks" style={{ display: 'block', textAlign: 'center', fontSize: 13, color: '#FF3D00', textDecoration: 'none', marginTop: 12, transition: 'opacity .2s' }}>
+                  <a href="/tasks" style={{ display: 'block', textAlign: 'center', fontSize: 13, color: '#FF5A1F', textDecoration: 'none', marginTop: 12, transition: 'opacity .2s' }}>
                     查看全部任务
                   </a>
                 </div>
@@ -354,7 +354,7 @@ export default function DashboardPage() {
                           disabled={actionLoading === t.id}
                           aria-label="重试"
                           style={{ ...actionBtnStyle, color: '#B91C1C', opacity: actionLoading === t.id ? 0.5 : 1 }}
-                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,61,0,0.3)'; e.currentTarget.style.background = 'rgba(255,61,0,0.06)'; }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)'; e.currentTarget.style.background = 'rgba(255,90,31,0.06)'; }}
                           onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.background = '#FFFFFF'; }}
                         >
                           {actionLoading === t.id ? '重试中...' : '重试'}
@@ -363,7 +363,7 @@ export default function DashboardPage() {
                       <a
                         href={t.conversationId ? `/agent?conversationId=${t.conversationId}` : `/tasks/${t.id}`}
                         style={actionBtnStyle}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,61,0,0.3)'; e.currentTarget.style.background = 'rgba(255,61,0,0.06)'; e.currentTarget.style.color = '#FF3D00'; }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)'; e.currentTarget.style.background = 'rgba(255,90,31,0.06)'; e.currentTarget.style.color = '#FF5A1F'; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#888888'; }}
                       >
                         查看

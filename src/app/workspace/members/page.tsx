@@ -133,7 +133,7 @@ export default function WorkspaceMembersPage() {
                     background: '#252321', padding: '0 14px', fontSize: 14, color: '#F5F5F5', outline: 'none',
                     transition: 'border-color .2s',
                   }}
-                  onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#FF5A1F')}
                   onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')}
                 />
                 <button
@@ -141,7 +141,7 @@ export default function WorkspaceMembersPage() {
                   disabled={!inviteEmail.includes('@') || inviting}
                   style={{
                     height: 40, padding: '0 20px', borderRadius: 12, fontSize: 14, fontWeight: 600,
-                    border: 'none', background: '#FF3D00', color: '#fff', cursor: 'pointer',
+                    border: 'none', background: '#FF5A1F', color: '#fff', cursor: 'pointer',
                     opacity: (!inviteEmail.includes('@') || inviting) ? 0.5 : 1,
                     transition: 'background .2s',
                   }}
@@ -192,7 +192,7 @@ export default function WorkspaceMembersPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{
                       width: 32, height: 32, borderRadius: '50%',
-                      background: 'rgba(255,61,0,0.10)', color: '#FF3D00',
+                      background: 'rgba(255,90,31,0.10)', color: '#FF5A1F',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 13, fontWeight: 600,
                     }}>
@@ -207,7 +207,7 @@ export default function WorkspaceMembersPage() {
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px',
                       borderRadius: 9999, fontSize: 11, fontWeight: 500,
-                      background: m.role === 'owner' ? 'rgba(255,61,0,0.10)' : 'rgba(156,163,175,0.10)',
+                      background: m.role === 'owner' ? 'rgba(255,90,31,0.10)' : 'rgba(156,163,175,0.10)',
                       color: m.role === 'owner' ? '#C2410C' : '#888888',
                     }}>
                       {m.role === 'owner' ? 'Owner' : '成员'}

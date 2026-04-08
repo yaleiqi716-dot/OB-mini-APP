@@ -55,7 +55,7 @@ function StatusBadge({ status }: { status: string }) {
 
   let bg = 'rgba(156,163,175,0.10)';
   let color = '#888888';
-  if (isRunning)   { bg = 'rgba(255,61,0,0.10)'; color = '#C2410C'; }
+  if (isRunning)   { bg = 'rgba(255,90,31,0.10)'; color = '#C2410C'; }
   if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = '#047857'; }
   if (isFailed)    { bg = 'rgba(239,68,68,0.10)';  color = '#B91C1C'; }
   if (isReview)    { bg = 'rgba(59,130,246,0.10)';  color = '#1D4ED8'; }
@@ -195,7 +195,7 @@ export default function MyTasksPage() {
                   color: '#F5F5F5', outline: 'none',
                   transition: 'border-color .2s, box-shadow .2s',
                 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#FF3D00'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255,61,0,0.12)'; }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#FF5A1F'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255,90,31,0.12)'; }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.boxShadow = 'none'; }}
               />
             </div>
@@ -210,8 +210,8 @@ export default function MyTasksPage() {
                 <button key={value} onClick={() => { setViewMode(value); setFilter('all'); }}
                   style={{
                     padding: '8px 20px', fontSize: 14, fontWeight: viewMode === value ? 600 : 400,
-                    color: viewMode === value ? '#FF3D00' : '#888888',
-                    borderBottom: viewMode === value ? '2px solid #FF3D00' : '2px solid transparent',
+                    color: viewMode === value ? '#FF5A1F' : '#888888',
+                    borderBottom: viewMode === value ? '2px solid #FF5A1F' : '2px solid transparent',
                     background: 'transparent', border: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none',
                     cursor: 'pointer', transition: 'color .2s',
                     marginBottom: -1,
@@ -233,8 +233,8 @@ export default function MyTasksPage() {
                     height: 32, padding: '0 14px',
                     borderRadius: 9999, fontSize: 13, fontWeight: active ? 500 : 400,
                     border: active ? 'none' : '1px solid rgba(255,255,255,0.04)',
-                    background: active ? 'rgba(255,61,0,0.10)' : '#252321',
-                    color: active ? '#FF3D00' : '#888888',
+                    background: active ? 'rgba(255,90,31,0.10)' : '#252321',
+                    color: active ? '#FF5A1F' : '#888888',
                     cursor: 'pointer',
                     transition: 'all .2s ease',
                   }}
@@ -256,7 +256,7 @@ export default function MyTasksPage() {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
               <p style={{ fontSize: 14, color: '#888888', marginBottom: 12 }}>{error}</p>
-              <button onClick={fetchTasks} style={{ fontSize: 13, color: '#FF3D00', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>重新加载</button>
+              <button onClick={fetchTasks} style={{ fontSize: 13, color: '#FF5A1F', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>重新加载</button>
             </div>
           ) : filtered.length === 0 ? (
             /* ── Empty state ── */
@@ -274,12 +274,12 @@ export default function MyTasksPage() {
                   display: 'inline-flex', alignItems: 'center', gap: 6,
                   height: 36, padding: '0 18px',
                   borderRadius: 9999, fontSize: 14, fontWeight: 500,
-                  background: '#FF3D00', color: '#fff',
+                  background: '#FF5A1F', color: '#fff',
                   textDecoration: 'none',
                   transition: 'background .2s',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = '#E63600')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = '#FF3D00')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#FF5A1F')}
               >
                 去 Agent
               </a>
@@ -305,9 +305,9 @@ export default function MyTasksPage() {
                   transition: 'border-color .2s, background .2s, color .2s',
                 };
                 const hoverIn = (e: React.MouseEvent<HTMLElement>) => {
-                  e.currentTarget.style.borderColor = 'rgba(255,61,0,0.3)';
-                  e.currentTarget.style.background = 'rgba(255,61,0,0.06)';
-                  e.currentTarget.style.color = '#FF3D00';
+                  e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)';
+                  e.currentTarget.style.background = 'rgba(255,90,31,0.06)';
+                  e.currentTarget.style.color = '#FF5A1F';
                 };
                 const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
                   e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)';

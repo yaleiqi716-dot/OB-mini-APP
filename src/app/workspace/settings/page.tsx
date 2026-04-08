@@ -54,14 +54,14 @@ export default function WorkspaceSettingsPage() {
 
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <div style={{ width: 20, height: 20, border: '2px solid #FF3D00', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto' }} />
+              <div style={{ width: 20, height: 20, border: '2px solid #FF5A1F', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto' }} />
             </div>
           ) : (
             <div style={{ background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 24 }}>
               <div style={{ marginBottom: 24 }}>
                 <label style={labelStyle}>工作区名称</label>
                 <input value={name} onChange={e => setName(e.target.value)} style={inputStyle}
-                  onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
+                  onFocus={e => (e.currentTarget.style.borderColor = '#FF5A1F')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
               </div>
 
               <div style={{ marginBottom: 24 }}>
@@ -69,12 +69,12 @@ export default function WorkspaceSettingsPage() {
                 <input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)}
                   placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..."
                   style={inputStyle}
-                  onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
+                  onFocus={e => (e.currentTarget.style.borderColor = '#FF5A1F')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
                 <p style={descStyle}>配置后，任务分配、提交、审核等关键节点会推送通知到企业微信群</p>
               </div>
 
               <button onClick={handleSave} disabled={!name.trim() || saving}
-                style={{ height: 40, padding: '0 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, border: 'none', background: '#FF3D00', color: '#fff', cursor: 'pointer', opacity: (!name.trim() || saving) ? 0.5 : 1 }}>
+                style={{ height: 40, padding: '0 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, border: 'none', background: '#FF5A1F', color: '#fff', cursor: 'pointer', opacity: (!name.trim() || saving) ? 0.5 : 1 }}>
                 {saving ? '保存中...' : '保存'}
               </button>
             </div>

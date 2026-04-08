@@ -186,9 +186,9 @@ export default function AccountPage() {
     transition: 'border-color .2s, background .2s, color .2s',
   };
   const hoverIn = (e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.borderColor = 'rgba(255,61,0,0.3)';
-    e.currentTarget.style.background = 'rgba(255,61,0,0.06)';
-    e.currentTarget.style.color = '#FF3D00';
+    e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)';
+    e.currentTarget.style.background = 'rgba(255,90,31,0.06)';
+    e.currentTarget.style.color = '#FF5A1F';
   };
   const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
     e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)';
@@ -215,7 +215,7 @@ export default function AccountPage() {
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 20, height: 20, border: '2px solid #FF3D00', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+          <div style={{ width: 20, height: 20, border: '2px solid #FF5A1F', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
         </div>
       </div>
     );
@@ -240,7 +240,7 @@ export default function AccountPage() {
               {/* Avatar */}
               <div style={{
                 width: 56, height: 56, borderRadius: '50%',
-                background: 'rgba(255,61,0,0.12)', color: '#FF3D00',
+                background: 'rgba(255,90,31,0.12)', color: '#FF5A1F',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 18, fontWeight: 600, flexShrink: 0,
               }}>
@@ -256,7 +256,7 @@ export default function AccountPage() {
                     display: 'inline-flex', alignItems: 'center',
                     height: 24, padding: '0 10px', borderRadius: 9999,
                     fontSize: 11, fontWeight: 500,
-                    background: 'rgba(255,61,0,0.10)', color: '#C2410C',
+                    background: 'rgba(255,90,31,0.10)', color: '#C2410C',
                   }}>
                     {planInfo.label}
                   </span>
@@ -290,15 +290,15 @@ export default function AccountPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div>
                 <p style={{ fontSize: 13, color: '#888888', margin: '0 0 6px' }}>总可用积分</p>
-                <p style={{ fontSize: 36, fontWeight: 700, color: '#FF3D00', margin: 0, lineHeight: 1 }}>
+                <p style={{ fontSize: 36, fontWeight: 700, color: '#FF5A1F', margin: 0, lineHeight: 1 }}>
                   {user?.credits ?? 0}
                 </p>
               </div>
               <a href="/billing" style={{
                 ...actionBtnStyle,
-                border: '1px solid #FF3D00', color: '#FF3D00',
+                border: '1px solid #FF5A1F', color: '#FF5A1F',
               }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,61,0,0.08)'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,90,31,0.08)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = '#252321'; }}
               >
                 充值
@@ -338,7 +338,7 @@ export default function AccountPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <p style={sectionTitle}>当前套餐权益</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: '#FF3D00' }}>{planInfo.label}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: '#FF5A1F' }}>{planInfo.label}</span>
                 <span style={{ fontSize: 13, color: '#888888' }}>{planInfo.price}</span>
               </div>
             </div>

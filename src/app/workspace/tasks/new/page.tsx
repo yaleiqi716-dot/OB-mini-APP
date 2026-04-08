@@ -70,14 +70,14 @@ export default function NewWorkspaceTaskPage() {
             <div style={{ marginBottom: 20 }}>
               <label style={labelStyle}>任务标题 *</label>
               <input value={title} onChange={e => setTitle(e.target.value)} placeholder="例如：写季度总结报告" style={inputStyle}
-                onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
+                onFocus={e => (e.currentTarget.style.borderColor = '#FF5A1F')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
             </div>
 
             <div style={{ marginBottom: 20 }}>
               <label style={labelStyle}>任务描述</label>
               <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="详细描述任务要求..." rows={4}
                 style={{ ...inputStyle, height: 'auto', padding: '10px 14px', resize: 'vertical', minHeight: 100, fontFamily: 'inherit', lineHeight: 1.6 }}
-                onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
+                onFocus={e => (e.currentTarget.style.borderColor = '#FF5A1F')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
@@ -116,7 +116,7 @@ export default function NewWorkspaceTaskPage() {
 
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={handleCreate} disabled={!title.trim() || submitting}
-                style={{ height: 40, padding: '0 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, border: 'none', background: '#FF3D00', color: '#fff', cursor: 'pointer', opacity: (!title.trim() || submitting) ? 0.5 : 1 }}>
+                style={{ height: 40, padding: '0 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, border: 'none', background: '#FF5A1F', color: '#fff', cursor: 'pointer', opacity: (!title.trim() || submitting) ? 0.5 : 1 }}>
                 {submitting ? '创建中...' : '创建任务'}
               </button>
               <button onClick={() => router.back()}

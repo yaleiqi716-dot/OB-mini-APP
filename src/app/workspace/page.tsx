@@ -51,8 +51,8 @@ const FILTER_OPTIONS = [
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, { bg: string; color: string }> = {
     draft: { bg: 'rgba(156,163,175,0.10)', color: 'rgba(224,216,208,0.28)' },
-    assigned: { bg: 'rgba(255,61,0,0.10)', color: '#C2410C' },
-    in_progress: { bg: 'rgba(255,61,0,0.10)', color: '#C2410C' },
+    assigned: { bg: 'rgba(255,90,31,0.10)', color: '#C2410C' },
+    in_progress: { bg: 'rgba(255,90,31,0.10)', color: '#C2410C' },
     submitted: { bg: 'rgba(59,130,246,0.10)', color: '#1D4ED8' },
     revision: { bg: 'rgba(239,68,68,0.10)', color: '#B91C1C' },
     completed: { bg: 'rgba(16,185,129,0.10)', color: '#047857' },
@@ -116,7 +116,7 @@ export default function WorkspacePage() {
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <div style={{ width: 24, height: 24, border: '2px solid #FF3D00', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+          <div style={{ width: 24, height: 24, border: '2px solid #FF5A1F', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
           <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.55)' }}>加载工作区...</p>
         </div>
       </div>
@@ -134,7 +134,7 @@ export default function WorkspacePage() {
             <a href="/workspace/new" style={{
               display: 'inline-flex', alignItems: 'center', height: 40, padding: '0 24px',
               borderRadius: 9999, fontSize: 15, fontWeight: 600,
-              background: '#FF3D00', color: '#fff', textDecoration: 'none',
+              background: '#FF5A1F', color: '#fff', textDecoration: 'none',
             }}>创建工作区</a>
           </div>
         </div>
@@ -159,7 +159,7 @@ export default function WorkspacePage() {
               <p style={{ fontSize: 13, color: 'rgba(224,216,208,0.55)', margin: 0 }}>{ws.memberCount} 位成员 · {ws.taskCount} 个任务</p>
             </div>
             {ws.role === 'owner' && (
-              <a href="/workspace/tasks/new" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 9999, fontSize: 14, fontWeight: 500, background: '#FF3D00', color: '#fff', textDecoration: 'none' }}>
+              <a href="/workspace/tasks/new" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 9999, fontSize: 14, fontWeight: 500, background: '#FF5A1F', color: '#fff', textDecoration: 'none' }}>
                 + 新建任务
               </a>
             )}
@@ -174,7 +174,7 @@ export default function WorkspacePage() {
             return (
               <div className="ob-command-bar">
                 <div className="ob-command-stat ob-command-stat--accent">
-                  <span className="ob-px-dot ob-px-dot--active" style={{ animation: active > 0 ? 'statusCycle 2s ease-in-out infinite' : 'none', background: active > 0 ? '#FF3D00' : '#666666', boxShadow: active > 0 ? '0 0 6px rgba(255,61,0,0.4)' : 'none' }} />
+                  <span className="ob-px-dot ob-px-dot--active" style={{ animation: active > 0 ? 'statusCycle 2s ease-in-out infinite' : 'none', background: active > 0 ? '#FF5A1F' : '#666666', boxShadow: active > 0 ? '0 0 6px rgba(255,90,31,0.4)' : 'none' }} />
                   <span><strong>{active}</strong> 进行中</span>
                 </div>
                 <div className="ob-command-stat" style={{ color: review > 0 ? '#1D4ED8' : undefined }}>
@@ -205,7 +205,7 @@ export default function WorkspacePage() {
                 type="text" placeholder="搜索任务..." value={search}
                 onChange={e => setSearch(e.target.value)}
                 style={{ width: '100%', height: 36, borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)', background: '#252321', padding: '0 12px 0 34px', fontSize: 13, color: '#E0D8D0', outline: 'none', transition: 'border-color .2s' }}
-                onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')}
+                onFocus={e => (e.currentTarget.style.borderColor = '#FF5A1F')}
                 onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')}
               />
             </div>
@@ -215,8 +215,8 @@ export default function WorkspacePage() {
                   height: 32, padding: '0 14px', borderRadius: 9999, fontSize: 13,
                   fontWeight: filter === f.value ? 500 : 400,
                   border: filter === f.value ? 'none' : '1px solid rgba(255,255,255,0.04)',
-                  background: filter === f.value ? 'rgba(255,61,0,0.10)' : '#252321',
-                  color: filter === f.value ? '#FF3D00' : '#888888',
+                  background: filter === f.value ? 'rgba(255,90,31,0.10)' : '#252321',
+                  color: filter === f.value ? '#FF5A1F' : '#888888',
                   cursor: 'pointer', transition: 'all .2s',
                 }}>{f.label}</button>
               ))}
@@ -238,7 +238,7 @@ export default function WorkspacePage() {
                 {search || filter !== 'all' ? '换个条件试试' : '创建第一个任务，分配给团队成员'}
               </p>
               {!(search || filter !== 'all') && ws?.role === 'owner' && (
-                <a href="/workspace/tasks/new" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 9999, fontSize: 14, fontWeight: 500, background: '#FF3D00', color: '#fff', textDecoration: 'none' }}>
+                <a href="/workspace/tasks/new" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 9999, fontSize: 14, fontWeight: 500, background: '#FF5A1F', color: '#fff', textDecoration: 'none' }}>
                   + 新建任务
                 </a>
               )}
@@ -291,7 +291,7 @@ function TaskCard({ task }: { task: WsTask }) {
       {task.assigneeName ? (
         <div style={{
           width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-          background: 'rgba(255,61,0,0.10)', color: '#FF3D00',
+          background: 'rgba(255,90,31,0.10)', color: '#FF5A1F',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 12, fontWeight: 600,
         }}>

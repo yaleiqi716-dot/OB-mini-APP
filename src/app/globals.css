@@ -3,67 +3,118 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════
-   DESIGN TOKENS — ORANGEBENCH Dark-First AI Work System
+   DESIGN TOKENS — ORANGEBENCH v1.2
+   Source of truth: DESIGN.md in repo root.
+   Legacy token names (--bg, --accent, ...) are kept as aliases
+   pointing at the v1.2 values for backward compat with existing
+   component CSS. New code should use the --ob-* names directly.
    ═══════════════════════════════════════════════════════════════ */
 :root{
-  /* Backgrounds — per施工单 final spec */
-  --bg:           #1E1C1A;
-  --bg-hero:      #1E1C1A;
-  --bg-exec:      #252321;
-  --bg-ws:        #2A2826;
-  --bg-billing:   #2C2A28;
-  --bg-mission:   #1E1C1A;
-  --bg-sidebar:   #1A1816;
-  --bg-card:      rgba(37,35,33,0.88);
-  --bg-secondary: #252321;
-  --bg-tertiary:  #2A2826;
-  --bg-input:     #252321;
-  --bg-hover:     #2E2C2A;
-  --bg-elevated:  #2C2A28;
-  --bg-conv:      #23211F;
+  /* ─── v1.2 canonical tokens (prefer these in new code) ─────── */
 
-  /* Text — per施工单 */
-  --text-primary:   #E0D8D0;
-  --text-secondary: rgba(224,216,208,0.55);
-  --text-muted:     rgba(224,216,208,0.28);
-  --text-label:     rgba(224,216,208,0.35);
-  --text-faint:     rgba(224,216,208,0.18);
+  /* Warm dark surface stack */
+  --ob-bg:            #141417;
+  --ob-surface:       #1D1D20;
+  --ob-surface-hi:    #26262A;
+  --ob-border:        #2F2F34;
+  --ob-border-strong: #42424A;
 
-  /* Dots — per施工单 */
-  --dot-online:  #22C55E;
-  --dot-active:  #FF3D00;
-  --dot-idle:    rgba(224,216,208,0.18);
+  /* Warm off-white text stack */
+  --ob-text:       #F5F5F0;
+  --ob-text-muted: #8A8A90;
+  --ob-text-dim:   #5A5A60;
 
-  /* Card — per施工单 */
-  --card-bg:     rgba(37,35,33,0.88);
-  --card-border: rgba(255,255,255,0.06);
-  --border-orange: rgba(255,61,0,0.15);
+  /* Brand orange — ONE value */
+  --ob-orange:         #FF5A1F;
+  --ob-orange-hi:      #FF7340;
+  --ob-orange-lo:      #D9471A;
+  --ob-orange-a10:     rgba(255,90,31,0.10);
+  --ob-orange-a20:     rgba(255,90,31,0.20);
+  --ob-orange-ring:    rgba(255,90,31,0.17);
+  --ob-orange-glow:    0 0 18px rgba(255,90,31,0.22);
+
+  /* Warm earthy semantic — no green, no blue */
+  --ob-success: #C9B89E;  /* warm sand / parchment */
+  --ob-warning: #D4A017;  /* mustard */
+  --ob-error:   #E4483D;  /* rust red */
+  --ob-info:    #9A9591;  /* warm stone */
+
+  /* Type */
+  --ob-font-display: "Cabinet Grotesk", "General Sans", system-ui, sans-serif;
+  --ob-font-body:    "Geist", "HarmonyOS Sans SC", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  --ob-font-mono:    "Geist Mono", "SF Mono", ui-monospace, monospace;
+
+  /* Radius */
+  --ob-r-input:  4px;
+  --ob-r-btn:    8px;
+  --ob-r-card:   12px;
+  --ob-r-card-lg:16px;
+  --ob-r-pill:   9999px;
+
+  /* Motion */
+  --ob-ease-out:    cubic-bezier(.2,.7,.3,1);
+  --ob-ease-in-out: cubic-bezier(.4,0,.2,1);
+
+  /* ─── Legacy aliases (kept for backward compat, do not use in new code) ── */
+
+  /* Backgrounds map onto the new surface stack */
+  --bg:           var(--ob-bg);
+  --bg-hero:      var(--ob-bg);
+  --bg-exec:      var(--ob-surface);
+  --bg-ws:        var(--ob-surface-hi);
+  --bg-billing:   var(--ob-surface-hi);
+  --bg-mission:   var(--ob-bg);
+  --bg-sidebar:   #111113;
+  --bg-card:      rgba(29,29,32,0.88);
+  --bg-secondary: var(--ob-surface);
+  --bg-tertiary:  var(--ob-surface-hi);
+  --bg-input:     var(--ob-surface);
+  --bg-hover:     var(--ob-surface-hi);
+  --bg-elevated:  var(--ob-surface-hi);
+  --bg-conv:      var(--ob-surface);
+
+  /* Text maps onto the new warm-off-white stack */
+  --text-primary:   var(--ob-text);
+  --text-secondary: rgba(245,245,240,0.55);
+  --text-muted:     rgba(245,245,240,0.35);
+  --text-label:     rgba(245,245,240,0.35);
+  --text-faint:     rgba(245,245,240,0.22);
+
+  /* Dots */
+  --dot-online:  var(--ob-success);
+  --dot-active:  var(--ob-orange);
+  --dot-idle:    rgba(245,245,240,0.18);
+
+  /* Card */
+  --card-bg:       rgba(29,29,32,0.88);
+  --card-border:   var(--ob-border);
+  --border-orange: var(--ob-orange-a20);
 
   /* Border */
-  --border:        rgba(255,255,255,0.06);
-  --border-strong: rgba(255,255,255,0.08);
+  --border:        var(--ob-border);
+  --border-strong: var(--ob-border-strong);
 
-  /* Brand — per施工单 */
-  --accent:        #FF3D00;
-  --accent-hover:  #E63600;
-  --accent-subtle: rgba(255,61,0,0.08);
-  --accent-ring:   rgba(255,61,0,0.17);
-  --accent-glow:   0 0 18px rgba(255,61,0,0.22);
+  /* Brand alias — legacy code still uses var(--accent) */
+  --accent:        var(--ob-orange);
+  --accent-hover:  var(--ob-orange-lo);
+  --accent-subtle: var(--ob-orange-a10);
+  --accent-ring:   var(--ob-orange-ring);
+  --accent-glow:   var(--ob-orange-glow);
 
-  /* Status colors */
-  --status-success: #22c55e;
-  --status-warning: #f59e0b;
-  --status-danger:  #ef4444;
-  --status-info:    #3b82f6;
+  /* Status — mapped to the warm earthy semantic palette */
+  --status-success: var(--ob-success);
+  --status-warning: var(--ob-warning);
+  --status-danger:  var(--ob-error);
+  --status-info:    var(--ob-info);
 
   /* Focus */
-  --input-focus-color: var(--accent);
-  --input-focus-ring:  0 0 0 3px rgba(255,61,0,0.17);
+  --input-focus-color: var(--ob-orange);
+  --input-focus-ring:  0 0 0 3px var(--ob-orange-ring);
 
   /* Send btn */
-  --send-bg:       #FF3D00;
-  --send-bg-hover: #E63600;
-  --send-bg-off:   #3A3836;
+  --send-bg:       var(--ob-orange);
+  --send-bg-hover: var(--ob-orange-lo);
+  --send-bg-off:   var(--ob-border-strong);
 
   /* Layout */
   --sidebar-w:    220px;
@@ -71,15 +122,15 @@
   --chat-max:     780px;
   --header-h:     52px;
 
-  /* Legacy compat */
-  --surface-primary:   #1E1C1A;
-  --surface-secondary: #252321;
-  --surface-tertiary:  #2A2826;
-  --content-primary:   #E0D8D0;
-  --content-secondary: rgba(224,216,208,0.55);
-  --content-tertiary:  rgba(224,216,208,0.28);
-  --border-color:      rgba(255,255,255,0.04);
-  --sidebar-bg:        #1A1816;
+  /* Legacy surface/content/border aliases */
+  --surface-primary:   var(--ob-bg);
+  --surface-secondary: var(--ob-surface);
+  --surface-tertiary:  var(--ob-surface-hi);
+  --content-primary:   var(--ob-text);
+  --content-secondary: rgba(245,245,240,0.55);
+  --content-tertiary:  rgba(245,245,240,0.35);
+  --border-color:      var(--ob-border);
+  --sidebar-bg:        #111113;
   --sidebar-width:     220px;
 }
 
@@ -87,11 +138,12 @@ html{color-scheme:dark}
 *{box-sizing:border-box}
 
 body{
-  background:var(--bg);
-  color:var(--text-primary);
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  background:var(--ob-bg);
+  color:var(--ob-text);
+  font-family:var(--ob-font-body);
   font-size:14px;
   line-height:1.6;
+  font-feature-settings:"ss01","cv11";
   overscroll-behavior:none;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
@@ -107,10 +159,10 @@ body{
 .border-border          {border-color:var(--border)!important}
 .text-accent            {color:var(--accent)!important}
 .bg-accent              {background:var(--accent)!important}
-.bg-accent\/15          {background:rgba(255,61,0,.15)!important}
-.bg-accent\/5           {background:rgba(255,61,0,.05)!important}
-.hover\:bg-accent\/10:hover{background:rgba(255,61,0,.10)!important}
-.border-accent\/30      {border-color:rgba(255,61,0,.30)!important}
+.bg-accent\/15          {background:rgba(255,90,31,.15)!important}
+.bg-accent\/5           {background:rgba(255,90,31,.05)!important}
+.hover\:bg-accent\/10:hover{background:rgba(255,90,31,.10)!important}
+.border-accent\/30      {border-color:rgba(255,90,31,.30)!important}
 
 /* Scrollbar */
 .scrollbar-hide{scrollbar-width:none;-ms-overflow-style:none}
@@ -197,7 +249,7 @@ body{
 /* Conversation items */
 .ob-session-row,.sidebar-task-row{width:100%;text-align:left;padding:0;border:none;background:transparent;cursor:pointer;border-radius:10px;transition:background .2s ease;display:block;margin-bottom:1px}
 .ob-session-row:hover:not(.ob-session-row--active),.sidebar-task-row--idle:hover{background:var(--bg-hover)}
-.ob-session-row--active{background:rgba(255,61,0,.10);border-left:3px solid var(--accent)}
+.ob-session-row--active{background:rgba(255,90,31,.10);border-left:3px solid var(--accent)}
 .ob-session-inner,.sidebar-task-row-inner{padding:0 12px;display:flex;align-items:center;gap:6px;height:34px}
 .ob-session-title,.sidebar-task-title{font-size:12.5px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;flex:1;min-width:0}
 .ob-session-row--active .ob-session-title{font-weight:550;color:#F5F5F5}
@@ -240,8 +292,8 @@ body{
 
 /* Chips — mono system pills */
 .ob-chips,.agent-examples{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:800px;width:100%;margin-top:16px}
-.ob-chip,.agent-example-btn{display:inline-flex;align-items:center;gap:6px;font-family:'Courier New',monospace;font-size:12px;color:#C8C0B8;background:transparent;border:1px solid rgba(255,61,0,0.30);border-radius:3px;padding:6px 14px;cursor:pointer;transition:all .12s ease;white-space:nowrap}
-.ob-chip:hover:not(:disabled),.agent-example-btn:hover:not(:disabled){background:rgba(255,61,0,0.06);border-color:rgba(255,61,0,0.5);color:#E0D8D0}
+.ob-chip,.agent-example-btn{display:inline-flex;align-items:center;gap:6px;font-family:'Courier New',monospace;font-size:12px;color:#C8C0B8;background:transparent;border:1px solid rgba(255,90,31,0.30);border-radius:3px;padding:6px 14px;cursor:pointer;transition:all .12s ease;white-space:nowrap}
+.ob-chip:hover:not(:disabled),.agent-example-btn:hover:not(:disabled){background:rgba(255,90,31,0.06);border-color:rgba(255,90,31,0.5);color:#E0D8D0}
 .ob-chip:disabled,.agent-example-btn:disabled{opacity:.45;cursor:not-allowed}
 
 /* Capability cards */
@@ -263,7 +315,7 @@ body{
 
 /* User bubble — orange bg white text */
 .ob-msg-user,.chat-user-bubble-row{display:flex;justify-content:flex-end;margin-bottom:12px;padding-right:24px}
-.ob-msg-user-bubble,.chat-user-bubble{max-width:340px;background:var(--accent);color:#ffffff;font-size:14px;line-height:1.6;padding:10px 14px;border-radius:14px 14px 4px 14px;white-space:pre-wrap;word-break:break-word;box-shadow:0 2px 12px rgba(255,61,0,0.15)}
+.ob-msg-user-bubble,.chat-user-bubble{max-width:340px;background:var(--accent);color:#ffffff;font-size:14px;line-height:1.6;padding:10px 14px;border-radius:14px 14px 4px 14px;white-space:pre-wrap;word-break:break-word;box-shadow:0 2px 12px rgba(255,90,31,0.15)}
 
 /* AI response area */
 .ob-msg-ai,.chat-ai-area{padding-bottom:12px}
@@ -289,7 +341,7 @@ body{
 /* Result action buttons */
 .ob-result-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;padding-bottom:4px}
 .ob-result-action-btn{display:inline-flex;align-items:center;gap:6px;height:32px;font-size:13px;color:var(--text-secondary);background:var(--bg-card);border:1px solid var(--border);border-radius:9999px;padding:0 16px;cursor:pointer;transition:border-color .2s ease,color .2s ease,background .2s ease}
-.ob-result-action-btn:hover{border-color:rgba(255,61,0,.25);color:var(--accent)}
+.ob-result-action-btn:hover{border-color:rgba(255,90,31,.25);color:var(--accent)}
 
 /* Error hint card */
 .ob-error-hint{background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:16px;padding:16px;display:flex;align-items:flex-start;gap:12px}
@@ -298,7 +350,7 @@ body{
 .ob-error-hint-title{font-size:14px;font-weight:600;color:#ef4444;margin-bottom:4px}
 .ob-error-hint-desc{font-size:13px;color:var(--text-secondary);line-height:1.5}
 .ob-error-hint-retry{margin-top:10px;display:inline-flex;align-items:center;gap:6px;height:32px;font-size:13px;font-weight:500;color:var(--accent);background:var(--accent-subtle);border:none;border-radius:9999px;padding:0 16px;cursor:pointer;transition:background .2s ease}
-.ob-error-hint-retry:hover{background:rgba(255,61,0,.14)}
+.ob-error-hint-retry:hover{background:rgba(255,90,31,.14)}
 
 
 /* ═══════════════════════════════════════════════════════════════
@@ -311,9 +363,9 @@ body{
 
 /* Input box — welcome (prominent) */
 .ob-input-box,.agent-input-box{display:flex;flex-direction:column;border-radius:24px;border:1px solid var(--border);background:var(--bg-card);overflow:hidden;transition:border-color .2s ease,box-shadow .2s ease;box-shadow:none}
-.ob-input-box:focus-within,.agent-input-box:focus-within{border-color:rgba(255,61,0,0.4);box-shadow:var(--input-focus-ring),var(--accent-glow)}
+.ob-input-box:focus-within,.agent-input-box:focus-within{border-color:rgba(255,90,31,0.4);box-shadow:var(--input-focus-ring),var(--accent-glow)}
 .ob-input-box--prominent,.agent-input-box--prominent{min-height:56px;box-shadow:none}
-.ob-input-box--prominent:hover{box-shadow:0 0 24px rgba(255,61,0,0.06)}
+.ob-input-box--prominent:hover{box-shadow:0 0 24px rgba(255,90,31,0.06)}
 
 /* Chat input box — smaller radius */
 .ob-input-box--chat,.agent-input-box--chat{border-radius:20px;min-height:72px}
@@ -338,8 +390,8 @@ body{
 
 /* Send button */
 .ob-send-btn,.agent-send-btn{flex-shrink:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:background .2s ease,transform .1s ease}
-.ob-send-btn--on,.agent-send-btn--active{background:var(--accent);color:#fff;box-shadow:0 0 12px rgba(255,61,0,0.3)}
-.ob-send-btn--on:hover,.agent-send-btn--active:hover{background:var(--accent-hover);box-shadow:0 0 16px rgba(255,61,0,0.4)}
+.ob-send-btn--on,.agent-send-btn--active{background:var(--accent);color:#fff;box-shadow:0 0 12px rgba(255,90,31,0.3)}
+.ob-send-btn--on:hover,.agent-send-btn--active:hover{background:var(--accent-hover);box-shadow:0 0 16px rgba(255,90,31,0.4)}
 .ob-send-btn--on:active,.agent-send-btn--active:active{transform:scale(.9)}
 .ob-send-btn--off,.agent-send-btn--idle{background:var(--send-bg-off);color:#fff;cursor:not-allowed}
 
@@ -361,7 +413,7 @@ body{
   background:linear-gradient(to bottom,rgba(30,28,26,0.3) 0%,transparent 56px,transparent calc(100% - 72px),rgba(30,28,26,0.4) 100%)}
 .ob-launcher-atmosphere{position:relative}
 .ob-launcher-atmosphere::before{content:'';position:absolute;top:-60px;left:-80px;right:-80px;bottom:-60px;z-index:0;pointer-events:none;
-  background:radial-gradient(ellipse 62% 48% at center,rgba(255,61,0,0.24) 0%,rgba(255,61,0,0.14) 24%,rgba(255,61,0,0.06) 46%,rgba(255,61,0,0.00) 72%);
+  background:radial-gradient(ellipse 62% 48% at center,rgba(255,90,31,0.24) 0%,rgba(255,90,31,0.14) 24%,rgba(255,90,31,0.06) 46%,rgba(255,90,31,0.00) 72%);
   opacity:0.40;filter:blur(56px)}
 
 /* Chat/exec atmosphere — full visibility, no extra darkening */
@@ -392,14 +444,14 @@ body{
    ═══════════════════════════════════════════════════════════════ */
 /* Dot grid — standalone overlay divs, not pseudo-elements */
 .ob-dotgrid{position:absolute;top:0;left:0;right:0;pointer-events:none;z-index:1}
-.ob-dotgrid--hero{background-image:radial-gradient(circle,rgba(255,61,0,0.09) 1px,transparent 1px);background-size:28px 28px}
-.ob-dotgrid--exec{background-image:radial-gradient(circle,rgba(255,61,0,0.07) 1px,transparent 1px);background-size:16px 16px}
-.ob-dotgrid--ws{background-image:radial-gradient(circle,rgba(255,61,0,0.09) 1px,transparent 1px);background-size:20px 20px}
-.ob-dotgrid--billing{background-image:radial-gradient(circle,rgba(255,61,0,0.09) 1px,transparent 1px);background-size:22px 22px}
+.ob-dotgrid--hero{background-image:radial-gradient(circle,rgba(255,90,31,0.09) 1px,transparent 1px);background-size:28px 28px}
+.ob-dotgrid--exec{background-image:radial-gradient(circle,rgba(255,90,31,0.07) 1px,transparent 1px);background-size:16px 16px}
+.ob-dotgrid--ws{background-image:radial-gradient(circle,rgba(255,90,31,0.09) 1px,transparent 1px);background-size:20px 20px}
+.ob-dotgrid--billing{background-image:radial-gradient(circle,rgba(255,90,31,0.09) 1px,transparent 1px);background-size:22px 22px}
 
 /* Exec left-side vertical lines — standalone div */
 .ob-exec-vlines{position:absolute;top:0;left:0;bottom:0;width:32%;pointer-events:none;z-index:1;
-  background:repeating-linear-gradient(90deg,rgba(255,61,0,0.035) 0px,rgba(255,61,0,0.035) 1px,transparent 1px,transparent 10px)}
+  background:repeating-linear-gradient(90deg,rgba(255,90,31,0.035) 0px,rgba(255,90,31,0.035) 1px,transparent 1px,transparent 10px)}
 
 /* Mono utility */
 .ob-mono{font-family:'Courier New',monospace}
@@ -409,7 +461,7 @@ body{
    ═══════════════════════════════════════════════════════════════ */
 /* Pixel status lamp: 4x4 square dot for minimal indicators */
 .ob-px-dot{width:4px;height:4px;border-radius:1px;flex-shrink:0;display:inline-block}
-.ob-px-dot--active{background:#FF3D00;box-shadow:0 0 6px rgba(255,61,0,0.4)}
+.ob-px-dot--active{background:#FF5A1F;box-shadow:0 0 6px rgba(255,90,31,0.4)}
 .ob-px-dot--success{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,0.3)}
 .ob-px-dot--danger{background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,0.3)}
 .ob-px-dot--warning{background:#f59e0b}
@@ -417,10 +469,10 @@ body{
 .ob-px-dot--pulse{animation:statusCycle 1.5s ease-in-out infinite}
 
 /* Nav tail lamp: thin accent line at bottom of active nav item */
-.ob-nav-lamp{position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);width:12px;height:2px;background:#FF3D00;border-radius:1px;box-shadow:0 0 8px rgba(255,61,0,0.4)}
+.ob-nav-lamp{position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);width:12px;height:2px;background:#FF5A1F;border-radius:1px;box-shadow:0 0 8px rgba(255,90,31,0.4)}
 
 /* Notification signal lamp (replaces plain red dot) */
-.ob-signal-lamp{background:#FF3D00;box-shadow:0 0 8px rgba(255,61,0,0.5),0 0 2px rgba(255,61,0,0.8)}
+.ob-signal-lamp{background:#FF5A1F;box-shadow:0 0 8px rgba(255,90,31,0.5),0 0 2px rgba(255,90,31,0.8)}
 
 
 /* ═══════════════════════════════════════════════════════════════
@@ -444,25 +496,25 @@ body{
 
 /* Status pulse animation */
 @keyframes statusCycle{0%,100%{opacity:1}50%{opacity:.5}}
-@keyframes glowPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,61,0,0)}50%{box-shadow:0 0 0 8px rgba(255,61,0,.08)}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,90,31,0)}50%{box-shadow:0 0 0 8px rgba(255,90,31,.08)}}
 @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
 /* Hero headline */
 .ob-hero-title{font-size:44px;font-weight:700;color:var(--text-primary);letter-spacing:-.5px;line-height:1.12;text-align:center;margin:0 0 12px}
-.ob-hero-accent{background:linear-gradient(135deg,#FF3D00,#EA580C);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.ob-hero-accent{background:linear-gradient(135deg,#FF5A1F,#EA580C);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .ob-hero-sub{font-size:17px;color:#6B7280;text-align:center;line-height:1.6;max-width:520px;margin:0 auto 32px}
 
 /* Task launcher input */
-.ob-launcher{width:min(800px,80%);background:var(--card-bg);border:1px solid rgba(255,61,0,0.22);border-radius:6px;padding:20px;transition:border-color .2s,box-shadow .3s;
-  box-shadow:0 0 0 1px rgba(255,61,0,0.08),0 0 32px rgba(255,61,0,0.10)}
-.ob-launcher:focus-within{border-color:rgba(255,61,0,0.5);box-shadow:0 0 0 4px rgba(255,61,0,.12),var(--accent-glow)}
+.ob-launcher{width:min(800px,80%);background:var(--card-bg);border:1px solid rgba(255,90,31,0.22);border-radius:6px;padding:20px;transition:border-color .2s,box-shadow .3s;
+  box-shadow:0 0 0 1px rgba(255,90,31,0.08),0 0 32px rgba(255,90,31,0.10)}
+.ob-launcher:focus-within{border-color:rgba(255,90,31,0.5);box-shadow:0 0 0 4px rgba(255,90,31,.12),var(--accent-glow)}
 .ob-launcher:hover:not(:focus-within){box-shadow:0 8px 24px rgba(0,0,0,.04)}
 
 /* Quick actions grid */
 .ob-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:720px;margin-top:24px}
 .ob-action-card{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;cursor:pointer;transition:all .2s ease;text-decoration:none;text-align:left}
 /* Hard-cut hover: 120ms, lift 3px, icon+text snap white */
-.ob-action-card:hover{border-color:rgba(255,61,0,.3);background:rgba(255,61,0,.06);transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.3);transition:all .12s ease}
+.ob-action-card:hover{border-color:rgba(255,90,31,.3);background:rgba(255,90,31,.06);transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.3);transition:all .12s ease}
 .ob-action-card:hover .ob-action-label{color:#F5F5F5}
 .ob-action-card:hover .ob-action-desc{color:#CCCCCC}
 .ob-action-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -470,14 +522,14 @@ body{
 .ob-action-desc{font-size:11px;color:#9CA3AF;margin-top:1px}
 
 /* Live status indicator */
-.ob-live-status{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9999px;background:rgba(255,61,0,.06);border:1px solid rgba(255,61,0,.12);font-size:12px;color:#C2410C;margin-bottom:24px;animation:glowPulse 3s ease-in-out infinite}
-.ob-live-dot{width:6px;height:6px;border-radius:50%;background:#FF3D00;animation:statusCycle 2s ease-in-out infinite}
+.ob-live-status{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9999px;background:rgba(255,90,31,.06);border:1px solid rgba(255,90,31,.12);font-size:12px;color:#C2410C;margin-bottom:24px;animation:glowPulse 3s ease-in-out infinite}
+.ob-live-dot{width:6px;height:6px;border-radius:50%;background:#FF5A1F;animation:statusCycle 2s ease-in-out infinite}
 
 /* Mission progress bar */
 .ob-mission-phase{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-elevated);border:none;border-radius:12px;margin-bottom:12px}
 /* Square pixel mission dots */
 .ob-mission-dot{width:4px;height:4px;border-radius:1px;flex-shrink:0}
-.ob-mission-dot--active{background:#FF3D00;box-shadow:0 0 6px rgba(255,61,0,0.4);animation:statusCycle 1.5s ease-in-out infinite}
+.ob-mission-dot--active{background:#FF5A1F;box-shadow:0 0 6px rgba(255,90,31,0.4);animation:statusCycle 1.5s ease-in-out infinite}
 .ob-mission-dot--done{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,0.3)}
 .ob-mission-dot--pending{background:#666666}
 .ob-mission-label{font-size:13px;font-weight:500;color:#F5F5F5}
@@ -485,7 +537,7 @@ body{
 
 /* Result node (not just a reply block) */
 .ob-result-node{position:relative;background:var(--bg-elevated);border:1px solid rgba(255,255,255,0.10);border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.3);margin-top:8px}
-.ob-result-node::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#FF3D00,#22c55e)}
+.ob-result-node::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#FF5A1F,#22c55e)}
 .ob-result-node-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.04)}
 .ob-result-node-body{padding:20px}
 
@@ -493,18 +545,18 @@ body{
 .ob-command-bar{display:flex;align-items:center;gap:16px;padding:14px 20px;background:var(--bg-card);border:none;border-radius:14px;margin-bottom:20px}
 .ob-command-stat{display:flex;align-items:center;gap:6px;font-size:13px;color:#6B7280}
 .ob-command-stat strong{font-weight:650;color:var(--text-primary)}
-.ob-command-stat--accent strong{color:#FF3D00}
+.ob-command-stat--accent strong{color:#FF5A1F}
 .ob-command-stat--green strong{color:#047857}
 .ob-command-stat--red strong{color:#B91C1C}
 
 /* Fuel gauge (billing) */
 .ob-fuel-gauge{position:relative;height:8px;border-radius:4px;background:rgba(255,255,255,0.06);overflow:hidden;margin:8px 0}
-.ob-fuel-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#FF3D00,#EA580C);transition:width .6s ease}
+.ob-fuel-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#FF5A1F,#EA580C);transition:width .6s ease}
 .ob-fuel-fill--low{background:linear-gradient(90deg,#ef4444,#B91C1C)}
 
 /* Billing tier card highlight */
-.ob-tier-recommended{border:2px solid #FF3D00;position:relative}
-.ob-tier-badge{position:absolute;top:-1px;right:16px;background:#FF3D00;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:0 0 6px 6px;letter-spacing:0.04em;box-shadow:0 0 12px rgba(255,61,0,0.25)}
+.ob-tier-recommended{border:2px solid #FF5A1F;position:relative}
+.ob-tier-badge{position:absolute;top:-1px;right:16px;background:#FF5A1F;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:0 0 6px 6px;letter-spacing:0.04em;box-shadow:0 0 12px rgba(255,90,31,0.25)}
 
 @media(max-width:768px){
   .ob-hero-title{font-size:28px}
@@ -517,7 +569,7 @@ body{
 /* ═══════════════════════════════════════════════════════════════
    RECONNECT / TOAST
    ═══════════════════════════════════════════════════════════════ */
-.ob-reconnect,.agent-reconnect-banner{flex-shrink:0;background:rgba(255,61,0,.06);border-bottom:1px solid rgba(255,61,0,.15);text-align:center;font-size:12px;color:#d97706;padding:6px 16px}
+.ob-reconnect,.agent-reconnect-banner{flex-shrink:0;background:rgba(255,90,31,.06);border-bottom:1px solid rgba(255,90,31,.15);text-align:center;font-size:12px;color:#d97706;padding:6px 16px}
 .ob-toast,.agent-error-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:88px;z-index:60;padding:10px 20px;border-radius:9999px;background:rgba(239,68,68,.92);color:#fff;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.12);white-space:nowrap;pointer-events:none}
 
 

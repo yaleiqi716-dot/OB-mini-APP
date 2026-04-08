@@ -90,7 +90,7 @@ function QRModal({
             {product?.type === 'subscription' ? (
               <div style={{ textAlign: 'center' }}>
                 <p style={{ fontSize: 14, color: '#D1D5DB', margin: '0 0 4px' }}>
-                  已开通 <span style={{ color: '#FF3D00', fontWeight: 600 }}>{product.label}</span> 订阅
+                  已开通 <span style={{ color: '#FF5A1F', fontWeight: 600 }}>{product.label}</span> 订阅
                 </p>
                 <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.45)', margin: 0 }}>
                   +{product.credits} 订阅积分已到账 · 每日体验赠额 {product.dailyTrialCredits}/日
@@ -99,7 +99,7 @@ function QRModal({
             ) : product?.type === 'credits' ? (
               <div style={{ textAlign: 'center' }}>
                 <p style={{ fontSize: 14, color: '#D1D5DB', margin: '0 0 4px' }}>
-                  +<span style={{ color: '#FF3D00', fontWeight: 600 }}>{product.totalCredits}</span> 通用积分已到账
+                  +<span style={{ color: '#FF5A1F', fontWeight: 600 }}>{product.totalCredits}</span> 通用积分已到账
                 </p>
                 {(product.bonusCredits ?? 0) > 0 && (
                   <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.45)', margin: 0 }}>
@@ -131,7 +131,7 @@ function QRModal({
           <>
             <div style={{ textAlign: 'center' }}>
               <p style={{ fontSize: 16, fontWeight: 600, color: '#E0D8D0', marginBottom: 4 }}>微信扫码支付</p>
-              <p style={{ fontSize: 24, fontWeight: 700, color: '#FF3D00' }}>{amountLabel}</p>
+              <p style={{ fontSize: 24, fontWeight: 700, color: '#FF5A1F' }}>{amountLabel}</p>
             </div>
             <div style={{ padding: 8, borderRadius: 16, border: '2px solid rgba(255,255,255,0.04)', background: '#252321' }}>
               <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrUrl)}`} alt="支付二维码" width={180} height={180} style={{ borderRadius: 8 }} />
@@ -232,8 +232,8 @@ export default function BillingPage() {
           <div style={{ marginBottom: 24 }}>
             {/* Eyebrow — mono signal line */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <span style={{ width: 24, height: 2, background: '#FF3D00', borderRadius: 1 }} />
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, letterSpacing: 3, textTransform: 'uppercase' as const, color: '#FF3D00' }}>FUEL STATION</span>
+              <span style={{ width: 24, height: 2, background: '#FF5A1F', borderRadius: 1 }} />
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, letterSpacing: 3, textTransform: 'uppercase' as const, color: '#FF5A1F' }}>FUEL STATION</span>
             </div>
             <h1 className="ob-hero-title" style={{ fontSize: 32, textAlign: 'left', marginBottom: 8 }}>
               执行<span className="ob-hero-accent">燃料</span>补给
@@ -252,14 +252,14 @@ export default function BillingPage() {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                       <span style={{ fontSize: 22, fontWeight: 700, color: '#E0D8D0' }}>{planLabel}</span>
-                      <span style={{ fontSize: 11, fontWeight: 500, color: '#C2410C', background: 'rgba(255,61,0,0.10)', padding: '2px 10px', borderRadius: 9999 }}>当前套餐</span>
+                      <span style={{ fontSize: 11, fontWeight: 500, color: '#C2410C', background: 'rgba(255,90,31,0.10)', padding: '2px 10px', borderRadius: 9999 }}>当前套餐</span>
                     </div>
                     {user.expireAt && (
                       <span style={{ fontSize: 12, color: 'rgba(224,216,208,0.55)' }}>到期 {new Date(user.expireAt).toLocaleDateString('zh-CN')}</span>
                     )}
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: 36, fontWeight: 700, color: isLow ? '#B91C1C' : '#FF3D00', lineHeight: 1 }}>{user.credits}</span>
+                    <span style={{ fontSize: 36, fontWeight: 700, color: isLow ? '#B91C1C' : '#FF5A1F', lineHeight: 1 }}>{user.credits}</span>
                     <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.55)', margin: '4px 0 0' }}>剩余额度</p>
                   </div>
                 </div>
@@ -288,13 +288,13 @@ export default function BillingPage() {
                     padding: 20, display: 'flex', flexDirection: 'column', position: 'relative',
                     transition: 'border-color .2s, box-shadow .2s',
                   }}
-                    onMouseEnter={e => { if (!isRecommended) e.currentTarget.style.borderColor = 'rgba(255,61,0,0.3)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.04)'; }}
+                    onMouseEnter={e => { if (!isRecommended) e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.04)'; }}
                     onMouseLeave={e => { if (!isRecommended) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.boxShadow = 'none'; }}
                   >
                     {isRecommended && <span className="ob-tier-badge">推荐</span>}
                     <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 600, color: '#E0D8D0', margin: '0 0 4px', textTransform: 'uppercase' as const, letterSpacing: '1.5px' }}>{p.label}</p>
                     <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.45)', margin: '0 0 10px' }}>{p.description}{p.teamPerSeat ? ' · 按人/月' : ''}</p>
-                    <p style={{ fontSize: 28, fontWeight: 700, color: '#FF3D00', margin: '0 0 4px' }}>
+                    <p style={{ fontSize: 28, fontWeight: 700, color: '#FF5A1F', margin: '0 0 4px' }}>
                       {p.amountLabel}<span style={{ fontSize: 13, fontWeight: 400, color: 'rgba(224,216,208,0.45)' }}>{p.teamPerSeat ? '/人/月' : '/月'}</span>
                     </p>
                     <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: '#8A8078', margin: '0 0 4px' }}>{p.credits} 订阅积分/月 · {p.dailyTrialCredits} 体验赠额/日</p>
@@ -304,9 +304,9 @@ export default function BillingPage() {
                       disabled={!!buying}
                       style={{
                         height: 40, borderRadius: 6, fontSize: 14, fontWeight: 600,
-                        border: isRecommended ? 'none' : '1px solid #FF3D00',
-                        background: isRecommended ? '#FF3D00' : 'transparent',
-                        color: isRecommended ? '#fff' : '#FF3D00',
+                        border: isRecommended ? 'none' : '1px solid #FF5A1F',
+                        background: isRecommended ? '#FF5A1F' : 'transparent',
+                        color: isRecommended ? '#fff' : '#FF5A1F',
                         cursor: buying ? 'wait' : 'pointer', opacity: buying ? 0.5 : 1,
                         transition: 'background .2s', marginTop: 'auto',
                       }}
@@ -332,18 +332,18 @@ export default function BillingPage() {
                     padding: 20, display: 'flex', flexDirection: 'column',
                     transition: 'border-color .2s',
                   }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,61,0,0.3)')}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)')}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')}
                   >
                     <p style={{ fontSize: 28, fontWeight: 700, color: '#E0D8D0', margin: '0 0 4px' }}>{p.amountLabel}</p>
                     <p style={{ fontSize: 13, color: 'rgba(224,216,208,0.45)', margin: '0 0 4px' }}>{p.displayLabel || `+${p.totalCredits} 通用积分`}</p>
-                    {(p.bonusCredits ?? 0) > 0 && <p style={{ fontSize: 11, color: '#FF3D00', margin: '0 0 12px' }}>含赠送 {p.bonusCredits}</p>}
+                    {(p.bonusCredits ?? 0) > 0 && <p style={{ fontSize: 11, color: '#FF5A1F', margin: '0 0 12px' }}>含赠送 {p.bonusCredits}</p>}
                     <button
                       onClick={() => handleBuy(p.code)}
                       disabled={!!buying}
                       style={{
                         height: 40, borderRadius: 12, fontSize: 14, fontWeight: 600,
-                        border: '2px solid #FF3D00', background: 'transparent', color: '#FF3D00',
+                        border: '2px solid #FF5A1F', background: 'transparent', color: '#FF5A1F',
                         cursor: buying ? 'wait' : 'pointer', opacity: buying ? 0.5 : 1,
                         transition: 'background .2s', marginTop: 'auto',
                       }}

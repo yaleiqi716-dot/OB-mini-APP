@@ -613,7 +613,7 @@ function AgentPageInner() {
             ) : taskLoadError ? (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
                 <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.55)' }}>对话加载失败</p>
-                <button onClick={() => currentConversationId && fetchConversationTasks(currentConversationId)} style={{ fontSize: 13, color: '#FF3D00', background: 'none', border: 'none', cursor: 'pointer' }}>重试</button>
+                <button onClick={() => currentConversationId && fetchConversationTasks(currentConversationId)} style={{ fontSize: 13, color: '#FF5A1F', background: 'none', border: 'none', cursor: 'pointer' }}>重试</button>
               </div>
             ) : (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -667,7 +667,7 @@ function AgentPageInner() {
                   {QUICK_ACTIONS.map((a, i) => (
                     a.href ? (
                       <a key={i} href={a.href} className="ob-action-card">
-                        <div className="ob-action-icon" style={{ background: 'rgba(255,61,0,0.08)', color: '#FF3D00' }}>
+                        <div className="ob-action-icon" style={{ background: 'rgba(255,90,31,0.08)', color: '#FF5A1F' }}>
                           <ActionIcon name={a.icon} />
                         </div>
                         <div>
@@ -677,7 +677,7 @@ function AgentPageInner() {
                       </a>
                     ) : (
                       <button key={i} onClick={() => a.action && handleSubmit(a.action, a.type)} disabled={isSubmitting} className="ob-action-card" style={{ border: '1px solid rgba(255,255,255,0.04)' }}>
-                        <div className="ob-action-icon" style={{ background: 'rgba(255,61,0,0.08)', color: '#FF3D00' }}>
+                        <div className="ob-action-icon" style={{ background: 'rgba(255,90,31,0.08)', color: '#FF5A1F' }}>
                           <ActionIcon name={a.icon} />
                         </div>
                         <div style={{ textAlign: 'left' }}>

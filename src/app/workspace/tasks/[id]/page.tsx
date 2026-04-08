@@ -24,8 +24,8 @@ const STATUS_LABEL: Record<string, string> = {
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, { bg: string; color: string }> = {
     draft: { bg: 'rgba(156,163,175,0.10)', color: '#888888' },
-    assigned: { bg: 'rgba(255,61,0,0.10)', color: '#C2410C' },
-    in_progress: { bg: 'rgba(255,61,0,0.10)', color: '#C2410C' },
+    assigned: { bg: 'rgba(255,90,31,0.10)', color: '#C2410C' },
+    in_progress: { bg: 'rgba(255,90,31,0.10)', color: '#C2410C' },
     submitted: { bg: 'rgba(59,130,246,0.10)', color: '#1D4ED8' },
     revision: { bg: 'rgba(239,68,68,0.10)', color: '#B91C1C' },
     completed: { bg: 'rgba(16,185,129,0.10)', color: '#047857' },
@@ -181,7 +181,7 @@ export default function WorkspaceTaskDetailPage() {
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 20, height: 20, border: '2px solid #FF3D00', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+          <div style={{ width: 20, height: 20, border: '2px solid #FF5A1F', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
         </div>
       </div>
     );
@@ -240,7 +240,7 @@ export default function WorkspaceTaskDetailPage() {
                 return (
                   <div key={at.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < task.agentTasks.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: at.status === 'completed' ? '#22c55e' : at.status === 'failed' ? '#ef4444' : '#FF3D00', flexShrink: 0 }} />
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: at.status === 'completed' ? '#22c55e' : at.status === 'failed' ? '#ef4444' : '#FF5A1F', flexShrink: 0 }} />
                       <span style={{ fontSize: 14, color: '#F5F5F5' }}>{at.title || 'Agent 任务'}</span>
                       {link?.purpose === 'final' && <span style={{ fontSize: 11, color: '#047857', fontWeight: 500 }}>已提交</span>}
                     </div>
@@ -283,7 +283,7 @@ export default function WorkspaceTaskDetailPage() {
                   <div key={c.id} style={{ display: 'flex', gap: 10 }}>
                     <div style={{
                       width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                      background: 'rgba(255,61,0,0.10)', color: '#FF3D00',
+                      background: 'rgba(255,90,31,0.10)', color: '#FF5A1F',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 12, fontWeight: 600, marginTop: 2,
                     }}>
@@ -317,7 +317,7 @@ export default function WorkspaceTaskDetailPage() {
                   outline: 'none', resize: 'none', minHeight: 44, fontFamily: 'inherit',
                   transition: 'border-color .2s',
                 }}
-                onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')}
+                onFocus={e => (e.currentTarget.style.borderColor = '#FF5A1F')}
                 onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')}
               />
               <button
@@ -326,7 +326,7 @@ export default function WorkspaceTaskDetailPage() {
                 style={{
                   height: 44, padding: '0 16px', borderRadius: 12,
                   fontSize: 14, fontWeight: 500, border: 'none',
-                  background: (!commentText.trim() || sendingComment) ? '#D5D3CE' : '#FF3D00',
+                  background: (!commentText.trim() || sendingComment) ? '#D5D3CE' : '#FF5A1F',
                   color: '#fff', cursor: (!commentText.trim() || sendingComment) ? 'not-allowed' : 'pointer',
                   flexShrink: 0, transition: 'background .2s',
                 }}
@@ -343,7 +343,7 @@ export default function WorkspaceTaskDetailPage() {
             {canExecute && (
               <div style={{ marginBottom: 16 }}>
                 <button onClick={handleUseAgent} disabled={actionLoading === 'agent'}
-                  style={{ ...actionBtn, background: '#FF3D00', color: '#fff', opacity: actionLoading === 'agent' ? 0.5 : 1 }}>
+                  style={{ ...actionBtn, background: '#FF5A1F', color: '#fff', opacity: actionLoading === 'agent' ? 0.5 : 1 }}>
                   {actionLoading === 'agent' ? '创建中...' : '用 Agent 执行'}
                 </button>
               </div>
@@ -356,7 +356,7 @@ export default function WorkspaceTaskDetailPage() {
                 <textarea value={submitSummary} onChange={e => setSubmitSummary(e.target.value)}
                   placeholder="简要说明你的交付内容（可选）" rows={2}
                   style={{ width: '100%', borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)', padding: '10px 14px', fontSize: 14, color: '#F5F5F5', outline: 'none', resize: 'vertical', minHeight: 60, fontFamily: 'inherit', marginBottom: 10 }}
-                  onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
+                  onFocus={e => (e.currentTarget.style.borderColor = '#FF5A1F')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
                 <div style={{ marginBottom: 12 }}>
                   <FileUploader files={submitFiles} onChange={setSubmitFiles} label="附加文件（可选）" />
                 </div>
@@ -381,7 +381,7 @@ export default function WorkspaceTaskDetailPage() {
                   <textarea value={reviewFeedback} onChange={e => setReviewFeedback(e.target.value)}
                     placeholder="填写修改意见后点击退回..." rows={2}
                     style={{ width: '100%', borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)', padding: '10px 14px', fontSize: 14, color: '#F5F5F5', outline: 'none', resize: 'vertical', minHeight: 60, fontFamily: 'inherit', marginBottom: 10 }}
-                    onFocus={e => (e.currentTarget.style.borderColor = '#FF3D00')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
+                    onFocus={e => (e.currentTarget.style.borderColor = '#FF5A1F')} onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')} />
                   <button onClick={() => handleReview('revision')} disabled={!!actionLoading || !reviewFeedback.trim()}
                     style={{ ...actionBtn, background: '#252321', border: '1px solid rgba(185,28,28,0.18)', color: '#B91C1C', opacity: (actionLoading || !reviewFeedback.trim()) ? 0.5 : 1 }}>
                     {actionLoading === 'revision' ? '处理中...' : '退回修改'}
