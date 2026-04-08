@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
-    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
+    const userId = await getUserIdFromRequest(req);
     const userFilter = userId ? { userId } : {};
 
     // 唯一真实状态源：status 字段（废弃 businessStatus）

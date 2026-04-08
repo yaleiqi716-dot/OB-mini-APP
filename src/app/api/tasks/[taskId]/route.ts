@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getTaskFormatted } from '@/services/task-manager';
 import { prisma } from '@/lib/prisma';
 import { enqueue } from '@/services/task-queue';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { taskId: string } }
 ) {
   try {
-    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
+    const userId = await getUserIdFromRequest(req);
 
     // If request includes x-check-assignee header, enforce assignee permission
     if (req.headers.get('x-check-assignee') === '1') {
@@ -42,7 +43,7 @@ export async function PATCH(
   { params }: { params: { taskId: string } }
 ) {
   try {
-    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
     const body = await req.json();
     const { status } = body;

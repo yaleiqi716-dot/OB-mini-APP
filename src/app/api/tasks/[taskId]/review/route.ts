@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { chatCompletion } from '@/lib/openrouter';
 import { executeWithBilling, InsufficientCreditsError } from '@/services/billing';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 export async function POST(
   req: NextRequest,
@@ -32,7 +33,7 @@ export async function POST(
     }
 
     if (action === 'ai_optimize') {
-      const userId = task.userId || req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
+      const userId = task.userId || (await getUserIdFromRequest(req));
       if (!userId) {
         return NextResponse.json({ error: '未登录' }, { status: 401 });
       }
