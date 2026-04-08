@@ -2,7 +2,7 @@
 
 > **Source of truth for all visual and UI decisions.** Before writing UI code, reference this file. Before proposing a visual change, update this file. If the code disagrees with this file, the code is wrong.
 
-**Version:** 1.0 · **Created:** 2026-04-08 · **Method:** `/design-consultation` with competitive research
+**Version:** 1.1 · **Created:** 2026-04-08 · **Method:** `/design-consultation` with competitive research
 
 ---
 
@@ -43,11 +43,11 @@
 
 | Token | Hex | Usage |
 |---|---|---|
-| `--ob-bg` | `#0B0B0C` | Warm near-black (not pure `#000`). Primary page background. |
-| `--ob-surface` | `#17171A` | Cards, sidebars, composer input container. |
-| `--ob-surface-hi` | `#1F1F23` | Hover / elevated card state. |
-| `--ob-border` | `#26262B` | Default border, dividers. |
-| `--ob-border-strong` | `#3A3A40` | Hover border, emphasis divider. |
+| `--ob-bg` | `#141417` | Warm near-black. Lifted from an earlier `#0B0B0C` because pure-deep felt "dev dungeon"; `#141417` still reads warm-dark but doesn't press. |
+| `--ob-surface` | `#1D1D20` | Cards, sidebars, composer input container. |
+| `--ob-surface-hi` | `#26262A` | Hover / elevated card state. |
+| `--ob-border` | `#2F2F34` | Default border, dividers. |
+| `--ob-border-strong` | `#42424A` | Hover border, emphasis divider. |
 | `--ob-text` | `#F5F5F0` | Primary text — warm off-white, "paper", not sterile `#FFFFFF`. |
 | `--ob-text-muted` | `#8A8A90` | Secondary text, captions, muted labels. |
 | `--ob-text-dim` | `#5A5A60` | Disabled state, timestamps, least-important meta. |
@@ -66,14 +66,16 @@
 
 ### Semantic
 
+**Philosophy:** warm / earthy / desaturated. The default "red-yellow-green-blue traffic-light" status palette fights the editorial brand and screams against the warm-dark canvas. Instead, the whole semantic palette lives in the warm natural-color family — sage, mustard, rust, stone. Orange stays the loudest color on the page.
+
 | Token | Hex | Usage |
 |---|---|---|
-| `--ob-success` | `#2F9E6B` | Task completed, credit granted, test passed. |
-| `--ob-warning` | `#C58B00` | Running long, near quota, needs attention. Amber, not orange — otherwise it competes with the brand. |
-| `--ob-error` | `#E4483D` | Task failed, validation failed, destructive confirm. |
-| `--ob-info` | `#5B8CD6` | Neutral informational state, changelog, tips. |
+| `--ob-success` | `#8A9A5B` | **Warm sage / olive.** Task completed, credit granted, test passed. Not bright green — sage has weight without shouting. |
+| `--ob-warning` | `#D4A017` | **Mustard.** Running long, near quota, needs attention. Distinct from orange (yellower), editorial-feeling. |
+| `--ob-error`   | `#E4483D` | **Rust red.** Task failed, validation failed, destructive confirm. Kept — red is the universal stop sign. |
+| `--ob-info`    | `#9A9591` | **Warm stone.** Neutral informational state, changelog, tips. **No blue.** Blue fights the warm palette and introduces a cold axis we don't want. Stone reads as "quiet neutral" without adding another color family. |
 
-Semantic colors are **muted and desaturated intentionally** — orange stays the loudest color on the page. Do not bump semantic saturation to match a Figma default.
+**Do not introduce pure green, yellow, or blue to the codebase.** If a design requires a "green" or "blue" meaning, use sage / stone respectively. If you feel the urge to bump saturation to match a Figma default, stop — the muted feel is the brand.
 
 ### Light mode
 
@@ -81,11 +83,11 @@ Light mode exists but is the secondary surface. Defaults:
 
 | Token | Dark | Light |
 |---|---|---|
-| `--ob-bg` | `#0B0B0C` | `#FAF9F5` (warm paper) |
-| `--ob-surface` | `#17171A` | `#FFFFFF` |
-| `--ob-surface-hi` | `#1F1F23` | `#F1F0EA` |
-| `--ob-border` | `#26262B` | `#E5E3DC` |
-| `--ob-border-strong` | `#3A3A40` | `#C9C6BD` |
+| `--ob-bg` | `#141417` | `#FAF9F5` (warm paper) |
+| `--ob-surface` | `#1D1D20` | `#FFFFFF` |
+| `--ob-surface-hi` | `#26262A` | `#F1F0EA` |
+| `--ob-border` | `#2F2F34` | `#E5E3DC` |
+| `--ob-border-strong` | `#42424A` | `#C9C6BD` |
 | `--ob-text` | `#F5F5F0` | `#121210` |
 | `--ob-text-muted` | `#8A8A90` | `#696865` |
 | `--ob-text-dim` | `#5A5A60` | `#9C9A94` |
@@ -278,6 +280,8 @@ All caption labels are **ALL CAPS + monospace + 0.12em tracking**. This is an in
 8. **Two different orange values in the codebase.** One orange, `#FF5A1F`.
 9. **Bouncy spring animations.** Too cute for a work tool.
 10. **"Built with AI" / "Powered by AI" marketing copy.** Every competitor does it. We let the product speak.
+11. **Dashed borders anywhere.** Use solid borders only. Dashed reads as "placeholder / not finished / CAD drawing" — the editorial brand wants confident solid lines. This applies to buttons, dividers, meta rows, step separators — everywhere.
+12. **Primary-color semantic palette (bright green / bright yellow / pure blue).** Use the warm earthy semantic palette (sage / mustard / rust / stone). No blue anywhere in the product UI.
 
 ---
 
@@ -296,8 +300,11 @@ When designing light mode, **do not just invert the colors.** Reduce saturation 
 | 2026-04-08 | Initial DESIGN.md created | `/design-consultation` with competitive research. Eureka: no competitor owns "warm-dark + bold sans + editorial + confident orange" — that's OrangeBench's lane. |
 | 2026-04-08 | Orange canonicalized to `#FF5A1F` | Previously split between `#FF3D00` (invite page) and `#FF6B00` / tailwind `orange-500` (login page). Unified to one value. |
 | 2026-04-08 | Cabinet Grotesk for display, Geist for body, HarmonyOS Sans SC for CJK | Avoids overused fonts (Inter etc.) while keeping web loadable fonts. HarmonyOS Sans SC is the 2025+ Chinese-product default. |
-| 2026-04-08 | Warm off-white text `#F5F5F0` + warm near-black bg `#0B0B0C` | Not pure `#000`/`#FFF`. Gives the whole product a "paper in a warm room" feel instead of CRT. |
+| 2026-04-08 | Warm off-white text `#F5F5F0` + warm near-black bg (originally `#0B0B0C`) | Not pure `#000`/`#FFF`. Gives the whole product a "paper in a warm room" feel instead of CRT. |
 | 2026-04-08 | Wordmark "ORANGE" orange + "BENCH" white, always | Consistent brand lockup. Never full-one-color. |
+| 2026-04-08 | **v1.1 revision**: bg lifted `#0B0B0C` → `#141417`, all surface/border tokens lifted proportionally | User feedback: the original near-black felt "too deep" / "dev dungeon". The lifted value still reads warm dark but stops pressing. |
+| 2026-04-08 | **v1.1 revision**: semantic palette replaced with warm earthy set | Original `#2F9E6B` (green) / `#C58B00` (yellow) / `#5B8CD6` (blue) felt like a traffic-light palette fighting the editorial warm brand. Replaced with sage `#8A9A5B` / mustard `#D4A017` / stone `#9A9591`. Red kept (`#E4483D`) as the universal stop sign. |
+| 2026-04-08 | **v1.1 revision**: dashed borders banned everywhere | Original preview used `border-dashed` on the "+ new task" button, step separators, and right-panel meta rows. Solid borders only — dashed reads as "unfinished / placeholder / CAD" and fights the confident editorial tone. |
 
 ---
 
