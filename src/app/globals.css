@@ -505,10 +505,12 @@ body{
 .ob-hero-sub{font-size:17px;color:#6B7280;text-align:center;line-height:1.6;max-width:520px;margin:0 auto 32px}
 
 /* Task launcher input */
-.ob-launcher{width:min(800px,80%);background:var(--card-bg);border:1px solid rgba(255,90,31,0.22);border-radius:6px;padding:20px;transition:border-color .2s,box-shadow .3s;
-  box-shadow:0 0 0 1px rgba(255,90,31,0.08),0 0 32px rgba(255,90,31,0.10)}
-.ob-launcher:focus-within{border-color:rgba(255,90,31,0.5);box-shadow:0 0 0 4px rgba(255,90,31,.12),var(--accent-glow)}
-.ob-launcher:hover:not(:focus-within){box-shadow:0 8px 24px rgba(0,0,0,.04)}
+/* .ob-launcher is a transparent sleeve — the composer v2 inside provides
+   its own background, border, padding, and focus glow. Keep the width
+   constraint and center alignment here. */
+.ob-launcher{width:min(760px,92%);background:transparent;border:none;border-radius:0;padding:0;box-shadow:none;display:flex;justify-content:center}
+.ob-launcher:focus-within{box-shadow:none}
+.ob-launcher:hover:not(:focus-within){box-shadow:none}
 
 /* Quick actions grid */
 .ob-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:720px;margin-top:24px}

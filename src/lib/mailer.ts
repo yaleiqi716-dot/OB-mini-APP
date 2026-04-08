@@ -76,17 +76,48 @@ async function sendViaSMTP(email: string, code: string): Promise<boolean> {
   }
 }
 
-// Main: Resend first, SMTP fallback
+// In non-production environments without real mailer credentials,
+// print the code to the server terminal instead of silently failing.
+// This lets developers log in locally without setting up Resend/SMTP.
+function isPlaceholderKey(key: string | undefined): boolean {
+  if (!key) return true
+  return key.includes('placeholder') || key.startsWith('re_placeholder') || key === 'CHANGEME'
+}
+
+function logDevCode(email: string, code: string): void {
+  const line = '═'.repeat(60)
+  console.log(`\n${line}`)
+  console.log(`[Mailer · DEV MODE] No real mailer configured.`)
+  console.log(`  To:    ${email}`)
+  console.log(`  Code:  ${code}`)
+  console.log(`  Expires in 10 minutes.`)
+  console.log(`  Set RESEND_API_KEY or SMTP_HOST in .env.local to send real emails.`)
+  console.log(`${line}\n`)
+}
+
+// Main: Resend first, SMTP fallback, dev-console last resort
 export async function sendVerificationCode(email: string, code: string): Promise<boolean> {
-  if (process.env.RESEND_API_KEY) {
+  const hasResend = process.env.RESEND_API_KEY && !isPlaceholderKey(process.env.RESEND_API_KEY)
+  const hasSMTP = !!process.env.SMTP_HOST
+
+  if (hasResend) {
     const ok = await sendViaResend(email, code)
     if (ok) return true
     console.warn('[Mailer] Resend failed, trying SMTP...')
   }
-  if (process.env.SMTP_HOST) {
-    return sendViaSMTP(email, code)
+  if (hasSMTP) {
+    const ok = await sendViaSMTP(email, code)
+    if (ok) return true
   }
-  console.error('[Mailer] No mailer configured')
+
+  // Dev fallback: print the code to the terminal and report success so
+  // local-only environments can complete the login flow. Refuse in prod.
+  if (process.env.NODE_ENV !== 'production') {
+    logDevCode(email, code)
+    return true
+  }
+
+  console.error('[Mailer] No mailer configured (production requires RESEND_API_KEY or SMTP_*)')
   return false
 }
 

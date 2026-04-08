@@ -21,3 +21,6 @@ prisma/prod.db
 ecosystem.config.js
 
 .gstack/
+
+# Dev-only design preview helper
+seed-test-user.mjs
