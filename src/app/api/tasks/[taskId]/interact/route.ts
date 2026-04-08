@@ -42,8 +42,9 @@ export async function POST(
       .catch(console.error);
     return NextResponse.json({ success: true });
   } catch (error) {
+    // Don't leak internal error details to clients — log server-side only.
     console.error('提交交互失败:', error);
-    return NextResponse.json({ error: '提交交互失败', detail: String(error) }, { status: 500 });
+    return NextResponse.json({ error: '提交交互失败' }, { status: 500 });
   }
 }
 

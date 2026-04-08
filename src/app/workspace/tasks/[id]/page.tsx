@@ -65,28 +65,38 @@ export default function WorkspaceTaskDetailPage() {
   const loadTask = useCallback(() => {
     setLoading(true);
     fetch(`/api/workspace/tasks/${taskId}`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then(d => { if (d?.id) setTask(d); })
-      .catch(() => {})
+      .catch(err => {
+        console.error('[loadTask]', err);
+        showToast('加载任务失败，请刷新重试');
+      })
       .finally(() => setLoading(false));
   }, [taskId]);
 
   useEffect(() => {
     loadTask();
-    // Fetch comments
-    fetch(`/api/workspace/tasks/${taskId}/comments`).then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setComments(data);
-    }).catch(() => {});
-    // Fetch member names for display
-    fetch('/api/workspace/members').then(r => r.json()).then(data => {
-      if (Array.isArray(data)) {
-        const names: Record<string, string> = {};
-        data.forEach((m: { userId: string; name: string | null; email: string }) => {
-          names[m.userId] = m.name || m.email;
-        });
-        setMemberNames(names);
-      }
-    }).catch(() => {});
+    // Fetch comments — failures are non-fatal but should still log.
+    fetch(`/api/workspace/tasks/${taskId}/comments`)
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(data => { if (Array.isArray(data)) setComments(data); })
+      .catch(err => console.error('[loadComments]', err));
+    // Fetch member names for display — failures are non-fatal but should still log.
+    fetch('/api/workspace/members')
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(data => {
+        if (Array.isArray(data)) {
+          const names: Record<string, string> = {};
+          data.forEach((m: { userId: string; name: string | null; email: string }) => {
+            names[m.userId] = m.name || m.email;
+          });
+          setMemberNames(names);
+        }
+      })
+      .catch(err => console.error('[loadMembers]', err));
   }, [loadTask, taskId]);
 
   const isOwner = task?.userRole === 'owner';
