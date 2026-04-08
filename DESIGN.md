@@ -2,7 +2,7 @@
 
 > **Source of truth for all visual and UI decisions.** Before writing UI code, reference this file. Before proposing a visual change, update this file. If the code disagrees with this file, the code is wrong.
 
-**Version:** 1.1 · **Created:** 2026-04-08 · **Method:** `/design-consultation` with competitive research
+**Version:** 1.2 · **Created:** 2026-04-08 · **Method:** `/design-consultation` with competitive research
 
 ---
 
@@ -66,16 +66,16 @@
 
 ### Semantic
 
-**Philosophy:** warm / earthy / desaturated. The default "red-yellow-green-blue traffic-light" status palette fights the editorial brand and screams against the warm-dark canvas. Instead, the whole semantic palette lives in the warm natural-color family — sage, mustard, rust, stone. Orange stays the loudest color on the page.
+**Philosophy:** warm / earthy / desaturated. The default "red-yellow-green-blue traffic-light" status palette fights the editorial brand and screams against the warm-dark canvas. Instead, the whole semantic palette lives in the warm natural-color family — sand, mustard, rust, stone. **Zero green anywhere.** Orange stays the loudest color on the page.
 
 | Token | Hex | Usage |
 |---|---|---|
-| `--ob-success` | `#8A9A5B` | **Warm sage / olive.** Task completed, credit granted, test passed. Not bright green — sage has weight without shouting. |
+| `--ob-success` | `#C9B89E` | **Warm sand / parchment.** Task completed, credit granted, test passed. Reads as "quietly done", like paper in sunlight. Not green — we tried sage `#8A9A5B` in v1.1 and even that read too green. Sand is unambiguous. |
 | `--ob-warning` | `#D4A017` | **Mustard.** Running long, near quota, needs attention. Distinct from orange (yellower), editorial-feeling. |
 | `--ob-error`   | `#E4483D` | **Rust red.** Task failed, validation failed, destructive confirm. Kept — red is the universal stop sign. |
 | `--ob-info`    | `#9A9591` | **Warm stone.** Neutral informational state, changelog, tips. **No blue.** Blue fights the warm palette and introduces a cold axis we don't want. Stone reads as "quiet neutral" without adding another color family. |
 
-**Do not introduce pure green, yellow, or blue to the codebase.** If a design requires a "green" or "blue" meaning, use sage / stone respectively. If you feel the urge to bump saturation to match a Figma default, stop — the muted feel is the brand.
+**Do not introduce any green, pure yellow, or any blue to the codebase.** If a design requires a "done / safe" meaning, use sand. If it requires "info" or "neutral", use stone. If you feel the urge to bump saturation to match a Figma default, stop — the muted feel is the brand.
 
 ### Light mode
 
@@ -254,6 +254,36 @@ All caption labels are **ALL CAPS + monospace + 0.12em tracking**. This is an in
 - Hover: border becomes `--ob-border-strong`, translate Y `-1px`.
 - The composer (main task input) uses `--r-card-lg` (16px) to feel like the hero of the canvas.
 
+### Composer (the /agent task input — hero element)
+
+The composer is the primary visual anchor of the `/agent` workspace and must be designed as a hero element, not a utility toolbar.
+
+**Structure:**
+- Outer container: `--ob-surface`, `--r-card-lg` (16px), `--ob-border` stroke, `18px 20px 14px` padding.
+- **Floating label** riding the top border: mono 10px `0.14em` tracked uppercase, in `--ob-text-muted`. Label background matches page bg (`--ob-bg`) so it cuts through the stroke cleanly. Format: `<b>AGENT</b> · 输入任务` where `AGENT` is in `--ob-orange`.
+- **Textarea** (NOT a single-line input): transparent bg, no border, `min-height: 48px`, `rows="2"` default, `15px/1.55` body type. Placeholder in `--ob-text-dim`.
+- **Toolbar** separated by a hairline `--ob-border` divider, `12px` padding top.
+
+**Toolbar layout (3 zones):**
+1. **Left:** tool buttons (attachments, command palette, knowledge base) each `32×32 rounded-6` icon-only ghost buttons. Then a small **model chip** — pill-shape, `--ob-surface-hi` bg, `--ob-border`, mono 11px, format: `● gpt-4o ▾` where the dot is a tiny `--ob-orange` indicator with a soft glow.
+2. **Middle:** cost preview (`约 18 积分` in mono 11px dim) + keyboard hint (`⌘ ↵ 发送` where each key is its own small `kbd` element with `--ob-surface-hi` bg).
+3. **Right:** the send button.
+
+**Send button:**
+- `44×44` circle, `--ob-orange` background.
+- **Icon:** Lucide `send-horizontal` paper plane (2px stroke, 18px size, offset `-1px x, +1px y` to optically center inside the circle — the paper plane visually leans forward).
+- Inset highlight (`rgba(255,255,255,.12)` top) + outer orange glow shadow (`0 6px 18px -6px rgba(255,90,31,.6)`) + a subtle `-2px` outer ring in `--ob-orange-alpha-20` for an extra halo.
+- **No text label inside the button.** The icon carries the meaning; the `⌘ ↵ 发送` hint to the left of the button provides the verbal affordance.
+- **Hover:** darkens to `--ob-orange-lo`, translate Y `-1px`, rotate `-2deg` (subtle tilt as if about to take off), stronger glow.
+- **Active:** returns to rotation 0.
+
+**Focus state (whole composer):** border becomes `--ob-orange`, adds a `0 0 0 4px` outer ring in `--ob-orange-alpha-10`. This makes the composer "light up" when the user clicks into it — a quiet but confident signal.
+
+**Do not:**
+- Replace the round send button with a rectangular "send" text button — the circular icon-only button is the brand's hero affordance.
+- Use a generic up-arrow ↑ glyph. Paper plane only.
+- Put model selection in a dropdown outside the composer. The chip is inline inside the toolbar.
+
 ### Badges / status
 
 - All lowercase monospace, ALL CAPS tracked wide, pill shape.
@@ -305,6 +335,8 @@ When designing light mode, **do not just invert the colors.** Reduce saturation 
 | 2026-04-08 | **v1.1 revision**: bg lifted `#0B0B0C` → `#141417`, all surface/border tokens lifted proportionally | User feedback: the original near-black felt "too deep" / "dev dungeon". The lifted value still reads warm dark but stops pressing. |
 | 2026-04-08 | **v1.1 revision**: semantic palette replaced with warm earthy set | Original `#2F9E6B` (green) / `#C58B00` (yellow) / `#5B8CD6` (blue) felt like a traffic-light palette fighting the editorial warm brand. Replaced with sage `#8A9A5B` / mustard `#D4A017` / stone `#9A9591`. Red kept (`#E4483D`) as the universal stop sign. |
 | 2026-04-08 | **v1.1 revision**: dashed borders banned everywhere | Original preview used `border-dashed` on the "+ new task" button, step separators, and right-panel meta rows. Solid borders only — dashed reads as "unfinished / placeholder / CAD" and fights the confident editorial tone. |
+| 2026-04-08 | **v1.2 revision**: success sage `#8A9A5B` → sand `#C9B89E` | User feedback: even muted sage still read as green. Replaced with warm parchment sand, which has zero green cast and fits the editorial warm palette naturally. Zero green anywhere is now a hard rule. |
+| 2026-04-08 | **v1.2 revision**: composer redesigned as hero element | v1 composer was a minor utility toolbar with broken layout ("模型" text wrapped vertically, tiny square send button). v1.2 composer has a floating "AGENT · 输入任务" label riding the top border, real multiline textarea, clean 3-zone toolbar, and a 44px circular orange send button with Lucide `send-horizontal` paper plane icon, inset highlight, outer orange glow, and a -2deg hover tilt. See the Composer section. |
 
 ---
 
