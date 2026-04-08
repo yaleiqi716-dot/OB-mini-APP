@@ -26,9 +26,9 @@ function StatusBadge({ status }: { status: string }) {
     draft: { bg: 'rgba(156,163,175,0.10)', color: 'var(--ob-text-muted)' },
     assigned: { bg: 'rgba(255,90,31,0.10)', color: 'var(--ob-orange)' },
     in_progress: { bg: 'rgba(255,90,31,0.10)', color: 'var(--ob-orange)' },
-    submitted: { bg: 'rgba(154,149,145,0.10)', color: '#1D4ED8' },
-    revision: { bg: 'rgba(228,72,61,0.10)', color: '#B91C1C' },
-    completed: { bg: 'rgba(16,185,129,0.10)', color: 'var(--ob-success)' },
+    submitted: { bg: 'rgba(154,149,145,0.10)', color: '#9A9591' },
+    revision: { bg: 'rgba(228,72,61,0.10)', color: '#E4483D' },
+    completed: { bg: 'rgba(201,184,158,0.10)', color: 'var(--ob-success)' },
   };
   const c = colors[status] || colors.draft;
   return <span style={{ display: 'inline-flex', alignItems: 'center', height: 24, padding: '0 12px', fontSize: 12, fontWeight: 500, borderRadius: 9999, background: c.bg, color: c.color }}>{STATUS_LABEL[status] || status}</span>;
@@ -173,7 +173,7 @@ export default function WorkspaceTaskDetailPage() {
     finally { setSendingComment(false); }
   }
 
-  const cardStyle: React.CSSProperties = { background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20, marginBottom: 16 };
+  const cardStyle: React.CSSProperties = { background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 20, marginBottom: 16 };
   const actionBtn: React.CSSProperties = { height: 36, padding: '0 18px', borderRadius: 12, fontSize: 14, fontWeight: 500, border: 'none', cursor: 'pointer', transition: 'background .2s' };
 
   if (loading || !task) {
@@ -204,7 +204,7 @@ export default function WorkspaceTaskDetailPage() {
               {task.assigneeId && <span>负责人：<strong style={{ color: 'var(--ob-text)', fontWeight: 500 }}>{memberNames[task.assigneeId] || task.assigneeId}</strong></span>}
               <span>创建于 {new Date(task.createdAt).toLocaleDateString('zh-CN')}</span>
               {task.dueAt && <span>截止 {new Date(task.dueAt).toLocaleDateString('zh-CN')}</span>}
-              {task.priority >= 2 && <span style={{ color: '#B91C1C', fontWeight: 500 }}>紧急</span>}
+              {task.priority >= 2 && <span style={{ color: '#E4483D', fontWeight: 500 }}>紧急</span>}
             </div>
           </div>
 
@@ -212,7 +212,7 @@ export default function WorkspaceTaskDetailPage() {
           {task.description && (
             <div style={cardStyle}>
               <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ob-text-muted)', margin: '0 0 8px' }}>任务描述</p>
-              <p style={{ fontSize: 14, color: '#D1D5DB', lineHeight: 1.75, margin: 0, whiteSpace: 'pre-wrap' }}>{task.description}</p>
+              <p style={{ fontSize: 14, color: '#8A8A90', lineHeight: 1.75, margin: 0, whiteSpace: 'pre-wrap' }}>{task.description}</p>
             </div>
           )}
 
@@ -227,7 +227,7 @@ export default function WorkspaceTaskDetailPage() {
           {task.feedback && task.businessStatus === 'revision' && (
             <div style={{ ...cardStyle, background: '#FFF7F5', borderColor: '#F5D0C5' }}>
               <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ob-orange)', margin: '0 0 8px' }}>修改意见</p>
-              <p style={{ fontSize: 14, color: '#D1D5DB', lineHeight: 1.6, margin: 0 }}>{task.feedback}</p>
+              <p style={{ fontSize: 14, color: '#8A8A90', lineHeight: 1.6, margin: 0 }}>{task.feedback}</p>
             </div>
           )}
 
@@ -238,7 +238,7 @@ export default function WorkspaceTaskDetailPage() {
               {task.agentTasks.map((at, i) => {
                 const link = task.links.find(l => l.agentTaskId === at.id);
                 return (
-                  <div key={at.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < task.agentTasks.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                  <div key={at.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < task.agentTasks.length - 1 ? '1px solid rgba(245,245,240,0.08)' : 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ width: 6, height: 6, borderRadius: '50%', background: at.status === 'completed' ? '#C9B89E' : at.status === 'failed' ? '#E4483D' : '#FF5A1F', flexShrink: 0 }} />
                       <span style={{ fontSize: 14, color: 'var(--ob-text)' }}>{at.title || 'Agent 任务'}</span>
@@ -247,7 +247,7 @@ export default function WorkspaceTaskDetailPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 12, color: 'var(--ob-text-muted)' }}>{new Date(at.createdAt).toLocaleDateString('zh-CN')}</span>
                       {at.conversationId && (
-                        <a href={`/agent?conversationId=${at.conversationId}`} style={{ height: 26, padding: '0 10px', borderRadius: 9999, fontSize: 12, fontWeight: 500, border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>查看</a>
+                        <a href={`/agent?conversationId=${at.conversationId}`} style={{ height: 26, padding: '0 10px', borderRadius: 9999, fontSize: 12, fontWeight: 500, border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>查看</a>
                       )}
                     </div>
                   </div>
@@ -262,7 +262,7 @@ export default function WorkspaceTaskDetailPage() {
               {task.submissionSummary && (
                 <>
                   <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ob-text-muted)', margin: '0 0 8px' }}>交付说明</p>
-                  <p style={{ fontSize: 14, color: '#D1D5DB', lineHeight: 1.6, margin: '0 0 12px' }}>{task.submissionSummary}</p>
+                  <p style={{ fontSize: 14, color: '#8A8A90', lineHeight: 1.6, margin: '0 0 12px' }}>{task.submissionSummary}</p>
                 </>
               )}
               {task.submissionAttachments && task.submissionAttachments.length > 0 && (
@@ -296,7 +296,7 @@ export default function WorkspaceTaskDetailPage() {
                           {new Date(c.createdAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      <p style={{ fontSize: 14, color: '#D1D5DB', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>{c.content}</p>
+                      <p style={{ fontSize: 14, color: '#8A8A90', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>{c.content}</p>
                     </div>
                   </div>
                 ))}
@@ -312,7 +312,7 @@ export default function WorkspaceTaskDetailPage() {
                 placeholder="输入讨论内容..."
                 rows={2}
                 style={{
-                  flex: 1, borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)',
+                  flex: 1, borderRadius: 12, border: '1px solid rgba(245,245,240,0.08)',
                   padding: '10px 14px', fontSize: 14, color: 'var(--ob-text)',
                   outline: 'none', resize: 'none', minHeight: 44, fontFamily: 'inherit',
                   transition: 'border-color .2s',
@@ -351,11 +351,11 @@ export default function WorkspaceTaskDetailPage() {
 
             {/* Member: Submit */}
             {canSubmit && (
-              <div style={{ borderTop: canExecute ? '1px solid rgba(255,255,255,0.04)' : 'none', paddingTop: canExecute ? 16 : 0 }}>
+              <div style={{ borderTop: canExecute ? '1px solid rgba(245,245,240,0.08)' : 'none', paddingTop: canExecute ? 16 : 0 }}>
                 <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--ob-text)', margin: '0 0 8px' }}>提交交付物</p>
                 <textarea value={submitSummary} onChange={e => setSubmitSummary(e.target.value)}
                   placeholder="简要说明你的交付内容（可选）" rows={2}
-                  style={{ width: '100%', borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)', padding: '10px 14px', fontSize: 14, color: 'var(--ob-text)', outline: 'none', resize: 'vertical', minHeight: 60, fontFamily: 'inherit', marginBottom: 10 }}
+                  style={{ width: '100%', borderRadius: 12, border: '1px solid rgba(245,245,240,0.08)', padding: '10px 14px', fontSize: 14, color: 'var(--ob-text)', outline: 'none', resize: 'vertical', minHeight: 60, fontFamily: 'inherit', marginBottom: 10 }}
                   onFocus={e => (e.currentTarget.style.borderColor = '#FF5A1F')} onBlur={e => (e.currentTarget.style.borderColor = 'var(--ob-border)')} />
                 <div style={{ marginBottom: 12 }}>
                   <FileUploader files={submitFiles} onChange={setSubmitFiles} label="附加文件（可选）" />
@@ -380,10 +380,10 @@ export default function WorkspaceTaskDetailPage() {
                 <div>
                   <textarea value={reviewFeedback} onChange={e => setReviewFeedback(e.target.value)}
                     placeholder="填写修改意见后点击退回..." rows={2}
-                    style={{ width: '100%', borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)', padding: '10px 14px', fontSize: 14, color: 'var(--ob-text)', outline: 'none', resize: 'vertical', minHeight: 60, fontFamily: 'inherit', marginBottom: 10 }}
+                    style={{ width: '100%', borderRadius: 12, border: '1px solid rgba(245,245,240,0.08)', padding: '10px 14px', fontSize: 14, color: 'var(--ob-text)', outline: 'none', resize: 'vertical', minHeight: 60, fontFamily: 'inherit', marginBottom: 10 }}
                     onFocus={e => (e.currentTarget.style.borderColor = '#FF5A1F')} onBlur={e => (e.currentTarget.style.borderColor = 'var(--ob-border)')} />
                   <button onClick={() => handleReview('revision')} disabled={!!actionLoading || !reviewFeedback.trim()}
-                    style={{ ...actionBtn, background: 'var(--ob-surface)', border: '1px solid rgba(185,28,28,0.18)', color: '#B91C1C', opacity: (actionLoading || !reviewFeedback.trim()) ? 0.5 : 1 }}>
+                    style={{ ...actionBtn, background: 'var(--ob-surface)', border: '1px solid rgba(185,28,28,0.18)', color: '#E4483D', opacity: (actionLoading || !reviewFeedback.trim()) ? 0.5 : 1 }}>
                     {actionLoading === 'revision' ? '处理中...' : '退回修改'}
                   </button>
                 </div>
@@ -404,7 +404,7 @@ export default function WorkspaceTaskDetailPage() {
 
             {/* Submitted waiting for owner */}
             {task.businessStatus === 'submitted' && !canReview && (
-              <p style={{ fontSize: 14, color: '#1D4ED8', textAlign: 'center' }}>已提交，等待审核</p>
+              <p style={{ fontSize: 14, color: '#9A9591', textAlign: 'center' }}>已提交，等待审核</p>
             )}
           </div>
         </div>

@@ -97,7 +97,7 @@ export default function WorkspaceMembersPage() {
 
   const actionBtn: React.CSSProperties = {
     height: 28, padding: '0 10px', borderRadius: 9999, fontSize: 12, fontWeight: 500,
-    border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)', cursor: 'pointer',
+    border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)', cursor: 'pointer',
     transition: 'border-color .2s, color .2s',
   };
 
@@ -119,7 +119,7 @@ export default function WorkspaceMembersPage() {
 
           {/* Invite form (owner only) */}
           {isOwner && (
-            <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
+            <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
               <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 12px' }}>邀请新成员</p>
               <div style={{ display: 'flex', gap: 10 }}>
                 <input
@@ -129,7 +129,7 @@ export default function WorkspaceMembersPage() {
                   onKeyDown={e => e.key === 'Enter' && handleInvite()}
                   placeholder="输入邮箱地址"
                   style={{
-                    flex: 1, height: 40, borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)',
+                    flex: 1, height: 40, borderRadius: 12, border: '1px solid rgba(245,245,240,0.08)',
                     background: 'var(--ob-surface)', padding: '0 14px', fontSize: 14, color: 'var(--ob-text)', outline: 'none',
                     transition: 'border-color .2s',
                   }}
@@ -154,12 +154,12 @@ export default function WorkspaceMembersPage() {
 
           {/* Pending invites */}
           {pendingInvites.length > 0 && (
-            <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
+            <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
               <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 12px' }}>待接受邀请</p>
               {pendingInvites.map(inv => (
                 <div key={inv.id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  padding: '10px 0', borderBottom: '1px solid rgba(245,245,240,0.08)',
                 }}>
                   <div>
                     <span style={{ fontSize: 14, color: 'var(--ob-text)' }}>{inv.email}</span>
@@ -174,7 +174,7 @@ export default function WorkspaceMembersPage() {
           )}
 
           {/* Members list */}
-          <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20 }}>
+          <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 20 }}>
             <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 12px' }}>
               当前成员 ({members.length})
             </p>
@@ -187,7 +187,7 @@ export default function WorkspaceMembersPage() {
                 <div key={m.id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '10px 0',
-                  borderBottom: i < members.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                  borderBottom: i < members.length - 1 ? '1px solid rgba(245,245,240,0.08)' : 'none',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{

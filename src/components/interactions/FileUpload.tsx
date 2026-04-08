@@ -33,9 +33,9 @@ export function FileUpload({ question, accept, onSubmit, disabled }: FileUploadP
       <div
         onClick={() => inputRef.current?.click()}
         className={cn(
-          'border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors',
-          'hover:border-accent/40 hover:bg-surface-tertiary',
-          file ? 'border-accent/40 bg-accent/5' : 'border-border'
+          'border rounded-ob-card p-6 text-center cursor-pointer transition-colors',
+          'hover:border-accent/60 hover:bg-surface-tertiary',
+          file ? 'border-accent bg-accent/10' : 'border-border'
         )}
       >
         {file ? (

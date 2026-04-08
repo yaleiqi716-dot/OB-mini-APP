@@ -95,8 +95,8 @@ const PRODUCT_NAMES: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, { text: string; color: string }> = {
   paid: { text: '已完成', color: 'var(--ob-success)' },
-  pending: { text: '待支付', color: '#D97706' },
-  failed: { text: '失败', color: '#B91C1C' },
+  pending: { text: '待支付', color: '#D4A017' },
+  failed: { text: '失败', color: '#E4483D' },
   cancelled: { text: '已取消', color: 'var(--ob-text-muted)' },
 };
 
@@ -170,17 +170,17 @@ export default function AccountPage() {
     ? new Date(user.expireAt).getTime() - Date.now() < 7 * 86400000
     : false;
   const statusLabel = !user ? '加载中' : isExpiringSoon ? '即将到期' : '正常';
-  const statusBg = isExpiringSoon ? 'rgba(228,72,61,0.10)' : 'rgba(16,185,129,0.10)';
-  const statusColor = isExpiringSoon ? '#B91C1C' : 'var(--ob-success)';
+  const statusBg = isExpiringSoon ? 'rgba(228,72,61,0.10)' : 'rgba(201,184,158,0.10)';
+  const statusColor = isExpiringSoon ? '#E4483D' : 'var(--ob-success)';
 
   // ── Shared styles ──
   const cardStyle: React.CSSProperties = {
-    background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20,
+    background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 20,
   };
   const actionBtnStyle: React.CSSProperties = {
     height: 30, padding: '0 12px', borderRadius: 9999,
     fontSize: 12, fontWeight: 500,
-    border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)',
+    border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)',
     color: 'var(--ob-text-muted)', cursor: 'pointer', textDecoration: 'none',
     display: 'inline-flex', alignItems: 'center',
     transition: 'border-color .2s, background .2s, color .2s',
@@ -199,12 +199,12 @@ export default function AccountPage() {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     minHeight: 56, padding: '12px 0',
   };
-  const rowBorder: React.CSSProperties = { borderBottom: '1px solid rgba(255,255,255,0.04)' };
+  const rowBorder: React.CSSProperties = { borderBottom: '1px solid rgba(245,245,240,0.08)' };
   const placeholderTag: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center',
     height: 22, fontSize: 11, fontWeight: 500, color: 'var(--ob-text-muted)',
     background: 'var(--ob-bg)', borderRadius: 9999, padding: '0 10px',
-    border: '1px solid rgba(255,255,255,0.04)',
+    border: '1px solid rgba(245,245,240,0.08)',
   };
   const sectionTitle: React.CSSProperties = {
     fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 16px',
@@ -349,7 +349,7 @@ export default function AccountPage() {
               {planInfo.benefits.map((b, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#C9B89E', flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, color: '#D1D5DB' }}>{b}</span>
+                  <span style={{ fontSize: 14, color: '#8A8A90' }}>{b}</span>
                 </div>
               ))}
             </div>
@@ -370,14 +370,14 @@ export default function AccountPage() {
 
                 {/* Cancel status */}
                 {user?.cancelAtPeriodEnd && (
-                  <p style={{ fontSize: 13, color: '#D97706', margin: '4px 0', fontWeight: 500 }}>
+                  <p style={{ fontSize: 13, color: '#D4A017', margin: '4px 0', fontWeight: 500 }}>
                     已设置到期取消 — 到期后将降为 Free
                   </p>
                 )}
 
                 {/* Pending downgrade status */}
                 {user?.pendingPlan && !user?.cancelAtPeriodEnd && (
-                  <p style={{ fontSize: 13, color: '#D97706', margin: '4px 0', fontWeight: 500 }}>
+                  <p style={{ fontSize: 13, color: '#D4A017', margin: '4px 0', fontWeight: 500 }}>
                     已设置到期降级为 {(PLAN_DISPLAY[user.pendingPlan] || { label: user.pendingPlan }).label}
                   </p>
                 )}
@@ -402,7 +402,7 @@ export default function AccountPage() {
                   <button
                     onClick={() => { if (confirm('确定要在到期后取消订阅吗？当前周期内权益不受影响。')) subAction('cancel'); }}
                     disabled={subActing}
-                    style={{ ...actionBtnStyle, color: '#B91C1C', borderColor: 'rgba(185,28,28,0.18)' }}
+                    style={{ ...actionBtnStyle, color: '#E4483D', borderColor: 'rgba(185,28,28,0.18)' }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'rgba(228,72,61,0.06)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'var(--ob-surface)'; }}
                   >
@@ -486,7 +486,7 @@ export default function AccountPage() {
             ) : (
               <div>
                 {/* Table header */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px 80px 80px', gap: 8, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px 80px 80px', gap: 8, padding: '8px 0', borderBottom: '1px solid rgba(245,245,240,0.10)' }}>
                   <span style={{ fontSize: 11, color: 'var(--ob-text-dim)', fontWeight: 500 }}>时间</span>
                   <span style={{ fontSize: 11, color: 'var(--ob-text-dim)', fontWeight: 500 }}>商品</span>
                   <span style={{ fontSize: 11, color: 'var(--ob-text-dim)', fontWeight: 500 }}>类型</span>
@@ -561,7 +561,7 @@ export default function AccountPage() {
                   height: 30, padding: '0 12px', borderRadius: 9999,
                   fontSize: 12, fontWeight: 500,
                   border: '1px solid rgba(185,28,28,0.18)', background: 'var(--ob-surface)',
-                  color: '#B91C1C', cursor: 'pointer',
+                  color: '#E4483D', cursor: 'pointer',
                   display: 'inline-flex', alignItems: 'center',
                   transition: 'background .2s',
                 }}

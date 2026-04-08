@@ -63,9 +63,9 @@ function StatusBadge({ status }: { status: string }) {
   const isFailed = status === 'failed';
   let bg = 'rgba(156,163,175,0.10)'; let color = 'var(--ob-text-muted)';
   if (isRunning)   { bg = 'rgba(255,90,31,0.10)'; color = 'var(--ob-orange)'; }
-  if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = 'var(--ob-success)'; }
-  if (isFailed)    { bg = 'rgba(228,72,61,0.10)';  color = '#B91C1C'; }
-  if (isReview)    { bg = 'rgba(154,149,145,0.10)';  color = '#1D4ED8'; }
+  if (isCompleted) { bg = 'rgba(201,184,158,0.10)'; color = 'var(--ob-success)'; }
+  if (isFailed)    { bg = 'rgba(228,72,61,0.10)';  color = '#E4483D'; }
+  if (isReview)    { bg = 'rgba(154,149,145,0.10)';  color = '#9A9591'; }
   const label = WS_STATUS_LABEL[status] || STATUS_LABEL[status] || status;
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px', fontSize: 11, fontWeight: 500, borderRadius: 9999, background: bg, color, whiteSpace: 'nowrap' }}>
@@ -182,7 +182,7 @@ export default function ReviewPage() {
   const actionBtnStyle: React.CSSProperties = {
     height: 30, padding: '0 12px', borderRadius: 9999,
     fontSize: 12, fontWeight: 500,
-    border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)',
+    border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)',
     color: 'var(--ob-text-muted)', textDecoration: 'none', cursor: 'pointer',
     display: 'inline-flex', alignItems: 'center',
     transition: 'border-color .2s, background .2s, color .2s',
@@ -225,7 +225,7 @@ export default function ReviewPage() {
                 aria-label="搜索任务"
                 style={{
                   width: 220, height: 36, borderRadius: 12,
-                  border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)',
+                  border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)',
                   padding: '0 12px 0 34px', fontSize: 13,
                   color: 'var(--ob-text)', outline: 'none',
                   transition: 'border-color .2s, box-shadow .2s',
@@ -239,7 +239,7 @@ export default function ReviewPage() {
 
           {/* View mode tabs */}
           {hasWorkspace && (
-            <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid rgba(245,245,240,0.08)' }}>
               {([['personal', '个人'], ['team', '团队']] as const).map(([value, label]) => (
                 <button key={value} onClick={() => { setViewMode(value); setFilter('all'); }}
                   style={{
@@ -263,7 +263,7 @@ export default function ReviewPage() {
                 style={{
                   height: 32, padding: '0 14px', borderRadius: 9999,
                   fontSize: 13, fontWeight: filter === f.value ? 500 : 400,
-                  border: filter === f.value ? 'none' : '1px solid rgba(255,255,255,0.04)',
+                  border: filter === f.value ? 'none' : '1px solid rgba(245,245,240,0.08)',
                   background: filter === f.value ? 'rgba(255,90,31,0.10)' : 'var(--ob-surface)',
                   color: filter === f.value ? '#FF5A1F' : 'var(--ob-text-muted)',
                   cursor: 'pointer', transition: 'all .2s',
@@ -282,7 +282,7 @@ export default function ReviewPage() {
           ) : filtered.length === 0 ? (
             /* Empty state */
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 16, background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 16, background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CCCCCC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
@@ -323,7 +323,7 @@ export default function ReviewPage() {
                   <div
                     key={t.id}
                     style={{
-                      background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)',
+                      background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)',
                       borderRadius: 16, padding: 18, minHeight: 124,
                       transition: 'transform .2s, box-shadow .2s',
                     }}
@@ -355,7 +355,7 @@ export default function ReviewPage() {
                           <div style={{
                             background: '#FBFBFA', borderRadius: 12,
                             padding: '12px 14px', marginTop: 10,
-                            fontSize: 13, color: '#D1D5DB', lineHeight: 1.7,
+                            fontSize: 13, color: '#8A8A90', lineHeight: 1.7,
                             overflow: 'hidden', display: '-webkit-box',
                             WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
                           }}>
@@ -372,12 +372,12 @@ export default function ReviewPage() {
 
                         {/* Team: submitted = needs review */}
                         {isSubmitted && (
-                          <p style={{ fontSize: 13, color: '#1D4ED8', marginTop: 8 }}>已提交，等待审核</p>
+                          <p style={{ fontSize: 13, color: '#9A9591', marginTop: 8 }}>已提交，等待审核</p>
                         )}
 
                         {/* Team: revision = sent back */}
                         {isRevision && (
-                          <p style={{ fontSize: 13, color: '#B91C1C', marginTop: 8 }}>已退回修改，等待重新提交</p>
+                          <p style={{ fontSize: 13, color: '#E4483D', marginTop: 8 }}>已退回修改，等待重新提交</p>
                         )}
 
                         {/* Team: running = member working */}
@@ -387,7 +387,7 @@ export default function ReviewPage() {
 
                         {/* Failed message */}
                         {failed && (
-                          <p style={{ fontSize: 12, color: '#B91C1C', marginTop: 8 }}>
+                          <p style={{ fontSize: 12, color: '#E4483D', marginTop: 8 }}>
                             当前能力暂不可用 · 请稍后重试，或联系管理员启用该能力
                           </p>
                         )}
@@ -417,9 +417,9 @@ export default function ReviewPage() {
                               onClick={() => handleRetry(t.id)}
                               disabled={retrying === t.id}
                               aria-label="重试"
-                              style={{ ...actionBtnStyle, color: '#B91C1C', opacity: retrying === t.id ? 0.5 : 1 }}
+                              style={{ ...actionBtnStyle, color: '#E4483D', opacity: retrying === t.id ? 0.5 : 1 }}
                               onMouseEnter={hoverIn}
-                              onMouseLeave={e => { hoverOut(e); e.currentTarget.style.color = '#B91C1C'; }}
+                              onMouseLeave={e => { hoverOut(e); e.currentTarget.style.color = '#E4483D'; }}
                             >
                               {retrying === t.id ? '重试中...' : '重试'}
                             </button>

@@ -612,7 +612,7 @@ function AgentPageInner() {
             </>
             ) : taskLoadError ? (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.55)' }}>对话加载失败</p>
+                <p style={{ fontSize: 14, color: 'rgba(245,245,240,0.55)' }}>对话加载失败</p>
                 <button onClick={() => currentConversationId && fetchConversationTasks(currentConversationId)} style={{ fontSize: 13, color: '#FF5A1F', background: 'none', border: 'none', cursor: 'pointer' }}>重试</button>
               </div>
             ) : (

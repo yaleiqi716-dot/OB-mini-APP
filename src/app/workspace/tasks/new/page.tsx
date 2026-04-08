@@ -52,7 +52,7 @@ export default function NewWorkspaceTaskPage() {
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', height: 40, borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)',
+    width: '100%', height: 40, borderRadius: 12, border: '1px solid rgba(245,245,240,0.08)',
     background: 'var(--ob-surface)', padding: '0 14px', fontSize: 14, color: 'var(--ob-text)', outline: 'none',
     transition: 'border-color .2s',
   };
@@ -66,7 +66,7 @@ export default function NewWorkspaceTaskPage() {
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '40px 32px 60px' }}>
           <h1 style={{ fontSize: 28, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 24px' }}>新建任务</h1>
 
-          <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 24 }}>
+          <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 24 }}>
             <div style={{ marginBottom: 20 }}>
               <label style={labelStyle}>任务标题 *</label>
               <input value={title} onChange={e => setTitle(e.target.value)} placeholder="例如：写季度总结报告" style={inputStyle}
@@ -112,7 +112,7 @@ export default function NewWorkspaceTaskPage() {
               <FileUploader files={attachments} onChange={setAttachments} label="附件（可选）" />
             </div>
 
-            {error && <p style={{ fontSize: 13, color: '#B91C1C', marginBottom: 16 }}>{error}</p>}
+            {error && <p style={{ fontSize: 13, color: '#E4483D', marginBottom: 16 }}>{error}</p>}
 
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={handleCreate} disabled={!title.trim() || submitting}
@@ -120,7 +120,7 @@ export default function NewWorkspaceTaskPage() {
                 {submitting ? '创建中...' : '创建任务'}
               </button>
               <button onClick={() => router.back()}
-                style={{ height: 40, padding: '0 20px', borderRadius: 12, fontSize: 14, border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)', cursor: 'pointer' }}>
+                style={{ height: 40, padding: '0 20px', borderRadius: 12, fontSize: 14, border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)', cursor: 'pointer' }}>
                 取消
               </button>
             </div>

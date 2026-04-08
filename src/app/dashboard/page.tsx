@@ -54,8 +54,8 @@ function StatusBadge({ status }: { status: string }) {
   const isFailed = status === 'failed';
   let bg = 'rgba(156,163,175,0.10)'; let color = 'var(--ob-text-muted)';
   if (isRunning)   { bg = 'rgba(255,90,31,0.10)'; color = 'var(--ob-orange)'; }
-  if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = 'var(--ob-success)'; }
-  if (isFailed)    { bg = 'rgba(228,72,61,0.10)';  color = '#B91C1C'; }
+  if (isCompleted) { bg = 'rgba(201,184,158,0.10)'; color = 'var(--ob-success)'; }
+  if (isFailed)    { bg = 'rgba(228,72,61,0.10)';  color = '#E4483D'; }
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px', fontSize: 11, fontWeight: 500, borderRadius: 9999, background: bg, color, whiteSpace: 'nowrap' }}>
       {STATUS_LABEL[status] || status}
@@ -156,7 +156,7 @@ export default function DashboardPage() {
     { label: '总任务数', value: data.total },
     { label: '进行中', value: data.running, accent: 'var(--ob-orange)' },
     { label: '已完成', value: data.completed, accent: 'var(--ob-success)' },
-    { label: '失败', value: data.failed, accent: '#B91C1C' },
+    { label: '失败', value: data.failed, accent: '#E4483D' },
   ];
 
   const timeChips: { value: TimeRange; label: string }[] = [
@@ -172,7 +172,7 @@ export default function DashboardPage() {
   const actionBtnStyle: React.CSSProperties = {
     height: 30, padding: '0 12px', borderRadius: 9999,
     fontSize: 12, fontWeight: 500,
-    border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)',
+    border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)',
     color: 'var(--ob-text-muted)', textDecoration: 'none', cursor: 'pointer',
     display: 'inline-flex', alignItems: 'center',
     transition: 'border-color .2s, background .2s, color .2s',
@@ -202,7 +202,7 @@ export default function DashboardPage() {
                   style={{
                     height: 32, padding: '0 14px', borderRadius: 9999,
                     fontSize: 13, fontWeight: timeRange === c.value ? 500 : 400,
-                    border: timeRange === c.value ? 'none' : '1px solid rgba(255,255,255,0.04)',
+                    border: timeRange === c.value ? 'none' : '1px solid rgba(245,245,240,0.08)',
                     background: timeRange === c.value ? 'rgba(255,90,31,0.10)' : 'var(--ob-surface)',
                     color: timeRange === c.value ? '#FF5A1F' : 'var(--ob-text-muted)',
                     cursor: 'pointer', transition: 'all .2s',
@@ -219,7 +219,7 @@ export default function DashboardPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 }}>
             {statCards.map(s => (
               <div key={s.label} style={{
-                background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16,
+                background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16,
                 padding: 18, height: 108,
                 display: 'flex', flexDirection: 'column', justifyContent: 'center',
               }}>
@@ -232,7 +232,7 @@ export default function DashboardPage() {
           {/* ── Workspace summary card ── */}
           {wsSummary && (
             <div style={{
-              background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16,
+              background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16,
               padding: 18, marginBottom: 20,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
@@ -260,7 +260,7 @@ export default function DashboardPage() {
               </div>
               <a href="/workspace" style={{
                 height: 30, padding: '0 14px', borderRadius: 9999, fontSize: 13, fontWeight: 500,
-                border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)',
+                border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)',
                 textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
                 transition: 'border-color .2s, color .2s',
               }}
@@ -274,7 +274,7 @@ export default function DashboardPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: 20, marginBottom: 20 }}>
 
             {/* Left: Recent tasks */}
-            <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 18 }}>
+            <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 18 }}>
               <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 14px' }}>最近任务</p>
               {recentTasks.length > 0 ? (
                 <div>
@@ -285,7 +285,7 @@ export default function DashboardPage() {
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         height: 56, padding: '0 4px', textDecoration: 'none',
-                        borderBottom: i < recentTasks.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                        borderBottom: i < recentTasks.length - 1 ? '1px solid rgba(245,245,240,0.08)' : 'none',
                         transition: 'background .2s',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.015)')}
@@ -310,13 +310,13 @@ export default function DashboardPage() {
             </div>
 
             {/* Right: AI Summary */}
-            <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20, minHeight: 260 }}>
+            <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 20, minHeight: 260 }}>
               <div style={{ marginBottom: 14 }}>
                 <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: 0 }}>AI 总结</p>
                 <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: '2px 0 0' }}>基于你的任务数据自动生成</p>
               </div>
               {aiText ? (
-                <p style={{ fontSize: 14, color: '#D1D5DB', lineHeight: 1.75, margin: 0, whiteSpace: 'pre-wrap' }}>{aiText}</p>
+                <p style={{ fontSize: 14, color: '#8A8A90', lineHeight: 1.75, margin: 0, whiteSpace: 'pre-wrap' }}>{aiText}</p>
               ) : (
                 <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', lineHeight: 1.75, margin: 0 }}>
                   等任务多一点后，ORANGEBENCH 会在这里帮你总结趋势和重点。
@@ -326,7 +326,7 @@ export default function DashboardPage() {
           </div>
 
           {/* ── Row 3: Needs attention ── */}
-          <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 18 }}>
+          <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 18 }}>
             <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 14px' }}>需要关注</p>
             {needAttention.length > 0 ? (
               <div>
@@ -336,7 +336,7 @@ export default function DashboardPage() {
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '10px 4px',
-                      borderBottom: i < needAttention.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                      borderBottom: i < needAttention.length - 1 ? '1px solid rgba(245,245,240,0.08)' : 'none',
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -356,7 +356,7 @@ export default function DashboardPage() {
                           onClick={() => handleRetry(t.id)}
                           disabled={actionLoading === t.id}
                           aria-label="重试"
-                          style={{ ...actionBtnStyle, color: '#B91C1C', opacity: actionLoading === t.id ? 0.5 : 1 }}
+                          style={{ ...actionBtnStyle, color: '#E4483D', opacity: actionLoading === t.id ? 0.5 : 1 }}
                           onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)'; e.currentTarget.style.background = 'rgba(255,90,31,0.06)'; }}
                           onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--ob-border)'; e.currentTarget.style.background = '#FFFFFF'; }}
                         >

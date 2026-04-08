@@ -27,82 +27,96 @@ export default function ProfilePage() {
   }, []);
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-surface-primary">
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)', fontFamily: 'var(--ob-font-body)' }}>
       <AppHeader />
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="max-w-2xl mx-auto px-4 md:px-6 py-8 space-y-6">
-          <h1 className="text-xl font-semibold text-content-primary">个人资料</h1>
+      <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
+        <div style={{ maxWidth: 720, margin: '0 auto', padding: '40px 32px 60px' }}>
+          {/* Editorial kicker + display h1 */}
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 8px' }}>
+              <span style={{ color: 'var(--ob-orange)' }}>●</span> Profile
+            </p>
+            <h1 style={{ fontFamily: 'var(--ob-font-display)', fontSize: 44, fontWeight: 800, color: 'var(--ob-text)', lineHeight: 1, letterSpacing: '-0.025em', margin: 0 }}>个人资料</h1>
+          </div>
 
           {loading ? (
-            <div className="flex justify-center py-12"><Spinner size="md" /></div>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}><Spinner size="md" /></div>
           ) : (
-            <>
-              {/* Avatar + basic info */}
-              <div className="rounded-2xl border border-border bg-surface-secondary p-6 flex items-center gap-5">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Avatar + basic info — hero card uses 16px radius */}
+              <div style={{ borderRadius: 16, border: '1px solid var(--ob-border)', background: 'var(--ob-surface)', padding: 24, display: 'flex', alignItems: 'center', gap: 18 }}>
                 <div style={{
                   width: 56, height: 56, borderRadius: '50%',
-                  background: 'var(--accent)', color: '#fff',
+                  background: 'var(--ob-orange)', color: '#fff',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 22, fontWeight: 700, flexShrink: 0,
+                  fontFamily: 'var(--ob-font-display)',
                 }}>
                   {userId ? userId.slice(0, 1).toUpperCase() : 'U'}
                 </div>
                 <div>
-                  <div className="text-base font-semibold text-content-primary">{userId || '未知用户'}</div>
-                  <div className="text-xs text-content-tertiary mt-1">用户 ID：{user?.id || userId}</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ob-text)' }}>{userId || '未知用户'}</div>
+                  <div style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 11, color: 'var(--ob-text-dim)', marginTop: 4, letterSpacing: '0.04em' }}>
+                    USER ID · {user?.id || userId}
+                  </div>
                 </div>
               </div>
 
-              {/* Plan & credits */}
-              <div className="rounded-2xl border border-border bg-surface-secondary p-6 space-y-4">
-                <h2 className="text-sm font-semibold text-content-primary">账户状态</h2>
-                <div className="grid grid-cols-2 gap-4">
+              {/* Plan & credits — body card uses 12px radius */}
+              <div style={{ borderRadius: 12, border: '1px solid var(--ob-border)', background: 'var(--ob-surface)', padding: 24 }}>
+                <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 10, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 16px' }}>账户状态</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
                   <div>
-                    <div className="text-xs text-content-tertiary mb-1">当前套餐</div>
-                    <div className="text-lg font-bold text-content-primary uppercase">{user?.plan || 'Free'}</div>
+                    <div style={{ fontSize: 11, color: 'var(--ob-text-dim)', marginBottom: 4, fontFamily: 'var(--ob-font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>当前套餐</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--ob-text)', textTransform: 'uppercase', fontFamily: 'var(--ob-font-display)' }}>{user?.plan || 'Free'}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-content-tertiary mb-1">剩余额度</div>
-                    <div className="text-lg font-bold text-accent">{user?.credits ?? '--'} credits</div>
+                    <div style={{ fontSize: 11, color: 'var(--ob-text-dim)', marginBottom: 4, fontFamily: 'var(--ob-font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>剩余额度</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--ob-orange)', fontFamily: 'var(--ob-font-mono)' }}>{user?.credits ?? '--'} <span style={{ fontSize: 11, color: 'var(--ob-text-muted)' }}>credits</span></div>
                   </div>
                   {user?.expireAt && (
                     <div>
-                      <div className="text-xs text-content-tertiary mb-1">到期时间</div>
-                      <div className="text-sm text-content-primary">{new Date(user.expireAt).toLocaleDateString('zh-CN')}</div>
+                      <div style={{ fontSize: 11, color: 'var(--ob-text-dim)', marginBottom: 4, fontFamily: 'var(--ob-font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>到期时间</div>
+                      <div style={{ fontSize: 13, color: 'var(--ob-text)' }}>{new Date(user.expireAt).toLocaleDateString('zh-CN')}</div>
                     </div>
                   )}
                   <div>
-                    <div className="text-xs text-content-tertiary mb-1">最大并发任务</div>
-                    <div className="text-sm text-content-primary">{user?.limits?.maxConcurrent ?? '--'} 个</div>
+                    <div style={{ fontSize: 11, color: 'var(--ob-text-dim)', marginBottom: 4, fontFamily: 'var(--ob-font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>最大并发任务</div>
+                    <div style={{ fontSize: 13, color: 'var(--ob-text)' }}>{user?.limits?.maxConcurrent ?? '--'} 个</div>
                   </div>
                 </div>
               </div>
 
-              {/* Quick links */}
-              <div className="rounded-2xl border border-border bg-surface-secondary p-6 space-y-3">
-                <h2 className="text-sm font-semibold text-content-primary">快捷操作</h2>
-                <div className="space-y-2">
-                  <a href="/billing" className="flex items-center justify-between p-3 rounded-xl hover:bg-surface-tertiary transition-colors">
-                    <span className="text-sm text-content-primary">充值与套餐</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-content-tertiary">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </a>
-                  <a href="/tasks" className="flex items-center justify-between p-3 rounded-xl hover:bg-surface-tertiary transition-colors">
-                    <span className="text-sm text-content-primary">我的任务</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-content-tertiary">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </a>
-                  <a href="/settings" className="flex items-center justify-between p-3 rounded-xl hover:bg-surface-tertiary transition-colors">
-                    <span className="text-sm text-content-primary">账户设置</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-content-tertiary">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </a>
+              {/* Quick links — body card 12px */}
+              <div style={{ borderRadius: 12, border: '1px solid var(--ob-border)', background: 'var(--ob-surface)', padding: '20px 24px' }}>
+                <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 10, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 12px' }}>快捷操作</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {[
+                    { href: '/billing', label: '充值与套餐' },
+                    { href: '/tasks', label: '我的任务' },
+                    { href: '/settings', label: '账户设置' },
+                  ].map((link) => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '12px 14px', borderRadius: 8,
+                        color: 'var(--ob-text)', textDecoration: 'none',
+                        transition: 'background .12s cubic-bezier(.2,.7,.3,1)',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--ob-surface-hi)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <span style={{ fontSize: 14 }}>{link.label}</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ob-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9 18 15 12 9 6"/>
+                      </svg>
+                    </a>
+                  ))}
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

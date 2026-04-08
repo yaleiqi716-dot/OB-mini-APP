@@ -212,7 +212,7 @@ export default function InviteAcceptPage() {
               <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', marginBottom: 24 }}>{errorMsg}</p>
               <button onClick={() => setState('valid')} style={{
                 height: 30, padding: '0 14px', borderRadius: 9999, fontSize: 13, fontWeight: 500,
-                border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)', cursor: 'pointer',
+                border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)', cursor: 'pointer',
               }}>重试</button>
             </div>
           )}

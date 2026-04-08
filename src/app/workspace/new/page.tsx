@@ -49,7 +49,7 @@ export default function NewWorkspacePage() {
             <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', margin: 0 }}>为你的团队创建一个协作空间</p>
           </div>
 
-          <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 24 }}>
+          <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 24 }}>
             <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--ob-text)', marginBottom: 8 }}>
               工作区名称
             </label>
@@ -60,7 +60,7 @@ export default function NewWorkspacePage() {
               placeholder="例如：产品团队、市场部"
               autoFocus
               style={{
-                width: '100%', height: 44, borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)',
+                width: '100%', height: 44, borderRadius: 12, border: '1px solid rgba(245,245,240,0.08)',
                 background: 'var(--ob-surface)', padding: '0 16px', fontSize: 15, color: 'var(--ob-text)', outline: 'none',
                 transition: 'border-color .2s',
               }}
@@ -68,7 +68,7 @@ export default function NewWorkspacePage() {
               onBlur={e => (e.currentTarget.style.borderColor = 'var(--ob-border)')}
             />
 
-            {error && <p style={{ fontSize: 13, color: '#B91C1C', marginTop: 12 }}>{error}</p>}
+            {error && <p style={{ fontSize: 13, color: '#E4483D', marginTop: 12 }}>{error}</p>}
 
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
               <button
@@ -86,7 +86,7 @@ export default function NewWorkspacePage() {
                 onClick={() => router.back()}
                 style={{
                   height: 44, padding: '0 20px', borderRadius: 12, fontSize: 14,
-                  border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)', cursor: 'pointer',
+                  border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)', cursor: 'pointer',
                 }}
               >
                 取消

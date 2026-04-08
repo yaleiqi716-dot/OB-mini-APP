@@ -167,10 +167,10 @@ body{
 /* Scrollbar */
 .scrollbar-hide{scrollbar-width:none;-ms-overflow-style:none}
 .scrollbar-hide::-webkit-scrollbar{display:none}
-.custom-scrollbar{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent}
+.custom-scrollbar{scrollbar-width:thin;scrollbar-color:rgba(245,245,240,0.12) transparent}
 .custom-scrollbar::-webkit-scrollbar{width:4px}
 .custom-scrollbar::-webkit-scrollbar-track{background:transparent}
-.custom-scrollbar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:2px}
+.custom-scrollbar::-webkit-scrollbar-thumb{background:rgba(245,245,240,0.12);border-radius:2px}
 .custom-scrollbar::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.15)}
 
 /* Animations */
@@ -511,26 +511,26 @@ body{
 .ob-mission-dot--done{background:#C9B89E;box-shadow:0 0 6px rgba(201,184,158,0.3)}
 .ob-mission-dot--pending{background:#666666}
 .ob-mission-label{font-size:13px;font-weight:500;color:#F5F5F5}
-.ob-mission-sub{font-size:12px;color:#9CA3AF}
+.ob-mission-sub{font-size:12px;color:#8A8A90}
 
-/* Result node (not just a reply block) */
-.ob-result-node{position:relative;background:var(--bg-elevated);border:1px solid rgba(255,255,255,0.10);border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.3);margin-top:8px}
-.ob-result-node::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#FF5A1F,#C9B89E)}
-.ob-result-node-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.04)}
+/* Result node — token-driven, solid accent bar (no gradient) */
+.ob-result-node{position:relative;background:var(--ob-surface);border:1px solid var(--ob-border);border-radius:var(--ob-r-card-lg,12px);overflow:hidden;margin-top:8px}
+.ob-result-node::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ob-orange)}
+.ob-result-node-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--ob-border);font-family:var(--ob-font-display);font-weight:700;font-size:14px;color:var(--ob-text)}
 .ob-result-node-body{padding:20px}
 
-/* Command center summary bar */
-.ob-command-bar{display:flex;align-items:center;gap:16px;padding:14px 20px;background:var(--bg-card);border:none;border-radius:14px;margin-bottom:20px}
-.ob-command-stat{display:flex;align-items:center;gap:6px;font-size:13px;color:#6B7280}
-.ob-command-stat strong{font-weight:650;color:var(--text-primary)}
-.ob-command-stat--accent strong{color:#FF5A1F}
-.ob-command-stat--green strong{color:#047857}
-.ob-command-stat--red strong{color:#B91C1C}
+/* Command center summary bar — token-driven */
+.ob-command-bar{display:flex;align-items:center;gap:16px;padding:14px 20px;background:var(--ob-surface);border:1px solid var(--ob-border);border-radius:12px;margin-bottom:20px;font-family:var(--ob-font-body)}
+.ob-command-stat{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ob-text-muted)}
+.ob-command-stat strong{font-weight:650;color:var(--ob-text)}
+.ob-command-stat--accent strong{color:var(--ob-orange)}
+.ob-command-stat--green strong{color:var(--ob-success)}
+.ob-command-stat--red strong{color:var(--ob-error)}
 
-/* Fuel gauge (billing) */
-.ob-fuel-gauge{position:relative;height:8px;border-radius:4px;background:rgba(255,255,255,0.06);overflow:hidden;margin:8px 0}
-.ob-fuel-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#FF5A1F,#EA580C);transition:width .6s ease}
-.ob-fuel-fill--low{background:linear-gradient(90deg,#E4483D,#B91C1C)}
+/* Fuel gauge (billing) — solid fill, no gradient */
+.ob-fuel-gauge{position:relative;height:8px;border-radius:4px;background:var(--ob-surface-hi);overflow:hidden;margin:8px 0;border:1px solid var(--ob-border)}
+.ob-fuel-fill{height:100%;border-radius:4px;background:var(--ob-orange);transition:width .6s ease}
+.ob-fuel-fill--low{background:var(--ob-error)}
 
 /* Billing tier card highlight */
 .ob-tier-recommended{border:2px solid #FF5A1F;position:relative}
@@ -547,7 +547,7 @@ body{
 /* ═══════════════════════════════════════════════════════════════
    RECONNECT / TOAST
    ═══════════════════════════════════════════════════════════════ */
-.ob-reconnect,.agent-reconnect-banner{flex-shrink:0;background:rgba(255,90,31,.06);border-bottom:1px solid rgba(255,90,31,.15);text-align:center;font-size:12px;color:#d97706;padding:6px 16px}
+.ob-reconnect,.agent-reconnect-banner{flex-shrink:0;background:rgba(255,90,31,.06);border-bottom:1px solid rgba(255,90,31,.15);text-align:center;font-size:12px;color:#d4a017;padding:6px 16px}
 .ob-toast,.agent-error-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:88px;z-index:60;padding:10px 20px;border-radius:9999px;background:rgba(228,72,61,.92);color:#fff;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.12);white-space:nowrap;pointer-events:none}
 
 

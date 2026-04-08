@@ -50,12 +50,12 @@ const FILTER_OPTIONS = [
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, { bg: string; color: string }> = {
-    draft: { bg: 'rgba(156,163,175,0.10)', color: 'rgba(224,216,208,0.28)' },
+    draft: { bg: 'rgba(156,163,175,0.10)', color: 'rgba(245,245,240,0.28)' },
     assigned: { bg: 'rgba(255,90,31,0.10)', color: 'var(--ob-orange)' },
     in_progress: { bg: 'rgba(255,90,31,0.10)', color: 'var(--ob-orange)' },
-    submitted: { bg: 'rgba(154,149,145,0.10)', color: '#1D4ED8' },
-    revision: { bg: 'rgba(228,72,61,0.10)', color: '#B91C1C' },
-    completed: { bg: 'rgba(16,185,129,0.10)', color: 'var(--ob-success)' },
+    submitted: { bg: 'rgba(154,149,145,0.10)', color: '#9A9591' },
+    revision: { bg: 'rgba(228,72,61,0.10)', color: '#E4483D' },
+    completed: { bg: 'rgba(201,184,158,0.10)', color: 'var(--ob-success)' },
   };
   const c = colors[status] || colors.draft;
   return <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px', fontSize: 11, fontWeight: 500, borderRadius: 9999, background: c.bg, color: c.color }}>{STATUS_LABEL[status] || status}</span>;
@@ -117,7 +117,7 @@ export default function WorkspacePage() {
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
           <div style={{ width: 24, height: 24, border: '2px solid #FF5A1F', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
-          <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.55)' }}>加载工作区...</p>
+          <p style={{ fontSize: 14, color: 'rgba(245,245,240,0.55)' }}>加载工作区...</p>
         </div>
       </div>
     );
@@ -130,7 +130,7 @@ export default function WorkspacePage() {
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center' }}>
             <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--ob-text)', marginBottom: 8 }}>还没有工作区</p>
-            <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.55)', marginBottom: 24 }}>创建一个工作区开始团队协作</p>
+            <p style={{ fontSize: 14, color: 'rgba(245,245,240,0.55)', marginBottom: 24 }}>创建一个工作区开始团队协作</p>
             <a href="/workspace/new" style={{
               display: 'inline-flex', alignItems: 'center', height: 40, padding: '0 24px',
               borderRadius: 9999, fontSize: 15, fontWeight: 600,
@@ -180,7 +180,7 @@ export default function WorkspacePage() {
                   <span className="ob-px-dot ob-px-dot--active" style={{ animation: active > 0 ? 'statusCycle 2s ease-in-out infinite' : 'none', background: active > 0 ? '#FF5A1F' : 'var(--ob-text-dim)', boxShadow: active > 0 ? '0 0 6px rgba(255,90,31,0.4)' : 'none' }} />
                   <span><strong>{active}</strong> 进行中</span>
                 </div>
-                <div className="ob-command-stat" style={{ color: review > 0 ? '#1D4ED8' : undefined }}>
+                <div className="ob-command-stat" style={{ color: review > 0 ? '#9A9591' : undefined }}>
                   <span><strong>{review}</strong> 待审核</span>
                 </div>
                 <div className="ob-command-stat ob-command-stat--green">
@@ -192,8 +192,8 @@ export default function WorkspacePage() {
                   </div>
                 )}
                 <div style={{ flex: 1 }} />
-                <span style={{ fontSize: 10, color: 'rgba(224,216,208,0.28)', letterSpacing: '0.05em' }}>ACTIVE</span>
-                <span style={{ fontSize: 12, color: 'rgba(224,216,208,0.55)' }}>{ws?.memberCount} 位成员协作中</span>
+                <span style={{ fontSize: 10, color: 'rgba(245,245,240,0.28)', letterSpacing: '0.05em' }}>ACTIVE</span>
+                <span style={{ fontSize: 12, color: 'rgba(245,245,240,0.55)' }}>{ws?.memberCount} 位成员协作中</span>
               </div>
             );
           })()}
@@ -201,13 +201,13 @@ export default function WorkspacePage() {
           {/* Search + filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <div style={{ position: 'relative', flex: 1, maxWidth: 260 }}>
-              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'rgba(224,216,208,0.55)', pointerEvents: 'none' }}>
+              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'rgba(245,245,240,0.55)', pointerEvents: 'none' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               </span>
               <input
                 type="text" placeholder="搜索任务..." value={search}
                 onChange={e => setSearch(e.target.value)}
-                style={{ width: '100%', height: 36, borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)', padding: '0 12px 0 34px', fontSize: 13, color: 'var(--ob-text)', outline: 'none', transition: 'border-color .2s' }}
+                style={{ width: '100%', height: 36, borderRadius: 12, border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)', padding: '0 12px 0 34px', fontSize: 13, color: 'var(--ob-text)', outline: 'none', transition: 'border-color .2s' }}
                 onFocus={e => (e.currentTarget.style.borderColor = '#FF5A1F')}
                 onBlur={e => (e.currentTarget.style.borderColor = 'var(--ob-border)')}
               />
@@ -217,7 +217,7 @@ export default function WorkspacePage() {
                 <button key={f.value} onClick={() => setFilter(f.value)} style={{
                   height: 32, padding: '0 14px', borderRadius: 9999, fontSize: 13,
                   fontWeight: filter === f.value ? 500 : 400,
-                  border: filter === f.value ? 'none' : '1px solid rgba(255,255,255,0.04)',
+                  border: filter === f.value ? 'none' : '1px solid rgba(245,245,240,0.08)',
                   background: filter === f.value ? 'rgba(255,90,31,0.10)' : 'var(--ob-surface)',
                   color: filter === f.value ? '#FF5A1F' : 'var(--ob-text-muted)',
                   cursor: 'pointer', transition: 'all .2s',
@@ -229,7 +229,7 @@ export default function WorkspacePage() {
           {/* Task list */}
           {filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 16, background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 16, background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CCCCCC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="16" x2="12" y2="16"/>
                 </svg>
@@ -237,7 +237,7 @@ export default function WorkspacePage() {
               <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--ob-text)', marginBottom: 6 }}>
                 {search || filter !== 'all' ? '没有匹配的任务' : '还没有任务'}
               </p>
-              <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.55)', marginBottom: search || filter !== 'all' ? 0 : 20 }}>
+              <p style={{ fontSize: 14, color: 'rgba(245,245,240,0.55)', marginBottom: search || filter !== 'all' ? 0 : 20 }}>
                 {search || filter !== 'all' ? '换个条件试试' : '创建第一个任务，分配给团队成员'}
               </p>
               {!(search || filter !== 'all') && ws?.role === 'owner' && (
@@ -254,7 +254,7 @@ export default function WorkspacePage() {
                 if (groupTasks.length === 0) return null;
                 return (
                   <div key={group.key} style={{ marginBottom: 20 }}>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: 'rgba(224,216,208,0.55)', marginBottom: 10 }}>{group.label} ({groupTasks.length})</p>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: 'rgba(245,245,240,0.55)', marginBottom: 10 }}>{group.label} ({groupTasks.length})</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {groupTasks.map(t => <TaskCard key={t.id} task={t} />)}
                     </div>
@@ -283,7 +283,7 @@ function TaskCard({ task }: { task: WsTask }) {
       href={`/workspace/tasks/${task.id}`}
       style={{
         display: 'flex', alignItems: 'center', gap: 12,
-        background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 14,
+        background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 14,
         padding: '14px 16px', textDecoration: 'none',
         transition: 'transform .2s, box-shadow .2s',
       }}
@@ -303,7 +303,7 @@ function TaskCard({ task }: { task: WsTask }) {
       ) : (
         <div style={{
           width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-          background: 'var(--ob-text)', color: 'rgba(224,216,208,0.55)',
+          background: 'var(--ob-text)', color: 'rgba(245,245,240,0.55)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 12,
         }}>?</div>
@@ -315,15 +315,15 @@ function TaskCard({ task }: { task: WsTask }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ob-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>{task.title}</span>
           <StatusBadge status={task.businessStatus} />
-          {task.priority >= 2 && <span style={{ fontSize: 11, color: '#B91C1C', fontWeight: 500 }}>紧急</span>}
+          {task.priority >= 2 && <span style={{ fontSize: 11, color: '#E4483D', fontWeight: 500 }}>紧急</span>}
         </div>
 
         {/* Meta row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'rgba(224,216,208,0.55)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'rgba(245,245,240,0.55)' }}>
           {task.assigneeName && <span>{task.assigneeName}</span>}
           <span>{timeAgo(task.updatedAt)}</span>
           {hasDue && (
-            <span style={{ color: isOverdue ? '#B91C1C' : 'var(--ob-text-muted)' }}>
+            <span style={{ color: isOverdue ? '#E4483D' : 'var(--ob-text-muted)' }}>
               {isOverdue ? '已逾期' : `截止 ${new Date(task.dueAt!).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}`}
             </span>
           )}

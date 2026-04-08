@@ -66,16 +66,16 @@ export async function POST(req: NextRequest) {
       `
       <div style="font-family: -apple-system, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px;">
         <div style="margin-bottom: 24px;">
-          <span style="color: #F97316; font-weight: 700; font-size: 18px;">ORANGE</span><span style="color: #171717; font-weight: 700; font-size: 18px;">BENCH</span>
+          <span style="color: #FF5A1F; font-weight: 700; font-size: 18px;">ORANGE</span><span style="color: #171717; font-weight: 700; font-size: 18px;">BENCH</span>
         </div>
         <h2 style="color: #171717; font-size: 22px; font-weight: 600; margin: 0 0 8px;">你被邀请加入工作区</h2>
-        <p style="color: #6B7280; font-size: 15px; margin: 0 0 24px; line-height: 1.6;">
+        <p style="color: #5A5A60; font-size: 15px; margin: 0 0 24px; line-height: 1.6;">
           <strong>${ownerName}</strong> 邀请你加入工作区 <strong>${workspaceName}</strong>，角色为 ${role === 'owner' ? '管理员' : '成员'}。
         </p>
-        <a href="${inviteUrl}" style="display: inline-block; background: #F97316; color: #ffffff; font-size: 15px; font-weight: 600; padding: 12px 28px; border-radius: 12px; text-decoration: none;">
+        <a href="${inviteUrl}" style="display: inline-block; background: #FF5A1F; color: #ffffff; font-size: 15px; font-weight: 600; padding: 12px 28px; border-radius: 12px; text-decoration: none;">
           接受邀请
         </a>
-        <p style="color: #9CA3AF; font-size: 12px; margin-top: 32px; line-height: 1.6;">
+        <p style="color: #8A8A90; font-size: 12px; margin-top: 32px; line-height: 1.6;">
           此邀请 7 天内有效。如果你没有预期收到此邮件，请忽略。
         </p>
       </div>

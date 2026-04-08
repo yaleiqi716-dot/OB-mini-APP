@@ -37,7 +37,7 @@ export default function WorkspaceSettingsPage() {
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', height: 40, borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)',
+    width: '100%', height: 40, borderRadius: 12, border: '1px solid rgba(245,245,240,0.08)',
     background: 'var(--ob-surface)', padding: '0 14px', fontSize: 14, color: 'var(--ob-text)', outline: 'none',
   };
   const labelStyle: React.CSSProperties = { fontSize: 14, fontWeight: 500, color: 'var(--ob-text)', marginBottom: 6, display: 'block' };
@@ -57,7 +57,7 @@ export default function WorkspaceSettingsPage() {
               <div style={{ width: 20, height: 20, border: '2px solid #FF5A1F', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto' }} />
             </div>
           ) : (
-            <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 24 }}>
+            <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 24 }}>
               <div style={{ marginBottom: 24 }}>
                 <label style={labelStyle}>工作区名称</label>
                 <input value={name} onChange={e => setName(e.target.value)} style={inputStyle}

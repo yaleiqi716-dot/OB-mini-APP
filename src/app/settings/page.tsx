@@ -51,7 +51,7 @@ export default function SettingsPage() {
 
   // ── Shared styles ──
   const cardStyle: React.CSSProperties = {
-    background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20,
+    background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 20,
   };
   const sectionTitle: React.CSSProperties = {
     fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 4px',
@@ -64,7 +64,7 @@ export default function SettingsPage() {
     minHeight: 56, padding: '12px 0',
   };
   const rowBorder: React.CSSProperties = {
-    borderBottom: '1px solid rgba(255,255,255,0.04)',
+    borderBottom: '1px solid rgba(245,245,240,0.08)',
   };
   const labelStyle: React.CSSProperties = {
     fontSize: 14, fontWeight: 500, color: 'var(--ob-text)',
@@ -78,7 +78,7 @@ export default function SettingsPage() {
   const actionBtnStyle: React.CSSProperties = {
     height: 30, padding: '0 12px', borderRadius: 9999,
     fontSize: 12, fontWeight: 500,
-    border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)',
+    border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)',
     color: 'var(--ob-text-muted)', cursor: 'pointer',
     display: 'inline-flex', alignItems: 'center',
     transition: 'border-color .2s, background .2s, color .2s',
@@ -97,7 +97,7 @@ export default function SettingsPage() {
     display: 'inline-flex', alignItems: 'center',
     height: 22, fontSize: 11, fontWeight: 500, color: 'var(--ob-text-muted)',
     background: 'var(--ob-bg)', borderRadius: 9999, padding: '0 10px',
-    border: '1px solid rgba(255,255,255,0.04)',
+    border: '1px solid rgba(245,245,240,0.08)',
   };
   const switchStyle = (on: boolean): React.CSSProperties => ({
     width: 44, height: 24, borderRadius: 12, border: 'none',
@@ -267,7 +267,7 @@ export default function SettingsPage() {
             </div>
             <button
               onClick={handleLogout}
-              style={{ height: 30, padding: '0 12px', borderRadius: 9999, fontSize: 12, fontWeight: 500, border: '1px solid rgba(185,28,28,0.18)', background: 'var(--ob-surface)', color: '#B91C1C', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', transition: 'background .2s' }}
+              style={{ height: 30, padding: '0 12px', borderRadius: 9999, fontSize: 12, fontWeight: 500, border: '1px solid rgba(185,28,28,0.18)', background: 'var(--ob-surface)', color: '#E4483D', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', transition: 'background .2s' }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(228,72,61,0.06)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--ob-surface)'; }}
               aria-label="登出所有设备"

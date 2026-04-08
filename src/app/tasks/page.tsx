@@ -56,9 +56,9 @@ function StatusBadge({ status }: { status: string }) {
   let bg = 'rgba(156,163,175,0.10)';
   let color = 'var(--ob-text-muted)';
   if (isRunning)   { bg = 'rgba(255,90,31,0.10)'; color = 'var(--ob-orange)'; }
-  if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = 'var(--ob-success)'; }
-  if (isFailed)    { bg = 'rgba(228,72,61,0.10)';  color = '#B91C1C'; }
-  if (isReview)    { bg = 'rgba(154,149,145,0.10)';  color = '#1D4ED8'; }
+  if (isCompleted) { bg = 'rgba(201,184,158,0.10)'; color = 'var(--ob-success)'; }
+  if (isFailed)    { bg = 'rgba(228,72,61,0.10)';  color = '#E4483D'; }
+  if (isReview)    { bg = 'rgba(154,149,145,0.10)';  color = '#9A9591'; }
 
   return (
     <span style={{
@@ -193,7 +193,7 @@ export default function MyTasksPage() {
                 onChange={(e) => setSearch(e.target.value)}
                 style={{
                   width: 220, height: 36, borderRadius: 12,
-                  border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)',
+                  border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)',
                   padding: '0 12px 0 34px', fontSize: 13,
                   color: 'var(--ob-text)', outline: 'none',
                   transition: 'border-color .2s, box-shadow .2s',
@@ -208,7 +208,7 @@ export default function MyTasksPage() {
 
           {/* ── View mode tabs ── */}
           {hasWorkspace && (
-            <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid rgba(245,245,240,0.08)' }}>
               {([['personal', '个人'], ['team', '团队']] as const).map(([value, label]) => (
                 <button key={value} onClick={() => { setViewMode(value); setFilter('all'); }}
                   style={{
@@ -235,7 +235,7 @@ export default function MyTasksPage() {
                   style={{
                     height: 32, padding: '0 14px',
                     borderRadius: 9999, fontSize: 13, fontWeight: active ? 500 : 400,
-                    border: active ? 'none' : '1px solid rgba(255,255,255,0.04)',
+                    border: active ? 'none' : '1px solid rgba(245,245,240,0.08)',
                     background: active ? 'rgba(255,90,31,0.10)' : 'var(--ob-surface)',
                     color: active ? '#FF5A1F' : 'var(--ob-text-muted)',
                     cursor: 'pointer',
@@ -256,7 +256,7 @@ export default function MyTasksPage() {
           ) : error ? (
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
               <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(228,72,61,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E4483D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
               <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', marginBottom: 12 }}>{error}</p>
               <button onClick={fetchTasks} style={{ fontSize: 13, color: '#FF5A1F', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>重新加载</button>
@@ -264,7 +264,7 @@ export default function MyTasksPage() {
           ) : filtered.length === 0 ? (
             /* ── Empty state ── */
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 16, background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 16, background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CCCCCC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="16" x2="12" y2="16"/>
                 </svg>
@@ -302,7 +302,7 @@ export default function MyTasksPage() {
                 const actionBtnStyle: React.CSSProperties = {
                   height: 30, padding: '0 12px',
                   borderRadius: 9999, fontSize: 12, fontWeight: 500,
-                  border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)',
+                  border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)',
                   color: 'var(--ob-text-muted)', textDecoration: 'none', cursor: 'pointer',
                   display: 'inline-flex', alignItems: 'center',
                   transition: 'border-color .2s, background .2s, color .2s',
@@ -323,7 +323,7 @@ export default function MyTasksPage() {
                     key={t.id}
                     style={{
                       background: 'var(--ob-surface)',
-                      border: '1px solid rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(245,245,240,0.08)',
                       borderRadius: 16,
                       padding: 18,
                       minHeight: 96,
@@ -368,7 +368,7 @@ export default function MyTasksPage() {
 
                         {/* Failed: friendly message */}
                         {failed && (
-                          <p style={{ fontSize: 12, color: '#B91C1C', marginTop: 6 }}>
+                          <p style={{ fontSize: 12, color: '#E4483D', marginTop: 6 }}>
                             当前能力暂不可用 · 请稍后重试，或联系管理员启用该能力
                           </p>
                         )}
@@ -381,9 +381,9 @@ export default function MyTasksPage() {
                             onClick={() => handleRetry(t.id)}
                             disabled={retrying === t.id}
                             aria-label="重试任务"
-                            style={{ ...actionBtnStyle, color: '#B91C1C', opacity: retrying === t.id ? 0.5 : 1 }}
+                            style={{ ...actionBtnStyle, color: '#E4483D', opacity: retrying === t.id ? 0.5 : 1 }}
                             onMouseEnter={hoverIn}
-                            onMouseLeave={(e) => { hoverOut(e); e.currentTarget.style.color = '#B91C1C'; }}
+                            onMouseLeave={(e) => { hoverOut(e); e.currentTarget.style.color = '#E4483D'; }}
                           >
                             {retrying === t.id ? '重试中...' : '重试'}
                           </button>

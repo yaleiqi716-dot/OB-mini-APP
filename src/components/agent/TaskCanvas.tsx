@@ -384,18 +384,18 @@ export function TaskCanvas({
           <div className="ob-msg-ai chat-ai-area">
             {/* AI avatar row */}
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-full bg-[#f97316]/10 flex items-center justify-center flex-shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[#FF5A1F]/10 flex items-center justify-center flex-shrink-0">
                 {/* AI avatar icon — SVG, no emoji */}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF5A1F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="8" r="4"/>
                   <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
                 </svg>
               </div>
-              <span style={{ fontSize: 12, fontWeight: 500, color: 'rgba(224,216,208,0.28)' }}>ORANGEBENCH</span>
+              <span style={{ fontSize: 12, fontWeight: 500, color: 'rgba(245,245,240,0.28)' }}>ORANGEBENCH</span>
               {isActive ? (
-                <span style={{ fontSize: 11, color: '#C2410C', fontWeight: 500, background: 'rgba(255,90,31,0.08)', padding: '2px 8px', borderRadius: 9999 }}>执行中</span>
+                <span style={{ fontSize: 11, color: 'var(--ob-orange)', fontWeight: 500, background: 'rgba(255,90,31,0.08)', padding: '2px 8px', borderRadius: 9999 }}>执行中</span>
               ) : mode === 'result' ? (
-                <span style={{ fontSize: 11, color: '#047857', fontWeight: 500, background: 'rgba(16,185,129,0.08)', padding: '2px 8px', borderRadius: 9999 }}>已完成</span>
+                <span style={{ fontSize: 11, color: '#C9B89E', fontWeight: 500, background: 'rgba(201,184,158,0.08)', padding: '2px 8px', borderRadius: 9999 }}>已完成</span>
               ) : null}
             </div>
 
@@ -403,7 +403,7 @@ export function TaskCanvas({
             {isActive && (
               <div className="ob-mission-phase" style={{ marginLeft: 36 }}>
                 <span className={`ob-mission-dot ${status === 'understanding' || status === 'structuring' ? 'ob-mission-dot--active' : status === 'executing' || status === 'completed' ? 'ob-mission-dot--done' : 'ob-mission-dot--active'}`} />
-                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: '#8A8078', letterSpacing: '1px', flexShrink: 0 }}>
+                <span style={{ fontFamily: "var(--ob-font-mono)", fontSize: 10, color: '#8A8A90', letterSpacing: '1px', flexShrink: 0 }}>
                   {status === 'queued' || status === 'pending' ? 'READY' :
                    status === 'understanding' ? 'SIGNAL' :
                    status === 'structuring' ? 'PLAN' :
@@ -418,13 +418,13 @@ export function TaskCanvas({
                    status === 'interacting' ? '等待你的确认' :
                    '推进中'}
                 </span>
-                <span className="ob-mission-sub" style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: '1px', color: '#8A8078' }}>
+                <span className="ob-mission-sub" style={{ fontFamily: "var(--ob-font-mono)", fontSize: 10, letterSpacing: '1px', color: '#8A8A90' }}>
                   {completedSteps.length > 0 ? `${completedSteps.length} DONE` : ''}
                 </span>
               </div>
             )}
 
-            <div className="flex-1 min-w-0 space-y-3 pl-9" style={{ fontSize: 14, color: '#525252', lineHeight: 1.65 }}>
+            <div className="flex-1 min-w-0 space-y-3 pl-9" style={{ fontSize: 14, color: '#8A8A90', lineHeight: 1.65 }}>
 
               {/* Logs — only during review */}
               {visibleLogs.map((event, i) => (
@@ -452,7 +452,7 @@ export function TaskCanvas({
                         <span className="ob-step-text">
                           {step.text}
                           {step.current !== undefined && step.total !== undefined ? (
-                            <span style={{ color: 'rgba(224,216,208,0.55)', fontSize: 12, marginLeft: 6, fontVariantNumeric: 'tabular-nums' }}>{step.current}/{step.total}</span>
+                            <span style={{ color: 'rgba(245,245,240,0.55)', fontSize: 12, marginLeft: 6, fontVariantNumeric: 'tabular-nums' }}>{step.current}/{step.total}</span>
                           ) : null}
                         </span>
                       </div>
@@ -747,7 +747,7 @@ function CompletedStructure({ structure }: { structure: string[] }) {
   return (
     <div className="pl-3 border-l-2 border-green-400/20 py-1">
       <div className="flex items-center gap-2 mb-1.5">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#C9B89E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         <span className="text-xs text-content-tertiary">结构已确认 · {structure.length} 项</span>
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -1019,7 +1019,7 @@ function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { titl
       <div className="ob-result-card-header">
         <div className="flex items-center gap-2">
           <span style={{ display: 'inline-flex', width: 6, height: 6, borderRadius: '50%', background: '#C9B89E' }} />
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, fontWeight: 600, color: '#C9B89E', textTransform: 'uppercase' as const, letterSpacing: '1.5px' }}>RESULT</span>
+          <span style={{ fontFamily: "var(--ob-font-mono)", fontSize: 10, fontWeight: 600, color: '#C9B89E', textTransform: 'uppercase' as const, letterSpacing: '1.5px' }}>RESULT</span>
           {subtitle && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>{subtitle}</span>}
         </div>
         <button
@@ -1039,7 +1039,7 @@ function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { titl
       {/* Result body */}
       <div className="ob-result-card-body">
         <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 16 }}>{title}</p>
-        <div className="ob-result-card-inner" style={{ color: 'rgba(224,216,208,0.55)', lineHeight: 1.75 }}>
+        <div className="ob-result-card-inner" style={{ color: 'rgba(245,245,240,0.55)', lineHeight: 1.75 }}>
           <div className="space-y-3" ref={contentRef}>{children}</div>
         </div>
       </div>
