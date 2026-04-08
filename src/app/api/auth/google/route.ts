@@ -31,7 +31,15 @@ export async function GET(req: NextRequest) {
 
   const clientId = process.env.GOOGLE_CLIENT_ID
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  // In production, NEXT_PUBLIC_APP_URL MUST be set — falling back to localhost breaks
+  // OAuth redirect_uri matching. Only allow localhost fallback in development.
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+    || (process.env.NODE_ENV === 'production' ? null : 'http://localhost:3000')
+
+  if (!appUrl) {
+    console.error('[auth/google] NEXT_PUBLIC_APP_URL is not set in production')
+    return NextResponse.redirect(new URL('/login?error=app_url_missing', req.url))
+  }
 
   if (!clientId || !clientSecret) {
     // Google OAuth 未配置，重定向到登录页并提示
@@ -113,13 +121,22 @@ export async function GET(req: NextRequest) {
     // 4. 创建 session
     const token = await createSession(user.id)
 
-    // Honor redirect from state param or default to /agent
+    // Honor redirect from state param or default to /agent.
+    // Only accept local paths: must start with `/` but NOT `//` (which browsers
+    // treat as protocol-relative URLs and would navigate to arbitrary origins).
     const state = searchParams.get('state')
     let redirectTo = '/agent'
     if (state) {
       try {
         const decoded = JSON.parse(decodeURIComponent(state))
-        if (decoded.redirect && decoded.redirect.startsWith('/')) redirectTo = decoded.redirect
+        if (
+          typeof decoded.redirect === 'string' &&
+          decoded.redirect.startsWith('/') &&
+          !decoded.redirect.startsWith('//') &&
+          !decoded.redirect.startsWith('/\\')
+        ) {
+          redirectTo = decoded.redirect
+        }
       } catch { /* ignore malformed state */ }
     }
     const response = NextResponse.redirect(new URL(redirectTo, appUrl))
