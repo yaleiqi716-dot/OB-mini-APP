@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, isErrorResponse } from '@/lib/workspace-auth';
+import { rateLimit, getClientIp, rateLimitedResponse } from '@/lib/rate-limit';
 
 // GET — Validate invite token (public — no auth required)
 export async function GET(
@@ -8,6 +9,14 @@ export async function GET(
   { params }: { params: { token: string } }
 ) {
   try {
+    // Public endpoint — rate limit by IP to stop token enumeration.
+    const limit = rateLimit(getClientIp(req), {
+      key: 'invite-validate',
+      max: 30,
+      windowMs: 60 * 1000,
+    });
+    if (!limit.ok) return rateLimitedResponse(limit);
+
     const invite = await prisma.workspaceInvite.findUnique({
       where: { token: params.token },
       include: { workspace: { select: { name: true } } },

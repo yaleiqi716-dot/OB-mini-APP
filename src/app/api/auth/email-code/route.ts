@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateOTP } from '@/lib/auth'
 import { sendVerificationCode } from '@/lib/mailer'
+import { rateLimit, getClientIp, rateLimitedResponse } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +11,19 @@ export async function POST(req: NextRequest) {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: '请输入有效的邮箱地址' }, { status: 400 })
     }
+
+    // Rate limit by IP and by email separately. IP limit stops a single attacker
+    // from spamming many emails; email limit stops targeted mailbox flooding.
+    const ip = getClientIp(req)
+    const ipLimit = rateLimit(ip, { key: 'email-code:ip', max: 10, windowMs: 60 * 60 * 1000 })
+    if (!ipLimit.ok) return rateLimitedResponse(ipLimit)
+
+    const emailLimit = rateLimit(email.toLowerCase(), {
+      key: 'email-code:email',
+      max: 5,
+      windowMs: 60 * 60 * 1000,
+    })
+    if (!emailLimit.ok) return rateLimitedResponse(emailLimit, '该邮箱发送验证码过于频繁，请稍后再试')
 
     // 清除旧的未使用验证码
     await prisma.verificationCode.deleteMany({
