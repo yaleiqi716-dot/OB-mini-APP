@@ -15,6 +15,14 @@ const PUBLIC_PATHS = [
   '/icons',
   '/images',
   '/assets',
+  // SEO / social sharing infrastructure — MUST be public
+  '/robots.txt',
+  '/sitemap.xml',
+  '/icon',
+  '/apple-icon',
+  '/opengraph-image',
+  '/twitter-image',
+  '/manifest.webmanifest',
 ]
 
 export function middleware(req: NextRequest) {
@@ -50,7 +58,9 @@ export const config = {
      * - _next/static（静态文件）
      * - _next/image（图片优化）
      * - favicon.ico
+     * - robots.txt, sitemap.xml（SEO，必须对爬虫公开）
+     * - icon, apple-icon, opengraph-image, twitter-image（App Router 生成的静态资源）
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|icon|apple-icon|opengraph-image|twitter-image|manifest\\.webmanifest).*)',
   ],
 }
