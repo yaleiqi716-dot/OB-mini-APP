@@ -80,13 +80,13 @@ function QRModal({
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
-      <div style={{ background: '#252321', borderRadius: 20, padding: 32, width: 340, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }} className="animate-flow-in">
+      <div style={{ background: 'var(--ob-surface)', borderRadius: 20, padding: 32, width: 340, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }} className="animate-flow-in">
         {payState === 'success' ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '16px 0' }}>
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(16,185,129,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#047857" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
-            <p style={{ fontSize: 18, fontWeight: 600, color: '#E0D8D0' }}>支付成功</p>
+            <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--ob-text)' }}>支付成功</p>
             {product?.type === 'subscription' ? (
               <div style={{ textAlign: 'center' }}>
                 <p style={{ fontSize: 14, color: '#D1D5DB', margin: '0 0 4px' }}>
@@ -116,7 +116,7 @@ function QRModal({
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(228,72,61,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </div>
-            <p style={{ fontSize: 18, fontWeight: 600, color: '#E0D8D0' }}>支付未完成</p>
+            <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--ob-text)' }}>支付未完成</p>
             <p style={{ fontSize: 14, color: 'rgba(224,216,208,0.45)', margin: 0, textAlign: 'center' }}>
               {product?.type === 'subscription'
                 ? `${product.label} 订阅未完成支付`
@@ -125,15 +125,15 @@ function QRModal({
                 : '未完成支付'}
             </p>
             <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.28)', margin: 0 }}>请重试或使用其他支付方式</p>
-            <button onClick={onCancel} style={{ height: 36, padding: '0 20px', borderRadius: 9999, fontSize: 14, border: '1px solid rgba(255,255,255,0.04)', background: '#252321', color: 'rgba(224,216,208,0.45)', cursor: 'pointer' }}>关闭</button>
+            <button onClick={onCancel} style={{ height: 36, padding: '0 20px', borderRadius: 9999, fontSize: 14, border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)', color: 'rgba(224,216,208,0.45)', cursor: 'pointer' }}>关闭</button>
           </div>
         ) : (
           <>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: 16, fontWeight: 600, color: '#E0D8D0', marginBottom: 4 }}>微信扫码支付</p>
+              <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--ob-text)', marginBottom: 4 }}>微信扫码支付</p>
               <p style={{ fontSize: 24, fontWeight: 700, color: '#FF5A1F' }}>{amountLabel}</p>
             </div>
-            <div style={{ padding: 8, borderRadius: 16, border: '2px solid rgba(255,255,255,0.04)', background: '#252321' }}>
+            <div style={{ padding: 8, borderRadius: 16, border: '2px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)' }}>
               <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrUrl)}`} alt="支付二维码" width={180} height={180} style={{ borderRadius: 8 }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'rgba(224,216,208,0.28)' }}>
@@ -211,14 +211,14 @@ export default function BillingPage() {
   const planLabel = user?.plan?.toUpperCase() || 'FREE';
 
   if (loading) return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
       <AppHeader />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Spinner size="md" /></div>
     </div>
   );
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }} className="custom-scrollbar">
@@ -229,16 +229,14 @@ export default function BillingPage() {
         <div style={{ maxWidth: 980, margin: '0 auto', padding: '48px 32px 60px', position: 'relative', zIndex: 1 }}>
 
           {/* Eyebrow + Hero */}
-          <div style={{ marginBottom: 24 }}>
-            {/* Eyebrow — mono signal line */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <span style={{ width: 24, height: 2, background: '#FF5A1F', borderRadius: 1 }} />
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, letterSpacing: 3, textTransform: 'uppercase' as const, color: '#FF5A1F' }}>FUEL STATION</span>
-            </div>
-            <h1 className="ob-hero-title" style={{ fontSize: 32, textAlign: 'left', marginBottom: 8 }}>
-              执行<span className="ob-hero-accent">燃料</span>补给
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 8px' }}>
+              <span style={{ color: 'var(--ob-orange)' }}>●</span> Billing · Fuel Station
+            </p>
+            <h1 style={{ fontFamily: 'var(--ob-font-display)', fontSize: 44, fontWeight: 800, color: 'var(--ob-text)', lineHeight: 1, letterSpacing: '-0.025em', margin: '0 0 12px' }}>
+              执行<span style={{ color: 'var(--ob-orange)' }}>燃料</span>补给
             </h1>
-            <p style={{ fontSize: 15, color: 'rgba(224,216,208,0.45)', margin: 0 }}>订阅解锁长期能力，额度包补给高强度执行</p>
+            <p style={{ fontFamily: 'var(--ob-font-body)', fontSize: 15, color: 'var(--ob-text-muted)', margin: 0 }}>订阅解锁长期能力，额度包补给高强度执行</p>
           </div>
 
           {/* Fuel status card */}
@@ -247,12 +245,12 @@ export default function BillingPage() {
             const pct = Math.min(100, Math.round((user.credits / maxCredits) * 100));
             const isLow = user.credits < 20;
             return (
-              <div style={{ background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 24, marginBottom: 28 }}>
+              <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 24, marginBottom: 28 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                      <span style={{ fontSize: 22, fontWeight: 700, color: '#E0D8D0' }}>{planLabel}</span>
-                      <span style={{ fontSize: 11, fontWeight: 500, color: '#C2410C', background: 'rgba(255,90,31,0.10)', padding: '2px 10px', borderRadius: 9999 }}>当前套餐</span>
+                      <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--ob-text)' }}>{planLabel}</span>
+                      <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--ob-orange)', background: 'rgba(255,90,31,0.10)', padding: '2px 10px', borderRadius: 9999 }}>当前套餐</span>
                     </div>
                     {user.expireAt && (
                       <span style={{ fontSize: 12, color: 'rgba(224,216,208,0.55)' }}>到期 {new Date(user.expireAt).toLocaleDateString('zh-CN')}</span>
@@ -278,21 +276,21 @@ export default function BillingPage() {
           {/* Subscription plans */}
           {subs.length > 0 && (
             <div style={{ marginBottom: 24 }}>
-              <p style={{ fontSize: 17, fontWeight: 600, color: '#E0D8D0', margin: '0 0 14px' }}>订阅套餐</p>
+              <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 14px' }}>订阅套餐</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                 {subs.map((p) => {
                   const isRecommended = p.recommended;
                   return (
                   <div key={p.code} className={isRecommended ? 'ob-tier-recommended' : ''} style={{
-                    background: '#252321', border: isRecommended ? undefined : '1px solid rgba(255,255,255,0.04)', borderRadius: 16,
+                    background: 'var(--ob-surface)', border: isRecommended ? undefined : '1px solid rgba(255,255,255,0.04)', borderRadius: 16,
                     padding: 20, display: 'flex', flexDirection: 'column', position: 'relative',
                     transition: 'border-color .2s, box-shadow .2s',
                   }}
                     onMouseEnter={e => { if (!isRecommended) e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.04)'; }}
-                    onMouseLeave={e => { if (!isRecommended) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.boxShadow = 'none'; }}
+                    onMouseLeave={e => { if (!isRecommended) e.currentTarget.style.borderColor = 'var(--ob-border)'; e.currentTarget.style.boxShadow = 'none'; }}
                   >
                     {isRecommended && <span className="ob-tier-badge">推荐</span>}
-                    <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 600, color: '#E0D8D0', margin: '0 0 4px', textTransform: 'uppercase' as const, letterSpacing: '1.5px' }}>{p.label}</p>
+                    <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 4px', textTransform: 'uppercase' as const, letterSpacing: '1.5px' }}>{p.label}</p>
                     <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.45)', margin: '0 0 10px' }}>{p.description}{p.teamPerSeat ? ' · 按人/月' : ''}</p>
                     <p style={{ fontSize: 28, fontWeight: 700, color: '#FF5A1F', margin: '0 0 4px' }}>
                       {p.amountLabel}<span style={{ fontSize: 13, fontWeight: 400, color: 'rgba(224,216,208,0.45)' }}>{p.teamPerSeat ? '/人/月' : '/月'}</span>
@@ -323,19 +321,19 @@ export default function BillingPage() {
           {/* Credits packs */}
           {creds.length > 0 && (
             <div>
-              <p style={{ fontSize: 17, fontWeight: 600, color: '#E0D8D0', margin: '0 0 6px' }}>通用积分包</p>
+              <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 6px' }}>通用积分包</p>
               <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.35)', margin: '0 0 14px' }}>用于重任务、超额使用和临时补量</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                 {creds.map(p => (
                   <div key={p.code} style={{
-                    background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16,
+                    background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16,
                     padding: 20, display: 'flex', flexDirection: 'column',
                     transition: 'border-color .2s',
                   }}
                     onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)')}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--ob-border)')}
                   >
-                    <p style={{ fontSize: 28, fontWeight: 700, color: '#E0D8D0', margin: '0 0 4px' }}>{p.amountLabel}</p>
+                    <p style={{ fontSize: 28, fontWeight: 700, color: 'var(--ob-text)', margin: '0 0 4px' }}>{p.amountLabel}</p>
                     <p style={{ fontSize: 13, color: 'rgba(224,216,208,0.45)', margin: '0 0 4px' }}>{p.displayLabel || `+${p.totalCredits} 通用积分`}</p>
                     {(p.bonusCredits ?? 0) > 0 && <p style={{ fontSize: 11, color: '#FF5A1F', margin: '0 0 12px' }}>含赠送 {p.bonusCredits}</p>}
                     <button

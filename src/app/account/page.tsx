@@ -94,10 +94,10 @@ const PRODUCT_NAMES: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, { text: string; color: string }> = {
-  paid: { text: '已完成', color: '#047857' },
+  paid: { text: '已完成', color: 'var(--ob-success)' },
   pending: { text: '待支付', color: '#D97706' },
   failed: { text: '失败', color: '#B91C1C' },
-  cancelled: { text: '已取消', color: '#888888' },
+  cancelled: { text: '已取消', color: 'var(--ob-text-muted)' },
 };
 
 export default function AccountPage() {
@@ -171,17 +171,17 @@ export default function AccountPage() {
     : false;
   const statusLabel = !user ? '加载中' : isExpiringSoon ? '即将到期' : '正常';
   const statusBg = isExpiringSoon ? 'rgba(228,72,61,0.10)' : 'rgba(16,185,129,0.10)';
-  const statusColor = isExpiringSoon ? '#B91C1C' : '#047857';
+  const statusColor = isExpiringSoon ? '#B91C1C' : 'var(--ob-success)';
 
   // ── Shared styles ──
   const cardStyle: React.CSSProperties = {
-    background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20,
+    background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20,
   };
   const actionBtnStyle: React.CSSProperties = {
     height: 30, padding: '0 12px', borderRadius: 9999,
     fontSize: 12, fontWeight: 500,
-    border: '1px solid rgba(255,255,255,0.04)', background: '#252321',
-    color: '#888888', cursor: 'pointer', textDecoration: 'none',
+    border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)',
+    color: 'var(--ob-text-muted)', cursor: 'pointer', textDecoration: 'none',
     display: 'inline-flex', alignItems: 'center',
     transition: 'border-color .2s, background .2s, color .2s',
   };
@@ -191,9 +191,9 @@ export default function AccountPage() {
     e.currentTarget.style.color = '#FF5A1F';
   };
   const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)';
-    e.currentTarget.style.background = '#252321';
-    e.currentTarget.style.color = '#888888';
+    e.currentTarget.style.borderColor = 'var(--ob-border)';
+    e.currentTarget.style.background = 'var(--ob-surface)';
+    e.currentTarget.style.color = 'var(--ob-text-muted)';
   };
   const rowStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -202,17 +202,17 @@ export default function AccountPage() {
   const rowBorder: React.CSSProperties = { borderBottom: '1px solid rgba(255,255,255,0.04)' };
   const placeholderTag: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center',
-    height: 22, fontSize: 11, fontWeight: 500, color: '#CCCCCC',
-    background: '#1E1C1A', borderRadius: 9999, padding: '0 10px',
+    height: 22, fontSize: 11, fontWeight: 500, color: 'var(--ob-text-muted)',
+    background: 'var(--ob-bg)', borderRadius: 9999, padding: '0 10px',
     border: '1px solid rgba(255,255,255,0.04)',
   };
   const sectionTitle: React.CSSProperties = {
-    fontSize: 17, fontWeight: 600, color: '#F5F5F5', margin: '0 0 16px',
+    fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 16px',
   };
 
   if (loading) {
     return (
-      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: 20, height: 20, border: '2px solid #FF5A1F', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
@@ -222,16 +222,19 @@ export default function AccountPage() {
   }
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px' }}>
 
           {/* ── Top area ── */}
-          <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#F5F5F5', lineHeight: 1.2, margin: '0 0 8px' }}>账户</h1>
-            <p style={{ fontSize: 14, color: '#CCCCCC', margin: 0, maxWidth: 520 }}>查看你的账号信息、套餐与使用权益</p>
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 8px' }}>
+              <span style={{ color: 'var(--ob-orange)' }}>●</span> Account
+            </p>
+            <h1 style={{ fontFamily: 'var(--ob-font-display)', fontSize: 44, fontWeight: 800, color: 'var(--ob-text)', lineHeight: 1, letterSpacing: '-0.025em', margin: '0 0 12px' }}>账户</h1>
+            <p style={{ fontFamily: 'var(--ob-font-body)', fontSize: 14, color: 'var(--ob-text-muted)', margin: 0, maxWidth: 520 }}>查看你的账号信息、套餐与使用权益</p>
           </div>
 
           {/* ── Account overview card ── */}
@@ -250,13 +253,13 @@ export default function AccountPage() {
               {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 18, fontWeight: 600, color: '#F5F5F5' }}>{userName}</span>
+                  <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--ob-text)' }}>{userName}</span>
                   {/* Plan badge */}
                   <span style={{
                     display: 'inline-flex', alignItems: 'center',
                     height: 24, padding: '0 10px', borderRadius: 9999,
                     fontSize: 11, fontWeight: 500,
-                    background: 'rgba(255,90,31,0.10)', color: '#C2410C',
+                    background: 'rgba(255,90,31,0.10)', color: 'var(--ob-orange)',
                   }}>
                     {planInfo.label}
                   </span>
@@ -270,9 +273,9 @@ export default function AccountPage() {
                     {statusLabel}
                   </span>
                 </div>
-                <span style={{ fontSize: 13, color: '#888888' }}>{userId}</span>
+                <span style={{ fontSize: 13, color: 'var(--ob-text-muted)' }}>{userId}</span>
                 {user?.expireAt && plan !== 'free' && (
-                  <span style={{ fontSize: 12, color: '#888888', marginLeft: 12 }}>
+                  <span style={{ fontSize: 12, color: 'var(--ob-text-muted)', marginLeft: 12 }}>
                     到期 {new Date(user.expireAt).toLocaleDateString('zh-CN')}
                   </span>
                 )}
@@ -289,7 +292,7 @@ export default function AccountPage() {
           <div style={{ ...cardStyle, marginBottom: 20, padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div>
-                <p style={{ fontSize: 13, color: '#888888', margin: '0 0 6px' }}>总可用积分</p>
+                <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', margin: '0 0 6px' }}>总可用积分</p>
                 <p style={{ fontSize: 36, fontWeight: 700, color: '#FF5A1F', margin: 0, lineHeight: 1 }}>
                   {user?.credits ?? 0}
                 </p>
@@ -299,14 +302,14 @@ export default function AccountPage() {
                 border: '1px solid #FF5A1F', color: '#FF5A1F',
               }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,90,31,0.08)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#252321'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--ob-surface)'; }}
               >
                 充值
               </a>
             </div>
 
             {/* ── Credit bucket breakdown ── */}
-            <p style={{ fontSize: 13, fontWeight: 500, color: '#F5F5F5', margin: '0 0 12px' }}>积分明细</p>
+            <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ob-text)', margin: '0 0 12px' }}>积分明细</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
               {([
                 { label: '每日体验赠额', value: user?.dailyTrialCredits ?? 0, note: '每日刷新，不结转' },
@@ -317,18 +320,18 @@ export default function AccountPage() {
                 ...(hasLegacy ? [{ label: '历史兼容积分', value: legacyCredits, note: '旧版遗留，优先级最低' }] : []),
               ] as const).map((bucket, i) => (
                 <div key={i} style={{
-                  background: '#1E1C1A', borderRadius: 12, padding: '12px 14px',
+                  background: 'var(--ob-bg)', borderRadius: 12, padding: '12px 14px',
                   border: '1px solid rgba(255,255,255,0.03)',
                 }}>
-                  <p style={{ fontSize: 11, color: '#888888', margin: '0 0 4px' }}>{bucket.label}</p>
-                  <p style={{ fontSize: 20, fontWeight: 600, color: '#F5F5F5', margin: '0 0 2px', lineHeight: 1 }}>
+                  <p style={{ fontSize: 11, color: 'var(--ob-text-muted)', margin: '0 0 4px' }}>{bucket.label}</p>
+                  <p style={{ fontSize: 20, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 2px', lineHeight: 1 }}>
                     {bucket.value}
                   </p>
-                  <p style={{ fontSize: 10, color: '#666666', margin: 0 }}>{bucket.note}</p>
+                  <p style={{ fontSize: 10, color: 'var(--ob-text-dim)', margin: 0 }}>{bucket.note}</p>
                 </div>
               ))}
             </div>
-            <p style={{ fontSize: 11, color: '#666666', margin: '12px 0 0' }}>
+            <p style={{ fontSize: 11, color: 'var(--ob-text-dim)', margin: '12px 0 0' }}>
               消耗顺序：每日体验赠额 → 新人赠送 → 订阅积分 → 通用积分 → 奖励积分{hasLegacy ? ' → 历史兼容积分' : ''}
             </p>
           </div>
@@ -339,7 +342,7 @@ export default function AccountPage() {
               <p style={sectionTitle}>当前套餐权益</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 14, fontWeight: 600, color: '#FF5A1F' }}>{planInfo.label}</span>
-                <span style={{ fontSize: 13, color: '#888888' }}>{planInfo.price}</span>
+                <span style={{ fontSize: 13, color: 'var(--ob-text-muted)' }}>{planInfo.price}</span>
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 24px' }}>
@@ -353,14 +356,14 @@ export default function AccountPage() {
 
             {/* Subscription lifecycle status */}
             {plan !== 'free' && (
-              <div style={{ marginTop: 16, padding: '12px 14px', background: '#1E1C1A', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
+              <div style={{ marginTop: 16, padding: '12px 14px', background: 'var(--ob-bg)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
                 {user?.currentPeriodEnd && (
-                  <p style={{ fontSize: 12, color: '#888888', margin: '0 0 4px' }}>
+                  <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: '0 0 4px' }}>
                     当前周期到期：{new Date(user.currentPeriodEnd).toLocaleDateString('zh-CN')}
                   </p>
                 )}
                 {!user?.currentPeriodEnd && user?.expireAt && (
-                  <p style={{ fontSize: 12, color: '#888888', margin: '0 0 4px' }}>
+                  <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: '0 0 4px' }}>
                     订阅到期：{new Date(user.expireAt).toLocaleDateString('zh-CN')}
                   </p>
                 )}
@@ -381,7 +384,7 @@ export default function AccountPage() {
 
                 {/* Info note */}
                 {(user?.cancelAtPeriodEnd || user?.pendingPlan) && (
-                  <p style={{ fontSize: 11, color: '#666666', margin: '4px 0 0' }}>
+                  <p style={{ fontSize: 11, color: 'var(--ob-text-dim)', margin: '4px 0 0' }}>
                     当前周期内仍可正常使用全部权益，通用积分不受影响
                   </p>
                 )}
@@ -401,7 +404,7 @@ export default function AccountPage() {
                     disabled={subActing}
                     style={{ ...actionBtnStyle, color: '#B91C1C', borderColor: 'rgba(185,28,28,0.18)' }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'rgba(228,72,61,0.06)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = '#252321'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'var(--ob-surface)'; }}
                   >
                     取消订阅
                   </button>
@@ -445,8 +448,8 @@ export default function AccountPage() {
 
             {/* Downgrade target picker */}
             {showDowngrade && plan !== 'free' && (
-              <div style={{ marginTop: 12, padding: '12px 14px', background: '#1E1C1A', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
-                <p style={{ fontSize: 12, color: '#888888', margin: '0 0 8px' }}>选择到期后的目标套餐：</p>
+              <div style={{ marginTop: 12, padding: '12px 14px', background: 'var(--ob-bg)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
+                <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: '0 0 8px' }}>选择到期后的目标套餐：</p>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {(['free', 'basic', 'pro'] as const)
                     .filter(p => {
@@ -479,32 +482,32 @@ export default function AccountPage() {
           <div style={{ ...cardStyle, marginBottom: 20 }}>
             <p style={sectionTitle}>最近订单</p>
             {orders.length === 0 ? (
-              <p style={{ fontSize: 14, color: '#888888', margin: 0 }}>暂无购买记录</p>
+              <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', margin: 0 }}>暂无购买记录</p>
             ) : (
               <div>
                 {/* Table header */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px 80px 80px', gap: 8, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  <span style={{ fontSize: 11, color: '#666666', fontWeight: 500 }}>时间</span>
-                  <span style={{ fontSize: 11, color: '#666666', fontWeight: 500 }}>商品</span>
-                  <span style={{ fontSize: 11, color: '#666666', fontWeight: 500 }}>类型</span>
-                  <span style={{ fontSize: 11, color: '#666666', fontWeight: 500, textAlign: 'right' }}>金额</span>
-                  <span style={{ fontSize: 11, color: '#666666', fontWeight: 500, textAlign: 'right' }}>状态</span>
+                  <span style={{ fontSize: 11, color: 'var(--ob-text-dim)', fontWeight: 500 }}>时间</span>
+                  <span style={{ fontSize: 11, color: 'var(--ob-text-dim)', fontWeight: 500 }}>商品</span>
+                  <span style={{ fontSize: 11, color: 'var(--ob-text-dim)', fontWeight: 500 }}>类型</span>
+                  <span style={{ fontSize: 11, color: 'var(--ob-text-dim)', fontWeight: 500, textAlign: 'right' }}>金额</span>
+                  <span style={{ fontSize: 11, color: 'var(--ob-text-dim)', fontWeight: 500, textAlign: 'right' }}>状态</span>
                 </div>
                 {orders.slice(0, 10).map(order => {
-                  const statusInfo = STATUS_LABELS[order.status] || { text: order.status, color: '#888888' };
+                  const statusInfo = STATUS_LABELS[order.status] || { text: order.status, color: 'var(--ob-text-muted)' };
                   return (
                     <div key={order.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px 80px 80px', gap: 8, padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center' }}>
-                      <span style={{ fontSize: 13, color: '#CCCCCC' }}>
+                      <span style={{ fontSize: 13, color: 'var(--ob-text-muted)' }}>
                         {new Date(order.createdAt).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}{' '}
                         {new Date(order.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
                       </span>
-                      <span style={{ fontSize: 13, color: '#F5F5F5' }}>
+                      <span style={{ fontSize: 13, color: 'var(--ob-text)' }}>
                         {PRODUCT_NAMES[order.productCode] || order.productCode}
                       </span>
-                      <span style={{ fontSize: 12, color: '#888888' }}>
+                      <span style={{ fontSize: 12, color: 'var(--ob-text-muted)' }}>
                         {order.productType === 'subscription' ? '订阅' : '通用积分包'}
                       </span>
-                      <span style={{ fontSize: 13, color: '#F5F5F5', textAlign: 'right' }}>
+                      <span style={{ fontSize: 13, color: 'var(--ob-text)', textAlign: 'right' }}>
                         ¥{(order.amount / 100).toFixed(order.amount % 100 === 0 ? 0 : 2)}
                       </span>
                       <span style={{ fontSize: 12, color: statusInfo.color, textAlign: 'right', fontWeight: 500 }}>
@@ -523,24 +526,24 @@ export default function AccountPage() {
 
             <div style={{ ...rowStyle, ...rowBorder }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: '#F5F5F5' }}>设置</div>
-                <div style={{ fontSize: 12, color: '#CCCCCC', marginTop: 2 }}>偏好、通知、安全与集成</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--ob-text)' }}>设置</div>
+                <div style={{ fontSize: 12, color: 'var(--ob-text-muted)', marginTop: 2 }}>偏好、通知、安全与集成</div>
               </div>
               <a href="/settings" style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>前往设置</a>
             </div>
 
             <div style={{ ...rowStyle, ...rowBorder }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: '#F5F5F5' }}>导出数据</div>
-                <div style={{ fontSize: 12, color: '#CCCCCC', marginTop: 2 }}>导出你的任务记录与结果</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--ob-text)' }}>导出数据</div>
+                <div style={{ fontSize: 12, color: 'var(--ob-text-muted)', marginTop: 2 }}>导出你的任务记录与结果</div>
               </div>
               <span style={placeholderTag}>即将开放</span>
             </div>
 
             <div style={{ ...rowStyle, ...rowBorder }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: '#F5F5F5' }}>订阅与充值</div>
-                <div style={{ fontSize: 12, color: '#CCCCCC', marginTop: 2 }}>管理套餐与额度</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--ob-text)' }}>订阅与充值</div>
+                <div style={{ fontSize: 12, color: 'var(--ob-text-muted)', marginTop: 2 }}>管理套餐与额度</div>
               </div>
               <a href="/billing" style={actionBtnStyle}
                 onMouseEnter={hoverIn} onMouseLeave={hoverOut}>前往充值</a>
@@ -548,8 +551,8 @@ export default function AccountPage() {
 
             <div style={rowStyle}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: '#F5F5F5' }}>退出登录</div>
-                <div style={{ fontSize: 12, color: '#CCCCCC', marginTop: 2 }}>退出当前账号</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--ob-text)' }}>退出登录</div>
+                <div style={{ fontSize: 12, color: 'var(--ob-text-muted)', marginTop: 2 }}>退出当前账号</div>
               </div>
               <button
                 onClick={handleLogout}
@@ -557,13 +560,13 @@ export default function AccountPage() {
                 style={{
                   height: 30, padding: '0 12px', borderRadius: 9999,
                   fontSize: 12, fontWeight: 500,
-                  border: '1px solid rgba(185,28,28,0.18)', background: '#252321',
+                  border: '1px solid rgba(185,28,28,0.18)', background: 'var(--ob-surface)',
                   color: '#B91C1C', cursor: 'pointer',
                   display: 'inline-flex', alignItems: 'center',
                   transition: 'background .2s',
                 }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(228,72,61,0.06)')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#252321')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'var(--ob-surface)')}
               >
                 退出登录
               </button>

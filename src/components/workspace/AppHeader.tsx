@@ -104,13 +104,14 @@ export function AppHeader() {
   return (
     <header style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      height: 52, padding: '0 32px',
-      borderBottom: '1px solid rgba(255,255,255,0.04)',
-      background: '#1A1816', flexShrink: 0,
+      height: 56, padding: '0 28px',
+      borderBottom: '1px solid var(--ob-border)',
+      background: 'var(--ob-bg)', flexShrink: 0,
+      fontFamily: 'var(--ob-font-body)',
     }}>
-      <a href="/agent" style={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}>
-        <span style={{ color: '#FF5A1F', fontWeight: 700, fontSize: 15, textShadow: '0 0 12px rgba(255,90,31,0.3)' }}>ORANGE</span>
-        <span style={{ color: '#E0D8D0', fontWeight: 700, fontSize: 15 }}>BENCH</span>
+      <a href="/agent" style={{ display: 'flex', alignItems: 'center', gap: 0, textDecoration: 'none' }}>
+        <span style={{ fontFamily: 'var(--ob-font-display)', color: 'var(--ob-orange)', fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em' }}>ORANGE</span>
+        <span style={{ fontFamily: 'var(--ob-font-display)', color: 'var(--ob-text)', fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em' }}>BENCH</span>
       </a>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -118,21 +119,21 @@ export function AppHeader() {
             const active = isNavActive(n.href);
             return (
               <a key={n.href} href={n.href} style={{
-                fontSize: 13, textDecoration: 'none', padding: '6px 10px', borderRadius: 8,
-                fontWeight: active ? 600 : 400,
-                color: active ? '#FF5A1F' : '#888888',
-                background: active ? 'rgba(255,90,31,0.08)' : 'transparent',
-                transition: 'color .12s, background .12s',
+                fontSize: 13, textDecoration: 'none', padding: '7px 12px', borderRadius: 6,
+                fontWeight: active ? 600 : 500,
+                color: active ? 'var(--ob-text)' : 'var(--ob-text-muted)',
+                background: 'transparent',
+                transition: 'color .12s cubic-bezier(.2,.7,.3,1)',
                 position: 'relative',
+                fontFamily: 'var(--ob-font-body)',
               }}>
                 {n.label}
-                {/* Signal lamp — active nav indicator */}
                 {active && (
                   <span style={{
                     position: 'absolute', bottom: -1, left: '50%', transform: 'translateX(-50%)',
-                    width: 12, height: 2, borderRadius: 1,
-                    background: '#FF5A1F',
-                    boxShadow: '0 0 18px rgba(255,90,31,0.22)',
+                    width: 14, height: 2, borderRadius: 1,
+                    background: 'var(--ob-orange)',
+                    boxShadow: '0 0 8px rgba(255,90,31,0.5)',
                   }} />
                 )}
               </a>
@@ -146,45 +147,48 @@ export function AppHeader() {
             onClick={handleToggle}
             aria-label="通知"
             style={{
-              width: 32, height: 32, borderRadius: 8, border: 'none',
-              background: dropdownOpen ? 'rgba(255,90,31,0.10)' : 'transparent',
+              width: 34, height: 34, borderRadius: 6, border: '1px solid transparent',
+              background: dropdownOpen ? 'var(--ob-surface-hi)' : 'transparent',
+              borderColor: dropdownOpen ? 'var(--ob-border)' : 'transparent',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              position: 'relative', transition: 'background .2s',
+              position: 'relative', transition: 'all .15s cubic-bezier(.2,.7,.3,1)',
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dropdownOpen ? '#FF5A1F' : '#CCCCCC'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dropdownOpen ? 'var(--ob-orange)' : 'var(--ob-text-muted)'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
             {unreadCount > 0 && (
               <span style={{
-                position: 'absolute', top: 3, right: 3,
+                position: 'absolute', top: 4, right: 4,
                 width: unreadCount > 9 ? 16 : 7, height: 7,
                 borderRadius: 2,
-                background: '#FF5A1F',
+                background: 'var(--ob-orange)',
                 boxShadow: '0 0 8px rgba(255,90,31,0.5), 0 0 2px rgba(255,90,31,0.8)',
                 color: '#fff', fontSize: 9, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                lineHeight: 1,
+                lineHeight: 1, fontFamily: 'var(--ob-font-mono)',
               }}>
                 {unreadCount > 9 ? '9+' : unreadCount > 1 ? unreadCount : ''}
               </span>
             )}
           </button>
 
-          {/* Dropdown panel */}
+          {/* Dropdown panel — token-driven */}
           {dropdownOpen && (
             <div style={{
-              position: 'absolute', top: 40, right: 0,
-              width: 340, maxHeight: 420, overflowY: 'auto',
-              background: '#252321', border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 16, boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+              position: 'absolute', top: 42, right: 0,
+              width: 360, maxHeight: 440, overflowY: 'auto',
+              background: 'var(--ob-surface)', border: '1px solid var(--ob-border)',
+              borderRadius: 12, boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
               zIndex: 100,
             }}>
               {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 10px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#E0D8D0' }}>通知</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 12px', borderBottom: '1px solid var(--ob-border)' }}>
+                <span style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 10, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)' }}>
+                  <span style={{ color: 'var(--ob-orange)' }}>●</span> 通知
+                </span>
                 {unreadCount > 0 && (
-                  <button onClick={handleMarkAllRead} style={{ fontSize: 12, color: '#FF5A1F', background: 'none', border: 'none', cursor: 'pointer' }}>
+                  <button onClick={handleMarkAllRead} style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ob-orange)', background: 'none', border: 'none', cursor: 'pointer' }}>
                     全部已读
                   </button>
                 )}
@@ -192,8 +196,8 @@ export function AppHeader() {
 
               {/* List */}
               {notifications.length === 0 ? (
-                <div style={{ padding: '32px 16px', textAlign: 'center' }}>
-                  <p style={{ fontSize: 13, color: 'rgba(224,216,208,0.55)' }}>暂无通知</p>
+                <div style={{ padding: '36px 16px', textAlign: 'center' }}>
+                  <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', fontFamily: 'var(--ob-font-body)' }}>暂无通知</p>
                 </div>
               ) : (
                 <div>
@@ -203,22 +207,22 @@ export function AppHeader() {
                       onClick={() => handleClickNotif(n)}
                       style={{
                         width: '100%', display: 'flex', alignItems: 'flex-start', gap: 10,
-                        padding: '12px 16px', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)',
-                        background: n.read ? 'transparent' : 'rgba(255,90,31,0.04)',
+                        padding: '14px 18px', border: 'none', borderBottom: '1px solid var(--ob-border)',
+                        background: n.read ? 'transparent' : 'var(--ob-orange-a10, rgba(255,90,31,0.06))',
                         cursor: 'pointer', textAlign: 'left', transition: 'background .15s',
+                        fontFamily: 'var(--ob-font-body)',
                       }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(255,90,31,0.04)')}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--ob-surface-hi)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = n.read ? 'transparent' : 'var(--ob-orange-a10, rgba(255,90,31,0.06))')}
                     >
-                      {/* Unread dot */}
                       <span style={{
                         width: 6, height: 6, borderRadius: '50%', flexShrink: 0, marginTop: 6,
-                        background: n.read ? 'transparent' : '#FF5A1F',
+                        background: n.read ? 'transparent' : 'var(--ob-orange)',
                       }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: n.read ? 400 : 500, color: '#E0D8D0', margin: '0 0 2px', lineHeight: 1.4 }}>{n.title}</p>
-                        {n.body && <p style={{ fontSize: 12, color: 'rgba(224,216,208,0.28)', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</p>}
-                        <span style={{ fontSize: 11, color: 'rgba(224,216,208,0.55)' }}>{timeAgo(n.createdAt)}</span>
+                        <p style={{ fontSize: 13, fontWeight: n.read ? 400 : 600, color: 'var(--ob-text)', margin: '0 0 3px', lineHeight: 1.45 }}>{n.title}</p>
+                        {n.body && <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: '0 0 5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</p>}
+                        <span style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 10, letterSpacing: '0.06em', color: 'var(--ob-text-dim)' }}>{timeAgo(n.createdAt)}</span>
                       </div>
                     </button>
                   ))}
@@ -240,20 +244,21 @@ export function WorkspaceSubNav() {
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 6,
-      padding: '0 32px', height: 40,
-      borderBottom: '1px solid rgba(255,255,255,0.04)',
-      background: '#1A1816',
+      display: 'flex', alignItems: 'center', gap: 4,
+      padding: '0 28px', height: 42,
+      borderBottom: '1px solid var(--ob-border)',
+      background: 'var(--ob-bg)',
+      fontFamily: 'var(--ob-font-body)',
     }}>
       {WS_NAV.map(n => {
         const active = n.href === activeHref;
         return (
           <a key={n.href} href={n.href} style={{
-            fontSize: 13, fontWeight: active ? 500 : 400,
-            color: active ? '#F5F5F5' : '#888888',
-            textDecoration: 'none', padding: '6px 12px', borderRadius: 8,
-            background: active ? 'rgba(255,255,255,0.04)' : 'transparent',
-            transition: 'all .2s',
+            fontSize: 13, fontWeight: active ? 600 : 500,
+            color: active ? 'var(--ob-text)' : 'var(--ob-text-muted)',
+            textDecoration: 'none', padding: '7px 14px', borderRadius: 6,
+            background: active ? 'var(--ob-surface-hi)' : 'transparent',
+            transition: 'all .15s cubic-bezier(.2,.7,.3,1)',
           }}>{n.label}</a>
         );
       })}

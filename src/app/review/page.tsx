@@ -61,9 +61,9 @@ function StatusBadge({ status }: { status: string }) {
   const isCompleted = status === 'completed';
   const isReview = ['submitted', 'revision'].includes(status);
   const isFailed = status === 'failed';
-  let bg = 'rgba(156,163,175,0.10)'; let color = '#888888';
-  if (isRunning)   { bg = 'rgba(255,90,31,0.10)'; color = '#C2410C'; }
-  if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = '#047857'; }
+  let bg = 'rgba(156,163,175,0.10)'; let color = 'var(--ob-text-muted)';
+  if (isRunning)   { bg = 'rgba(255,90,31,0.10)'; color = 'var(--ob-orange)'; }
+  if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = 'var(--ob-success)'; }
   if (isFailed)    { bg = 'rgba(228,72,61,0.10)';  color = '#B91C1C'; }
   if (isReview)    { bg = 'rgba(154,149,145,0.10)';  color = '#1D4ED8'; }
   const label = WS_STATUS_LABEL[status] || STATUS_LABEL[status] || status;
@@ -182,8 +182,8 @@ export default function ReviewPage() {
   const actionBtnStyle: React.CSSProperties = {
     height: 30, padding: '0 12px', borderRadius: 9999,
     fontSize: 12, fontWeight: 500,
-    border: '1px solid rgba(255,255,255,0.04)', background: '#252321',
-    color: '#888888', textDecoration: 'none', cursor: 'pointer',
+    border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)',
+    color: 'var(--ob-text-muted)', textDecoration: 'none', cursor: 'pointer',
     display: 'inline-flex', alignItems: 'center',
     transition: 'border-color .2s, background .2s, color .2s',
   };
@@ -193,13 +193,13 @@ export default function ReviewPage() {
     e.currentTarget.style.color = '#FF5A1F';
   };
   const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)';
-    e.currentTarget.style.background = '#252321';
-    e.currentTarget.style.color = '#888888';
+    e.currentTarget.style.borderColor = 'var(--ob-border)';
+    e.currentTarget.style.background = 'var(--ob-surface)';
+    e.currentTarget.style.color = 'var(--ob-text-muted)';
   };
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
@@ -207,9 +207,14 @@ export default function ReviewPage() {
 
           {/* Top area */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
-            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#F5F5F5', lineHeight: 1.2, margin: 0 }}>处理</h1>
+            <div>
+              <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 8px' }}>
+                <span style={{ color: 'var(--ob-orange)' }}>●</span> Review
+              </p>
+              <h1 style={{ fontFamily: 'var(--ob-font-display)', fontSize: 44, fontWeight: 800, color: 'var(--ob-text)', lineHeight: 1, letterSpacing: '-0.025em', margin: 0 }}>处理</h1>
+            </div>
             <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#CCCCCC', pointerEvents: 'none' }}>
+              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--ob-text-muted)', pointerEvents: 'none' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               </span>
               <input
@@ -220,17 +225,17 @@ export default function ReviewPage() {
                 aria-label="搜索任务"
                 style={{
                   width: 220, height: 36, borderRadius: 12,
-                  border: '1px solid rgba(255,255,255,0.04)', background: '#252321',
+                  border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)',
                   padding: '0 12px 0 34px', fontSize: 13,
-                  color: '#F5F5F5', outline: 'none',
+                  color: 'var(--ob-text)', outline: 'none',
                   transition: 'border-color .2s, box-shadow .2s',
                 }}
                 onFocus={e => { e.currentTarget.style.borderColor = '#FF5A1F'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255,90,31,0.12)'; }}
-                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.boxShadow = 'none'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = 'var(--ob-border)'; e.currentTarget.style.boxShadow = 'none'; }}
               />
             </div>
           </div>
-          <p style={{ fontSize: 14, color: '#CCCCCC', margin: '0 0 16px' }}>查看需要你确认、继续或处理的任务</p>
+          <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', margin: '0 0 16px' }}>查看需要你确认、继续或处理的任务</p>
 
           {/* View mode tabs */}
           {hasWorkspace && (
@@ -239,7 +244,7 @@ export default function ReviewPage() {
                 <button key={value} onClick={() => { setViewMode(value); setFilter('all'); }}
                   style={{
                     padding: '8px 20px', fontSize: 14, fontWeight: viewMode === value ? 600 : 400,
-                    color: viewMode === value ? '#FF5A1F' : '#888888',
+                    color: viewMode === value ? '#FF5A1F' : 'var(--ob-text-muted)',
                     borderBottom: viewMode === value ? '2px solid #FF5A1F' : '2px solid transparent',
                     background: 'transparent', border: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none',
                     cursor: 'pointer', transition: 'color .2s', marginBottom: -1,
@@ -259,8 +264,8 @@ export default function ReviewPage() {
                   height: 32, padding: '0 14px', borderRadius: 9999,
                   fontSize: 13, fontWeight: filter === f.value ? 500 : 400,
                   border: filter === f.value ? 'none' : '1px solid rgba(255,255,255,0.04)',
-                  background: filter === f.value ? 'rgba(255,90,31,0.10)' : '#252321',
-                  color: filter === f.value ? '#FF5A1F' : '#888888',
+                  background: filter === f.value ? 'rgba(255,90,31,0.10)' : 'var(--ob-surface)',
+                  color: filter === f.value ? '#FF5A1F' : 'var(--ob-text-muted)',
                   cursor: 'pointer', transition: 'all .2s',
                 }}
               >
@@ -277,13 +282,13 @@ export default function ReviewPage() {
           ) : filtered.length === 0 ? (
             /* Empty state */
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 16, background: '#252321', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 16, background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CCCCCC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               </div>
-              <p style={{ fontSize: 16, fontWeight: 600, color: '#F5F5F5', marginBottom: 6 }}>当前没有需要处理的任务</p>
-              <p style={{ fontSize: 14, color: '#CCCCCC', marginBottom: 20 }}>新的完成结果、失败任务或执行中的项目会出现在这里</p>
+              <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--ob-text)', marginBottom: 6 }}>当前没有需要处理的任务</p>
+              <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', marginBottom: 20 }}>新的完成结果、失败任务或执行中的项目会出现在这里</p>
               <a
                 href="/tasks"
                 style={{
@@ -318,7 +323,7 @@ export default function ReviewPage() {
                   <div
                     key={t.id}
                     style={{
-                      background: '#252321', border: '1px solid rgba(255,255,255,0.04)',
+                      background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)',
                       borderRadius: 16, padding: 18, minHeight: 124,
                       transition: 'transform .2s, box-shadow .2s',
                     }}
@@ -329,19 +334,19 @@ export default function ReviewPage() {
                       {/* Left: info */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                          <p style={{ fontSize: 17, fontWeight: 600, color: '#F5F5F5', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
                             {title}
                           </p>
                           <StatusBadge status={t.status} />
                         </div>
 
                         {inputSummary && (
-                          <p style={{ fontSize: 13, color: '#888888', margin: '0 0 6px', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                          <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', margin: '0 0 6px', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                             {inputSummary}
                           </p>
                         )}
 
-                        <span style={{ display: 'block', fontSize: 12, color: '#888888', marginTop: 4 }}>
+                        <span style={{ display: 'block', fontSize: 12, color: 'var(--ob-text-muted)', marginTop: 4 }}>
                           {timeAgo(t.updatedAt || t.createdAt)}
                         </span>
 
@@ -360,7 +365,7 @@ export default function ReviewPage() {
 
                         {/* Running status */}
                         {running && !isTeam && (
-                          <p style={{ fontSize: 13, color: '#C2410C', marginTop: 8 }}>
+                          <p style={{ fontSize: 13, color: 'var(--ob-orange)', marginTop: 8 }}>
                             AI 正在继续处理这项任务
                           </p>
                         )}
@@ -377,7 +382,7 @@ export default function ReviewPage() {
 
                         {/* Team: running = member working */}
                         {running && isTeam && (
-                          <p style={{ fontSize: 13, color: '#C2410C', marginTop: 8 }}>成员正在处理中</p>
+                          <p style={{ fontSize: 13, color: 'var(--ob-orange)', marginTop: 8 }}>成员正在处理中</p>
                         )}
 
                         {/* Failed message */}

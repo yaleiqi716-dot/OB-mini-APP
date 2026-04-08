@@ -51,13 +51,13 @@ export default function SettingsPage() {
 
   // ── Shared styles ──
   const cardStyle: React.CSSProperties = {
-    background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20,
+    background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20,
   };
   const sectionTitle: React.CSSProperties = {
-    fontSize: 17, fontWeight: 600, color: '#F5F5F5', margin: '0 0 4px',
+    fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 4px',
   };
   const sectionDesc: React.CSSProperties = {
-    fontSize: 13, color: '#888888', margin: '0 0 16px',
+    fontSize: 13, color: 'var(--ob-text-muted)', margin: '0 0 16px',
   };
   const rowStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -67,19 +67,19 @@ export default function SettingsPage() {
     borderBottom: '1px solid rgba(255,255,255,0.04)',
   };
   const labelStyle: React.CSSProperties = {
-    fontSize: 14, fontWeight: 500, color: '#F5F5F5',
+    fontSize: 14, fontWeight: 500, color: 'var(--ob-text)',
   };
   const sublabelStyle: React.CSSProperties = {
-    fontSize: 12, color: '#CCCCCC', marginTop: 2,
+    fontSize: 12, color: 'var(--ob-text-muted)', marginTop: 2,
   };
   const valueStyle: React.CSSProperties = {
-    fontSize: 14, color: '#888888',
+    fontSize: 14, color: 'var(--ob-text-muted)',
   };
   const actionBtnStyle: React.CSSProperties = {
     height: 30, padding: '0 12px', borderRadius: 9999,
     fontSize: 12, fontWeight: 500,
-    border: '1px solid rgba(255,255,255,0.04)', background: '#252321',
-    color: '#888888', cursor: 'pointer',
+    border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)',
+    color: 'var(--ob-text-muted)', cursor: 'pointer',
     display: 'inline-flex', alignItems: 'center',
     transition: 'border-color .2s, background .2s, color .2s',
   };
@@ -89,14 +89,14 @@ export default function SettingsPage() {
     e.currentTarget.style.color = '#FF5A1F';
   };
   const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)';
-    e.currentTarget.style.background = '#252321';
-    e.currentTarget.style.color = '#888888';
+    e.currentTarget.style.borderColor = 'var(--ob-border)';
+    e.currentTarget.style.background = 'var(--ob-surface)';
+    e.currentTarget.style.color = 'var(--ob-text-muted)';
   };
   const placeholderTag: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center',
-    height: 22, fontSize: 11, fontWeight: 500, color: '#CCCCCC',
-    background: '#1E1C1A', borderRadius: 9999, padding: '0 10px',
+    height: 22, fontSize: 11, fontWeight: 500, color: 'var(--ob-text-muted)',
+    background: 'var(--ob-bg)', borderRadius: 9999, padding: '0 10px',
     border: '1px solid rgba(255,255,255,0.04)',
   };
   const switchStyle = (on: boolean): React.CSSProperties => ({
@@ -107,7 +107,7 @@ export default function SettingsPage() {
   });
   const switchDot = (on: boolean): React.CSSProperties => ({
     position: 'absolute', top: 2, left: on ? 22 : 2,
-    width: 20, height: 20, borderRadius: '50%', background: '#252321',
+    width: 20, height: 20, borderRadius: '50%', background: 'var(--ob-surface)',
     transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
   });
 
@@ -267,9 +267,9 @@ export default function SettingsPage() {
             </div>
             <button
               onClick={handleLogout}
-              style={{ height: 30, padding: '0 12px', borderRadius: 9999, fontSize: 12, fontWeight: 500, border: '1px solid rgba(185,28,28,0.18)', background: '#252321', color: '#B91C1C', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', transition: 'background .2s' }}
+              style={{ height: 30, padding: '0 12px', borderRadius: 9999, fontSize: 12, fontWeight: 500, border: '1px solid rgba(185,28,28,0.18)', background: 'var(--ob-surface)', color: '#B91C1C', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', transition: 'background .2s' }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(228,72,61,0.06)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#252321'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--ob-surface)'; }}
               aria-label="登出所有设备"
             >
               退出登录
@@ -305,7 +305,7 @@ export default function SettingsPage() {
         <div style={rowStyle}>
           <div style={{ flex: 1 }}>
             <div style={labelStyle}>更多集成</div>
-            <div style={{ fontSize: 13, color: '#CCCCCC', marginTop: 4, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 13, color: 'var(--ob-text-muted)', marginTop: 4, lineHeight: 1.5 }}>
               Zapier、Slack、飞书等更多集成即将开放，敬请期待。
             </div>
           </div>
@@ -323,16 +323,19 @@ export default function SettingsPage() {
   };
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px' }}>
 
           {/* Top area */}
-          <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 32, fontWeight: 600, color: '#F5F5F5', lineHeight: 1.2, margin: '0 0 8px' }}>设置</h1>
-            <p style={{ fontSize: 14, color: '#CCCCCC', margin: 0 }}>管理你的账号、偏好与产品设置</p>
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 8px' }}>
+              <span style={{ color: 'var(--ob-orange)' }}>●</span> Settings
+            </p>
+            <h1 style={{ fontFamily: 'var(--ob-font-display)', fontSize: 44, fontWeight: 800, color: 'var(--ob-text)', lineHeight: 1, letterSpacing: '-0.025em', margin: '0 0 12px' }}>设置</h1>
+            <p style={{ fontFamily: 'var(--ob-font-body)', fontSize: 14, color: 'var(--ob-text-muted)', margin: 0 }}>管理你的账号、偏好与产品设置</p>
           </div>
 
           {/* Two-column layout */}
@@ -351,14 +354,14 @@ export default function SettingsPage() {
                         height: 40, padding: '0 12px', borderRadius: 12,
                         fontSize: 14, border: 'none',
                         background: active ? 'rgba(255,90,31,0.06)' : 'transparent',
-                        color: active ? '#F5F5F5' : '#888888',
+                        color: active ? 'var(--ob-text)' : 'var(--ob-text-muted)',
                         fontWeight: active ? 550 : 500,
                         cursor: 'pointer',
                         borderLeft: active ? '2px solid #FF5A1F' : '2px solid transparent',
                         transition: 'all .2s',
                         width: '100%', textAlign: 'left',
                       }}
-                      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = '#252321'; }}
+                      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--ob-surface)'; }}
                       onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
                     >
                       <NavIcon name={item.icon} />

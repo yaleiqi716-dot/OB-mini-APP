@@ -35,7 +35,7 @@ export default function NewWorkspacePage() {
   }
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
       <AppHeader />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{ width: '100%', maxWidth: 440 }}>
@@ -45,12 +45,12 @@ export default function NewWorkspacePage() {
                 <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
               </svg>
             </div>
-            <h1 style={{ fontSize: 24, fontWeight: 600, color: '#F5F5F5', margin: '0 0 8px' }}>创建工作区</h1>
-            <p style={{ fontSize: 14, color: '#CCCCCC', margin: 0 }}>为你的团队创建一个协作空间</p>
+            <h1 style={{ fontSize: 24, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 8px' }}>创建工作区</h1>
+            <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', margin: 0 }}>为你的团队创建一个协作空间</p>
           </div>
 
-          <div style={{ background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 24 }}>
-            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#F5F5F5', marginBottom: 8 }}>
+          <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 24 }}>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--ob-text)', marginBottom: 8 }}>
               工作区名称
             </label>
             <input
@@ -61,11 +61,11 @@ export default function NewWorkspacePage() {
               autoFocus
               style={{
                 width: '100%', height: 44, borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)',
-                background: '#252321', padding: '0 16px', fontSize: 15, color: '#F5F5F5', outline: 'none',
+                background: 'var(--ob-surface)', padding: '0 16px', fontSize: 15, color: 'var(--ob-text)', outline: 'none',
                 transition: 'border-color .2s',
               }}
               onFocus={e => (e.currentTarget.style.borderColor = '#FF5A1F')}
-              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'var(--ob-border)')}
             />
 
             {error && <p style={{ fontSize: 13, color: '#B91C1C', marginTop: 12 }}>{error}</p>}
@@ -86,7 +86,7 @@ export default function NewWorkspacePage() {
                 onClick={() => router.back()}
                 style={{
                   height: 44, padding: '0 20px', borderRadius: 12, fontSize: 14,
-                  border: '1px solid rgba(255,255,255,0.04)', background: '#252321', color: '#888888', cursor: 'pointer',
+                  border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)', cursor: 'pointer',
                 }}
               >
                 取消
@@ -94,7 +94,7 @@ export default function NewWorkspacePage() {
             </div>
           </div>
 
-          <p style={{ fontSize: 12, color: '#CCCCCC', textAlign: 'center', marginTop: 16 }}>
+          <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', textAlign: 'center', marginTop: 16 }}>
             创建后你将成为工作区 Owner，可以邀请成员加入
           </p>
         </div>

@@ -82,8 +82,8 @@ function LiveStatusCycle() {
   return (
     <div className="ob-live-status">
       <span className="ob-live-dot" />
-      <span style={{ color: 'rgba(224,216,208,0.55)', fontSize: 11, letterSpacing: '0.04em' }}>READY</span>
-      <span style={{ width: 1, height: 10, background: 'rgba(255,255,255,0.08)' }} />
+      <span>READY</span>
+      <span style={{ width: 1, height: 10, background: 'var(--ob-border-strong)' }} />
       <span>{STATUS_WORDS[idx]}</span>
     </div>
   );
@@ -637,10 +637,10 @@ function AgentPageInner() {
                 <h1 className="ob-hero-title" style={{ marginBottom: 12 }}>
                   告诉我任务，<span className="ob-hero-accent">推进到完成</span>
                 </h1>
-                {/* Subtitle — mono style per spec */}
+                {/* Subtitle — token-driven editorial mono kicker */}
                 <p style={{
-                  fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 3,
-                  textTransform: 'uppercase' as const, color: '#8A8078', textAlign: 'center',
+                  fontFamily: 'var(--ob-font-mono)', fontSize: 11, letterSpacing: '0.14em',
+                  textTransform: 'uppercase' as const, color: 'var(--ob-text-muted)', textAlign: 'center',
                   marginBottom: 32, maxWidth: 520,
                 }}>
                   UNDERSTAND · DECOMPOSE · EXECUTE · DELIVER · COLLABORATE
@@ -662,12 +662,12 @@ function AgentPageInner() {
                   )}
                 </div>
 
-                {/* Quick actions grid */}
+                {/* Quick actions grid — pure class-driven, all visual in globals.css */}
                 <div className="ob-actions">
                   {QUICK_ACTIONS.map((a, i) => (
                     a.href ? (
                       <a key={i} href={a.href} className="ob-action-card">
-                        <div className="ob-action-icon" style={{ background: 'rgba(255,90,31,0.08)', color: '#FF5A1F' }}>
+                        <div className="ob-action-icon">
                           <ActionIcon name={a.icon} />
                         </div>
                         <div>
@@ -676,8 +676,8 @@ function AgentPageInner() {
                         </div>
                       </a>
                     ) : (
-                      <button key={i} onClick={() => a.action && handleSubmit(a.action, a.type)} disabled={isSubmitting} className="ob-action-card" style={{ border: '1px solid rgba(255,255,255,0.04)' }}>
-                        <div className="ob-action-icon" style={{ background: 'rgba(255,90,31,0.08)', color: '#FF5A1F' }}>
+                      <button key={i} onClick={() => a.action && handleSubmit(a.action, a.type)} disabled={isSubmitting} className="ob-action-card">
+                        <div className="ob-action-icon">
                           <ActionIcon name={a.icon} />
                         </div>
                         <div style={{ textAlign: 'left' }}>

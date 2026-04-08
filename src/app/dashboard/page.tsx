@@ -52,9 +52,9 @@ function StatusBadge({ status }: { status: string }) {
   const isRunning = ['queued', 'understanding', 'running', 'executing', 'interacting', 'structuring'].includes(status);
   const isCompleted = status === 'completed';
   const isFailed = status === 'failed';
-  let bg = 'rgba(156,163,175,0.10)'; let color = '#888888';
-  if (isRunning)   { bg = 'rgba(255,90,31,0.10)'; color = '#C2410C'; }
-  if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = '#047857'; }
+  let bg = 'rgba(156,163,175,0.10)'; let color = 'var(--ob-text-muted)';
+  if (isRunning)   { bg = 'rgba(255,90,31,0.10)'; color = 'var(--ob-orange)'; }
+  if (isCompleted) { bg = 'rgba(16,185,129,0.10)'; color = 'var(--ob-success)'; }
   if (isFailed)    { bg = 'rgba(228,72,61,0.10)';  color = '#B91C1C'; }
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px', fontSize: 11, fontWeight: 500, borderRadius: 9999, background: bg, color, whiteSpace: 'nowrap' }}>
@@ -125,7 +125,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Spinner size="md" />
@@ -136,10 +136,10 @@ export default function DashboardPage() {
 
   if (error || !data) {
     return (
-      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <p style={{ fontSize: 14, color: '#888888' }}>{error || '数据加载失败'}</p>
+          <p style={{ fontSize: 14, color: 'var(--ob-text-muted)' }}>{error || '数据加载失败'}</p>
           <button onClick={() => window.location.reload()} style={{ fontSize: 13, color: '#FF5A1F', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>刷新页面</button>
         </div>
       </div>
@@ -154,8 +154,8 @@ export default function DashboardPage() {
 
   const statCards: { label: string; value: number; accent?: string }[] = [
     { label: '总任务数', value: data.total },
-    { label: '进行中', value: data.running, accent: '#C2410C' },
-    { label: '已完成', value: data.completed, accent: '#047857' },
+    { label: '进行中', value: data.running, accent: 'var(--ob-orange)' },
+    { label: '已完成', value: data.completed, accent: 'var(--ob-success)' },
     { label: '失败', value: data.failed, accent: '#B91C1C' },
   ];
 
@@ -172,14 +172,14 @@ export default function DashboardPage() {
   const actionBtnStyle: React.CSSProperties = {
     height: 30, padding: '0 12px', borderRadius: 9999,
     fontSize: 12, fontWeight: 500,
-    border: '1px solid rgba(255,255,255,0.04)', background: '#252321',
-    color: '#888888', textDecoration: 'none', cursor: 'pointer',
+    border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)',
+    color: 'var(--ob-text-muted)', textDecoration: 'none', cursor: 'pointer',
     display: 'inline-flex', alignItems: 'center',
     transition: 'border-color .2s, background .2s, color .2s',
   };
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: '#1E1C1A' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
@@ -188,7 +188,10 @@ export default function DashboardPage() {
           {/* ── Top area ── */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
             <div>
-              <h1 style={{ fontSize: 32, fontWeight: 600, color: '#F5F5F5', lineHeight: 1.2, margin: 0 }}>总览</h1>
+              <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 8px' }}>
+                <span style={{ color: 'var(--ob-orange)' }}>●</span> Dashboard
+              </p>
+              <h1 style={{ fontFamily: 'var(--ob-font-display)', fontSize: 44, fontWeight: 800, color: 'var(--ob-text)', lineHeight: 1, letterSpacing: '-0.025em', margin: 0 }}>总览</h1>
             </div>
             {/* Time range chips */}
             <div style={{ display: 'flex', gap: 6 }}>
@@ -200,8 +203,8 @@ export default function DashboardPage() {
                     height: 32, padding: '0 14px', borderRadius: 9999,
                     fontSize: 13, fontWeight: timeRange === c.value ? 500 : 400,
                     border: timeRange === c.value ? 'none' : '1px solid rgba(255,255,255,0.04)',
-                    background: timeRange === c.value ? 'rgba(255,90,31,0.10)' : '#252321',
-                    color: timeRange === c.value ? '#FF5A1F' : '#888888',
+                    background: timeRange === c.value ? 'rgba(255,90,31,0.10)' : 'var(--ob-surface)',
+                    color: timeRange === c.value ? '#FF5A1F' : 'var(--ob-text-muted)',
                     cursor: 'pointer', transition: 'all .2s',
                   }}
                 >
@@ -210,18 +213,18 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
-          <p style={{ fontSize: 14, color: '#CCCCCC', margin: '0 0 24px' }}>查看当前任务进展与 AI 工作概览</p>
+          <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', margin: '0 0 24px' }}>查看当前任务进展与 AI 工作概览</p>
 
           {/* ── Row 1: 4 stat cards ── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 }}>
             {statCards.map(s => (
               <div key={s.label} style={{
-                background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16,
+                background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16,
                 padding: 18, height: 108,
                 display: 'flex', flexDirection: 'column', justifyContent: 'center',
               }}>
-                <p style={{ fontSize: 13, color: '#888888', margin: '0 0 6px' }}>{s.label}</p>
-                <p style={{ fontSize: 28, fontWeight: 650, color: s.accent || '#F5F5F5', margin: 0, lineHeight: 1 }}>{s.value}</p>
+                <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', margin: '0 0 6px' }}>{s.label}</p>
+                <p style={{ fontSize: 28, fontWeight: 650, color: s.accent || 'var(--ob-text)', margin: 0, lineHeight: 1 }}>{s.value}</p>
               </div>
             ))}
           </div>
@@ -229,40 +232,40 @@ export default function DashboardPage() {
           {/* ── Workspace summary card ── */}
           {wsSummary && (
             <div style={{
-              background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16,
+              background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16,
               padding: 18, marginBottom: 20,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                 <div>
-                  <p style={{ fontSize: 15, fontWeight: 600, color: '#F5F5F5', margin: '0 0 4px' }}>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 4px' }}>
                     工作区：{wsSummary.name}
                   </p>
-                  <p style={{ fontSize: 13, color: '#CCCCCC', margin: 0 }}>团队任务概览</p>
+                  <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', margin: 0 }}>团队任务概览</p>
                 </div>
                 <div style={{ display: 'flex', gap: 16, marginLeft: 16 }}>
                   <div style={{ textAlign: 'center' }}>
-                    <p style={{ fontSize: 20, fontWeight: 650, color: '#C2410C', margin: 0 }}>{wsSummary.assigned}</p>
-                    <p style={{ fontSize: 12, color: '#888888', margin: 0 }}>进行中</p>
+                    <p style={{ fontSize: 20, fontWeight: 650, color: 'var(--ob-orange)', margin: 0 }}>{wsSummary.assigned}</p>
+                    <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: 0 }}>进行中</p>
                   </div>
                   <div style={{ textAlign: 'center' }}>
-                    <p style={{ fontSize: 20, fontWeight: 650, color: '#1D4ED8', margin: 0 }}>{wsSummary.submitted}</p>
-                    <p style={{ fontSize: 12, color: '#888888', margin: 0 }}>待审核</p>
+                    <p style={{ fontSize: 20, fontWeight: 650, color: 'var(--ob-info)', margin: 0 }}>{wsSummary.submitted}</p>
+                    <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: 0 }}>待审核</p>
                   </div>
                   <div style={{ textAlign: 'center' }}>
-                    <p style={{ fontSize: 20, fontWeight: 650, color: '#047857', margin: 0 }}>{wsSummary.completed}</p>
-                    <p style={{ fontSize: 12, color: '#888888', margin: 0 }}>已完成</p>
+                    <p style={{ fontSize: 20, fontWeight: 650, color: 'var(--ob-success)', margin: 0 }}>{wsSummary.completed}</p>
+                    <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: 0 }}>已完成</p>
                   </div>
                 </div>
               </div>
               <a href="/workspace" style={{
                 height: 30, padding: '0 14px', borderRadius: 9999, fontSize: 13, fontWeight: 500,
-                border: '1px solid rgba(255,255,255,0.04)', background: '#252321', color: '#888888',
+                border: '1px solid rgba(255,255,255,0.04)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)',
                 textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
                 transition: 'border-color .2s, color .2s',
               }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)'; e.currentTarget.style.color = '#FF5A1F'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#888888'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--ob-border)'; e.currentTarget.style.color = 'var(--ob-text-muted)'; }}
               >查看工作区</a>
             </div>
           )}
@@ -271,8 +274,8 @@ export default function DashboardPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: 20, marginBottom: 20 }}>
 
             {/* Left: Recent tasks */}
-            <div style={{ background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 18 }}>
-              <p style={{ fontSize: 17, fontWeight: 600, color: '#F5F5F5', margin: '0 0 14px' }}>最近任务</p>
+            <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 18 }}>
+              <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 14px' }}>最近任务</p>
               {recentTasks.length > 0 ? (
                 <div>
                   {recentTasks.map((t, i) => (
@@ -289,10 +292,10 @@ export default function DashboardPage() {
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
                       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <span style={{ fontSize: 14, fontWeight: 500, color: '#F5F5F5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ob-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {t.title || '未命名任务'}
                         </span>
-                        <span style={{ fontSize: 12, color: '#888888' }}>{timeAgo(t.updatedAt || t.createdAt)}</span>
+                        <span style={{ fontSize: 12, color: 'var(--ob-text-muted)' }}>{timeAgo(t.updatedAt || t.createdAt)}</span>
                       </div>
                       {t.status && <StatusBadge status={t.status} />}
                     </a>
@@ -302,20 +305,20 @@ export default function DashboardPage() {
                   </a>
                 </div>
               ) : (
-                <p style={{ fontSize: 13, color: '#888888', textAlign: 'center', padding: '24px 0' }}>暂无任务记录</p>
+                <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', textAlign: 'center', padding: '24px 0' }}>暂无任务记录</p>
               )}
             </div>
 
             {/* Right: AI Summary */}
-            <div style={{ background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20, minHeight: 260 }}>
+            <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 20, minHeight: 260 }}>
               <div style={{ marginBottom: 14 }}>
-                <p style={{ fontSize: 17, fontWeight: 600, color: '#F5F5F5', margin: 0 }}>AI 总结</p>
-                <p style={{ fontSize: 12, color: '#888888', margin: '2px 0 0' }}>基于你的任务数据自动生成</p>
+                <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: 0 }}>AI 总结</p>
+                <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: '2px 0 0' }}>基于你的任务数据自动生成</p>
               </div>
               {aiText ? (
                 <p style={{ fontSize: 14, color: '#D1D5DB', lineHeight: 1.75, margin: 0, whiteSpace: 'pre-wrap' }}>{aiText}</p>
               ) : (
-                <p style={{ fontSize: 14, color: '#888888', lineHeight: 1.75, margin: 0 }}>
+                <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', lineHeight: 1.75, margin: 0 }}>
                   等任务多一点后，ORANGEBENCH 会在这里帮你总结趋势和重点。
                 </p>
               )}
@@ -323,8 +326,8 @@ export default function DashboardPage() {
           </div>
 
           {/* ── Row 3: Needs attention ── */}
-          <div style={{ background: '#252321', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 18 }}>
-            <p style={{ fontSize: 17, fontWeight: 600, color: '#F5F5F5', margin: '0 0 14px' }}>需要关注</p>
+          <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: 18 }}>
+            <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 14px' }}>需要关注</p>
             {needAttention.length > 0 ? (
               <div>
                 {needAttention.map((t, i) => (
@@ -338,12 +341,12 @@ export default function DashboardPage() {
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 14, fontWeight: 500, color: '#F5F5F5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ob-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {t.title || '未命名任务'}
                         </span>
                         {t.status && <StatusBadge status={t.status} />}
                       </div>
-                      <p style={{ fontSize: 12, color: '#888888', margin: '4px 0 0' }}>
+                      <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: '4px 0 0' }}>
                         {t.reason === 'failed' ? '当前能力暂不可用 · 请稍后重试' : `${timeAgo(t.updatedAt || t.createdAt)} 开始执行`}
                       </p>
                     </div>
@@ -355,7 +358,7 @@ export default function DashboardPage() {
                           aria-label="重试"
                           style={{ ...actionBtnStyle, color: '#B91C1C', opacity: actionLoading === t.id ? 0.5 : 1 }}
                           onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)'; e.currentTarget.style.background = 'rgba(255,90,31,0.06)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.background = '#FFFFFF'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--ob-border)'; e.currentTarget.style.background = '#FFFFFF'; }}
                         >
                           {actionLoading === t.id ? '重试中...' : '重试'}
                         </button>
@@ -364,7 +367,7 @@ export default function DashboardPage() {
                         href={t.conversationId ? `/agent?conversationId=${t.conversationId}` : `/tasks/${t.id}`}
                         style={actionBtnStyle}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)'; e.currentTarget.style.background = 'rgba(255,90,31,0.06)'; e.currentTarget.style.color = '#FF5A1F'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#888888'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--ob-border)'; e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = 'var(--ob-text-muted)'; }}
                       >
                         查看
                       </a>
@@ -373,7 +376,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <p style={{ fontSize: 13, color: '#888888', textAlign: 'center', padding: '16px 0' }}>目前没有需要关注的任务</p>
+              <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', textAlign: 'center', padding: '16px 0' }}>目前没有需要关注的任务</p>
             )}
           </div>
 
