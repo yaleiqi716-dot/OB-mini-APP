@@ -14,8 +14,17 @@ interface WsTaskDetail {
   priority: number; createdBy: string; assigneeId: string | null; dueAt: string | null;
   feedback: string | null; submissionSummary: string | null;
   attachments: UploadedFile[]; submissionAttachments: UploadedFile[];
+  preferredSkillRoles: string[];
   createdAt: string; updatedAt: string; userRole: string;
   agentTasks: AgentTaskRef[]; links: LinkRef[];
+}
+
+interface SkillRoleMeta {
+  id: string;
+  department: string;
+  name: string;
+  description: string;
+  color?: string;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -53,6 +62,10 @@ export default function WorkspaceTaskDetailPage() {
   const [commentText, setCommentText] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
   const [userId, setUserId] = useState('');
+  // All-roles lookup: used to resolve preferredSkillRoles ids → meta
+  // (name + description) for rendering the suggested role chips.
+  // Fetched once from /api/skills?flat=1 when the detail page mounts.
+  const [allRoles, setAllRoles] = useState<Record<string, SkillRoleMeta>>({});
 
   // Read userId from cookie in useEffect (SSR-safe)
   useEffect(() => {
@@ -61,6 +74,21 @@ export default function WorkspaceTaskDetailPage() {
     if (!hasSession) { router.replace('/login'); return; }
     if (m?.[1]) setUserId(decodeURIComponent(m[1]));
   }, [router]);
+
+  // Preload the skill-role lookup once per page mount so we can resolve
+  // preferredSkillRoles ids → {name, description} for the chip UI.
+  useEffect(() => {
+    fetch('/api/skills?flat=1')
+      .then(r => (r.ok ? r.json() : Promise.reject(r)))
+      .then((data: { roles: SkillRoleMeta[] }) => {
+        const map: Record<string, SkillRoleMeta> = {};
+        for (const role of data.roles || []) map[role.id] = role;
+        setAllRoles(map);
+      })
+      .catch(() => {
+        // Silent — chips become plain id strings as fallback, still clickable.
+      });
+  }, []);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 3000); }
 
@@ -107,10 +135,18 @@ export default function WorkspaceTaskDetailPage() {
   const canSubmit = isAssignee && ['in_progress', 'revision'].includes(task?.businessStatus || '') && (task?.agentTasks || []).some(t => t.status === 'completed');
   const canReview = isOwner && task?.businessStatus === 'submitted';
 
-  async function handleUseAgent() {
-    setActionLoading('agent');
+  // handleUseAgent now accepts an optional skillRoleId — when the assignee
+  // clicks a suggested-role chip, that role is pinned to the new Agent
+  // conversation. When they click the plain "用 Agent 执行" button, no
+  // role is pinned (plain agent mode).
+  async function handleUseAgent(skillRoleId?: string) {
+    setActionLoading(skillRoleId ? `agent:${skillRoleId}` : 'agent');
     try {
-      const res = await fetch(`/api/workspace/tasks/${taskId}/agent`, { method: 'POST' });
+      const res = await fetch(`/api/workspace/tasks/${taskId}/agent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(skillRoleId ? { skillRoleId } : {}),
+      });
       const data = await res.json();
       if (data.success && data.redirectUrl) {
         router.push(data.redirectUrl);
@@ -375,9 +411,82 @@ export default function WorkspaceTaskDetailPage() {
             {/* Member: Use Agent */}
             {canExecute && (
               <div style={{ marginBottom: 16 }}>
-                <button onClick={handleUseAgent} disabled={actionLoading === 'agent'}
-                  style={{ ...actionBtn, background: '#FF5A1F', color: '#fff', opacity: actionLoading === 'agent' ? 0.5 : 1 }}>
-                  {actionLoading === 'agent' ? '创建中...' : '用 Agent 执行'}
+                {/* Suggested roles — rendered ABOVE the plain launch button
+                    when the owner selected preferredSkillRoles at task creation.
+                    Clicking a suggested role launches Agent with that persona
+                    pinned. Each chip is a primary CTA in its own right. */}
+                {task && task.preferredSkillRoles.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div
+                      style={{
+                        fontFamily: 'var(--ob-font-mono)',
+                        fontSize: 10,
+                        fontWeight: 600,
+                        letterSpacing: '0.14em',
+                        textTransform: 'uppercase',
+                        color: 'var(--ob-text-muted)',
+                        marginBottom: 8,
+                      }}
+                    >
+                      老板建议用这些 AI 同事执行
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {task.preferredSkillRoles.map(roleId => {
+                        const meta = allRoles[roleId];
+                        const name = meta?.name || roleId.split('/').pop() || roleId;
+                        const desc = meta?.description || '';
+                        const isLoading = actionLoading === `agent:${roleId}`;
+                        return (
+                          <button
+                            key={roleId}
+                            type="button"
+                            onClick={() => handleUseAgent(roleId)}
+                            disabled={actionLoading !== null}
+                            title={desc}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              height: 36,
+                              padding: '0 16px',
+                              borderRadius: 9999,
+                              background: 'var(--ob-orange, #FF5A1F)',
+                              color: '#fff',
+                              border: 'none',
+                              fontFamily: 'var(--ob-font-body)',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: actionLoading !== null ? 'not-allowed' : 'pointer',
+                              opacity: actionLoading !== null && !isLoading ? 0.4 : 1,
+                              transition: 'all .12s cubic-bezier(.2,.7,.3,1)',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            <span style={{ fontSize: 14, lineHeight: 1 }}>@</span>
+                            <span>{name}</span>
+                            {isLoading && <span style={{ fontSize: 11, marginLeft: 2 }}>...</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <button onClick={() => handleUseAgent()} disabled={actionLoading === 'agent'}
+                  style={{
+                    ...actionBtn,
+                    // If suggested roles exist, the plain button becomes SECONDARY —
+                    // outlined instead of solid — so it doesn't compete with the
+                    // primary suggested-role chips.
+                    background: task && task.preferredSkillRoles.length > 0 ? 'transparent' : '#FF5A1F',
+                    color: task && task.preferredSkillRoles.length > 0 ? 'var(--ob-text-muted)' : '#fff',
+                    border: task && task.preferredSkillRoles.length > 0 ? '1px solid var(--ob-border)' : 'none',
+                    opacity: actionLoading === 'agent' ? 0.5 : 1,
+                  }}>
+                  {actionLoading === 'agent'
+                    ? '创建中...'
+                    : task && task.preferredSkillRoles.length > 0
+                      ? '不用推荐角色 · 普通 Agent 执行'
+                      : '用 Agent 执行'}
                 </button>
               </div>
             )}

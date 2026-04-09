@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/workspace/AppHeader';
 import { FileUploader, UploadedFile } from '@/components/workspace/FileUploader';
+import { SkillRoleMultiPicker } from '@/components/agent/SkillRoleMultiPicker';
 
 interface Member { id: string; userId: string; name: string | null; email: string; role: string; }
 
@@ -16,6 +17,7 @@ export default function NewWorkspaceTaskPage() {
   const [dueAt, setDueAt] = useState('');
   const [members, setMembers] = useState<Member[]>([]);
   const [attachments, setAttachments] = useState<UploadedFile[]>([]);
+  const [preferredSkillRoles, setPreferredSkillRoles] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -39,6 +41,7 @@ export default function NewWorkspaceTaskPage() {
           assigneeId: assigneeId || undefined,
           dueAt: dueAt || undefined,
           attachments: attachments.length > 0 ? attachments : undefined,
+          preferredSkillRoles: preferredSkillRoles.length > 0 ? preferredSkillRoles : undefined,
         }),
       });
       const data = await res.json();
@@ -133,6 +136,14 @@ export default function NewWorkspaceTaskPage() {
             <div style={{ marginBottom: 24 }}>
               <label style={labelStyle}>截止时间</label>
               <input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)} style={inputStyle} />
+            </div>
+
+            <div style={{ marginBottom: 24 }}>
+              <SkillRoleMultiPicker
+                value={preferredSkillRoles}
+                onChange={setPreferredSkillRoles}
+                max={3}
+              />
             </div>
 
             <div style={{ marginBottom: 24 }}>

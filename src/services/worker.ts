@@ -130,17 +130,33 @@ async function executeTask(taskId: string, input: string) {
   const cost = estimateCost(intentType);
 
   await prisma.task.update({ where: { id: taskId }, data: { estimatedCost: cost } });
-  // Strip persona preamble when deriving the task title. When a skill
-  // role is active, task.input is prepended with '【AI 同事角色】...\n---\n\n【用户任务】<real input>'.
-  // The UI should still show the original user intent as the title, not
-  // the injected role header. See src/app/api/tasks/route.ts for the
-  // injection logic and src/lib/skills/ for the role library.
+  // Strip preambles when deriving the task title. The task.input may have
+  // been injected in two ways:
+  //   1. Skill role preamble from /api/tasks:
+  //        【AI 同事角色】<name>\n...\n---\n\n【用户任务】<real input>
+  //   2. Workspace task preamble from /api/workspace/tasks/[id]/agent:
+  //        【工作区任务】<title>\n【任务描述】...\n【当前指令】请根据以上任务要求执行
+  //   3. Both combined (role + workspace):
+  //        【AI 同事角色】<name>\n...\n---\n\n【用户任务】【工作区任务】<title>\n...
+  //
+  // Strategy: prefer 【工作区任务】 when present (pulls clean task title
+  // directly), else fall back to 【用户任务】, else use the raw input.
+  const WS_TASK_MARKER = '【工作区任务】';
   const USER_INTENT_MARKER = '【用户任务】';
-  const markerIdx = input.indexOf(USER_INTENT_MARKER);
-  const userIntent = markerIdx >= 0
-    ? input.slice(markerIdx + USER_INTENT_MARKER.length).trim()
-    : input;
-  const title = userIntent.slice(0, 50);
+  let title: string;
+  const wsIdx = input.indexOf(WS_TASK_MARKER);
+  if (wsIdx >= 0) {
+    // Workspace task — title is the first line after 【工作区任务】.
+    const afterMarker = input.slice(wsIdx + WS_TASK_MARKER.length);
+    const firstLine = afterMarker.split('\n')[0] || afterMarker;
+    title = firstLine.trim().slice(0, 50);
+  } else {
+    const markerIdx = input.indexOf(USER_INTENT_MARKER);
+    const userIntent = markerIdx >= 0
+      ? input.slice(markerIdx + USER_INTENT_MARKER.length).trim()
+      : input;
+    title = userIntent.slice(0, 50);
+  }
   await updateTaskType(taskId, 'unknown' as TaskType, title);
   await updateTaskContext(taskId, { executionStrategy: 'agent_dispatch', engine: intentType });
 

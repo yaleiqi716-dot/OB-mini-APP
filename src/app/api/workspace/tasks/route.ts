@@ -68,9 +68,20 @@ export async function POST(req: NextRequest) {
     if (ctx.role !== 'owner') return NextResponse.json({ error: '只有 Owner 可以创建任务' }, { status: 403 });
 
     const body = await req.json();
-    const { title, description, priority: rawPriority, assigneeId, dueAt, attachments } = body;
+    const { title, description, priority: rawPriority, assigneeId, dueAt, attachments, preferredSkillRoles } = body;
 
     if (!title || !title.trim()) return NextResponse.json({ error: '请输入任务标题' }, { status: 400 });
+
+    // Defensive: preferredSkillRoles must be an array of non-empty strings.
+    // Silently ignore anything else so a bad client can't corrupt the row.
+    let normalizedPreferredRoles: string[] | null = null;
+    if (Array.isArray(preferredSkillRoles)) {
+      const clean = preferredSkillRoles
+        .filter((x: unknown): x is string => typeof x === 'string' && x.trim().length > 0)
+        .map((x: string) => x.trim())
+        .slice(0, 5); // cap at 5 even if client sends more
+      if (clean.length > 0) normalizedPreferredRoles = clean;
+    }
 
     // Coerce priority to Int 0-3. Schema is Int, but be defensive: accept
     // numbers, numeric strings, and common label strings from any client.
@@ -101,6 +112,7 @@ export async function POST(req: NextRequest) {
         assigneeId: assigneeId || null,
         dueAt: dueAt ? new Date(dueAt) : null,
         attachments: attachments ? JSON.stringify(attachments) : null,
+        preferredSkillRoles: normalizedPreferredRoles ? JSON.stringify(normalizedPreferredRoles) : null,
         businessStatus: assigneeId ? 'assigned' : 'draft',
       },
     });

@@ -40,13 +40,21 @@ export async function GET(
     // Parse JSON attachment fields
     let parsedAttachments = [];
     let parsedSubAttachments = [];
+    let parsedPreferredRoles: string[] = [];
     try { if (task.attachments) parsedAttachments = JSON.parse(task.attachments); } catch {}
     try { if (task.submissionAttachments) parsedSubAttachments = JSON.parse(task.submissionAttachments); } catch {}
+    try {
+      if (task.preferredSkillRoles) {
+        const parsed = JSON.parse(task.preferredSkillRoles);
+        if (Array.isArray(parsed)) parsedPreferredRoles = parsed.filter((x): x is string => typeof x === 'string');
+      }
+    } catch {}
 
     return NextResponse.json({
       ...task,
       attachments: parsedAttachments,
       submissionAttachments: parsedSubAttachments,
+      preferredSkillRoles: parsedPreferredRoles,
       dueAt: task.dueAt?.toISOString() || null,
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString(),
