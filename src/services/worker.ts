@@ -170,7 +170,15 @@ async function executeTask(taskId: string, input: string) {
   await emitStepStarted(taskId, 'step_execute', execLabel, execDetail);
   await emitThinking(taskId, '开始干活了...');
 
-  const result = await dispatch(decision, input);
+  // P4c4 — dispatch ctx for browser_task gstack path (needs userId +
+  // taskId for credential resolution + quota + TaskEvent artifact tracking)
+  const dispatchTask = await prisma.task
+    .findUnique({ where: { id: taskId }, select: { userId: true } })
+    .catch(() => null);
+  const result = await dispatch(decision, input, {
+    taskId,
+    userId: dispatchTask?.userId ?? undefined,
+  });
 
   if (!result.success) {
     await emitStepFailed(taskId, 'step_execute', execLabel, result.message || '执行失败', true);

@@ -10,6 +10,24 @@ import { createVideo } from '@/services/tools/minimax';
 import { createAvatarVideo } from '@/services/tools/akool';
 import { triggerAutomation } from '@/services/tools/zapier';
 import { createBrowserTask } from '@/services/tools/manus';
+// P4c4 — gstack browse integration for whitelisted sites.
+// When the agent asks to browse a known-safe Chinese platform, we prefer
+// the local gstack binary (sync, cheap, ~2-6s) over Manus (async, expensive,
+// 30s+). Unknown hosts still fall through to Manus.
+import {
+  findWhitelistedSite,
+  BrowseSiteId,
+  BROWSE_WHITELIST,
+} from '@/services/tools/browse-whitelist';
+import {
+  browseGoto,
+  browseScreenshot,
+  browseSnapshot,
+  browseText,
+  checkDailyQuota,
+  BrowseRunContext,
+} from '@/services/tools/browse';
+import { prisma } from '@/lib/prisma';
 
 // Async intents: these only create a job and return immediately.
 // The media-job-poller picks up results later.
@@ -23,7 +41,22 @@ export interface AsyncJobInfo {
   jobId: string;
 }
 
-export async function dispatch(decision: RouterDecision, originalInput: string): Promise<DispatchResult> {
+/**
+ * Optional execution context threaded through from the worker. Browser
+ * tool calls (P4c4) need userId for quota + credential resolution, and
+ * taskId for output paths and TaskEvent artifact tracking. Other handlers
+ * currently ignore this.
+ */
+export interface DispatchCtx {
+  userId?: string;
+  taskId?: string;
+}
+
+export async function dispatch(
+  decision: RouterDecision,
+  originalInput: string,
+  ctx: DispatchCtx = {},
+): Promise<DispatchResult> {
   const { intent, toolPayload } = decision;
 
   try {
@@ -50,7 +83,7 @@ export async function dispatch(decision: RouterDecision, originalInput: string):
         return await handleAutomation(toolPayload);
 
       case 'browser_task':
-        return await handleBrowserTask(toolPayload, originalInput);
+        return await handleBrowserTask(toolPayload, originalInput, ctx);
 
       default:
         return await handleText(toolPayload, originalInput);
@@ -238,17 +271,222 @@ async function handleAvatarVideo(payload: Record<string, unknown>): Promise<Disp
   };
 }
 
-async function handleBrowserTask(payload: Record<string, unknown>, originalInput: string): Promise<DispatchResult> {
-  const prompt = String(payload.instruction || payload.task || payload.prompt || originalInput);
-  const url = payload.url ? String(payload.url) : undefined;
-  const context = payload.context ? String(payload.context) : undefined;
-  const result = await createBrowserTask({ prompt, url, context });
+// P4c4 — extracted helpers + dual-engine dispatch.
+//
+// Engine selection for browser_task intent:
+//   1. If payload has an explicit URL and it's whitelisted → gstack (sync)
+//   2. If input text names a whitelisted site by label (e.g. "拉一下
+//      淘宝卖家中心") → gstack (sync), use the site's login URL
+//   3. Else → Manus (async, existing behavior)
+//
+// The key design principle: gstack is cheap and fast but restricted;
+// Manus is expensive but fully general. Users on whitelisted sites get
+// a 10x cost/latency improvement without changing how they phrase things.
 
-  return {
-    success: true,
-    intent: 'browser_task',
-    engine: 'manus',
-    data: { type: 'browser_task', _async: true, jobId: result.taskId },
-    message: '浏览器任务已启动...',
-  };
+function extractUrl(input: string): string | null {
+  const m = input.match(/https?:\/\/[^\s\u4e00-\u9fff]+/);
+  return m ? m[0] : null;
+}
+
+function detectSiteFromText(text: string): BrowseSiteId | null {
+  const lower = text.toLowerCase();
+  for (const [id, site] of Object.entries(BROWSE_WHITELIST)) {
+    // Match by Chinese label or hostname root
+    if (text.includes(site.label)) return id as BrowseSiteId;
+    const hostRoot = site.hostnames[0].split('.').slice(-2).join('.');
+    if (lower.includes(hostRoot)) return id as BrowseSiteId;
+  }
+  return null;
+}
+
+function detectSubcommand(input: string): 'screenshot' | 'snapshot' | 'text' | 'goto' {
+  // 截图/截一下/拍照 → screenshot; "截" as a standalone verb near 图/屏/页 counts
+  if (/截图|截一|拍照|拍一张|截屏|screenshot|shot/i.test(input)) return 'screenshot';
+  if (/结构|元素|snapshot|可访问|树/i.test(input)) return 'snapshot';
+  if (/文本|正文|内容|抓.*(字|文)|text/i.test(input)) return 'text';
+  return 'goto';
+}
+
+async function recordToolArtifact(
+  taskId: string,
+  toolName: string,
+  toolInput: Record<string, unknown>,
+  toolOutput: string,
+): Promise<void> {
+  await prisma.taskEvent
+    .create({
+      data: {
+        taskId,
+        type: 'tool_call',
+        data: JSON.stringify({ toolName, result: toolOutput.slice(0, 200) }),
+        toolName,
+        toolInput: JSON.stringify(toolInput).slice(0, 4096),
+        toolOutput: toolOutput.slice(0, 8192),
+      },
+    })
+    .catch(err => {
+      console.error('[DISPATCH_TOOL_ARTIFACT_FAIL]', err);
+    });
+}
+
+async function handleBrowserTask(
+  payload: Record<string, unknown>,
+  originalInput: string,
+  ctx: DispatchCtx,
+): Promise<DispatchResult> {
+  const prompt = String(payload.instruction || payload.task || payload.prompt || originalInput);
+  const explicitUrl = payload.url ? String(payload.url) : undefined;
+  const context = payload.context ? String(payload.context) : undefined;
+
+  // ── Engine selection ─────────────────────────────────────────────────
+  // 1. Explicit URL in payload
+  let targetUrl: string | undefined = explicitUrl;
+  let targetSite = targetUrl ? findWhitelistedSite(targetUrl) : null;
+
+  // 2. URL embedded in the prompt
+  if (!targetSite) {
+    const urlInPrompt = extractUrl(prompt);
+    if (urlInPrompt) {
+      const site = findWhitelistedSite(urlInPrompt);
+      if (site) {
+        targetUrl = urlInPrompt;
+        targetSite = site;
+      }
+    }
+  }
+
+  // 3. Site referenced by Chinese label or hostname root
+  if (!targetSite) {
+    const siteId = detectSiteFromText(prompt);
+    if (siteId) {
+      targetSite = BROWSE_WHITELIST[siteId];
+      targetUrl = targetUrl || targetSite.loginUrl;
+    }
+  }
+
+  // ── Path A: gstack browse (sync) ─────────────────────────────────────
+  if (targetSite && targetUrl && ctx.userId && ctx.taskId) {
+    // Quota gate BEFORE we spend compute on selector dispatch
+    const quota = await checkDailyQuota(ctx.userId);
+    if (!quota.allowed) {
+      return {
+        success: false,
+        intent: 'browser_task',
+        engine: 'gstack_browse',
+        data: {
+          type: 'browser_task',
+          error: `浏览工具今日已用完 ${quota.used}/${quota.limit} 次额度,请明天再试`,
+        },
+        message: `浏览工具今日已用完 ${quota.used}/${quota.limit} 次额度`,
+      };
+    }
+
+    // Only attach credentialSiteId if the user actually has a stored
+    // credential for this site. Public pages (login landing, marketing)
+    // don't need cookies — we shouldn't fail them just because the
+    // user hasn't set up login yet. If a credential exists, attaching
+    // it lets the browse wrapper inject cookies via the vault.
+    const hasCred = await prisma.browseCredential
+      .findFirst({ where: { userId: ctx.userId, siteId: targetSite.id }, select: { id: true } })
+      .catch(() => null);
+    const runCtx: BrowseRunContext = {
+      userId: ctx.userId,
+      taskId: ctx.taskId,
+      credentialSiteId: hasCred ? targetSite.id : undefined,
+    };
+    const subcmd = detectSubcommand(prompt);
+    let res;
+    switch (subcmd) {
+      case 'screenshot':
+        res = await browseScreenshot(runCtx, targetUrl);
+        break;
+      case 'snapshot':
+        res = await browseSnapshot(runCtx, targetUrl);
+        break;
+      case 'text':
+        res = await browseText(runCtx, targetUrl);
+        break;
+      default:
+        res = await browseGoto(runCtx, targetUrl);
+    }
+
+    const toolName = `browse.${res.subcommand}`;
+    if (res.success) {
+      await recordToolArtifact(
+        ctx.taskId,
+        toolName,
+        { url: targetUrl, subcommand: res.subcommand, siteId: targetSite.id },
+        JSON.stringify({ outputPath: res.outputPath, textLen: res.text?.length ?? 0 }),
+      );
+      return {
+        success: true,
+        intent: 'browser_task',
+        engine: 'gstack_browse',
+        data: {
+          type: 'browser_task',
+          tool: toolName,
+          subcommand: res.subcommand,
+          url: targetUrl,
+          site: targetSite.label,
+          siteId: targetSite.id,
+          outputPath: res.outputPath,
+          text: res.text,
+          durationMs: res.durationMs,
+        },
+        message: `已用浏览工具访问 ${targetSite.label}(${(res.durationMs / 1000).toFixed(1)}s)`,
+      };
+    }
+    // gstack failure: surface a clean message WITHOUT falling through
+    // to Manus. Falling through would double-charge the user and hide
+    // the real failure. If Manus is desired, the user retries with
+    // a non-whitelist URL.
+    await recordToolArtifact(
+      ctx.taskId,
+      toolName,
+      { url: targetUrl, subcommand: res.subcommand, siteId: targetSite.id },
+      JSON.stringify({ error: res.errorMsg, durationMs: res.durationMs }),
+    );
+    return {
+      success: false,
+      intent: 'browser_task',
+      engine: 'gstack_browse',
+      data: {
+        type: 'browser_task',
+        error: res.errorMsg || '浏览失败',
+        site: targetSite.label,
+        siteId: targetSite.id,
+      },
+      message: res.errorMsg || '浏览失败',
+    };
+  }
+
+  // ── Path B: Manus (async) ───────────────────────────────────────────
+  // Either no whitelisted site matched, or we lack ctx (old call sites).
+  // Wrap Manus in its own try/catch so "MANUS_API_KEY 未配置" or other
+  // config failures surface as a clean user-facing message, not a 500.
+  try {
+    const result = await createBrowserTask({ prompt, url: explicitUrl, context });
+    return {
+      success: true,
+      intent: 'browser_task',
+      engine: 'manus',
+      data: { type: 'browser_task', _async: true, jobId: result.taskId },
+      message: '浏览器任务已启动...',
+    };
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : '浏览器任务启动失败';
+    // Suggest a whitelisted-site-specific hint if the user seemed to
+    // want something we can actually do.
+    const hint = Object.values(BROWSE_WHITELIST)
+      .slice(0, 3)
+      .map(s => s.label)
+      .join('、');
+    return {
+      success: false,
+      intent: 'browser_task',
+      engine: 'manus',
+      data: { type: 'browser_task', error: errMsg },
+      message: `通用浏览暂不可用(${errMsg})。如果你要访问 ${hint} 等站点,可以直接告诉我,我会使用本地浏览工具。`,
+    };
+  }
 }
