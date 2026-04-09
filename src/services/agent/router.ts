@@ -79,6 +79,10 @@ const DESIGN_KEYWORDS = /(设计.*[图稿页屏]|UI.*(设计|mockup|稿|界面)|
 // Skip if DESIGN already matched (UI mockup wins over generic image).
 const IMAGE_KEYWORDS = /(画一张|画个|生成.*图片|生成.*海报|生成.*封面|生成.*logo|生成.*头像|海报设计|封面设计|插画|illustration|生成图)/i;
 
+// Video = generation requests for video clips.
+// Routes to handleVideo (Minimax video-01 backend, async via media-job-poller).
+const VIDEO_KEYWORDS = /(生成.*视频|做.*视频|做.*短片|拍.*视频|视频脚本之外.*视频|宣传.*视频|短视频生成|generate.*video|create.*video|make.*video|short.*video|video.*clip)/i;
+
 export async function routeIntent(input: string): Promise<RouterDecision> {
   // Pre-filter: design intent. Highest priority — UI/mockup specifics
   // beat generic image generation.
@@ -100,6 +104,19 @@ export async function routeIntent(input: string): Promise<RouterDecision> {
       needsClarification: false,
       questions: [],
       toolPayload: { prompt: input },
+    };
+  }
+
+  // Pre-filter: video generation. Routes to handleVideo (Minimax backend).
+  // Async via media-job-poller (~60-90s). The 'topic' field matches the
+  // shape handleVideo destructures from toolPayload.
+  if (VIDEO_KEYWORDS.test(input)) {
+    return {
+      intent: 'video',
+      reason: '关键词匹配:视频生成',
+      needsClarification: false,
+      questions: [],
+      toolPayload: { topic: input, duration: 6 },
     };
   }
 
