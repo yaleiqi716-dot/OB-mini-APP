@@ -18,6 +18,66 @@ export interface OpenRouterResponse {
   usage: { prompt_tokens: number; completion_tokens: number };
 }
 
+/**
+ * Structured LLM error codes. The UI uses these to show user-friendly,
+ * actionable error messages instead of "当前能力暂不可用 联系管理员".
+ *
+ * AUTH      — 401/403 from provider. Usually missing/invalid API key.
+ *             User action: none (this is our bug, show "we're on it").
+ * RATE_LIMIT — 429 from provider. Provider side throttling.
+ *             User action: wait ~30s, retry.
+ * QUOTA     — provider reports we're out of credits.
+ *             User action: none (admin action needed).
+ * UPSTREAM  — 500/502/503/504 from provider. Provider outage.
+ *             User action: wait a minute, retry.
+ * TIMEOUT   — our AbortController fired before provider responded.
+ *             User action: retry (often just a slow tail response).
+ * EMPTY     — provider returned 200 but no content in the completion.
+ *             User action: retry; if persists, rephrase prompt.
+ * UNKNOWN   — anything else (DNS, fetch error, parse error).
+ *             User action: retry; if persists, contact support.
+ */
+export type LLMErrorCode =
+  | 'LLM_AUTH'
+  | 'LLM_RATE_LIMIT'
+  | 'LLM_QUOTA'
+  | 'LLM_UPSTREAM'
+  | 'LLM_TIMEOUT'
+  | 'LLM_EMPTY'
+  | 'LLM_UNKNOWN';
+
+export class LLMError extends Error {
+  readonly code: LLMErrorCode;
+  readonly status?: number;
+  readonly upstreamMessage?: string;
+
+  constructor(code: LLMErrorCode, message: string, status?: number, upstreamMessage?: string) {
+    super(message);
+    this.name = 'LLMError';
+    this.code = code;
+    this.status = status;
+    this.upstreamMessage = upstreamMessage;
+  }
+}
+
+/**
+ * Classify an HTTP status + error body into a structured LLMErrorCode.
+ * Called from both the direct and gateway code paths.
+ */
+function classifyHttpError(status: number, body: string): LLMErrorCode {
+  if (status === 401 || status === 403) return 'LLM_AUTH';
+  if (status === 429) return 'LLM_RATE_LIMIT';
+  if (status === 402) return 'LLM_QUOTA';
+  if (status >= 500 && status <= 599) return 'LLM_UPSTREAM';
+  // Some providers return 400 with "insufficient_quota" or similar — check body.
+  const lower = body.toLowerCase();
+  if (lower.includes('insufficient_quota') || lower.includes('quota') || lower.includes('credit')) {
+    return 'LLM_QUOTA';
+  }
+  if (lower.includes('rate') || lower.includes('too many')) return 'LLM_RATE_LIMIT';
+  return 'LLM_UNKNOWN';
+}
+
 // ── LLM endpoint resolution ──
 // Mode 1 (direct):  call OpenRouter directly (default)
 // Mode 2 (gateway): call SG gateway which proxies to OpenRouter
@@ -39,8 +99,20 @@ function isGatewayMode(): boolean {
 
 function getApiKey(): string {
   const key = process.env.OPENROUTER_API_KEY;
-  if (!key || key === 'your-openrouter-api-key-here') {
-    throw new Error('OPENROUTER_API_KEY 未配置，请在 .env.local 中设置');
+  // Treat placeholder keys as "not configured" — they'd 401 at the provider
+  // anyway, but this gives us a clean AUTH error one layer earlier.
+  const placeholderPatterns = [
+    'your-openrouter-api-key-here',
+    'sk-or-v1-placeholder',
+    'placeholder',
+  ];
+  if (!key || placeholderPatterns.some((p) => key.toLowerCase().includes(p))) {
+    throw new LLMError(
+      'LLM_AUTH',
+      'OPENROUTER_API_KEY 未配置',
+      undefined,
+      'Set OPENROUTER_API_KEY in .env.local (dev) or production env (prod).',
+    );
   }
   return key;
 }
@@ -99,16 +171,28 @@ export async function chatCompletion(
 
     if (!res.ok) {
       const errorText = await res.text().catch(() => 'unknown');
-      console.error('[LLM_ERROR]', res.status, errorText.slice(0, 200), isGatewayMode() ? '(via gateway)' : '(direct)');
-      throw new Error(`AI 调用失败 (${res.status})`);
+      const code = classifyHttpError(res.status, errorText);
+      console.error(
+        '[LLM_ERROR]',
+        code,
+        res.status,
+        errorText.slice(0, 200),
+        isGatewayMode() ? '(via gateway)' : '(direct)',
+      );
+      throw new LLMError(
+        code,
+        `AI 调用失败 (${res.status})`,
+        res.status,
+        errorText.slice(0, 300),
+      );
     }
 
     const data = await res.json();
     const choice = data.choices?.[0];
 
     if (!choice?.message?.content) {
-      console.error('[LLM_EMPTY]', data);
-      throw new Error('AI 返回了空响应');
+      console.error('[LLM_ERROR]', 'LLM_EMPTY', JSON.stringify(data).slice(0, 200));
+      throw new LLMError('LLM_EMPTY', 'AI 返回了空响应');
     }
 
     return {
@@ -118,10 +202,15 @@ export async function chatCompletion(
     };
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      console.error('[LLM_TIMEOUT]', timeoutMs, 'ms', isGatewayMode() ? '(via gateway)' : '(direct)');
-      throw new Error('AI 响应超时，请重试');
+      console.error('[LLM_ERROR]', 'LLM_TIMEOUT', `${timeoutMs}ms`, isGatewayMode() ? '(via gateway)' : '(direct)');
+      throw new LLMError('LLM_TIMEOUT', 'AI 响应超时');
     }
-    throw error;
+    // Already an LLMError? Let it propagate unchanged.
+    if (error instanceof LLMError) throw error;
+    // Network / DNS / unexpected — classify as UNKNOWN but preserve detail.
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('[LLM_ERROR]', 'LLM_UNKNOWN', msg.slice(0, 200), isGatewayMode() ? '(via gateway)' : '(direct)');
+    throw new LLMError('LLM_UNKNOWN', `AI 调用失败: ${msg.slice(0, 120)}`);
   } finally {
     clearTimeout(timeout);
   }

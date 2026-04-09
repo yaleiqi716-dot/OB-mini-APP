@@ -148,7 +148,10 @@ async function executeTask(taskId: string, input: string) {
   if (!result.success) {
     await emitStepFailed(taskId, 'step_execute', execLabel, result.message || '执行失败', true);
     const { failTask } = await import('./task-manager');
-    await failTask(taskId, result.message || '执行失败');
+    // Propagate structured error code (e.g. LLM_AUTH, LLM_RATE_LIMIT) so
+    // the UI can render an actionable, bucketed message.
+    const errorCode = typeof result.data?.errorCode === 'string' ? result.data.errorCode : undefined;
+    await failTask(taskId, result.message || '执行失败', errorCode);
     return;
   }
 

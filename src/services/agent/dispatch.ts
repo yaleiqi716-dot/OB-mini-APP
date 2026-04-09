@@ -1,5 +1,5 @@
 import { RouterDecision, DispatchResult } from '@/types/agent';
-import { chatCompletion } from '@/lib/openrouter';
+import { chatCompletion, LLMError } from '@/lib/openrouter';
 import { braveSearch } from '@/services/tools/brave';
 import { createImage } from '@/services/tools/leonardo';
 import { createVideo } from '@/services/tools/minimax';
@@ -48,11 +48,14 @@ export async function dispatch(decision: RouterDecision, originalInput: string):
   } catch (err) {
     const message = err instanceof Error ? err.message : '执行失败';
     console.error(`[DISPATCH] ${intent} failed:`, err);
+    // If this is a structured LLM error, propagate the code so the UI can
+    // render an actionable, bucketed message instead of "当前能力暂不可用".
+    const errorCode = err instanceof LLMError ? err.code : undefined;
     return {
       success: false,
       intent,
       engine: intent,
-      data: { error: message },
+      data: { error: message, errorCode },
       message,
     };
   }

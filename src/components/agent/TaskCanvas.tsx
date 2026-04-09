@@ -678,27 +678,90 @@ export function TaskCanvas({
               ) : null}
 
               {mode === 'error' ? (() => {
-                const errMsg = events.find((e) => e.type === 'error')
-                  ? String(events.find((e) => e.type === 'error')!.data.message || '')
-                  : '';
+                const errEvent = events.find((e) => e.type === 'error');
+                const errMsg = errEvent ? String(errEvent.data.message || '') : '';
+                // Structured error code from failTask → emitEvent.
+                // Codes from src/lib/openrouter.ts LLMErrorCode union:
+                // LLM_AUTH, LLM_RATE_LIMIT, LLM_QUOTA, LLM_UPSTREAM,
+                // LLM_TIMEOUT, LLM_EMPTY, LLM_UNKNOWN
+                const errCode = errEvent ? String(errEvent.data.code || '') : '';
                 const hasInsufficientEvent = events.some((e) => e.type === 'insufficient_credits');
                 const isCreditsError = hasInsufficientEvent || errMsg.includes('余额不足') || errMsg.includes('额度不足');
-                const isConfigError = errMsg.includes('API_KEY') || errMsg.includes('api_key') ||
-                  errMsg.includes('OPENROUTER') || errMsg.includes('not configured') ||
-                  errMsg.includes('未配置') || errMsg.includes('401') || errMsg.includes('403');
                 const isImageError = errMsg.includes('LEONARDO') || errMsg.includes('leonardo');
                 const isVideoError = errMsg.includes('MINIMAX') || errMsg.includes('minimax') || errMsg.includes('AKOOL') || errMsg.includes('akool');
 
-                const friendlyMsg = isCreditsError
-                  ? '额度不足，充值后任务会自动恢复'
-                  : isImageError ? '图片生成功能暂未开启'
-                  : isVideoError ? '视频生成功能暂未开启'
-                  : isConfigError ? '当前能力暂不可用'
-                  : (errMsg && !errMsg.includes('Error') && !errMsg.includes('error') && !errMsg.includes('API') && !errMsg.includes('KEY'))
-                  ? errMsg : '当前能力暂不可用';
-                const friendlyDesc = isCreditsError
-                  ? '充值后任务将自动恢复执行'
-                  : '请稍后重试，或联系管理员启用该能力';
+                // Bucketed, actionable messages. Every non-credits bucket
+                // tells the user (a) what happened in their language and
+                // (b) what they can actually do next.
+                type Bucket = { title: string; desc: string; retryable: boolean };
+                const buckets: Record<string, Bucket> = {
+                  LLM_AUTH: {
+                    title: 'AI 服务配置异常',
+                    desc: '工程师已收到告警。通常 5 分钟内恢复。如持续出现,请联系 support@orangebench.tech',
+                    retryable: false,
+                  },
+                  LLM_RATE_LIMIT: {
+                    title: 'AI 服务繁忙',
+                    desc: '当前请求量超过上限,请等 30 秒后重试。',
+                    retryable: true,
+                  },
+                  LLM_QUOTA: {
+                    title: 'AI 服务配额不足',
+                    desc: '平台账单到期或积分耗尽,工程师已收到告警。',
+                    retryable: false,
+                  },
+                  LLM_UPSTREAM: {
+                    title: 'AI 上游服务异常',
+                    desc: '供应商侧故障。我们正在切换备用通道,1 分钟后重试通常可恢复。',
+                    retryable: true,
+                  },
+                  LLM_TIMEOUT: {
+                    title: 'AI 响应超时',
+                    desc: '任务已保存,可直接重试。如连续超时,试着把任务描述写短一点。',
+                    retryable: true,
+                  },
+                  LLM_EMPTY: {
+                    title: 'AI 返回了空响应',
+                    desc: '有时候供应商会返回空内容,直接重试通常就好。如持续,换个模型试试。',
+                    retryable: true,
+                  },
+                  LLM_UNKNOWN: {
+                    title: '任务执行失败',
+                    desc: '发生了未知错误。重试一次通常就好;如持续出现,请联系 support@orangebench.tech',
+                    retryable: true,
+                  },
+                };
+
+                let friendlyMsg: string;
+                let friendlyDesc: string;
+                let retryable = true;
+
+                if (isCreditsError) {
+                  friendlyMsg = '额度不足,充值后任务会自动恢复';
+                  friendlyDesc = '充值后任务将自动恢复执行';
+                  retryable = false;
+                } else if (isImageError) {
+                  friendlyMsg = '图片生成功能暂未开启';
+                  friendlyDesc = '联系管理员启用,或选择其他任务类型。';
+                  retryable = false;
+                } else if (isVideoError) {
+                  friendlyMsg = '视频生成功能暂未开启';
+                  friendlyDesc = '联系管理员启用,或选择其他任务类型。';
+                  retryable = false;
+                } else if (errCode && buckets[errCode]) {
+                  const b = buckets[errCode];
+                  friendlyMsg = b.title;
+                  friendlyDesc = b.desc;
+                  retryable = b.retryable;
+                } else if (errMsg && !errMsg.includes('Error') && !errMsg.includes('error') && !errMsg.includes('API') && !errMsg.includes('KEY')) {
+                  // Legacy path: raw message was already user-friendly.
+                  friendlyMsg = errMsg;
+                  friendlyDesc = '任务已保存,可重试一次。';
+                } else {
+                  // Fallback when no structured code exists (pre-LLMError errors).
+                  friendlyMsg = '任务执行失败';
+                  friendlyDesc = '请重试一次。如持续出现,请联系 support@orangebench.tech';
+                }
 
                 return (
                   <div className="animate-flow-in ob-error-hint">
@@ -710,7 +773,7 @@ export function TaskCanvas({
                     <div className="ob-error-hint-body">
                       <div className="ob-error-hint-title">{friendlyMsg}</div>
                       <div className="ob-error-hint-desc">{friendlyDesc}</div>
-                      {taskId && !isCreditsError && (
+                      {taskId && !isCreditsError && retryable && (
                         <button
                           onClick={() => {
                             fetch(`/api/tasks/${taskId}`, {

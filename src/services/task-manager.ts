@@ -267,7 +267,7 @@ function getNextSuggestions(type: string, input: string): { label: string; promp
   return map[type] || map.direct;
 }
 
-export async function failTask(taskId: string, errorMessage: string) {
+export async function failTask(taskId: string, errorMessage: string, errorCode?: string) {
   // Idempotency: skip if already completed or failed
   const existing = await prisma.task.findUnique({ where: { id: taskId } });
   if (existing?.status === 'completed' || existing?.status === 'failed') {
@@ -283,7 +283,10 @@ export async function failTask(taskId: string, errorMessage: string) {
     },
   });
 
-  await emitEvent(taskId, 'error', { message: errorMessage });
+  // errorCode carries a structured bucket (e.g. LLM_AUTH, LLM_RATE_LIMIT)
+  // so the UI can render an actionable, bucketed message instead of a
+  // generic "当前能力暂不可用". Optional for non-LLM failures.
+  await emitEvent(taskId, 'error', errorCode ? { message: errorMessage, code: errorCode } : { message: errorMessage });
   await emitEvent(taskId, 'status_change', { status: 'failed' });
 }
 
