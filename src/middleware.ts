@@ -29,6 +29,13 @@ const PUBLIC_PATHS = [
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
+  // Root path is public — handled by src/app/page.tsx which does
+  // smart routing (authed → /agent, unauth → /demo). We can't add
+  // '/' to PUBLIC_PATHS because startsWith('/') matches every path.
+  if (pathname === '/') {
+    return NextResponse.next()
+  }
+
   // 静态资源和公开路径直接放行
   if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
     return NextResponse.next()
