@@ -88,6 +88,127 @@ const EVENT_OPTIONS = [
   { id: 'task_completed', label: '任务通过审核', description: '老板审核通过任务完成时' },
 ] as const;
 
+// Quick-add templates — prefill the form with sensible defaults so the user
+// only needs to paste their URL. Each template selects:
+//   - kind (which receiver type)
+//   - default name (user can change)
+//   - default subscribed events
+//   - description shown in the card
+// The template DOES NOT include a URL — user pastes their own from
+// Zapier / 飞书 / 钉钉 / 企微 / Slack / etc.
+//
+// Categories help group cards in the grid:
+//   '中国本土' → 飞书 / 钉钉 / 企微 (use kind=feishu/dingtalk/wecom)
+//   '国际'    → Slack / Notion / Sheets / Gmail (use kind=generic via Zapier)
+//   '通用'    → custom HTTP, n8n, webhook.site
+const TEMPLATES = [
+  // 中国本土 (3) — direct platform integrations, no Zapier middleman
+  {
+    id: 'feishu-team',
+    category: '中国本土',
+    icon: '🚀',
+    label: '飞书群通知',
+    description: '把所有任务事件发送到飞书团队群,自动渲染成带颜色的互动卡片。',
+    defaultName: '飞书团队群',
+    kind: 'feishu',
+    events: ['task_assigned', 'task_submitted', 'task_revision', 'task_completed'],
+  },
+  {
+    id: 'dingtalk-team',
+    category: '中国本土',
+    icon: '🔔',
+    label: '钉钉群通知',
+    description: '把所有任务事件发送到钉钉群,markdown 格式,带跳转链接。',
+    defaultName: '钉钉团队群',
+    kind: 'dingtalk',
+    events: ['task_assigned', 'task_submitted', 'task_revision', 'task_completed'],
+  },
+  {
+    id: 'wecom-team',
+    category: '中国本土',
+    icon: '💼',
+    label: '企业微信群通知',
+    description: '把所有任务事件发送到企业微信群,markdown 格式,适合微信生态客户。',
+    defaultName: '企业微信团队群',
+    kind: 'wecom',
+    events: ['task_assigned', 'task_submitted', 'task_revision', 'task_completed'],
+  },
+
+  // 国际平台 via Zapier (4)
+  {
+    id: 'slack-via-zapier',
+    category: '国际',
+    icon: '💬',
+    label: 'Slack 通知 (via Zapier)',
+    description: '通过 Zapier 把任务事件发到 Slack 频道。在 Zapier 选 "Webhooks by Zapier" → "Slack" 后复制 webhook URL 进来。',
+    defaultName: 'Slack #team',
+    kind: 'generic',
+    events: ['task_assigned', 'task_submitted', 'task_completed'],
+  },
+  {
+    id: 'notion-archive',
+    category: '国际',
+    icon: '📝',
+    label: 'Notion 归档 (via Zapier)',
+    description: '员工提交任务后,通过 Zapier 把交付内容自动存入 Notion 数据库。订阅 task_submitted 即可。',
+    defaultName: 'Notion 任务归档',
+    kind: 'generic',
+    events: ['task_submitted', 'task_completed'],
+  },
+  {
+    id: 'sheets-log',
+    category: '国际',
+    icon: '📊',
+    label: 'Google Sheets 任务日志 (via Zapier)',
+    description: '所有 OB 任务事件自动追加到 Google Sheets 一行,适合做内部统计 / 周报数据源。',
+    defaultName: 'Sheets 任务日志',
+    kind: 'generic',
+    events: ['task_assigned', 'task_submitted', 'task_revision', 'task_completed'],
+  },
+  {
+    id: 'gmail-weekly',
+    category: '国际',
+    icon: '📧',
+    label: 'Gmail 任务通知 (via Zapier)',
+    description: '通过 Zapier 把任务事件邮件发送给指定收件人。适合不在 OB 里、需要邮件通知的干系人。',
+    defaultName: 'Gmail 任务通知',
+    kind: 'generic',
+    events: ['task_assigned', 'task_completed'],
+  },
+
+  // 通用 (3)
+  {
+    id: 'custom-https',
+    category: '通用',
+    icon: '🔌',
+    label: '自建 HTTPS 接收方',
+    description: '自己写的服务、内部系统、任何接受 JSON POST 的 endpoint。带 HMAC 签名,可以验证来源。',
+    defaultName: '自建 webhook',
+    kind: 'generic',
+    events: ['task_assigned', 'task_submitted', 'task_revision', 'task_completed'],
+  },
+  {
+    id: 'n8n-self-hosted',
+    category: '通用',
+    icon: '🛠',
+    label: 'n8n (自托管自动化)',
+    description: '把 OB 事件喂给 self-hosted n8n,做更复杂的多步自动化(类似开源版 Zapier)。',
+    defaultName: 'n8n workflow',
+    kind: 'generic',
+    events: ['task_assigned', 'task_submitted', 'task_revision', 'task_completed'],
+  },
+  {
+    id: 'webhook-site-debug',
+    category: '通用',
+    icon: '🧪',
+    label: 'webhook.site (调试用)',
+    description: '免注册的 webhook 接收方,用来看 OB 实际发出去的 payload 长什么样。开发调试必备。',
+    defaultName: 'webhook.site 调试',
+    kind: 'generic',
+    events: ['task_assigned', 'task_submitted', 'task_revision', 'task_completed'],
+  },
+] as const;
+
 export default function IntegrationsPage() {
   const router = useRouter();
   const [endpoints, setEndpoints] = useState<WebhookEndpoint[] | null>(null);
@@ -174,6 +295,21 @@ export default function IntegrationsPage() {
     setSelectedEvents(new Set(ep.events));
     setShowAddForm(true);
     // Scroll to top so the user sees the form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // One-click template prefill — opens the form with kind+name+events
+  // already filled in. URL is left blank so the user only has to paste
+  // their actual receiver URL. Templates have NO URL because that's the
+  // one piece that varies per user (their personal Slack channel,
+  // their company's 飞书 group, etc).
+  function useTemplate(template: typeof TEMPLATES[number]) {
+    setEditingId(null);
+    setSelectedKind(template.kind);
+    setName(template.defaultName);
+    setUrl('');
+    setSelectedEvents(new Set(template.events));
+    setShowAddForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -491,6 +627,140 @@ export default function IntegrationsPage() {
               <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
               添加新订阅
             </button>
+          )}
+
+          {/* Templates section — visible when form is closed.
+              Quick-add cards prefill the form with kind+name+events,
+              user just pastes their URL afterward. */}
+          {!showAddForm && (
+            <div style={{ marginBottom: 36 }}>
+              <p
+                style={{
+                  fontFamily: 'var(--ob-font-mono)',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'var(--ob-text-muted)',
+                  margin: '0 0 14px',
+                }}
+              >
+                <span style={{ color: 'var(--ob-orange)' }}>常用模板</span> · 一键预填,你只需粘贴 URL
+              </p>
+              {/* Group templates by category */}
+              {(['中国本土', '国际', '通用'] as const).map(category => {
+                const items = TEMPLATES.filter(t => t.category === category);
+                if (items.length === 0) return null;
+                return (
+                  <div key={category} style={{ marginBottom: 18 }}>
+                    <p
+                      style={{
+                        fontFamily: 'var(--ob-font-mono)',
+                        fontSize: 9,
+                        fontWeight: 500,
+                        letterSpacing: '0.12em',
+                        textTransform: 'uppercase',
+                        color: 'var(--ob-text-dim)',
+                        margin: '0 0 8px',
+                      }}
+                    >
+                      {category}
+                    </p>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                        gap: 10,
+                      }}
+                    >
+                      {items.map(template => (
+                        <button
+                          key={template.id}
+                          type="button"
+                          onClick={() => useTemplate(template)}
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                            gap: 6,
+                            padding: '14px 16px',
+                            background: 'var(--ob-surface)',
+                            border: '1px solid var(--ob-border)',
+                            borderRadius: 12,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'all .12s cubic-bezier(.2,.7,.3,1)',
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.borderColor = 'var(--ob-orange)';
+                            e.currentTarget.style.background = 'var(--ob-surface-hi)';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.borderColor = 'var(--ob-border)';
+                            e.currentTarget.style.background = 'var(--ob-surface)';
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                            <span style={{ fontSize: 18, lineHeight: 1 }}>{template.icon}</span>
+                            <span
+                              style={{
+                                fontFamily: 'var(--ob-font-body)',
+                                fontSize: 13,
+                                fontWeight: 600,
+                                color: 'var(--ob-text)',
+                                flex: 1,
+                              }}
+                            >
+                              {template.label}
+                            </span>
+                          </div>
+                          <p
+                            style={{
+                              fontSize: 11,
+                              color: 'var(--ob-text-muted)',
+                              margin: 0,
+                              lineHeight: 1.5,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 3,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            {template.description}
+                          </p>
+                          <div
+                            style={{
+                              display: 'flex',
+                              gap: 4,
+                              flexWrap: 'wrap',
+                              marginTop: 4,
+                            }}
+                          >
+                            {template.events.map(e => (
+                              <span
+                                key={e}
+                                style={{
+                                  fontFamily: 'var(--ob-font-mono)',
+                                  fontSize: 8,
+                                  fontWeight: 500,
+                                  padding: '1px 6px',
+                                  borderRadius: 9999,
+                                  background: 'var(--ob-surface-hi)',
+                                  color: 'var(--ob-text-dim)',
+                                  border: '1px solid var(--ob-border)',
+                                }}
+                              >
+                                {e}
+                              </span>
+                            ))}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
 
           {showAddForm && (
