@@ -51,13 +51,51 @@ function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
 
 const TERMINAL = new Set(['completed', 'failed']);
 
+// Quick actions — SPLIT into two zones per the PM audit's "unify the
+// mental model" finding. Previously 6 cards mixed href-navigate and
+// in-place-action behaviors, so clicking any card was a coin flip.
+//
+// New rules:
+//  - QUICK_ACTIONS (primary grid): ALL cards prefill the composer
+//    with a concrete, runnable prompt. Clicking one never leaves
+//    /agent. Three cards, each one a real task the user could ship.
+//  - QUICK_NAV (secondary row): small text links for navigation-
+//    only destinations. Visually distinct — these ARE jumps away,
+//    and they're labeled as such.
+//
+// The split makes the first-glance scan answer "what happens when I
+// click this?" correctly 100% of the time.
+
 const QUICK_ACTIONS = [
-  { label: '创建团队任务', desc: '分配给成员执行', icon: 'team', href: '/workspace/tasks/new' },
-  { label: '生成汇报方案', desc: 'AI 帮你写方案', icon: 'doc', action: '帮我写一份汇报方案', type: 'proposal' },
-  { label: '推进待审核任务', desc: '查看需要处理的', icon: 'check', href: '/review' },
-  { label: '整理交付内容', desc: 'PPT / 邮件 / 报告', icon: 'package', action: '帮我整理一份交付文档', type: 'unknown' },
-  { label: '发起工作区协作', desc: '邀请团队成员', icon: 'users', href: '/workspace/members' },
-  { label: '查看执行进度', desc: '所有任务状态', icon: 'activity', href: '/tasks' },
+  {
+    label: '写一封客户跟进邮件',
+    desc: '语气专业、带明确 CTA',
+    icon: 'doc',
+    action: '帮我给客户写一封简短的跟进邮件,确认下周三的会议。语气专业友好,最后带一个明确的回复 CTA。',
+    type: 'unknown',
+  },
+  {
+    label: '提炼会议纪要行动项',
+    desc: '5 条任务 · 每条带 owner',
+    icon: 'check',
+    action: '我给你一段会议纪要,帮我提炼出 5 个具体行动项,每个标注 owner 和建议的截止时间。会议内容:今天产品评审会讨论了 Q2 路线图,张三负责需求文档,李四负责设计评审,预计两周内完成...',
+    type: 'unknown',
+  },
+  {
+    label: '写一段发布文案',
+    desc: '150 字 · 可发朋友圈',
+    icon: 'package',
+    action: '帮我写一段 150 字以内的产品发布文案,重点突出"AI 帮你完成任务,你只负责审核"这个核心卖点,语气轻松有力,适合发朋友圈和微博。',
+    type: 'unknown',
+  },
+];
+
+// Secondary: navigation-only shortcuts. Small, clearly "go somewhere"
+// styled, not mixed with the action cards.
+const QUICK_NAV = [
+  { label: '我的任务', desc: '查看所有执行进度', href: '/tasks', icon: 'activity' },
+  { label: '团队工作区', desc: '分配任务 · 管理成员', href: '/workspace', icon: 'team' },
+  { label: '账户 & 额度', desc: '积分 · 充值 · 设置', href: '/account', icon: 'users' },
 ];
 
 const STATUS_WORDS = ['理解任务中', '拆解需求中', '组织方案中', '生成内容中', '整理交付中'];
@@ -665,14 +703,16 @@ function AgentPageInner() {
         )}
       </div>
 
-      {/* Footer nav */}
+      {/* Footer nav — 4 items, matches MAIN_NAV in lib/nav.ts.
+          Previously had 6 hardcoded items duplicating the top nav,
+          which created the IA confusion the PM audit called out:
+          任务 / 总览 / 处理 all queried the same tasks, and
+          设置 / 账户 were both user config. Now collapsed to the
+          same 4 destinations as the desktop top nav. */}
       <div className="ob-sidebar-footer">
         {[
           { href: '/tasks', icon: 'tasks', label: '任务' },
-          { href: '/dashboard', icon: 'dashboard', label: '总览' },
-          { href: '/review', icon: 'review', label: '处理' },
           { href: '/workspace', icon: 'dashboard', label: '工作区' },
-          { href: '/settings', icon: 'settings', label: '设置' },
           { href: '/account', icon: 'account', label: '账户' },
         ].map(n => (
           <a key={n.href} href={n.href} className="ob-sidebar-footer-item">
@@ -874,30 +914,109 @@ function AgentPageInner() {
                   )}
                 </div>
 
-                {/* Quick actions grid — pure class-driven, all visual in globals.css */}
+                {/* Quick actions grid — primary zone.
+                    All 3 cards prefill the composer with a real prompt
+                    and run the task in place. Clicking one never leaves
+                    /agent. (Previously mixed href-jumps with prefill
+                    actions — see the PM audit for why that broke the
+                    mental model.) */}
                 <div className="ob-actions">
                   {QUICK_ACTIONS.map((a, i) => (
-                    a.href ? (
-                      <a key={i} href={a.href} className="ob-action-card">
-                        <div className="ob-action-icon">
-                          <ActionIcon name={a.icon} />
-                        </div>
-                        <div>
-                          <div className="ob-action-label">{a.label}</div>
-                          <div className="ob-action-desc">{a.desc}</div>
-                        </div>
+                    <button
+                      key={i}
+                      onClick={() => a.action && handleSubmit(a.action, a.type)}
+                      disabled={isSubmitting}
+                      className="ob-action-card"
+                    >
+                      <div className="ob-action-icon">
+                        <ActionIcon name={a.icon} />
+                      </div>
+                      <div style={{ textAlign: 'left' }}>
+                        <div className="ob-action-label">{a.label}</div>
+                        <div className="ob-action-desc">{a.desc}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Secondary navigation row — clearly labeled as "jump
+                    to another page". Small, understated, separated from
+                    the primary action cards. Users who know what they
+                    want can click through; users scanning the page
+                    understand at a glance these are not AI prompts. */}
+                <div
+                  style={{
+                    marginTop: 28,
+                    paddingTop: 20,
+                    borderTop: '1px solid var(--ob-border)',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: 4,
+                    width: '100%',
+                    maxWidth: 720,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: 'var(--ob-font-mono)',
+                      fontSize: 10,
+                      letterSpacing: '0.14em',
+                      textTransform: 'uppercase',
+                      color: 'var(--ob-text-dim)',
+                      marginRight: 12,
+                    }}
+                  >
+                    或去
+                  </span>
+                  {QUICK_NAV.map((n, i) => (
+                    <span key={n.href} style={{ display: 'inline-flex', alignItems: 'center' }}>
+                      {i > 0 && (
+                        <span
+                          style={{
+                            color: 'var(--ob-text-dim)',
+                            margin: '0 6px',
+                            fontSize: 12,
+                          }}
+                        >
+                          ·
+                        </span>
+                      )}
+                      <a
+                        href={n.href}
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 500,
+                          color: 'var(--ob-text-muted)',
+                          textDecoration: 'none',
+                          padding: '6px 10px',
+                          borderRadius: 6,
+                          transition: 'color .15s',
+                          fontFamily: 'var(--ob-font-body)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ob-orange)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ob-text-muted)')}
+                      >
+                        {n.label}
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <line x1="7" y1="17" x2="17" y2="7" />
+                          <polyline points="7 7 17 7 17 17" />
+                        </svg>
                       </a>
-                    ) : (
-                      <button key={i} onClick={() => a.action && handleSubmit(a.action, a.type)} disabled={isSubmitting} className="ob-action-card">
-                        <div className="ob-action-icon">
-                          <ActionIcon name={a.icon} />
-                        </div>
-                        <div style={{ textAlign: 'left' }}>
-                          <div className="ob-action-label">{a.label}</div>
-                          <div className="ob-action-desc">{a.desc}</div>
-                        </div>
-                      </button>
-                    )
+                    </span>
                   ))}
                 </div>
               </div>
