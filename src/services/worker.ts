@@ -80,6 +80,7 @@ function intentToStepLabel(intent: string): { label: string; detail: string } {
     text:         { label: '生成内容',       detail: '调用语言模型，根据需求生成完整输出' },
     search:       { label: '搜索并整理',     detail: '联网获取最新信息，提炼关键内容' },
     image:        { label: '生成图片',       detail: '将描述转化为视觉图像' },
+    design:       { label: '设计 UI 稿',     detail: '调用 gstack design 引擎生成界面设计稿' },
     video:        { label: '生成视频',       detail: '合成视频内容，可能需要几分钟' },
     avatar_video: { label: '生成数字人视频', detail: '克隆形象并合成口播视频' },
     automation:   { label: '触发自动化',     detail: '调用外部系统执行操作' },

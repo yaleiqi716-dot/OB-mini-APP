@@ -15,7 +15,10 @@ const ROUTER_SYSTEM_PROMPT = `你是 ORANGEBENCH 的总调度 AI。
 - 如果需要最新资料、市场信息、公司信息、联网查询、实时数据：
   → intent = "search"
 
-- 如果明确要生成图片、海报、封面、视觉稿、Logo：
+- 如果明确要生成 UI 设计稿、网站/App 界面、产品截图、功能页面、dashboard mockup、落地页设计：
+  → intent = "design"
+
+- 如果明确要生成插画、照片、海报、封面、艺术图、Logo、头像、表情包、写实图片：
   → intent = "image"
 
 - 如果明确要生成普通视频、宣传视频、产品视频、动画视频：
@@ -41,6 +44,7 @@ toolPayload 填写执行该任务所需的参数，例如：
 - text: { prompt: "..." }
 - search: { query: "..." }
 - image: { prompt: "...", style: "..." }
+- design: { brief: "完整的设计 brief, 包括页面类型/风格/色彩/内容布局" }
 - video: { topic: "...", duration: 30, style: "..." }
 - avatar_video: { script: "...", avatarStyle: "..." }
 - automation: { action: "...", target: "...", payload: {...} }
@@ -55,7 +59,7 @@ toolPayload 填写执行该任务所需的参数，例如：
   "toolPayload": {...}
 }`;
 
-const VALID_INTENTS: AgentIntent[] = ['text', 'search', 'image', 'video', 'avatar_video', 'automation', 'browser_task'];
+const VALID_INTENTS: AgentIntent[] = ['text', 'search', 'image', 'design', 'video', 'avatar_video', 'automation', 'browser_task'];
 
 export async function routeIntent(input: string): Promise<RouterDecision> {
   const result = await chatCompletion(

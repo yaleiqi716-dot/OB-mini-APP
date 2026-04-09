@@ -2,6 +2,8 @@ export type AgentIntent =
   | 'text'
   | 'search'
   | 'image'
+  | 'design'         // Local gstack design binary (sync, PNG output).
+                     // Distinct from 'image' which routes to async Leonardo.
   | 'video'
   | 'avatar_video'
   | 'automation'

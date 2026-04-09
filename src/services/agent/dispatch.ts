@@ -2,6 +2,7 @@ import { RouterDecision, DispatchResult } from '@/types/agent';
 import { chatCompletion, LLMError } from '@/lib/openrouter';
 import { braveSearch } from '@/services/tools/brave';
 import { createImage } from '@/services/tools/leonardo';
+import { generateDesignImage } from '@/services/tools/design';
 import { createVideo } from '@/services/tools/minimax';
 import { createAvatarVideo } from '@/services/tools/akool';
 import { triggerAutomation } from '@/services/tools/zapier';
@@ -29,6 +30,9 @@ export async function dispatch(decision: RouterDecision, originalInput: string):
 
       case 'image':
         return await handleImage(toolPayload);
+
+      case 'design':
+        return await handleDesign(toolPayload, originalInput);
 
       case 'video':
         return await handleVideo(toolPayload);
@@ -130,6 +134,51 @@ async function handleImage(payload: Record<string, unknown>): Promise<DispatchRe
     engine: 'leonardo',
     data: { type: 'image', _async: true, jobId: result.generationId },
     message: '图片正在生成中...',
+  };
+}
+
+// Synchronous design mockup generation via the gstack design binary.
+// Unlike handleImage (async Leonardo), this returns a ready-to-render
+// URL when the binary completes successfully. Runtime: ~15-40 seconds.
+async function handleDesign(
+  payload: Record<string, unknown>,
+  originalInput: string,
+): Promise<DispatchResult> {
+  const brief = String(payload.brief || payload.prompt || originalInput);
+  const result = await generateDesignImage(brief);
+
+  if (!result.success) {
+    // Throw so the top-level try/catch in dispatch() bucketizes the error
+    // the same way LLM failures are bucketed (P0-1b contract). Map the
+    // wrapper's errorCode to the closest LLMErrorCode so the existing
+    // error card in TaskCanvas renders a clean, actionable message.
+    const llmCode =
+      result.errorCode === 'no_key' || result.errorCode === 'no_binary'
+        ? 'LLM_AUTH'
+        : result.errorCode === 'rate_limited'
+          ? 'LLM_RATE_LIMIT'
+          : result.errorCode === 'network'
+            ? 'LLM_UPSTREAM'
+            : 'LLM_UNKNOWN';
+    throw new LLMError(
+      llmCode,
+      result.error || '图像生成失败',
+      undefined,
+      result.errorCode,
+    );
+  }
+
+  return {
+    success: true,
+    intent: 'design',
+    engine: 'gstack-design',
+    data: {
+      type: 'image',
+      imageUrl: result.imageUrl,
+      prompt: brief,
+      engine: 'gstack-design',
+    },
+    message: '设计稿已生成',
   };
 }
 

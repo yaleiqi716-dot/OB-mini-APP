@@ -12,6 +12,7 @@ const COST_TABLE: Record<string, number> = {
   text: 10,
   search: 15,
   image: 25,
+  design: 25,  // gstack design binary — similar cost profile to image gen
   avatar_video: 40,
   automation: 10,
   browser_task: 20,
