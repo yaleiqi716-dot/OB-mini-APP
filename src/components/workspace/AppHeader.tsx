@@ -20,6 +20,7 @@ const ACCOUNT_NAV = [
   { href: '/profile', label: '个人资料' },
   { href: '/billing', label: '订阅 & 账单' },
   { href: '/account/integrations', label: '集成 · Webhook' },
+  { href: '/account/browse-sites', label: '浏览站点' },
   { href: '/settings', label: '偏好设置' },
 ];
 
