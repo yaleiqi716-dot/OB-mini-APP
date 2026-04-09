@@ -36,6 +36,25 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Video quota indicator (chunk 6) — Minimax T2V is rate-limited to 3/day
+  // by the user's plan. Surface remaining count in the toolbar so users
+  // know before they ask why a video request failed. Re-fetched after
+  // each task submit so it stays current.
+  const [videoQuota, setVideoQuota] = useState<{ used: number; limit: number; remaining: number } | null>(null);
+  const refreshQuota = useCallback(() => {
+    fetch('/api/quota/video')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (d && typeof d.used === 'number') {
+          setVideoQuota({ used: d.used, limit: d.limit, remaining: d.remaining });
+        }
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    refreshQuota();
+  }, [refreshQuota]);
+
   const canSend = (!!value.trim() || attachments.length > 0) && !disabled && !uploading;
 
   // Auto-resize textarea in composer v2 and chat modes, but cap the growth.
@@ -58,6 +77,9 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
       ? `\n\n[附件: ${attachments.map(f => f.name).join(', ')}]`
       : '';
     onSubmit(trimmed + fileContext, attachments.length > 0 ? attachments : undefined);
+    // Refresh quota after a few seconds — gives the worker time to create
+    // the Task row + write externalEngine='minimax' if it was a video task.
+    setTimeout(refreshQuota, 3000);
     setValue('');
     setAttachments([]);
     if (textareaRef.current) {
@@ -318,6 +340,40 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
                 onChange={onSkillRoleChange}
                 disabled={disabled}
               />
+            )}
+            {/* Video quota indicator — only render when quota data has loaded.
+                Surfaces today's remaining video generations so the user knows
+                before submitting a video request. Auto-hides when limit is high. */}
+            {videoQuota && videoQuota.limit > 0 && (
+              <span
+                title={`今日已用 ${videoQuota.used}/${videoQuota.limit} 视频生成额度。02:00 重置。`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  marginLeft: 8,
+                  height: 24,
+                  padding: '0 10px',
+                  borderRadius: 9999,
+                  background: 'var(--ob-surface-hi)',
+                  border: '1px solid var(--ob-border)',
+                  fontFamily: 'var(--ob-font-mono)',
+                  fontSize: 10,
+                  fontWeight: 500,
+                  color:
+                    videoQuota.remaining === 0
+                      ? 'var(--ob-error, #E4483D)'
+                      : videoQuota.remaining === 1
+                        ? 'var(--ob-orange)'
+                        : 'var(--ob-text-muted)',
+                  letterSpacing: '0.06em',
+                  whiteSpace: 'nowrap',
+                  cursor: 'help',
+                }}
+              >
+                <span style={{ fontSize: 11, lineHeight: 1 }}>🎬</span>
+                {videoQuota.remaining}/{videoQuota.limit}
+              </span>
             )}
           </div>
 

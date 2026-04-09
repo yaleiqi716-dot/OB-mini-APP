@@ -102,6 +102,11 @@ export default function IntegrationsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // When editing an existing endpoint, this holds its id. Form fields
+  // are reused (name, selectedKind, selectedEvents) but URL is locked
+  // for edit (changing the URL is a delete + recreate, not a PATCH —
+  // the secret would need rotation otherwise).
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   // After successful create, the API returns the FULL signing secret ONCE.
   // We surface it in a banner that the user MUST acknowledge before it
@@ -155,12 +160,52 @@ export default function IntegrationsPage() {
     setSelectedKind('generic');
     setSelectedEvents(new Set(['task_assigned', 'task_submitted', 'task_completed']));
     setShowAddForm(false);
+    setEditingId(null);
+  }
+
+  // Open the form pre-filled with an existing endpoint's values for editing.
+  // URL stays locked because changing it would invalidate the secret;
+  // for URL changes, user should delete + recreate.
+  function openEditForm(ep: WebhookEndpoint) {
+    setEditingId(ep.id);
+    setName(ep.name);
+    setUrl(ep.url); // masked URL just for display; PATCH won't accept it back
+    setSelectedKind(ep.kind);
+    setSelectedEvents(new Set(ep.events));
+    setShowAddForm(true);
+    // Scroll to top so the user sees the form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function handleAdd() {
-    if (!name.trim() || !url.trim() || submitting) return;
+    if (!name.trim() || submitting) return;
+    // For edit mode, URL is read-only — user can't change it via PATCH.
+    // For create mode, URL is required.
+    if (!editingId && !url.trim()) return;
     setSubmitting(true);
     try {
+      // Edit path: PATCH with name + events. URL + kind are immutable post-create.
+      if (editingId) {
+        const r = await fetch(`/api/webhooks/${editingId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name.trim(),
+            events: Array.from(selectedEvents),
+          }),
+        });
+        const data = await r.json();
+        if (!r.ok) {
+          showToast(data.error || '更新失败', false);
+          return;
+        }
+        showToast('已保存');
+        resetForm();
+        await loadEndpoints();
+        return;
+      }
+
+      // Create path
       const r = await fetch('/api/webhooks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -193,6 +238,26 @@ export default function IntegrationsPage() {
       showToast('网络错误', false);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  // Toggle active state via PATCH. Used by the "暂停/启用" button on each row.
+  async function handleToggleActive(ep: WebhookEndpoint) {
+    try {
+      const r = await fetch(`/api/webhooks/${ep.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: !ep.active }),
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        showToast(data.error || '操作失败', false);
+        return;
+      }
+      showToast(ep.active ? '已暂停' : '已启用');
+      await loadEndpoints();
+    } catch {
+      showToast('网络错误', false);
     }
   }
 
@@ -438,6 +503,24 @@ export default function IntegrationsPage() {
                 borderRadius: 16,
               }}
             >
+              {/* Edit mode banner — explains what's locked */}
+              {editingId && (
+                <div
+                  style={{
+                    marginBottom: 20,
+                    padding: '12px 14px',
+                    background: 'var(--ob-surface-hi)',
+                    borderLeft: '2px solid var(--ob-orange)',
+                    borderRadius: 4,
+                    fontSize: 12,
+                    color: 'var(--ob-text-muted)',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <strong style={{ color: 'var(--ob-text)' }}>编辑模式</strong> · 你只能改名字和订阅事件。URL 和接收平台改不了
+                  (会让签名密钥失效)。要换 URL 请删除后重新创建。
+                </div>
+              )}
               {/* Step 1: Type picker */}
               <div style={{ marginBottom: 24 }}>
                 <p
@@ -462,11 +545,13 @@ export default function IntegrationsPage() {
                 >
                   {RECEIVER_KINDS.map(kind => {
                     const active = selectedKind === kind.id;
+                    const lockedByEdit = editingId !== null && !active;
                     return (
                       <button
                         key={kind.id}
                         type="button"
-                        onClick={() => setSelectedKind(kind.id)}
+                        onClick={() => !editingId && setSelectedKind(kind.id)}
+                        disabled={lockedByEdit}
                         style={{
                           display: 'flex',
                           flexDirection: 'column',
@@ -476,7 +561,8 @@ export default function IntegrationsPage() {
                           background: active ? 'var(--ob-orange-lo, rgba(255,90,31,0.10))' : 'var(--ob-surface-hi)',
                           border: active ? '1px solid var(--ob-orange)' : '1px solid var(--ob-border)',
                           borderRadius: 12,
-                          cursor: 'pointer',
+                          cursor: lockedByEdit ? 'not-allowed' : 'pointer',
+                          opacity: lockedByEdit ? 0.3 : 1,
                           textAlign: 'left',
                           transition: 'all .12s cubic-bezier(.2,.7,.3,1)',
                         }}
@@ -560,21 +646,24 @@ export default function IntegrationsPage() {
                   />
                   <input
                     value={url}
-                    onChange={e => setUrl(e.target.value)}
+                    onChange={e => !editingId && setUrl(e.target.value)}
+                    readOnly={editingId !== null}
                     placeholder={selectedKindMeta.urlPlaceholder}
+                    title={editingId ? '编辑模式下 URL 不可改' : ''}
                     style={{
                       width: '100%',
                       height: 40,
                       padding: '0 14px',
                       borderRadius: 8,
                       border: '1px solid var(--ob-border)',
-                      background: 'var(--ob-bg)',
-                      color: 'var(--ob-text)',
+                      background: editingId ? 'var(--ob-surface-hi)' : 'var(--ob-bg)',
+                      color: editingId ? 'var(--ob-text-muted)' : 'var(--ob-text)',
                       fontSize: 13,
                       fontFamily: 'var(--ob-font-mono)',
                       outline: 'none',
+                      cursor: editingId ? 'not-allowed' : 'text',
                     }}
-                    onFocus={e => (e.currentTarget.style.borderColor = 'var(--ob-orange)')}
+                    onFocus={e => (e.currentTarget.style.borderColor = editingId ? 'var(--ob-border)' : 'var(--ob-orange)')}
                     onBlur={e => (e.currentTarget.style.borderColor = 'var(--ob-border)')}
                   />
                 </div>
@@ -633,7 +722,7 @@ export default function IntegrationsPage() {
               <div style={{ display: 'flex', gap: 10 }}>
                 <button
                   onClick={handleAdd}
-                  disabled={!name.trim() || !url.trim() || selectedEvents.size === 0 || submitting}
+                  disabled={!name.trim() || (!editingId && !url.trim()) || selectedEvents.size === 0 || submitting}
                   style={{
                     height: 40,
                     padding: '0 24px',
@@ -644,10 +733,13 @@ export default function IntegrationsPage() {
                     fontSize: 14,
                     fontWeight: 600,
                     cursor: 'pointer',
-                    opacity: !name.trim() || !url.trim() || selectedEvents.size === 0 || submitting ? 0.5 : 1,
+                    opacity:
+                      !name.trim() || (!editingId && !url.trim()) || selectedEvents.size === 0 || submitting ? 0.5 : 1,
                   }}
                 >
-                  {submitting ? '添加中...' : '添加'}
+                  {submitting
+                    ? editingId ? '保存中...' : '添加中...'
+                    : editingId ? '保存修改' : '添加'}
                 </button>
                 <button
                   onClick={resetForm}
@@ -831,6 +923,38 @@ export default function IntegrationsPage() {
                         }}
                       >
                         {testingId === ep.id ? '测试中...' : '🧪 测试'}
+                      </button>
+                      <button
+                        onClick={() => openEditForm(ep)}
+                        style={{
+                          height: 30,
+                          padding: '0 14px',
+                          borderRadius: 6,
+                          background: 'var(--ob-surface-hi)',
+                          color: 'var(--ob-text)',
+                          border: '1px solid var(--ob-border)',
+                          fontSize: 12,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✏️ 编辑
+                      </button>
+                      <button
+                        onClick={() => handleToggleActive(ep)}
+                        style={{
+                          height: 30,
+                          padding: '0 14px',
+                          borderRadius: 6,
+                          background: 'var(--ob-surface-hi)',
+                          color: 'var(--ob-text-muted)',
+                          border: '1px solid var(--ob-border)',
+                          fontSize: 12,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {ep.active ? '⏸ 暂停' : '▶ 启用'}
                       </button>
                       <button
                         onClick={() => handleDelete(ep.id)}
