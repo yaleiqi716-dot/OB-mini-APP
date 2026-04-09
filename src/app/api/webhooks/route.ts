@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
@@ -43,6 +44,9 @@ export async function GET(req: NextRequest) {
         lastFiredAt: e.lastFiredAt?.toISOString() || null,
         lastError: e.lastError,
         createdAt: e.createdAt.toISOString(),
+        // Boolean indicator only — never expose the actual secret in list.
+        // Old rows from chunk 1/2 (pre-HMAC) report false here.
+        hasSecret: !!e.secret,
       })),
     );
   } catch (err) {
@@ -96,6 +100,12 @@ export async function POST(req: NextRequest) {
       eventsJson = JSON.stringify(clean);
     }
 
+    // Generate a 32-byte HMAC signing secret. Receivers verify outbound
+    // payloads via X-OrangeBench-Signature header. Only generic endpoints
+    // need a secret (Chinese platform bots don't read custom headers), but
+    // we generate one for all kinds so future cross-platform features work.
+    const secret = randomBytes(32).toString('hex');
+
     const created = await prisma.webhookEndpoint.create({
       data: {
         userId,
@@ -103,9 +113,14 @@ export async function POST(req: NextRequest) {
         name: name.trim().slice(0, 100),
         url: url.trim(),
         events: eventsJson,
+        secret,
       },
     });
 
+    // Return the FULL secret here exactly once. Subsequent GET/list
+    // responses must NOT include it (only mask form). This is the same
+    // pattern as GitHub PAT, AWS access key, etc — the user copies it
+    // immediately and stores it on their receiver side; we only show it once.
     return NextResponse.json({
       id: created.id,
       kind: created.kind,
@@ -114,6 +129,9 @@ export async function POST(req: NextRequest) {
       events: eventsJson ? JSON.parse(eventsJson) : [],
       active: created.active,
       createdAt: created.createdAt.toISOString(),
+      // ONCE-ONLY full secret value — UI must surface a "copy now" prompt
+      // on first display because we won't return it again.
+      secret: created.secret,
     });
   } catch (err) {
     console.error('[WEBHOOK_CREATE_ERROR]', err);

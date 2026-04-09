@@ -1,3 +1,4 @@
+import { createHmac } from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { getTransformer } from './transformers';
 
@@ -122,6 +123,20 @@ function sleep(ms: number): Promise<void> {
   return new Promise(r => setTimeout(r, ms));
 }
 
+// Compute the HMAC-SHA256 signature header value for an outbound payload.
+// Format: 'sha256=<hex>' to match GitHub / Stripe / common webhook conventions.
+// Receivers verify by recomputing HMAC over the raw request body using the
+// same shared secret and constant-time comparing the hex digest.
+//
+// Returns null if no secret is set (chunk 1/2 endpoints) — those keep
+// working unsigned for backward compat.
+export function computeSignature(secret: string | null, body: string): string | null {
+  if (!secret) return null;
+  const hmac = createHmac('sha256', secret);
+  hmac.update(body, 'utf8');
+  return `sha256=${hmac.digest('hex')}`;
+}
+
 // Try a single POST with timeout. Returns { ok, statusCode, errorMsg }.
 // Also checks Chinese platform success conventions: 飞书/钉钉/企微 return
 // HTTP 200 even on logical failures (wrong format, expired token, etc),
@@ -131,16 +146,21 @@ async function attemptPost(
   url: string,
   body: string,
   contentType: string,
+  signature: string | null,
 ): Promise<{ ok: boolean; statusCode: number | null; errorMsg: string | null }> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  const headers: Record<string, string> = {
+    'Content-Type': contentType,
+    'User-Agent': 'OrangeBench-Webhook/1.0',
+  };
+  if (signature) {
+    headers['X-OrangeBench-Signature'] = signature;
+  }
   try {
     const r = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': contentType,
-        'User-Agent': 'OrangeBench-Webhook/1.0',
-      },
+      headers,
       body,
       signal: ctrl.signal,
     });
@@ -255,6 +275,12 @@ export async function fireWebhooks(
           });
         }
 
+        // Sign the body if this endpoint has a secret. Only generic kinds
+        // get a meaningful signature — Chinese platform bots use URL-bound
+        // auth and don't read custom headers.
+        const signature =
+          endpoint.kind === 'generic' ? computeSignature(endpoint.secret, body) : null;
+
         // Retry loop
         const start = Date.now();
         let lastResult: { ok: boolean; statusCode: number | null; errorMsg: string | null } = {
@@ -264,7 +290,7 @@ export async function fireWebhooks(
         };
         for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
           if (attempt > 0) await sleep(RETRY_BASE_MS * Math.pow(2, attempt - 1));
-          lastResult = await attemptPost(endpoint.url, body, contentType);
+          lastResult = await attemptPost(endpoint.url, body, contentType, signature);
           if (lastResult.ok) break;
         }
         const durationMs = Date.now() - start;

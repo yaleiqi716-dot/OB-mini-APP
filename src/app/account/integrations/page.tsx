@@ -29,6 +29,13 @@ interface WebhookEndpoint {
   lastFiredAt: string | null;
   lastError: string | null;
   createdAt: string;
+  hasSecret: boolean;
+}
+
+// Returned from POST /api/webhooks (create response). Includes the
+// FULL secret value once — the list endpoint never returns this.
+interface WebhookCreatedResponse extends WebhookEndpoint {
+  secret?: string;
 }
 
 // Receiver type catalog — drives the type picker.
@@ -96,6 +103,15 @@ export default function IntegrationsPage() {
   const [testingId, setTestingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  // After successful create, the API returns the FULL signing secret ONCE.
+  // We surface it in a banner that the user MUST acknowledge before it
+  // disappears, so the user has a chance to copy it to their receiver
+  // (Zapier filter / custom HTTPS verification middleware / etc).
+  const [revealedSecret, setRevealedSecret] = useState<{
+    endpointName: string;
+    endpointId: string;
+    secret: string;
+  } | null>(null);
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -155,12 +171,22 @@ export default function IntegrationsPage() {
           events: Array.from(selectedEvents),
         }),
       });
-      const data = await r.json();
-      if (!r.ok) {
-        showToast(data.error || '添加失败', false);
+      const data = (await r.json()) as WebhookCreatedResponse | { error: string };
+      if (!r.ok || 'error' in data) {
+        showToast(('error' in data && data.error) || '添加失败', false);
         return;
       }
       showToast('已添加 webhook');
+      // For generic kind, reveal the signing secret ONCE so the user can
+      // copy it to their receiver. Chinese platforms don't read the
+      // signature header so we skip the banner for them.
+      if (data.kind === 'generic' && data.secret) {
+        setRevealedSecret({
+          endpointName: data.name,
+          endpointId: data.id,
+          secret: data.secret,
+        });
+      }
       resetForm();
       await loadEndpoints();
     } catch {
@@ -257,6 +283,124 @@ export default function IntegrationsPage() {
               把 OrangeBench 的事件(任务分配 / 提交 / 审核 / 完成)推送到你的飞书 / 钉钉 / 企微群,或通过 Zapier 路由到 Slack / Notion / Sheets 等任何外部工具。
             </p>
           </div>
+
+          {/* One-time secret reveal banner (after successful create of generic kind).
+              The secret is shown ONCE — server doesn't return it again, so the user
+              MUST copy it now. Acknowledging closes the banner. */}
+          {revealedSecret && (
+            <div
+              style={{
+                marginBottom: 28,
+                padding: 20,
+                background: 'var(--ob-orange-lo, rgba(255,90,31,0.10))',
+                border: '1px solid var(--ob-orange)',
+                borderRadius: 12,
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: 'var(--ob-font-mono)',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'var(--ob-orange)',
+                  margin: '0 0 8px',
+                }}
+              >
+                ⚠ 请立即复制签名密钥(仅显示一次)
+              </p>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: 'var(--ob-text)',
+                  margin: '0 0 12px',
+                  lineHeight: 1.5,
+                }}
+              >
+                <strong>{revealedSecret.endpointName}</strong> · OrangeBench 会用这个密钥对每次发送的 payload 做 HMAC-SHA256 签名,
+                你的 receiver 可以验证 payload 真的来自 OB。把它保存到你的 receiver 端(Zapier filter / 自建服务的环境变量)。
+                <strong>关掉这个提示后服务器不再返回这个值</strong>。
+              </p>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '10px 12px',
+                  background: 'var(--ob-bg)',
+                  border: '1px solid var(--ob-border)',
+                  borderRadius: 8,
+                  marginBottom: 12,
+                }}
+              >
+                <code
+                  style={{
+                    flex: 1,
+                    fontFamily: 'var(--ob-font-mono)',
+                    fontSize: 11,
+                    color: 'var(--ob-text)',
+                    wordBreak: 'break-all',
+                    userSelect: 'all',
+                  }}
+                >
+                  {revealedSecret.secret}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(revealedSecret.secret).then(() => {
+                      showToast('密钥已复制到剪贴板');
+                    }).catch(() => {
+                      showToast('复制失败,请手动选中', false);
+                    });
+                  }}
+                  style={{
+                    height: 28,
+                    padding: '0 12px',
+                    borderRadius: 6,
+                    background: 'var(--ob-orange)',
+                    color: '#fff',
+                    border: 'none',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  📋 复制
+                </button>
+              </div>
+              <p
+                style={{
+                  fontSize: 11,
+                  color: 'var(--ob-text-muted)',
+                  margin: '0 0 12px',
+                  fontFamily: 'var(--ob-font-mono)',
+                }}
+              >
+                Header 名: <strong style={{ color: 'var(--ob-text)' }}>X-OrangeBench-Signature</strong>{' '}
+                · 格式: <strong style={{ color: 'var(--ob-text)' }}>sha256=&lt;hex&gt;</strong>
+              </p>
+              <button
+                type="button"
+                onClick={() => setRevealedSecret(null)}
+                style={{
+                  height: 32,
+                  padding: '0 16px',
+                  borderRadius: 6,
+                  background: 'var(--ob-text)',
+                  color: 'var(--ob-bg)',
+                  border: 'none',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                我已复制,关闭
+              </button>
+            </div>
+          )}
 
           {/* Add new — type picker */}
           {!showAddForm && (

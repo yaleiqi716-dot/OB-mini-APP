@@ -305,6 +305,13 @@ model WebhookEndpoint {
   // 'wecom'    — 企业微信 group bot, posts as markdown message
   // Adding a new kind = add a transformer in dispatcher.ts, no schema migration.
   kind         String   @default("generic")
+  // HMAC-SHA256 signing secret. 64-char hex string generated at create time.
+  // Sent on every outbound POST as `X-OrangeBench-Signature: sha256=<hex>`
+  // header so receivers can verify the payload truly came from OB and wasn't
+  // tampered with. Only used for kind='generic' — Chinese platform bot URLs
+  // (飞书/钉钉/企微) carry their own auth in the URL path itself.
+  // Nullable so old rows from chunk 1/2 (pre-HMAC) keep working unsigned.
+  secret       String?
   // Human-friendly name for the user — e.g. "团队飞书群", "Slack #team"
   name         String
   // The URL we POST to. Format depends on `kind`:

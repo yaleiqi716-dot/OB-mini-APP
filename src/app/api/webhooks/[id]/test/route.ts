@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { getTransformer } from '@/services/webhooks/transformers';
-import type { WebhookPayload } from '@/services/webhooks/dispatcher';
+import { computeSignature, type WebhookPayload } from '@/services/webhooks/dispatcher';
 
 export const runtime = 'nodejs';
 
@@ -58,6 +58,10 @@ export async function POST(
     const transformer = getTransformer(endpoint.kind);
     const transformed = transformer(testEnvelope);
 
+    // Sign the body if endpoint has a secret + is generic kind
+    const signature =
+      endpoint.kind === 'generic' ? computeSignature(endpoint.secret, transformed.body) : null;
+
     const start = Date.now();
     let statusCode: number | null = null;
     let errorMsg: string | null = null;
@@ -65,12 +69,14 @@ export async function POST(
     try {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 10_000);
+      const headers: Record<string, string> = {
+        'Content-Type': transformed.contentType,
+        'User-Agent': 'OrangeBench-Webhook/1.0 (test)',
+      };
+      if (signature) headers['X-OrangeBench-Signature'] = signature;
       const r = await fetch(endpoint.url, {
         method: 'POST',
-        headers: {
-          'Content-Type': transformed.contentType,
-          'User-Agent': 'OrangeBench-Webhook/1.0 (test)',
-        },
+        headers,
         body: transformed.body,
         signal: ctrl.signal,
       });
