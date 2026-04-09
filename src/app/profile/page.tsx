@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { AppHeader } from '@/components/workspace/AppHeader';
+import { AppHeader, AccountSubNav } from '@/components/workspace/AppHeader';
 import { Spinner } from '@/components/ui/Spinner';
 
 interface UserInfo {
@@ -29,6 +29,7 @@ export default function ProfilePage() {
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)', fontFamily: 'var(--ob-font-body)' }}>
       <AppHeader />
+      <AccountSubNav />
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 720, margin: '0 auto', padding: '40px 32px 60px' }}>
           {/* Editorial kicker + display h1 */}

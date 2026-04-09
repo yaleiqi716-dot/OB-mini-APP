@@ -10,6 +10,18 @@ const WS_NAV = [
   { href: '/workspace/settings', label: '设置' },
 ];
 
+// Account center sub-nav — unifies /account, /profile, /billing,
+// /settings into a single "account center" with 4 tabs. Each tab
+// still lives at its own URL (the underlying pages are untouched)
+// but the shared tab bar makes them feel like one destination.
+// Inserted below AppHeader on each of the 4 pages.
+const ACCOUNT_NAV = [
+  { href: '/account', label: '概览' },
+  { href: '/profile', label: '个人资料' },
+  { href: '/billing', label: '订阅 & 账单' },
+  { href: '/settings', label: '偏好设置' },
+];
+
 interface NotifItem {
   id: string;
   type: string;
@@ -233,6 +245,37 @@ export function AppHeader() {
         </div>
       </div>
     </header>
+  );
+}
+
+// Sub-nav for account center pages (/account, /profile, /billing, /settings).
+// Inserted below AppHeader on each page to visually unify them as a single
+// "account center" without requiring a risky merge of the 4 underlying pages.
+export function AccountSubNav() {
+  const pathname = usePathname();
+  const activeHref = ACCOUNT_NAV.find(n => pathname === n.href)?.href || null;
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 4,
+      padding: '0 28px', height: 42,
+      borderBottom: '1px solid var(--ob-border)',
+      background: 'var(--ob-bg)',
+      fontFamily: 'var(--ob-font-body)',
+    }}>
+      {ACCOUNT_NAV.map(n => {
+        const active = n.href === activeHref;
+        return (
+          <a key={n.href} href={n.href} style={{
+            fontSize: 13, fontWeight: active ? 600 : 500,
+            color: active ? 'var(--ob-text)' : 'var(--ob-text-muted)',
+            textDecoration: 'none', padding: '7px 14px', borderRadius: 6,
+            background: active ? 'var(--ob-surface-hi)' : 'transparent',
+            transition: 'all .15s cubic-bezier(.2,.7,.3,1)',
+          }}>{n.label}</a>
+        );
+      })}
+    </div>
   );
 }
 

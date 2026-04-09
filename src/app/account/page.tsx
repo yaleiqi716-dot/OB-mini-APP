@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AppHeader } from '@/components/workspace/AppHeader';
+import { AppHeader, AccountSubNav } from '@/components/workspace/AppHeader';
 
 interface UserStatus {
   id: string;
@@ -214,6 +214,7 @@ export default function AccountPage() {
     return (
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
         <AppHeader />
+        <AccountSubNav />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: 20, height: 20, border: '2px solid #FF5A1F', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
         </div>
@@ -224,6 +225,7 @@ export default function AccountPage() {
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
       <AppHeader />
+      <AccountSubNav />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px' }}>

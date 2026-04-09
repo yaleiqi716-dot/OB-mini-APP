@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Spinner } from '@/components/ui/Spinner';
-import { AppHeader } from '@/components/workspace/AppHeader';
+import { AppHeader, AccountSubNav } from '@/components/workspace/AppHeader';
 
 interface Product {
   code: string;
@@ -213,6 +213,7 @@ export default function BillingPage() {
   if (loading) return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
       <AppHeader />
+      <AccountSubNav />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Spinner size="md" /></div>
     </div>
   );
@@ -220,6 +221,7 @@ export default function BillingPage() {
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
       <AppHeader />
+      <AccountSubNav />
 
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }} className="custom-scrollbar">
         {/* Fuel station atmosphere */}

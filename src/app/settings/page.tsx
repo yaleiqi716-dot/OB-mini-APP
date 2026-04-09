@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AppHeader } from '@/components/workspace/AppHeader';
+import { AppHeader, AccountSubNav } from '@/components/workspace/AppHeader';
 
 type Section = 'profile' | 'preferences' | 'notifications' | 'security' | 'integrations';
 
@@ -325,6 +325,7 @@ export default function SettingsPage() {
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
       <AppHeader />
+      <AccountSubNav />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px' }}>
@@ -332,9 +333,9 @@ export default function SettingsPage() {
           {/* Top area */}
           <div style={{ marginBottom: 28 }}>
             <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 8px' }}>
-              <span style={{ color: 'var(--ob-orange)' }}>●</span> Settings
+              <span style={{ color: 'var(--ob-orange)' }}>●</span> Preferences
             </p>
-            <h1 style={{ fontFamily: 'var(--ob-font-display)', fontSize: 44, fontWeight: 800, color: 'var(--ob-text)', lineHeight: 1, letterSpacing: '-0.025em', margin: '0 0 12px' }}>设置</h1>
+            <h1 style={{ fontFamily: 'var(--ob-font-display)', fontSize: 44, fontWeight: 800, color: 'var(--ob-text)', lineHeight: 1, letterSpacing: '-0.025em', margin: '0 0 12px' }}>偏好设置</h1>
             <p style={{ fontFamily: 'var(--ob-font-body)', fontSize: 14, color: 'var(--ob-text-muted)', margin: 0 }}>管理你的账号、偏好与产品设置</p>
           </div>
 
