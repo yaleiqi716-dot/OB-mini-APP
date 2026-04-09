@@ -15,6 +15,9 @@ const ALLOWED_EVENTS = new Set([
   'agent_task_completed',
 ]);
 
+// Allowed receiver kinds — must match transformers in src/services/webhooks/transformers.ts
+const ALLOWED_KINDS = new Set(['generic', 'feishu', 'dingtalk', 'wecom']);
+
 // GET /api/webhooks — list current user's webhook endpoints
 export async function GET(req: NextRequest) {
   try {
@@ -29,6 +32,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       endpoints.map(e => ({
         id: e.id,
+        kind: e.kind,
         name: e.name,
         // Mask all but the last 12 chars of the URL path so the list view
         // doesn't leak full Zapier hooks in screenshots / logs.
@@ -55,10 +59,11 @@ export async function POST(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: '未登录' }, { status: 401 });
 
     const body = await req.json();
-    const { name, url, events } = body as {
+    const { name, url, events, kind } = body as {
       name?: string;
       url?: string;
       events?: unknown;
+      kind?: string;
     };
 
     if (!name || typeof name !== 'string' || !name.trim()) {
@@ -75,6 +80,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'URL 必须使用 https://' }, { status: 400 });
     }
 
+    // Validate kind. Default to generic for backward compat with existing
+    // clients that don't send the field.
+    const normalizedKind = typeof kind === 'string' && ALLOWED_KINDS.has(kind) ? kind : 'generic';
+
     // Sanitize events array
     let eventsJson: string | null = null;
     if (Array.isArray(events) && events.length > 0) {
@@ -90,6 +99,7 @@ export async function POST(req: NextRequest) {
     const created = await prisma.webhookEndpoint.create({
       data: {
         userId,
+        kind: normalizedKind,
         name: name.trim().slice(0, 100),
         url: url.trim(),
         events: eventsJson,
@@ -98,6 +108,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       id: created.id,
+      kind: created.kind,
       name: created.name,
       url: maskUrl(created.url),
       events: eventsJson ? JSON.parse(eventsJson) : [],

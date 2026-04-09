@@ -298,10 +298,20 @@ model Notification {
 model WebhookEndpoint {
   id           String   @id @default(cuid())
   userId       String
-  // Human-friendly name for the user — e.g. "Slack #team", "Notion archive"
+  // Receiver type — determines payload format transformation.
+  // 'generic'  — raw JSON envelope (Zapier, webhook.site, custom HTTPS)
+  // 'feishu'   — 飞书/Lark group bot, posts as interactive markdown card
+  // 'dingtalk' — 钉钉 group bot, posts as markdown message
+  // 'wecom'    — 企业微信 group bot, posts as markdown message
+  // Adding a new kind = add a transformer in dispatcher.ts, no schema migration.
+  kind         String   @default("generic")
+  // Human-friendly name for the user — e.g. "团队飞书群", "Slack #team"
   name         String
-  // The URL we POST JSON to. Usually a Zapier "Webhooks by Zapier" trigger
-  // URL but can be any HTTPS endpoint that accepts JSON.
+  // The URL we POST to. Format depends on `kind`:
+  //  - generic:  Zapier "Webhooks by Zapier" trigger URL or any HTTPS endpoint
+  //  - feishu:   https://open.feishu.cn/open-apis/bot/v2/hook/<uuid>
+  //  - dingtalk: https://oapi.dingtalk.com/robot/send?access_token=<token>
+  //  - wecom:    https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=<key>
   url          String
   // JSON-encoded array of event type strings the user wants this endpoint
   // notified about. Subset of:

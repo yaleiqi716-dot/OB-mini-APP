@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
+import { getTransformer } from '@/services/webhooks/transformers';
+import type { WebhookPayload } from '@/services/webhooks/dispatcher';
 
 export const runtime = 'nodejs';
 
@@ -29,19 +31,13 @@ export async function POST(
     if (!endpoint) return NextResponse.json({ error: '不存在' }, { status: 404 });
     if (endpoint.userId !== userId) return NextResponse.json({ error: '无权限' }, { status: 403 });
 
-    // Fire a synthetic event. Even if the endpoint isn't subscribed to
-    // task_assigned, fireWebhooks will skip it — but for a test we WANT
-    // delivery regardless of subscription. So we temporarily set events
-    // to null (subscribe to all) for this one call by reading the existing
-    // value, calling fireWebhooks, then NOT updating the row.
-    //
-    // Simplest approach: call fireWebhooks. If endpoint isn't subscribed
-    // to task_assigned, the dispatcher silently skips it — and we'd return
-    // success with 0 deliveries. That's confusing.
-    //
-    // Better: bypass the subscription check by writing directly here.
+    // Fire a synthetic event. Bypass the dispatcher's subscription check
+    // (we WANT delivery regardless of which events the endpoint subscribes to,
+    // since the user clicked "test" and expects something to happen).
+    // But still go through the right transformer for the endpoint's kind so
+    // the test message looks correct on the target platform.
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const testPayload = {
+    const testEnvelope: WebhookPayload = {
       event: 'task_assigned',
       timestamp: new Date().toISOString(),
       source: 'orangebench',
@@ -50,13 +46,17 @@ export async function POST(
         message: '这是一条来自 OrangeBench 的测试 webhook 事件',
         workspace_id: 'test-workspace',
         task_id: 'test-task',
-        task_title: 'Webhook 测试任务',
+        task_title: '【测试】Webhook 连通性验证',
         assignee_id: userId,
         assigned_by_name: 'OrangeBench 测试',
-        task_url: `${appUrl}/workspace`,
+        task_url: `${appUrl}/account/integrations`,
       },
       delivery: { id: `test-${Date.now()}`, endpointId: endpoint.id },
     };
+
+    // Run through the platform transformer
+    const transformer = getTransformer(endpoint.kind);
+    const transformed = transformer(testEnvelope);
 
     const start = Date.now();
     let statusCode: number | null = null;
@@ -68,17 +68,34 @@ export async function POST(
       const r = await fetch(endpoint.url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': transformed.contentType,
           'User-Agent': 'OrangeBench-Webhook/1.0 (test)',
         },
-        body: JSON.stringify(testPayload),
+        body: transformed.body,
         signal: ctrl.signal,
       });
       clearTimeout(t);
       statusCode = r.status;
+      const responseText = await r.text().catch(() => '');
+
+      // Check Chinese platform success envelopes (same logic as dispatcher)
       ok = r.ok;
+      if (r.ok && responseText) {
+        try {
+          const parsed = JSON.parse(responseText);
+          if (typeof parsed.errcode === 'number' && parsed.errcode !== 0) {
+            ok = false;
+            errorMsg = `${parsed.errcode}: ${parsed.errmsg || 'unknown'}`.slice(0, 1024);
+          } else if (typeof parsed.code === 'number' && parsed.code !== 0) {
+            ok = false;
+            errorMsg = `${parsed.code}: ${parsed.msg || 'unknown'}`.slice(0, 1024);
+          }
+        } catch {
+          // not JSON — generic webhook, success means success
+        }
+      }
       if (!r.ok) {
-        errorMsg = (await r.text().catch(() => '')).slice(0, 1024) || `HTTP ${r.status}`;
+        errorMsg = responseText.slice(0, 1024) || `HTTP ${r.status}`;
       }
     } catch (err) {
       errorMsg = (err instanceof Error ? err.message : String(err)).slice(0, 1024);
@@ -90,7 +107,7 @@ export async function POST(
       data: {
         endpointId: endpoint.id,
         event: 'task_assigned',
-        payload: JSON.stringify(testPayload).slice(0, 4096),
+        payload: transformed.body.slice(0, 4096),
         statusCode,
         errorMsg,
         durationMs,

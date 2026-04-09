@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { getTransformer } from './transformers';
 
 // Outbound webhook dispatcher — Phase 3 of the Skills Integration Plan.
 //
@@ -122,9 +123,14 @@ function sleep(ms: number): Promise<void> {
 }
 
 // Try a single POST with timeout. Returns { ok, statusCode, errorMsg }.
+// Also checks Chinese platform success conventions: 飞书/钉钉/企微 return
+// HTTP 200 even on logical failures (wrong format, expired token, etc),
+// with the real status in JSON `errcode` field. We unwrap that here so
+// the user sees actionable errors instead of fake "success".
 async function attemptPost(
   url: string,
   body: string,
+  contentType: string,
 ): Promise<{ ok: boolean; statusCode: number | null; errorMsg: string | null }> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
@@ -132,17 +138,50 @@ async function attemptPost(
     const r = await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': contentType,
         'User-Agent': 'OrangeBench-Webhook/1.0',
       },
       body,
       signal: ctrl.signal,
     });
     clearTimeout(t);
-    if (r.ok) return { ok: true, statusCode: r.status, errorMsg: null };
-    // Read at most MAX_ERROR_LENGTH chars of the error body for debug
-    const errText = (await r.text().catch(() => '')).slice(0, MAX_ERROR_LENGTH);
-    return { ok: false, statusCode: r.status, errorMsg: errText || `HTTP ${r.status}` };
+    const responseText = await r.text().catch(() => '');
+
+    if (!r.ok) {
+      const errText = responseText.slice(0, MAX_ERROR_LENGTH);
+      return { ok: false, statusCode: r.status, errorMsg: errText || `HTTP ${r.status}` };
+    }
+
+    // HTTP 200 but check Chinese platform error envelopes:
+    //   钉钉:    { errcode: 0, errmsg: 'ok' } success | non-zero errcode = failure
+    //   企业微信: { errcode: 0, errmsg: 'ok' } same shape
+    //   飞书:    { code: 0, msg: 'success' } different field names
+    //   generic:  no envelope, raw 200 = success
+    if (responseText) {
+      try {
+        const parsed = JSON.parse(responseText);
+        // 钉钉 / 企微 shape
+        if (typeof parsed.errcode === 'number' && parsed.errcode !== 0) {
+          return {
+            ok: false,
+            statusCode: r.status,
+            errorMsg: `${parsed.errcode}: ${parsed.errmsg || 'unknown error'}`.slice(0, MAX_ERROR_LENGTH),
+          };
+        }
+        // 飞书 shape
+        if (typeof parsed.code === 'number' && parsed.code !== 0) {
+          return {
+            ok: false,
+            statusCode: r.status,
+            errorMsg: `${parsed.code}: ${parsed.msg || 'unknown error'}`.slice(0, MAX_ERROR_LENGTH),
+          };
+        }
+      } catch {
+        // not JSON — that's fine for generic webhooks (Zapier returns text)
+      }
+    }
+
+    return { ok: true, statusCode: r.status, errorMsg: null };
   } catch (err) {
     clearTimeout(t);
     const msg = err instanceof Error ? err.message : String(err);
@@ -198,10 +237,18 @@ export async function fireWebhooks(
           data,
           delivery: { id: deliveryId, endpointId: endpoint.id },
         };
-        let body = JSON.stringify(envelope);
+
+        // Transform per platform — generic returns the raw envelope as JSON,
+        // 飞书/钉钉/企微 return platform-specific message format.
+        const transformer = getTransformer(endpoint.kind);
+        const transformed = transformer(envelope);
+        let body = transformed.body;
+        const contentType = transformed.contentType;
+
         if (body.length > MAX_PAYLOAD_LENGTH) {
           // Drop the data block if too large; keep the envelope so consumer
-          // still sees what type of event fired.
+          // still sees what type of event fired. Only meaningful for generic;
+          // platform-specific transformers should rarely exceed 4KB anyway.
           body = JSON.stringify({
             ...envelope,
             data: { _truncated: true, original_size: body.length },
@@ -217,7 +264,7 @@ export async function fireWebhooks(
         };
         for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
           if (attempt > 0) await sleep(RETRY_BASE_MS * Math.pow(2, attempt - 1));
-          lastResult = await attemptPost(endpoint.url, body);
+          lastResult = await attemptPost(endpoint.url, body, contentType);
           if (lastResult.ok) break;
         }
         const durationMs = Date.now() - start;
