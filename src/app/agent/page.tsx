@@ -89,6 +89,207 @@ function LiveStatusCycle() {
   );
 }
 
+// ── First Task Coach ──
+// One-time onboarding banner for brand-new users with zero conversation
+// history. Sits above the hero, points at a concrete example prompt, and
+// disappears for good once the user either sends their first task or
+// dismisses it. Keyed on localStorage so it never re-appears for the
+// same browser profile.
+const COACH_KEY = 'ob_first_task_coach_dismissed_v1';
+const COACH_EXAMPLE_PROMPTS = [
+  {
+    icon: 'mail',
+    label: '给客户写一封跟进邮件',
+    desc: '语气专业、内容简短、带一个明确的 CTA',
+    prompt: '帮我给客户写一封简短的跟进邮件,确认下周三的会议。语气专业友好,最后带一个明确的回复 CTA。',
+  },
+  {
+    icon: 'doc',
+    label: '把会议纪要变成 5 个行动项',
+    desc: '每个行动项带 owner 和截止时间',
+    prompt: '我给你一段会议纪要,帮我提炼出 5 个具体行动项,每个标注 owner 和建议的截止时间。会议内容:今天产品评审会讨论了 Q2 路线图,张三负责需求文档,李四负责设计评审,预计两周内完成...',
+  },
+  {
+    icon: 'spark',
+    label: '写一段产品发布文案',
+    desc: '150 字以内,放朋友圈和微博能用',
+    prompt: '帮我写一段 150 字以内的产品发布文案,重点突出"AI 帮你完成任务,你只负责审核"这个核心卖点,语气轻松有力,适合发朋友圈和微博。',
+  },
+];
+
+function CoachIcon({ name }: { name: string }) {
+  const s = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (name === 'mail') return <svg {...s}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
+  if (name === 'doc') return <svg {...s}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>;
+  if (name === 'spark') return <svg {...s}><path d="M12 2v6m0 8v6M4.22 4.22l4.24 4.24m7.08 7.08l4.24 4.24M2 12h6m8 0h6M4.22 19.78l4.24-4.24m7.08-7.08l4.24-4.24"/></svg>;
+  if (name === 'close') return <svg {...s} strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>;
+  return null;
+}
+
+interface FirstTaskCoachProps {
+  onPickExample: (prompt: string) => void;
+}
+
+function FirstTaskCoach({ onPickExample }: FirstTaskCoachProps) {
+  const [dismissed, setDismissed] = useState(true);
+  // Only read localStorage after mount (SSR safety).
+  useEffect(() => {
+    try {
+      const seen = localStorage.getItem(COACH_KEY);
+      if (!seen) setDismissed(false);
+    } catch {
+      // localStorage unavailable (private mode, etc.) — just don't show.
+    }
+  }, []);
+  function dismiss() {
+    setDismissed(true);
+    try { localStorage.setItem(COACH_KEY, '1'); } catch {}
+  }
+  function pick(prompt: string) {
+    onPickExample(prompt);
+    dismiss();
+  }
+  if (dismissed) return null;
+  return (
+    <div
+      className="ob-first-task-coach"
+      style={{
+        width: '100%',
+        maxWidth: 720,
+        margin: '0 auto 28px',
+        padding: '22px 24px 20px',
+        background: 'var(--ob-surface)',
+        border: '1px solid var(--ob-border)',
+        borderRadius: 16,
+        position: 'relative',
+        boxShadow: '0 1px 0 rgba(255,90,31,0.06) inset',
+      }}
+    >
+      <button
+        onClick={dismiss}
+        aria-label="关闭引导"
+        style={{
+          position: 'absolute',
+          top: 14,
+          right: 14,
+          width: 28,
+          height: 28,
+          background: 'transparent',
+          border: 'none',
+          borderRadius: 8,
+          color: 'var(--ob-text-muted)',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'background .15s',
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--ob-surface-hi)')}
+        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+      >
+        <CoachIcon name="close" />
+      </button>
+
+      <div
+        style={{
+          fontFamily: 'var(--ob-font-mono)',
+          fontSize: 10,
+          letterSpacing: '0.18em',
+          textTransform: 'uppercase',
+          color: 'var(--ob-orange)',
+          marginBottom: 8,
+          fontWeight: 600,
+        }}
+      >
+        👋 欢迎 · 第一步
+      </div>
+
+      <div
+        style={{
+          fontSize: 18,
+          fontWeight: 600,
+          color: 'var(--ob-text)',
+          marginBottom: 6,
+          lineHeight: 1.35,
+        }}
+      >
+        点一个例子,10 秒后你就会看到第一个结果。
+      </div>
+      <div
+        style={{
+          fontSize: 13,
+          color: 'var(--ob-text-muted)',
+          marginBottom: 16,
+          lineHeight: 1.5,
+        }}
+      >
+        不用自己想说什么,也不用填表。选一个真实的任务,看它怎么处理。
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: 10,
+        }}
+      >
+        {COACH_EXAMPLE_PROMPTS.map((ex) => (
+          <button
+            key={ex.label}
+            onClick={() => pick(ex.prompt)}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: 6,
+              padding: '14px 16px',
+              background: 'var(--ob-surface-hi)',
+              border: '1px solid var(--ob-border)',
+              borderRadius: 12,
+              color: 'var(--ob-text)',
+              cursor: 'pointer',
+              textAlign: 'left',
+              fontFamily: 'var(--ob-font-body)',
+              transition: 'all .15s cubic-bezier(.2,.7,.3,1)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--ob-orange)';
+              e.currentTarget.style.background = 'var(--ob-surface)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--ob-border)';
+              e.currentTarget.style.background = 'var(--ob-surface-hi)';
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                color: 'var(--ob-orange)',
+              }}
+            >
+              <CoachIcon name={ex.icon} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ob-text)' }}>
+                {ex.label}
+              </span>
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: 'var(--ob-text-muted)',
+                lineHeight: 1.4,
+              }}
+            >
+              {ex.desc}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Sidebar: group conversations by date ──
 function groupByDate(conversations: ConversationItem[]): { label: string; items: ConversationItem[] }[] {
   const now = new Date();
@@ -629,6 +830,17 @@ function AgentPageInner() {
               <div className="ob-dotgrid ob-dotgrid--hero" style={{ bottom: 0 }} />
 
               <div className="ob-atmosphere-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '56px 24px 48px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
+
+                {/* First Task Coach — only for brand-new users with zero
+                    conversation history. Picks an example, prefills the
+                    composer, self-dismisses to localStorage forever. */}
+                {conversations.length === 0 && (
+                  <FirstTaskCoach
+                    onPickExample={(prompt) => {
+                      handleSubmit(prompt, 'unknown');
+                    }}
+                  />
+                )}
 
                 {/* Status bar — ABOVE title per spec */}
                 <div style={{ marginBottom: 24 }}><LiveStatusCycle /></div>
