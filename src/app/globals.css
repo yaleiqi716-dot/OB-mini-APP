@@ -314,24 +314,31 @@ body{
 .ob-scroll,.agent-scroll{flex:1;overflow-y:auto;background:var(--bg-exec);position:relative}
 .ob-messages,.agent-content-wrap{max-width:var(--chat-max);margin:0 auto;padding:32px 24px 28px}
 
-/* User bubble — orange bg, warm-paper text */
-.ob-msg-user,.chat-user-bubble-row{display:flex;justify-content:flex-end;margin-bottom:14px;padding-right:24px}
-.ob-msg-user-bubble,.chat-user-bubble{max-width:380px;background:var(--ob-orange);color:#fff;font-family:var(--ob-font-body);font-size:14px;line-height:1.55;padding:11px 16px;border-radius:14px 14px 4px 14px;white-space:pre-wrap;word-break:break-word;box-shadow:0 1px 0 rgba(255,255,255,0.10) inset,0 6px 18px -6px rgba(255,90,31,0.5)}
+/* User bubble — orange bg, dark text per DESIGN.md v1.2 (V1 polish).
+   Previously used color:#fff which is lower contrast on orange and
+   harder to read for CJK at 14px. /demo proved dark-on-orange is
+   cleaner. Also simplified the asymmetric border-radius to uniform
+   14px for visual stillness and dropped the decorative shadow. */
+.ob-msg-user,.chat-user-bubble-row{display:flex;justify-content:flex-end;margin-bottom:16px;padding-right:24px}
+.ob-msg-user-bubble,.chat-user-bubble{max-width:72%;background:var(--ob-orange);color:#0B0B0C;font-family:var(--ob-font-body);font-size:14px;font-weight:500;line-height:1.55;padding:12px 16px;border-radius:14px;white-space:pre-wrap;word-break:break-word}
 
 /* AI response area */
-.ob-msg-ai,.chat-ai-area{padding-bottom:12px}
+.ob-msg-ai,.chat-ai-area{padding-bottom:16px}
 
-/* Step container */
-.ob-steps-container{background:var(--bg-tertiary);border:1px solid var(--border);border-radius:12px;padding:6px 8px;margin-bottom:12px}
+/* Step container — token-driven, matches /demo timeline look (V1 polish).
+   Previously used legacy --bg-tertiary / --border / --accent / etc.
+   which predated DESIGN.md v1.2. Now token-only + sand success dots
+   matching the /demo pre-baked conversation. */
+.ob-steps-container{background:var(--ob-surface);border:1px solid var(--ob-border);border-radius:12px;padding:10px 12px;margin-bottom:14px}
 
 /* Step blocks — lightweight execution steps */
-.ob-step-block{display:flex;align-items:center;gap:10px;height:28px;padding:0 8px;border-radius:8px}
-.ob-step-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.ob-step-dot--active{background:var(--accent)}
-.ob-step-dot--done{background:#C9B89E}
-.ob-step-text{font-size:13px;color:var(--text-secondary);line-height:1}
-.ob-step-block--active{background:var(--accent-subtle)}
-.ob-step-block--active .ob-step-text{color:var(--text-primary)}
+.ob-step-block{display:flex;align-items:center;gap:10px;height:30px;padding:0 8px;border-radius:8px}
+.ob-step-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ob-step-dot--active{background:var(--ob-orange);box-shadow:0 0 0 3px var(--ob-orange-a10,rgba(255,90,31,0.12))}
+.ob-step-dot--done{background:var(--ob-success)}
+.ob-step-text{font-size:13px;color:var(--ob-text-muted);line-height:1;font-family:var(--ob-font-body)}
+.ob-step-block--active{background:var(--ob-surface-hi)}
+.ob-step-block--active .ob-step-text{color:var(--ob-text);font-weight:500}
 
 /* Result card — token-driven, editorial */
 .ob-result-card{background:var(--ob-surface);border:1px solid var(--ob-border);border-radius:12px;overflow:hidden}

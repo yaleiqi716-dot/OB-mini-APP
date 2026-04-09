@@ -393,48 +393,75 @@ export default function MyTasksPage() {
                           {timeAgo(t.updatedAt || t.createdAt)}
                         </span>
 
-                        {/* Failed: friendly message */}
+                        {/* Failed: short hint (no stale "当前能力暂不可用"
+                            copy — that lived here before the P0-1b bucketed
+                            error system landed, and was the only place in the
+                            app still shipping that dead-end message). The real
+                            error detail lives in the task conversation now;
+                            this is just a one-word explanation for the list
+                            view so the red status badge isn't unexplained. */}
                         {failed && (
-                          <p style={{ fontSize: 12, color: '#E4483D', marginTop: 6 }}>
-                            当前能力暂不可用 · 请稍后重试，或联系管理员启用该能力
+                          <p style={{ fontSize: 12, color: 'var(--ob-error)', marginTop: 6 }}>
+                            执行失败 · 点"打开"查看原因和重试
                           </p>
                         )}
                       </div>
 
-                      {/* Right: action buttons — unified style */}
+                      {/* Right: action buttons — V2 simplified.
+                          Previously up to 5 different buttons (重试 / 查看详情 /
+                          继续对话 / 查看结果 / 查看进度) conditionally rendered
+                          based on status. The mental model was incoherent — the
+                          same task in two different states showed different
+                          button labels pointing at conceptually equivalent
+                          destinations. New rule:
+                            - ONE primary "打开" button per row. Routes to the
+                              task's conversation if it has one, otherwise to
+                              the detail page. Label never changes.
+                            - Failed tasks additionally get a small circular
+                              ↻ retry icon button before "打开", which re-queues
+                              the task in place without navigating. */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                         {failed && (
                           <button
                             onClick={() => handleRetry(t.id)}
                             disabled={retrying === t.id}
                             aria-label="重试任务"
-                            style={{ ...actionBtnStyle, color: '#E4483D', opacity: retrying === t.id ? 0.5 : 1 }}
-                            onMouseEnter={hoverIn}
-                            onMouseLeave={(e) => { hoverOut(e); e.currentTarget.style.color = '#E4483D'; }}
+                            style={{
+                              width: 32, height: 32, padding: 0,
+                              borderRadius: '50%',
+                              border: '1px solid var(--ob-border)',
+                              background: 'var(--ob-surface)',
+                              color: 'var(--ob-error)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: retrying === t.id ? 'wait' : 'pointer',
+                              opacity: retrying === t.id ? 0.5 : 1,
+                              transition: 'border-color .15s, background .15s',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = 'var(--ob-error)';
+                              e.currentTarget.style.background = 'var(--ob-surface-hi)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = 'var(--ob-border)';
+                              e.currentTarget.style.background = 'var(--ob-surface)';
+                            }}
                           >
-                            {retrying === t.id ? '重试中...' : '重试'}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="1 4 1 10 7 10" />
+                              <path d="M3.51 15a9 9 0 1 0 .49-4.5" />
+                            </svg>
                           </button>
                         )}
-                        {failed && (
-                          <a href={detailUrl} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
-                            查看详情
-                          </a>
-                        )}
-                        {completed && t.conversationId && (
-                          <a href={`/agent?conversationId=${t.conversationId}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
-                            继续对话
-                          </a>
-                        )}
-                        {completed && (
-                          <a href={detailUrl} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
-                            查看结果
-                          </a>
-                        )}
-                        {running && t.conversationId && (
-                          <a href={`/agent?conversationId=${t.conversationId}`} style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
-                            查看进度
-                          </a>
-                        )}
+                        <a
+                          href={t.conversationId ? `/agent?conversationId=${t.conversationId}` : detailUrl}
+                          style={actionBtnStyle}
+                          onMouseEnter={hoverIn}
+                          onMouseLeave={hoverOut}
+                        >
+                          打开
+                        </a>
                       </div>
                     </div>
                   </div>
