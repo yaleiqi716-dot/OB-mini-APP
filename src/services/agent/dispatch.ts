@@ -2,7 +2,9 @@ import { RouterDecision, DispatchResult } from '@/types/agent';
 import { chatCompletion, LLMError } from '@/lib/openrouter';
 import { braveSearch } from '@/services/tools/brave';
 import { createImage } from '@/services/tools/leonardo';
-import { generateDesignImage } from '@/services/tools/design';
+// generateDesignImage (gstack design binary) is kept in the repo as a
+// dormant alternative for when OPENAI_API_KEY is available — see
+// src/services/tools/design.ts and handleDesign below.
 import { createVideo } from '@/services/tools/minimax';
 import { createAvatarVideo } from '@/services/tools/akool';
 import { triggerAutomation } from '@/services/tools/zapier';
@@ -10,7 +12,7 @@ import { createBrowserTask } from '@/services/tools/manus';
 
 // Async intents: these only create a job and return immediately.
 // The media-job-poller picks up results later.
-export const ASYNC_INTENTS = new Set(['image', 'video', 'avatar_video', 'browser_task']);
+export const ASYNC_INTENTS = new Set(['image', 'design', 'video', 'avatar_video', 'browser_task']);
 
 export interface AsyncJobInfo {
   engine: string;
@@ -137,48 +139,49 @@ async function handleImage(payload: Record<string, unknown>): Promise<DispatchRe
   };
 }
 
-// Synchronous design mockup generation via the gstack design binary.
-// Unlike handleImage (async Leonardo), this returns a ready-to-render
-// URL when the binary completes successfully. Runtime: ~15-40 seconds.
+// Design mockup generation via Leonardo.ai.
+//
+// Unlike handleImage (which is generic image gen), handleDesign is
+// specialized for UI/product/marketing mockups. The difference is in
+// the prompt — we prepend UI-specific style cues so the same Leonardo
+// backend produces interface-shaped output instead of generic illustrations.
+//
+// Async pattern: identical to handleImage. Creates a Leonardo job,
+// returns { _async: true, jobId }, the worker writes externalJobId +
+// externalEngine, and media-job-poller (src/services/media-job-poller.ts)
+// polls every 10s until complete, then writes imageUrl back to task data.
+//
+// The gstack design binary path (src/services/tools/design.ts) is
+// kept in the repo as a dormant alternative — if OPENAI_API_KEY ever
+// becomes available, we can swap handleDesign back to it without
+// touching the router or the UI. See docs/skills-integration-plan-v1.md.
 async function handleDesign(
   payload: Record<string, unknown>,
   originalInput: string,
 ): Promise<DispatchResult> {
   const brief = String(payload.brief || payload.prompt || originalInput);
-  const result = await generateDesignImage(brief);
 
-  if (!result.success) {
-    // Throw so the top-level try/catch in dispatch() bucketizes the error
-    // the same way LLM failures are bucketed (P0-1b contract). Map the
-    // wrapper's errorCode to the closest LLMErrorCode so the existing
-    // error card in TaskCanvas renders a clean, actionable message.
-    const llmCode =
-      result.errorCode === 'no_key' || result.errorCode === 'no_binary'
-        ? 'LLM_AUTH'
-        : result.errorCode === 'rate_limited'
-          ? 'LLM_RATE_LIMIT'
-          : result.errorCode === 'network'
-            ? 'LLM_UPSTREAM'
-            : 'LLM_UNKNOWN';
-    throw new LLMError(
-      llmCode,
-      result.error || '图像生成失败',
-      undefined,
-      result.errorCode,
-    );
-  }
+  // Enhance the prompt with UI/design-specific style cues. This is the
+  // key difference from the generic 'image' intent — same Leonardo
+  // backend, different prompt engineering. Leonardo's default model
+  // (Leonardo Creative) handles photo/illustration well but needs
+  // explicit "UI design" keywords to produce interface mockups.
+  const designPrompt = `UI design mockup, ${brief}, clean modern interface, professional layout, high fidelity, product screenshot style, flat design`;
+
+  const result = await createImage(designPrompt, 'UI mockup');
 
   return {
     success: true,
     intent: 'design',
-    engine: 'gstack-design',
+    engine: 'leonardo',  // Same engine label as handleImage so the existing
+                         // media-job-poller picks it up without a new case.
     data: {
       type: 'image',
-      imageUrl: result.imageUrl,
+      _async: true,
+      jobId: result.generationId,
       prompt: brief,
-      engine: 'gstack-design',
     },
-    message: '设计稿已生成',
+    message: '设计稿正在生成中...',
   };
 }
 
