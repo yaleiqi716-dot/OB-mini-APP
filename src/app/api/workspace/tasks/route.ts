@@ -68,9 +68,20 @@ export async function POST(req: NextRequest) {
     if (ctx.role !== 'owner') return NextResponse.json({ error: '只有 Owner 可以创建任务' }, { status: 403 });
 
     const body = await req.json();
-    const { title, description, priority, assigneeId, dueAt, attachments } = body;
+    const { title, description, priority: rawPriority, assigneeId, dueAt, attachments } = body;
 
     if (!title || !title.trim()) return NextResponse.json({ error: '请输入任务标题' }, { status: 400 });
+
+    // Coerce priority to Int 0-3. Schema is Int, but be defensive: accept
+    // numbers, numeric strings, and common label strings from any client.
+    // Anything unrecognizable → 400, never 500.
+    const priority = coercePriority(rawPriority);
+    if (priority === null) {
+      return NextResponse.json(
+        { error: '优先级只接受 0-3 或 low/normal/medium/high/urgent' },
+        { status: 400 },
+      );
+    }
 
     // Validate assignee is a workspace member
     if (assigneeId) {
@@ -85,7 +96,7 @@ export async function POST(req: NextRequest) {
         workspaceId: ctx.workspaceId,
         title: title.trim(),
         description: description?.trim() || null,
-        priority: priority || 0,
+        priority,
         createdBy: ctx.userId,
         assigneeId: assigneeId || null,
         dueAt: dueAt ? new Date(dueAt) : null,
@@ -105,4 +116,38 @@ export async function POST(req: NextRequest) {
     console.error('[WS_TASK_CREATE_ERROR]', error);
     return NextResponse.json({ error: '创建失败' }, { status: 500 });
   }
+}
+
+/**
+ * Coerce a priority input to Int 0-3.
+ *
+ * The Prisma schema is Int, but we accept loose input from clients:
+ *  - number 0/1/2/3                          → as-is
+ *  - numeric string "0" / "1" / "2" / "3"    → parsed
+ *  - label string low/normal/medium/high/urgent (case-insensitive)
+ *  - undefined / null                        → 0 (default)
+ *
+ * Returns null for unrecognized input so the caller can emit a clear
+ * 400 instead of crashing Prisma with a 500.
+ */
+function coercePriority(value: unknown): number | null {
+  if (value === undefined || value === null || value === '') return 0;
+  if (typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 3) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim().toLowerCase();
+    // Numeric string
+    if (/^[0-3]$/.test(trimmed)) return Number(trimmed);
+    // Label aliases
+    const labelMap: Record<string, number> = {
+      low: 0, '低': 0,
+      normal: 0, '普通': 0,
+      medium: 1, mid: 1, '中': 1,
+      high: 2, '高': 2,
+      urgent: 3, critical: 3, '紧急': 3,
+    };
+    if (trimmed in labelMap) return labelMap[trimmed];
+  }
+  return null;
 }
