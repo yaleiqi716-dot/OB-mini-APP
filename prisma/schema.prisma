@@ -128,6 +128,16 @@ model TaskEvent {
   type      String
   data      String
   createdAt DateTime @default(now())
+
+  // P4c1 — tool-call artifact tracking. Nullable so existing events stay
+  // untouched. Populated by src/services/tools/* handlers (browse, design,
+  // future). toolName is namespaced (e.g. 'browse.screenshot'), toolInput
+  // is the JSON args the agent emitted, toolOutput is a path to a file
+  // or truncated raw JSON (capped at ~8KB to keep row size sane).
+  toolName   String?
+  toolInput  String?
+  toolOutput String?
+
   @@index([taskId, createdAt])
 }
 
