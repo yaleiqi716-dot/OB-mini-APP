@@ -463,3 +463,80 @@ model BrowseUsage {
   @@unique([userId, day])
   @@index([userId])
 }
+
+// ─── Phase 5: MCP for end users ──────────────────────────────────────
+//
+// Users install MCP servers that extend the agent's toolset with
+// personal integrations (Notion, Google Drive, filesystem, custom
+// internal tools). The worker spawns these on demand during task
+// execution and tears them down when idle.
+//
+// Security model:
+// - configEncrypted uses MCP_VAULT_KEY (SEPARATE from BROWSE_VAULT_KEY)
+//   so compromise of one namespace doesn't expose the other
+// - Every tool call writes an McpUsageLog row for audit
+// - Per-user daily call cap via McpUsage (same pattern as BrowseUsage)
+// - Destructive actions (delete/send/pay) require inline chat
+//   confirmation handled by dispatcher, not just install consent
+
+model McpServer {
+  id              String    @id @default(cuid())
+  userId          String
+  // Human-readable label shown in the /account/ai-tools list
+  name            String
+  // Catalog kind: 'filesystem' | 'memory' | 'git' | 'sqlite' | 'custom' | ...
+  // MVP focuses on stdio-based catalog entries that don't need OAuth.
+  kind            String
+  // Transport: 'stdio' (MVP) | 'sse' (future) | 'http' (future)
+  transport       String    @default("stdio")
+  // stdio: the command to spawn (e.g. 'npx @modelcontextprotocol/server-filesystem')
+  command         String?
+  // Space-joined args (e.g. '-y @modelcontextprotocol/server-filesystem /tmp/mcp')
+  args            String?
+  // sse/http: the endpoint URL
+  endpoint        String?
+  // AES-256-GCM ciphertext of a JSON blob { env: {...}, apiKey?: ..., token?: ... }
+  // Encrypted with MCP_VAULT_KEY (separate from browse vault key).
+  configEncrypted String
+  // JSON array of granted scopes: ["read","write","admin"]
+  scopes          String    @default("[\"read\"]")
+  enabled         Boolean   @default(true)
+  lastUsedAt      DateTime?
+  // Cached JSON array of tool names exposed by the server, populated
+  // from the test connection flow. Not authoritative at runtime — the
+  // dispatcher re-queries listTools if stale.
+  cachedTools     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  @@index([userId, enabled])
+}
+
+// Append-only audit log. Every tool call the MCP runtime dispatches
+// writes exactly one row here. Plaintext input/output are truncated
+// to 4KB each before storage.
+model McpUsageLog {
+  id            String   @id @default(cuid())
+  userId        String
+  mcpServerId   String
+  toolName      String
+  input         String?  // JSON, max 4KB
+  output        String?  // JSON, max 4KB
+  statusCode    Int      // 0 = success, 1+ = error
+  errorMsg      String?  // human-readable, max 1KB
+  durationMs    Int
+  firedAt       DateTime @default(now())
+  @@index([userId, firedAt])
+  @@index([mcpServerId, firedAt])
+}
+
+// Per-user daily cap for MCP tool calls. Default 100/day (env:
+// MCP_DAILY_LIMIT). Separate from BrowseUsage and billing credits.
+model McpUsage {
+  id          String   @id @default(cuid())
+  userId      String
+  day         String   // YYYY-MM-DD local
+  callCount   Int      @default(0)
+  updatedAt   DateTime @updatedAt
+  @@unique([userId, day])
+  @@index([userId])
+}
