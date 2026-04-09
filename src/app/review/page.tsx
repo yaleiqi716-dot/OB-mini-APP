@@ -1,5 +1,15 @@
 'use client';
 
+// DEPRECATED 2026-04-09 — /review is no longer in the top nav (see
+// src/lib/nav.ts). Its functionality has moved to the "待审核" filter
+// tab on /tasks, which queries the same /api/tasks/mine endpoint and
+// displays the same data with consistent styling.
+//
+// This file is kept alive to preserve bookmark compatibility for
+// existing users. Any new navigation should link to
+// /tasks?filter=review instead. Consider removing this file once
+// analytics confirm no direct traffic for 30+ days.
+
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Spinner } from '@/components/ui/Spinner';

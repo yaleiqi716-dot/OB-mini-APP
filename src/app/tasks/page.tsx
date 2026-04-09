@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Spinner } from '@/components/ui/Spinner';
 import { AppHeader } from '@/components/workspace/AppHeader';
 
@@ -37,11 +37,16 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('zh-CN');
 }
 
-type FilterType = 'all' | 'running' | 'completed' | 'failed';
+type FilterType = 'all' | 'running' | 'review' | 'completed' | 'failed';
 
+// "待审核" (review) is the consolidation of the old /review top-level page.
+// /review's data source is the same /api/tasks/mine + /api/workspace/tasks,
+// just filtered by status. Pulling it in as a tab here means there's one
+// place to find your work — not three confusingly similar destinations.
 const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: 'all', label: '全部' },
   { value: 'running', label: '进行中' },
+  { value: 'review', label: '待审核' },
   { value: 'completed', label: '已完成' },
   { value: 'failed', label: '失败' },
 ];
@@ -76,11 +81,18 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function MyTasksPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Initial filter can be set via ?filter=review — used by the legacy
+  // /review → /tasks?filter=review redirect in src/app/review/page.tsx
+  // so bookmarks keep working.
+  const initialFilter = (searchParams.get('filter') as FilterType) || 'all';
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [wsTasks, setWsTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterType>('all');
+  const [filter, setFilter] = useState<FilterType>(
+    FILTER_OPTIONS.some(o => o.value === initialFilter) ? initialFilter : 'all',
+  );
   const [retrying, setRetrying] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'personal' | 'team'>('personal');
@@ -145,17 +157,32 @@ export default function MyTasksPage() {
     }).catch(() => {});
   }, []);
 
-  const isRunning = (s: string) => ['queued', 'understanding', 'running', 'executing', 'interacting', 'structuring'].includes(s);
+  // Running = actively being worked on, NOT waiting on user review.
+  // Note: 'interacting' (AI is waiting for user response) is review state,
+  // not running state — it was previously misclassified here.
+  const isRunning = (s: string) => ['queued', 'understanding', 'running', 'executing', 'structuring'].includes(s);
+  // Review = awaiting human decision. For personal AI tasks, that's
+  // 'interacting' (AI asked a follow-up). For team workspace tasks,
+  // that's 'submitted' (assignee turned it in) or 'revision' (owner
+  // asked for changes).
+  const isReview = (s: string, isTeam: boolean) =>
+    isTeam ? ['submitted', 'revision'].includes(s) : s === 'interacting';
 
   const activeTasks = viewMode === 'team' ? wsTasks : tasks;
   const filtered = activeTasks.filter((t) => {
-    if (viewMode === 'team') {
+    const isTeam = viewMode === 'team';
+    if (isTeam) {
       // Team mode uses workspace business statuses
-      if (filter === 'running' && !['assigned', 'in_progress', 'revision'].includes(t.status)) return false;
+      if (filter === 'running' && !['assigned', 'in_progress'].includes(t.status)) return false;
+      if (filter === 'review' && !isReview(t.status, true)) return false;
       if (filter === 'completed' && t.status !== 'completed') return false;
-      if (filter === 'failed' && t.status !== 'submitted') return false; // "submitted" maps to "pending review"
+      // Workspace tasks don't have a 'failed' business state — hide
+      // everything when 'failed' is selected in team mode (the filter
+      // still exists for consistency; personal view is the user of it).
+      if (filter === 'failed') return false;
     } else {
       if (filter === 'running' && !isRunning(t.status)) return false;
+      if (filter === 'review' && !isReview(t.status, false)) return false;
       if (filter === 'completed' && t.status !== 'completed') return false;
       if (filter === 'failed' && t.status !== 'failed') return false;
     }
