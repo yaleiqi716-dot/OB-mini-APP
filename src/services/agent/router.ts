@@ -61,7 +61,49 @@ toolPayload 填写执行该任务所需的参数，例如：
 
 const VALID_INTENTS: AgentIntent[] = ['text', 'search', 'image', 'design', 'video', 'avatar_video', 'automation', 'browser_task'];
 
+// Keyword pre-filters — bypass the LLM router for high-confidence intents.
+// Critical when the LLM provider is unavailable (no OPENROUTER_API_KEY in dev,
+// upstream outage in prod): the LLM router falls back to 'text', which then
+// fails again because handleText also needs the LLM. Pre-filtering high-
+// confidence intents lets the design / image / search paths work independently.
+//
+// The patterns are intentionally narrow — only match when the request is
+// unambiguously about the matched intent. Edge cases still go through the
+// LLM router for proper classification.
+
+// Design = UI/product/marketing mockups. Distinct from generic 'image' which
+// is for illustrations / photos / logos.
+const DESIGN_KEYWORDS = /(设计.*[图稿页屏]|UI.*(设计|mockup|稿|界面)|界面.*(设计|mockup|稿)|登录页|注册页|落地页|首页设计|landing\s*page|mockup|线框图|wireframe|dashboard.*设计|product screen|product mockup|app.*(界面|UI)|网页设计|页面设计)/i;
+
+// Image = generic illustrations / photos / posters / logos.
+// Skip if DESIGN already matched (UI mockup wins over generic image).
+const IMAGE_KEYWORDS = /(画一张|画个|生成.*图片|生成.*海报|生成.*封面|生成.*logo|生成.*头像|海报设计|封面设计|插画|illustration|生成图)/i;
+
 export async function routeIntent(input: string): Promise<RouterDecision> {
+  // Pre-filter: design intent. Highest priority — UI/mockup specifics
+  // beat generic image generation.
+  if (DESIGN_KEYWORDS.test(input)) {
+    return {
+      intent: 'design',
+      reason: '关键词匹配:UI/界面设计',
+      needsClarification: false,
+      questions: [],
+      toolPayload: { brief: input },
+    };
+  }
+
+  // Pre-filter: generic image intent.
+  if (IMAGE_KEYWORDS.test(input)) {
+    return {
+      intent: 'image',
+      reason: '关键词匹配:图像生成',
+      needsClarification: false,
+      questions: [],
+      toolPayload: { prompt: input },
+    };
+  }
+
+  // Otherwise — fall through to the LLM-based router for nuanced classification.
   const result = await chatCompletion(
     [
       { role: 'system', content: ROUTER_SYSTEM_PROMPT },
