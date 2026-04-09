@@ -18,19 +18,19 @@ import Link from 'next/link';
  */
 
 export const metadata: Metadata = {
-  title: 'OrangeBench · 看 AI 怎么完成一个真实任务',
+  title: 'OrangeBench · 看 AI 8 秒做完一份运营周报',
   description:
-    '看 OrangeBench 完成一个真实的客户跟进任务：从收到需求到生成邮件草稿、检查格式、输出交付,全程无需登录。',
+    '每周五下午老板要周报,从 5 个平台拉数据、对比分析、写策略、发邮件 —— 一个人要 2 小时。OrangeBench 8 秒做完,可直接发给老板。无需登录即可查看。',
   openGraph: {
-    title: 'OrangeBench · 看 AI 怎么完成一个真实任务',
-    description: '不用注册,直接看 OrangeBench 跑一个真实的客户跟进任务。',
+    title: 'OrangeBench · 看 AI 8 秒做完一份运营周报',
+    description: '5 平台拉数据 · 对比分析 · 下周策略 · 可直接发邮件 —— 小团队每周都在重做的事,交给 AI。',
     url: 'https://orangebench.tech/demo',
     type: 'article',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'OrangeBench · 看 AI 怎么完成一个真实任务',
-    description: '不用注册,直接看 OrangeBench 跑一个真实的客户跟进任务。',
+    title: 'OrangeBench · 看 AI 8 秒做完一份运营周报',
+    description: '5 平台拉数据 · 对比分析 · 下周策略 · 可直接发邮件 —— 小团队每周都在重做的事,交给 AI。',
   },
   alternates: {
     canonical: '/demo',
@@ -41,8 +41,25 @@ export const metadata: Metadata = {
 // Static. Hardcoded. This is intentionally not a real LLM call — it's
 // a controlled product demonstration. Every visitor sees the exact
 // same thing, so we can polish it deliberately.
+//
+// Scenario (aligned to the ICP conversation with the founder):
+//   周报场景 — 小李是 6 人 SaaS 创业公司的运营同学,周五下午 17:15
+//   老板 17:30 要本周运营周报。她需要从淘宝后台 + 抖音商家版 +
+//   微信公众号 + 飞书文档 + 邮件 5 个平台拉数据,做对比分析,写
+//   下周策略。上周花了 2 小时 45 分钟。
+//
+// Why this scenario over "write a follow-up email":
+//   1. Universal pain — every SMB boss asks for weekly reports.
+//   2. Shows the REAL OrangeBench differentiator — multi-step
+//      workflow (拉数据 → 分析 → 策略 → 格式化) that ChatGPT can't
+//      do end-to-end in one shot.
+//   3. Directly addresses the founder's stated deepest pain:
+//      "人为打开多个网页整理运营数据,既不专业,老板又要花时间
+//       消化决策" — this demo IS that exact problem, solved.
+//   4. Result is actually shippable (ready-to-send email to boss),
+//      not a draft that still needs 30 minutes of editing.
 
-const USER_PROMPT = '帮我给客户写一封简短的跟进邮件,确认下周三的会议。语气专业友好,最后带一个明确的回复 CTA。';
+const USER_PROMPT = '帮我生成本周运营周报:从淘宝/抖音/公众号后台拉取本周 GMV、曝光、转化数据,对比上周同期变化,找出 Top 3 增长和 Top 3 下滑的点,归因分析后给出下周 3 个可执行的策略建议,最后整理成可直接发给老板的邮件。';
 
 interface Step {
   label: string;
@@ -51,34 +68,159 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  { label: '理解需求', detail: '客户跟进邮件 · 会议确认 · 专业友好语气', state: 'done' },
-  { label: '制定方案', detail: '选择 TEXT 路径 · 直接生成邮件草稿', state: 'done' },
-  { label: '生成内容', detail: '结构:称呼 → 上下文 → 议题 → CTA → 签名', state: 'done' },
-  { label: '检查输出', detail: '字数 142 · 语气得分 92/100 · 含明确 CTA', state: 'done' },
-  { label: '整理交付', detail: '格式化为邮件正文,可直接复制发送', state: 'done' },
+  {
+    label: '理解需求',
+    detail: '周报 · 5 平台数据 · 对比分析 · 策略建议 · 邮件格式',
+    state: 'done',
+  },
+  {
+    label: '拉取数据',
+    detail: '同步淘宝 · 抖音 · 公众号 · 飞书 · 邮件 · 本周 vs 上周',
+    state: 'done',
+  },
+  {
+    label: '分析洞察',
+    detail: '识别 Top 3 增长 · Top 3 下滑 · 归因到品类与渠道',
+    state: 'done',
+  },
+  {
+    label: '生成策略',
+    detail: '下周 3 个可执行建议 · 标注预期效果 · 分配 owner',
+    state: 'done',
+  },
+  {
+    label: '整理交付',
+    detail: '邮件格式 · 决策点前置 · 老板 90 秒可读完',
+    state: 'done',
+  },
 ];
 
-const RESULT_EMAIL = `主题:下周三产品评审会议确认
+// ── Structured result data ──
+// Replaces the previous 40-line <pre> email dump. The new visual
+// canvas shows the same information as scannable cards: decision
+// block (the hero), a 4-metric stat grid, two ranked columns for
+// Top 3 increases + decreases, and 3 strategy cards with owners.
+// Per the founder's feedback "重点表现呈现结果" — the result block
+// IS the page's visual focal point, not a text wall.
 
-王总,您好,
+const PLATFORMS = [
+  { label: '淘宝', icon: 'shop' },
+  { label: '抖音', icon: 'video' },
+  { label: '公众号', icon: 'chat' },
+  { label: '飞书', icon: 'doc' },
+  { label: '邮件', icon: 'mail' },
+] as const;
 
-感谢您上周对我们新版本的反馈。根据您的日程,我想确认一下我们计划在
-下周三(4 月 16 日)下午 3 点的产品评审会议仍然按时进行。
+const DECISIONS = [
+  {
+    n: 1,
+    title: '抖音直播预算是否加码 20%?',
+    metric: 'ROI 1:5.8',
+    metricLabel: '本周历史新高',
+  },
+  {
+    n: 2,
+    title: '公众号「新手入门」系列是否上付费推广?',
+    metric: '31%',
+    metricLabel: '自然打开率',
+  },
+  {
+    n: 3,
+    title: '淘宝「限时券」玩法本周失效,是否全面改「满减」?',
+    metric: '−18%',
+    metricLabel: '转化率下滑',
+  },
+] as const;
 
-议题:
-  • 回顾上周讨论的 3 个关键反馈点
-  • 演示已调整的产品方案
-  • 对齐下阶段的落地时间表
+const METRICS = [
+  { label: 'GMV', value: '¥287,450', delta: '+23.4%', up: true },
+  { label: '总曝光', value: '1.24M', delta: '+8.1%', up: true },
+  { label: '支付转化率', value: '3.84%', delta: '−0.22pp', up: false },
+  { label: '新客占比', value: '42.3%', delta: '+5.6pp', up: true },
+] as const;
 
-会议预计 45 分钟,我会提前 10 分钟进会议室调试设备。
+const WINS = [
+  { title: '抖音直播间', metric: '+67%', desc: '新品解说话术改版' },
+  { title: '公众号「新手入门」', metric: '+54%', desc: '选题打中痛点' },
+  { title: '淘宝手机壳类目', metric: '+41%', desc: '联名 IP 上架' },
+] as const;
 
-如果时间有变动,请在周二之前告诉我,我来重新协调。
+const LOSSES = [
+  { title: '公众号图文(非新手系列)', metric: '−28%', desc: '边际递减 3 周' },
+  { title: '淘宝「限时券」活动', metric: '−18%', desc: '用户疲劳,需换玩法' },
+  { title: '邮件 EDM', metric: '−12%', desc: '周三时间点疑似冲突' },
+] as const;
 
-期待周三见。
+const STRATEGIES = [
+  {
+    n: 1,
+    plan: '抖音:加码直播预算 +20%,锁定"新品解说话术"为标准 SOP',
+    owner: '小张',
+    expect: 'GMV +15K',
+  },
+  {
+    n: 2,
+    plan: '公众号:「新手入门」转付费推广,停图文推送 2 周',
+    owner: '小王',
+    expect: '新粉 +800',
+  },
+  {
+    n: 3,
+    plan: '淘宝:「限时券」改「满 199 减 30」,周一上线',
+    owner: '小李',
+    expect: '转化回到 4.0%',
+  },
+] as const;
 
-此致
-李明
-OrangeBench 产品团队`;
+// Small SVG icon set — keeps the page self-contained (no external image assets).
+function PlatformIcon({ name }: { name: string }) {
+  const common = {
+    width: 14,
+    height: 14,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  };
+  if (name === 'shop')
+    return (
+      <svg {...common}>
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <path d="M16 10a4 4 0 0 1-8 0" />
+      </svg>
+    );
+  if (name === 'video')
+    return (
+      <svg {...common}>
+        <polygon points="23 7 16 12 23 17 23 7" />
+        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+      </svg>
+    );
+  if (name === 'chat')
+    return (
+      <svg {...common}>
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    );
+  if (name === 'doc')
+    return (
+      <svg {...common}>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+      </svg>
+    );
+  if (name === 'mail')
+    return (
+      <svg {...common}>
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+        <polyline points="22,6 12,13 2,6" />
+      </svg>
+    );
+  return null;
+}
 
 export default function DemoPage() {
   return (
@@ -188,38 +330,46 @@ export default function DemoPage() {
           }}
         >
           <span style={{ width: 48, height: 2, background: 'var(--ob-orange)' }} />
-          DEMO · LIVE RUN · NO LOGIN
+          DEMO · 运营周报 · 本周真实任务
         </div>
 
-        {/* Hero headline */}
+        {/* Hero headline — tightened, one line of copy */}
         <h1
           style={{
             fontFamily: 'var(--ob-font-display)',
-            fontSize: 'clamp(36px, 6vw, 56px)',
+            fontSize: 'clamp(34px, 5.4vw, 52px)',
             fontWeight: 800,
             letterSpacing: '-0.025em',
             lineHeight: 1.05,
-            margin: '0 0 16px',
-            maxWidth: 720,
+            margin: '0 0 14px',
+            maxWidth: 760,
           }}
         >
-          看 OrangeBench 跑一个<br />
-          <span style={{ color: 'var(--ob-orange)' }}>真实任务</span>
+          周五 17:15,老板 15 分钟后要周报。<br />
+          <span style={{ color: 'var(--ob-orange)' }}>AI 帮你 8 秒搞定。</span>
         </h1>
 
-        <p
+        {/* Compact meta row instead of a 3-line intro para */}
+        <div
           style={{
-            fontSize: 17,
-            lineHeight: 1.55,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 10,
+            margin: '0 0 28px',
+            fontFamily: 'var(--ob-font-mono)',
+            fontSize: 11,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
             color: 'var(--ob-text-muted)',
-            maxWidth: 620,
-            margin: '0 0 40px',
           }}
         >
-          下面是一个完整的任务执行过程。用户给出一句话指令,AI 拆解需求、
-          生成内容、检查输出、整理交付 —— 5 步,约 8 秒。
-          <strong style={{ color: 'var(--ob-text)' }}>不需要注册。</strong>
-        </p>
+          <span>运营同学 · 小李 · 6 人 SaaS 团队</span>
+          <span style={{ color: 'var(--ob-text-dim)' }}>·</span>
+          <span>上周耗时 2h45m</span>
+          <span style={{ color: 'var(--ob-text-dim)' }}>·</span>
+          <span style={{ color: 'var(--ob-orange)' }}>本周 8.4 秒</span>
+        </div>
 
         {/* ── Conversation canvas ─────────────────────────────────────── */}
         <div
@@ -272,7 +422,7 @@ export default function DemoPage() {
                 background: 'var(--ob-success)',
               }}
             />
-            ORANGEBENCH · COMPLETED · 8.2s
+            ORANGEBENCH · COMPLETED · 8.4s · 拉了 5 个平台
           </div>
 
           {/* Step timeline */}
@@ -324,41 +474,484 @@ export default function DemoPage() {
             ))}
           </div>
 
-          {/* Result block */}
+          {/* ── Result canvas — visual, not a text wall ──────────── */}
           <div
             style={{
               background: 'var(--ob-bg)',
               border: '1px solid var(--ob-border)',
               borderRadius: 12,
-              padding: 20,
+              padding: 22,
             }}
           >
+            {/* Result header + platform chip row */}
             <div
               style={{
-                fontFamily: 'var(--ob-font-mono)',
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: 'var(--ob-orange)',
-                marginBottom: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginBottom: 20,
+                flexWrap: 'wrap',
               }}
             >
-              生成结果 · 可直接复制
+              <div
+                style={{
+                  fontFamily: 'var(--ob-font-mono)',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'var(--ob-orange)',
+                }}
+              >
+                生成结果 · 第 15 周运营周报
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  flexWrap: 'wrap',
+                }}
+              >
+                {PLATFORMS.map((p) => (
+                  <span
+                    key={p.label}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '4px 9px',
+                      borderRadius: 9999,
+                      background: 'var(--ob-surface)',
+                      border: '1px solid var(--ob-border)',
+                      fontSize: 11,
+                      color: 'var(--ob-text-muted)',
+                      fontFamily: 'var(--ob-font-body)',
+                    }}
+                  >
+                    <span style={{ color: 'var(--ob-success)' }}>
+                      <PlatformIcon name={p.icon} />
+                    </span>
+                    {p.label}
+                  </span>
+                ))}
+              </div>
             </div>
-            <pre
+
+            {/* ── Decision block — THE HERO of the result ── */}
+            <div
               style={{
-                fontFamily: 'var(--ob-font-mono)',
-                fontSize: 13,
-                lineHeight: 1.65,
-                color: 'var(--ob-text)',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                margin: 0,
+                background: 'var(--ob-surface)',
+                border: '1px solid var(--ob-border)',
+                borderLeft: '3px solid var(--ob-orange)',
+                borderRadius: 10,
+                padding: '18px 20px',
+                marginBottom: 18,
               }}
             >
-              {RESULT_EMAIL}
-            </pre>
+              <div
+                style={{
+                  fontFamily: 'var(--ob-font-mono)',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  color: 'var(--ob-orange)',
+                  marginBottom: 14,
+                }}
+              >
+                需要老板决策的 3 件事
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {DECISIONS.map((d) => (
+                  <div
+                    key={d.n}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 14,
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 26,
+                        height: 26,
+                        borderRadius: '50%',
+                        background: 'var(--ob-orange)',
+                        color: '#0B0B0C',
+                        fontFamily: 'var(--ob-font-mono)',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {d.n}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: 'var(--ob-text)',
+                          lineHeight: 1.4,
+                          marginBottom: 3,
+                        }}
+                      >
+                        {d.title}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          fontFamily: 'var(--ob-font-mono)',
+                          color: 'var(--ob-text-muted)',
+                          letterSpacing: '0.04em',
+                        }}
+                      >
+                        <span style={{ color: 'var(--ob-orange)', fontWeight: 600 }}>
+                          {d.metric}
+                        </span>{' '}
+                        · {d.metricLabel}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Metric grid — 4 stat cards ── */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: 10,
+                marginBottom: 18,
+              }}
+            >
+              {METRICS.map((m) => (
+                <div
+                  key={m.label}
+                  style={{
+                    background: 'var(--ob-surface)',
+                    border: '1px solid var(--ob-border)',
+                    borderRadius: 10,
+                    padding: '12px 14px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: 'var(--ob-font-mono)',
+                      fontSize: 10,
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                      color: 'var(--ob-text-muted)',
+                      marginBottom: 6,
+                    }}
+                  >
+                    {m.label}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: 'var(--ob-font-display)',
+                      fontSize: 22,
+                      fontWeight: 700,
+                      color: 'var(--ob-text)',
+                      letterSpacing: '-0.01em',
+                      lineHeight: 1,
+                      marginBottom: 6,
+                    }}
+                  >
+                    {m.value}
+                  </div>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 3,
+                      fontSize: 11,
+                      fontFamily: 'var(--ob-font-mono)',
+                      fontWeight: 600,
+                      color: m.up ? 'var(--ob-success)' : 'var(--ob-error)',
+                    }}
+                  >
+                    <span>{m.up ? '↑' : '↓'}</span>
+                    <span>{m.delta.replace(/[+−]/, '')}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ── Top 3 wins + losses, 2-column ── */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                gap: 12,
+                marginBottom: 18,
+              }}
+            >
+              {/* Wins */}
+              <div
+                style={{
+                  background: 'var(--ob-surface)',
+                  border: '1px solid var(--ob-border)',
+                  borderRadius: 10,
+                  padding: '14px 16px',
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: 'var(--ob-font-mono)',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                    color: 'var(--ob-success)',
+                    marginBottom: 12,
+                  }}
+                >
+                  ↑ 增长 Top 3
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {WINS.map((w, i) => (
+                    <div
+                      key={i}
+                      style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: 'var(--ob-font-mono)',
+                          fontSize: 11,
+                          color: 'var(--ob-text-dim)',
+                          marginTop: 2,
+                        }}
+                      >
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'baseline',
+                            justifyContent: 'space-between',
+                            gap: 8,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              color: 'var(--ob-text)',
+                            }}
+                          >
+                            {w.title}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 12,
+                              fontFamily: 'var(--ob-font-mono)',
+                              fontWeight: 600,
+                              color: 'var(--ob-success)',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {w.metric}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: 'var(--ob-text-muted)',
+                            lineHeight: 1.4,
+                            marginTop: 1,
+                          }}
+                        >
+                          {w.desc}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Losses */}
+              <div
+                style={{
+                  background: 'var(--ob-surface)',
+                  border: '1px solid var(--ob-border)',
+                  borderRadius: 10,
+                  padding: '14px 16px',
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: 'var(--ob-font-mono)',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                    color: 'var(--ob-error)',
+                    marginBottom: 12,
+                  }}
+                >
+                  ↓ 下滑 Top 3
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {LOSSES.map((l, i) => (
+                    <div
+                      key={i}
+                      style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: 'var(--ob-font-mono)',
+                          fontSize: 11,
+                          color: 'var(--ob-text-dim)',
+                          marginTop: 2,
+                        }}
+                      >
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'baseline',
+                            justifyContent: 'space-between',
+                            gap: 8,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              color: 'var(--ob-text)',
+                            }}
+                          >
+                            {l.title}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 12,
+                              fontFamily: 'var(--ob-font-mono)',
+                              fontWeight: 600,
+                              color: 'var(--ob-error)',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {l.metric}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: 'var(--ob-text-muted)',
+                            lineHeight: 1.4,
+                            marginTop: 1,
+                          }}
+                        >
+                          {l.desc}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Strategy cards — 3 actionable plans with owner chips ── */}
+            <div
+              style={{
+                background: 'var(--ob-surface)',
+                border: '1px solid var(--ob-border)',
+                borderRadius: 10,
+                padding: '14px 16px 16px',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--ob-font-mono)',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'var(--ob-orange)',
+                  marginBottom: 12,
+                }}
+              >
+                → 下周 3 个可执行策略
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {STRATEGIES.map((s) => (
+                  <div
+                    key={s.n}
+                    style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}
+                  >
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 22,
+                        height: 22,
+                        borderRadius: 6,
+                        background: 'var(--ob-orange-a10, rgba(255,90,31,0.12))',
+                        color: 'var(--ob-orange)',
+                        fontFamily: 'var(--ob-font-mono)',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        flexShrink: 0,
+                        marginTop: 1,
+                      }}
+                    >
+                      {s.n}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: 'var(--ob-text)',
+                          lineHeight: 1.5,
+                          marginBottom: 5,
+                        }}
+                      >
+                        {s.plan}
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          flexWrap: 'wrap',
+                          fontFamily: 'var(--ob-font-mono)',
+                          fontSize: 10,
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        <span
+                          style={{
+                            padding: '2px 8px',
+                            borderRadius: 9999,
+                            background: 'var(--ob-surface-hi)',
+                            border: '1px solid var(--ob-border)',
+                            color: 'var(--ob-text-muted)',
+                          }}
+                        >
+                          owner · {s.owner}
+                        </span>
+                        <span style={{ color: 'var(--ob-success)' }}>
+                          预期 · {s.expect}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -373,19 +966,19 @@ export default function DemoPage() {
         >
           {[
             {
-              kicker: '01 · 一句话',
-              title: '不填表,不拖拽',
-              desc: '一行指令说清楚你要什么。没有字段、没有下拉菜单、没有模板选择器。',
+              kicker: '01 · 从 2 小时到 8 秒',
+              title: '时间戏剧性',
+              desc: '小李上周花了 2 小时 45 分钟。本周 8.4 秒。这不是优化,是把一件事从"每周都要做"变成"顺手按一下"。',
             },
             {
-              kicker: '02 · 8 秒',
-              title: 'AI 拆 5 步执行',
-              desc: '理解 → 规划 → 生成 → 检查 → 交付。每一步都看得见,不是黑盒。',
+              kicker: '02 · 拉数据 + 分析 + 策略 + 邮件',
+              title: 'AI 拆 5 步,一气呵成',
+              desc: '从 5 个平台拉本周数据、对比上周、找出增长和下滑、做归因、写下周策略、整理成邮件 —— 全部一个 prompt 搞定。ChatGPT 做不到这种端到端的 workflow。',
             },
             {
-              kicker: '03 · 能直接用',
-              title: '交付,不是草稿',
-              desc: '输出就是你要发的那封邮件本身。改两处细节就能送出。',
+              kicker: '03 · 老板看了能决策',
+              title: '3 个决策点前置',
+              desc: 'AI 把需要老板拍板的 3 件事放在邮件最前面。老板 90 秒读完就能决策,不用再问"这个数据是怎么来的"或者"下周打算怎么做"。',
             },
           ].map((card, i) => (
             <div
@@ -454,7 +1047,7 @@ export default function DemoPage() {
               marginBottom: 14,
             }}
           >
-            现在试试你自己的任务
+            周报只是其中一个场景
           </div>
           <h2
             style={{
@@ -466,19 +1059,21 @@ export default function DemoPage() {
               margin: '0 0 18px',
             }}
           >
-            换成你的任务,结果会是什么样?
+            写朋友圈文案 · 客户跟进 · 招聘 JD<br />
+            <span style={{ color: 'var(--ob-orange)' }}>都是同样的套路。</span>
           </h2>
           <p
             style={{
               fontSize: 15,
               color: 'var(--ob-text-muted)',
               lineHeight: 1.55,
-              maxWidth: 520,
+              maxWidth: 560,
               margin: '0 auto 28px',
             }}
           >
-            注册只需要一个邮箱。新账号赠送 500 credits,
-            够你跑 50+ 个类似的任务,看看它对你具体的工作场景能做到什么程度。
+            每天 2 小时的朋友圈、每周一次的客户会议纪要、每月一次的招聘 JD 和面试题 ——
+            小团队每周都在重做的事,AI 帮你全部做完,你只负责审核。
+            注册只要一个邮箱,新账号赠送 500 credits,够你跑 50+ 个真实任务。
           </p>
           <Link
             href="/login?redirect=%2Fagent"
