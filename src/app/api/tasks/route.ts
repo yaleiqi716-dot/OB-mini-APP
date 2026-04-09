@@ -128,15 +128,59 @@ export async function POST(req: NextRequest) {
     // Create task — always assign to current user so it appears in /tasks/mine and dashboard stats
     // 处理 conversationId：如果前端传了就用，否则自动创建新会话
     let conversationId: string | null = body.conversationId || null;
+    let activeSkillRoleId: string | null = null;
     if (!conversationId) {
+      // New conversation — if body.skillRoleId is provided, pin it to the conv.
+      // This is how the picker communicates "use this AI colleague for this chat".
+      const requestedRole =
+        typeof body.skillRoleId === 'string' && body.skillRoleId.trim()
+          ? body.skillRoleId.trim()
+          : null;
       const conv = await prisma.conversation.create({
-        data: { userId, title: null },
+        data: { userId, title: null, skillRoleId: requestedRole },
       });
       conversationId = conv.id;
+      activeSkillRoleId = conv.skillRoleId;
     } else {
       const conv = await prisma.conversation.findUnique({ where: { id: conversationId } });
       if (!conv || conv.userId !== userId) {
         return NextResponse.json({ error: '会话不存在' }, { status: 404 });
+      }
+      activeSkillRoleId = conv.skillRoleId;
+      // Mid-conversation role switch — if body.skillRoleId differs from
+      // stored, update the conversation. This lets users swap AI
+      // colleagues without starting a new chat.
+      if (
+        typeof body.skillRoleId === 'string' &&
+        body.skillRoleId.trim() &&
+        body.skillRoleId.trim() !== conv.skillRoleId
+      ) {
+        const nextRoleId = body.skillRoleId.trim();
+        await prisma.conversation.update({
+          where: { id: conv.id },
+          data: { skillRoleId: nextRoleId },
+        });
+        activeSkillRoleId = nextRoleId;
+      }
+    }
+
+    // If a role is active on this conversation, prepend its system prompt
+    // to the task input. This is how agency-agents personas become real
+    // runtime behavior. See src/lib/skills/ for the role library.
+    if (activeSkillRoleId) {
+      const { getRoleById } = await import('@/lib/skills/registry');
+      const role = await getRoleById(activeSkillRoleId);
+      if (role) {
+        // Prepend the persona as a system-like preamble. Keeping it inside
+        // the user input preserves OpenRouter routing behavior (no need to
+        // touch the chat completion schema). Budget guard: truncate long
+        // personas to ~1200 chars (~400-500 tokens) so they don't eat the
+        // entire context window when combined with the user's task.
+        const personaBody =
+          role.systemPrompt.length > 1200
+            ? role.systemPrompt.slice(0, 1200) + '\n...(已截断)'
+            : role.systemPrompt;
+        finalInput = `【AI 同事角色】${role.name}\n${personaBody}\n\n---\n\n【用户任务】${finalInput}`;
       }
     }
 

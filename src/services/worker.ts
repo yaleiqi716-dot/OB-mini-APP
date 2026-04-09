@@ -130,7 +130,17 @@ async function executeTask(taskId: string, input: string) {
   const cost = estimateCost(intentType);
 
   await prisma.task.update({ where: { id: taskId }, data: { estimatedCost: cost } });
-  const title = input.slice(0, 50);
+  // Strip persona preamble when deriving the task title. When a skill
+  // role is active, task.input is prepended with '【AI 同事角色】...\n---\n\n【用户任务】<real input>'.
+  // The UI should still show the original user intent as the title, not
+  // the injected role header. See src/app/api/tasks/route.ts for the
+  // injection logic and src/lib/skills/ for the role library.
+  const USER_INTENT_MARKER = '【用户任务】';
+  const markerIdx = input.indexOf(USER_INTENT_MARKER);
+  const userIntent = markerIdx >= 0
+    ? input.slice(markerIdx + USER_INTENT_MARKER.length).trim()
+    : input;
+  const title = userIntent.slice(0, 50);
   await updateTaskType(taskId, 'unknown' as TaskType, title);
   await updateTaskContext(taskId, { executionStrategy: 'agent_dispatch', engine: intentType });
 

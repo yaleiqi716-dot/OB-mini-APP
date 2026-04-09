@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
         createdAt: conv.createdAt,
         updatedAt: conv.updatedAt,
         firstTaskInput: conv.tasks[0]?.input || '',
+        skillRoleId: conv.skillRoleId,
       }))
     );
   } catch (error) {

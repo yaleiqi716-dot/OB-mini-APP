@@ -71,6 +71,11 @@ model Conversation {
   workspaceId String?
   workspace   Workspace? @relation(fields: [workspaceId], references: [id])
   title       String?
+  // Active AI colleague persona for this conversation. Nullable = no
+  // persona active (plain agent). When set, the role's system prompt
+  // is injected before every task input. See src/lib/skills/ for the
+  // role library. id format: '{department}/{filename-without-.md}'.
+  skillRoleId String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   tasks       Task[]
@@ -236,6 +241,10 @@ model WorkspaceTask {
   submissionSummary       String?
   attachments             String?   // JSON: [{id,name,size,type,url,uploadedBy,uploadedAt}]
   submissionAttachments   String?   // JSON: same structure
+  // JSON array of skillRole ids suggested as defaults when the assignee
+  // clicks "用 Agent 执行" on this task. Example: ["marketing/marketing-xiaohongshu-operator"].
+  // Nullable — null means no suggestion (assignee picks freely).
+  preferredSkillRoles     String?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   links             WorkspaceTaskLink[]
