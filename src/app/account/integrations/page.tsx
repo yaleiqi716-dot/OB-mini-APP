@@ -38,6 +38,25 @@ interface WebhookCreatedResponse extends WebhookEndpoint {
   secret?: string;
 }
 
+// Inbound webhook subscription — opposite direction. External system
+// (Zapier / n8n / curl) POSTs to OB and triggers a Task creation.
+interface InboundEndpoint {
+  id: string;
+  name: string;
+  action: string;
+  active: boolean;
+  url: string;
+  callCount: number;
+  failureCount: number;
+  lastFiredAt: string | null;
+  createdAt: string;
+  hasSecret: boolean;
+}
+
+interface InboundCreatedResponse extends InboundEndpoint {
+  secret?: string;
+}
+
 // Receiver type catalog — drives the type picker.
 // Order is intentional: generic first (Zapier remains the headline path),
 // then Chinese platforms in order of common use among Chinese SMBs.
@@ -239,6 +258,17 @@ export default function IntegrationsPage() {
     secret: string;
   } | null>(null);
 
+  // Inbound endpoints (opposite direction) — Zapier/n8n/curl POSTs into OB.
+  const [inbounds, setInbounds] = useState<InboundEndpoint[] | null>(null);
+  const [showInboundForm, setShowInboundForm] = useState(false);
+  const [inboundName, setInboundName] = useState('');
+  const [inboundSubmitting, setInboundSubmitting] = useState(false);
+  const [revealedInbound, setRevealedInbound] = useState<{
+    name: string;
+    url: string;
+    secret: string;
+  } | null>(null);
+
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 3200);
@@ -247,22 +277,101 @@ export default function IntegrationsPage() {
   const loadEndpoints = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch('/api/webhooks');
-      if (!r.ok) {
-        if (r.status === 401) {
+      const [outR, inR] = await Promise.all([
+        fetch('/api/webhooks'),
+        fetch('/api/webhooks/inbound'),
+      ]);
+      if (!outR.ok) {
+        if (outR.status === 401) {
           router.replace('/login');
           return;
         }
         throw new Error('加载失败');
       }
-      const data = await r.json();
-      setEndpoints(Array.isArray(data) ? data : []);
+      const outData = await outR.json();
+      setEndpoints(Array.isArray(outData) ? outData : []);
+      if (inR.ok) {
+        const inData = await inR.json();
+        setInbounds(Array.isArray(inData) ? inData : []);
+      } else {
+        setInbounds([]);
+      }
     } catch {
       setEndpoints([]);
+      setInbounds([]);
     } finally {
       setLoading(false);
     }
   }, [router]);
+
+  // Inbound CRUD handlers
+  async function handleAddInbound() {
+    if (!inboundName.trim() || inboundSubmitting) return;
+    setInboundSubmitting(true);
+    try {
+      const r = await fetch('/api/webhooks/inbound', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: inboundName.trim() }),
+      });
+      const data = (await r.json()) as InboundCreatedResponse | { error: string };
+      if (!r.ok || 'error' in data) {
+        showToast(('error' in data && data.error) || '添加失败', false);
+        return;
+      }
+      showToast('已添加入站 webhook');
+      // Reveal both URL + secret once — user needs both to wire up Zapier.
+      if (data.secret) {
+        setRevealedInbound({
+          name: data.name,
+          url: data.url,
+          secret: data.secret,
+        });
+      }
+      setInboundName('');
+      setShowInboundForm(false);
+      await loadEndpoints();
+    } catch {
+      showToast('网络错误', false);
+    } finally {
+      setInboundSubmitting(false);
+    }
+  }
+
+  async function handleDeleteInbound(id: string) {
+    if (!window.confirm('确定要删除这个入站 webhook 吗?对应的 URL 会立刻失效。')) return;
+    try {
+      const r = await fetch(`/api/webhooks/inbound/manage/${id}`, { method: 'DELETE' });
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        showToast(data.error || '删除失败', false);
+        return;
+      }
+      showToast('已删除');
+      await loadEndpoints();
+    } catch {
+      showToast('网络错误', false);
+    }
+  }
+
+  async function handleToggleInboundActive(ep: InboundEndpoint) {
+    try {
+      const r = await fetch(`/api/webhooks/inbound/manage/${ep.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: !ep.active }),
+      });
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        showToast(data.error || '操作失败', false);
+        return;
+      }
+      showToast(ep.active ? '已暂停' : '已启用');
+      await loadEndpoints();
+    } catch {
+      showToast('网络错误', false);
+    }
+  }
 
   useEffect(() => {
     const hasSession = document.cookie.includes('ob-session=') || document.cookie.includes('ob-user-id=');
@@ -1250,6 +1359,446 @@ export default function IntegrationsPage() {
               })}
             </div>
           )}
+
+          {/* ── INBOUND SECTION ── */}
+          <div style={{ marginTop: 56, paddingTop: 36, borderTop: '1px solid var(--ob-border)' }}>
+            <p
+              style={{
+                fontFamily: 'var(--ob-font-mono)',
+                fontSize: 11,
+                fontWeight: 500,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'var(--ob-text-muted)',
+                margin: '0 0 12px',
+              }}
+            >
+              <span style={{ color: 'var(--ob-orange)' }}>05</span> · 入站 · INBOUND
+            </p>
+            <h2
+              style={{
+                fontFamily: 'var(--ob-font-display)',
+                fontSize: 32,
+                fontWeight: 800,
+                color: 'var(--ob-text)',
+                lineHeight: 1.05,
+                letterSpacing: '-0.02em',
+                margin: '0 0 12px',
+              }}
+            >
+              外部系统创建任务
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', maxWidth: 600, lineHeight: 1.6, margin: '0 0 24px' }}>
+              生成一个 OB 入站 URL,贴给 Zapier / n8n / 自建脚本。它们用 HTTP POST 把任务输入发到这个 URL 上,OB 自动在 /agent 里替你创建一个任务,跑完通过出站 webhook(上面那部分)再通知你。这是 OB ↔ 外部世界的双向闭环。
+            </p>
+
+            {/* One-time inbound secret reveal banner */}
+            {revealedInbound && (
+              <div
+                style={{
+                  marginBottom: 24,
+                  padding: 20,
+                  background: 'var(--ob-orange-lo, rgba(255,90,31,0.10))',
+                  border: '1px solid var(--ob-orange)',
+                  borderRadius: 12,
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: 'var(--ob-font-mono)',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                    color: 'var(--ob-orange)',
+                    margin: '0 0 8px',
+                  }}
+                >
+                  ⚠ 入站 URL + 密钥 (仅显示一次)
+                </p>
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--ob-text)',
+                    margin: '0 0 12px',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <strong>{revealedInbound.name}</strong> · 把下面的 URL + 密钥保存到你的 caller 端。
+                  调用方需要在 HTTP header 里带上密钥,否则 OB 会拒绝请求。
+                </p>
+                <div style={{ marginBottom: 12 }}>
+                  <p style={{ fontSize: 11, color: 'var(--ob-text-muted)', margin: '0 0 4px' }}>POST URL</p>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '10px 12px',
+                      background: 'var(--ob-bg)',
+                      border: '1px solid var(--ob-border)',
+                      borderRadius: 8,
+                    }}
+                  >
+                    <code
+                      style={{
+                        flex: 1,
+                        fontFamily: 'var(--ob-font-mono)',
+                        fontSize: 11,
+                        color: 'var(--ob-text)',
+                        wordBreak: 'break-all',
+                        userSelect: 'all',
+                      }}
+                    >
+                      {revealedInbound.url}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(revealedInbound.url).then(() => {
+                          showToast('URL 已复制');
+                        }).catch(() => showToast('复制失败', false));
+                      }}
+                      style={{
+                        height: 26,
+                        padding: '0 10px',
+                        borderRadius: 4,
+                        background: 'var(--ob-orange)',
+                        color: '#fff',
+                        border: 'none',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                    >
+                      📋
+                    </button>
+                  </div>
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <p style={{ fontSize: 11, color: 'var(--ob-text-muted)', margin: '0 0 4px' }}>X-OrangeBench-Inbound-Secret (header value)</p>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '10px 12px',
+                      background: 'var(--ob-bg)',
+                      border: '1px solid var(--ob-border)',
+                      borderRadius: 8,
+                    }}
+                  >
+                    <code
+                      style={{
+                        flex: 1,
+                        fontFamily: 'var(--ob-font-mono)',
+                        fontSize: 11,
+                        color: 'var(--ob-text)',
+                        wordBreak: 'break-all',
+                        userSelect: 'all',
+                      }}
+                    >
+                      {revealedInbound.secret}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(revealedInbound.secret).then(() => {
+                          showToast('密钥已复制');
+                        }).catch(() => showToast('复制失败', false));
+                      }}
+                      style={{
+                        height: 26,
+                        padding: '0 10px',
+                        borderRadius: 4,
+                        background: 'var(--ob-orange)',
+                        color: '#fff',
+                        border: 'none',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                    >
+                      📋
+                    </button>
+                  </div>
+                </div>
+                {/* curl example */}
+                <div style={{ marginBottom: 12 }}>
+                  <p style={{ fontSize: 11, color: 'var(--ob-text-muted)', margin: '0 0 4px' }}>调用示例</p>
+                  <pre
+                    style={{
+                      padding: '10px 12px',
+                      background: 'var(--ob-bg)',
+                      border: '1px solid var(--ob-border)',
+                      borderRadius: 8,
+                      fontFamily: 'var(--ob-font-mono)',
+                      fontSize: 10,
+                      color: 'var(--ob-text)',
+                      margin: 0,
+                      overflow: 'auto',
+                      lineHeight: 1.5,
+                    }}
+                  >
+{`curl -X POST '${revealedInbound.url}' \\
+  -H 'Content-Type: application/json' \\
+  -H 'X-OrangeBench-Inbound-Secret: <your-secret>' \\
+  -d '{"input": "帮我整理本周运营数据成周报"}'`}
+                  </pre>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRevealedInbound(null)}
+                  style={{
+                    height: 32,
+                    padding: '0 16px',
+                    borderRadius: 6,
+                    background: 'var(--ob-text)',
+                    color: 'var(--ob-bg)',
+                    border: 'none',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  我已复制,关闭
+                </button>
+              </div>
+            )}
+
+            {/* Add inbound button / form */}
+            {!showInboundForm && (
+              <button
+                onClick={() => setShowInboundForm(true)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  height: 38,
+                  padding: '0 20px',
+                  borderRadius: 8,
+                  background: 'var(--ob-surface-hi)',
+                  color: 'var(--ob-text)',
+                  border: '1px solid var(--ob-border)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  marginBottom: 24,
+                }}
+              >
+                <span style={{ fontSize: 14 }}>+</span>
+                生成新入站 URL
+              </button>
+            )}
+
+            {showInboundForm && (
+              <div
+                style={{
+                  marginBottom: 28,
+                  padding: 20,
+                  background: 'var(--ob-surface)',
+                  border: '1px solid var(--ob-border)',
+                  borderRadius: 12,
+                }}
+              >
+                <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: '0 0 12px' }}>
+                  生成一个新的入站 URL + 密钥。你可以把这对凭证给任何调用方,让它们 POST 到 OB 来创建任务。
+                </p>
+                <input
+                  value={inboundName}
+                  onChange={e => setInboundName(e.target.value)}
+                  placeholder="名称(给自己看,例如:Gmail 邮件触发器)"
+                  style={{
+                    width: '100%',
+                    height: 38,
+                    padding: '0 14px',
+                    borderRadius: 8,
+                    border: '1px solid var(--ob-border)',
+                    background: 'var(--ob-bg)',
+                    color: 'var(--ob-text)',
+                    fontSize: 14,
+                    fontFamily: 'var(--ob-font-body)',
+                    outline: 'none',
+                    marginBottom: 14,
+                  }}
+                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--ob-orange)')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'var(--ob-border)')}
+                />
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    onClick={handleAddInbound}
+                    disabled={!inboundName.trim() || inboundSubmitting}
+                    style={{
+                      height: 38,
+                      padding: '0 22px',
+                      borderRadius: 8,
+                      background: 'var(--ob-orange)',
+                      color: '#fff',
+                      border: 'none',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      opacity: !inboundName.trim() || inboundSubmitting ? 0.5 : 1,
+                    }}
+                  >
+                    {inboundSubmitting ? '生成中...' : '生成 URL + 密钥'}
+                  </button>
+                  <button
+                    onClick={() => { setInboundName(''); setShowInboundForm(false); }}
+                    style={{
+                      height: 38,
+                      padding: '0 18px',
+                      borderRadius: 8,
+                      background: 'transparent',
+                      color: 'var(--ob-text-muted)',
+                      border: '1px solid var(--ob-border)',
+                      fontSize: 13,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    取消
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Inbound list */}
+            {inbounds && inbounds.length === 0 && !showInboundForm && (
+              <div
+                style={{
+                  padding: '32px 24px',
+                  textAlign: 'center',
+                  background: 'var(--ob-surface)',
+                  border: '1px dashed var(--ob-border)',
+                  borderRadius: 12,
+                }}
+              >
+                <div style={{ fontSize: 28, marginBottom: 8 }}>📥</div>
+                <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', margin: 0 }}>
+                  还没有入站 URL。生成一个,让外部系统能在 OB 里创建任务。
+                </p>
+              </div>
+            )}
+
+            {inbounds && inbounds.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {inbounds.map(ep => (
+                  <div
+                    key={ep.id}
+                    style={{
+                      padding: 16,
+                      background: 'var(--ob-surface)',
+                      border: '1px solid var(--ob-border)',
+                      borderRadius: 12,
+                      opacity: ep.active ? 1 : 0.6,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <span style={{ fontSize: 18 }}>📥</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ob-text)', flex: 1 }}>
+                        {ep.name}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: 'var(--ob-font-mono)',
+                          fontSize: 9,
+                          fontWeight: 600,
+                          letterSpacing: '0.12em',
+                          textTransform: 'uppercase',
+                          padding: '2px 8px',
+                          borderRadius: 9999,
+                          background: ep.active ? 'var(--ob-orange-lo, rgba(255,90,31,0.10))' : 'var(--ob-surface-hi)',
+                          color: ep.active ? 'var(--ob-orange)' : 'var(--ob-text-dim)',
+                        }}
+                      >
+                        {ep.active ? 'ACTIVE' : 'DISABLED'}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: 'var(--ob-font-mono)',
+                          fontSize: 10,
+                          color: 'var(--ob-text-muted)',
+                        }}
+                      >
+                        ✓ {ep.callCount} · ✗ {ep.failureCount}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: 'var(--ob-font-mono)',
+                        fontSize: 10,
+                        color: 'var(--ob-text-muted)',
+                        wordBreak: 'break-all',
+                        marginBottom: 8,
+                      }}
+                    >
+                      {ep.url}
+                    </div>
+                    {ep.lastFiredAt && (
+                      <div style={{ fontSize: 10, color: 'var(--ob-text-dim)', marginBottom: 8 }}>
+                        最近触发:{new Date(ep.lastFiredAt).toLocaleString('zh-CN')}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 8, paddingTop: 10, borderTop: '1px solid var(--ob-border)' }}>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(ep.url).then(() => showToast('URL 已复制')).catch(() => showToast('复制失败', false));
+                        }}
+                        style={{
+                          height: 28,
+                          padding: '0 12px',
+                          borderRadius: 6,
+                          background: 'var(--ob-surface-hi)',
+                          color: 'var(--ob-text)',
+                          border: '1px solid var(--ob-border)',
+                          fontSize: 11,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        📋 复制 URL
+                      </button>
+                      <button
+                        onClick={() => handleToggleInboundActive(ep)}
+                        style={{
+                          height: 28,
+                          padding: '0 12px',
+                          borderRadius: 6,
+                          background: 'var(--ob-surface-hi)',
+                          color: 'var(--ob-text-muted)',
+                          border: '1px solid var(--ob-border)',
+                          fontSize: 11,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {ep.active ? '⏸ 暂停' : '▶ 启用'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteInbound(ep.id)}
+                        style={{
+                          height: 28,
+                          padding: '0 12px',
+                          borderRadius: 6,
+                          background: 'transparent',
+                          color: 'var(--ob-error, #E4483D)',
+                          border: '1px solid var(--ob-border)',
+                          fontSize: 11,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          marginLeft: 'auto',
+                        }}
+                      >
+                        删除
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

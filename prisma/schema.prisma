@@ -355,3 +355,57 @@ model WebhookLog {
   firedAt    DateTime @default(now())
   @@index([endpointId, firedAt])
 }
+
+// Inbound webhook subscriptions — Phase 3 chunk 4 of Skills Integration Plan.
+// Lets external systems (Zapier, n8n, custom apps) POST into OrangeBench
+// to create tasks on behalf of the user. The opposite direction of
+// WebhookEndpoint (which fires OB → external).
+//
+// Each row represents one URL/secret pair the user can hand out to a
+// caller. The caller authenticates by sending the secret in the
+// X-OrangeBench-Inbound-Secret header (constant-time compared server-side).
+//
+// Action types — what the inbound POST should DO:
+//   'create_agent_task' — create a Task in /agent (default)
+//   future: 'create_workspace_task', 'add_comment', 'reschedule', etc.
+model WebhookInbound {
+  id          String   @id @default(cuid())
+  userId      String
+  // Human label, shown in the UI
+  name        String
+  // 32-byte secret. Caller passes it as X-OrangeBench-Inbound-Secret header.
+  secret      String
+  // What this endpoint does when it receives a POST. See action types above.
+  action      String   @default("create_agent_task")
+  // Soft-disable without deleting
+  active      Boolean  @default(true)
+  // Last successful invocation
+  lastFiredAt DateTime?
+  // Successful invocation count (for usage stats)
+  callCount   Int      @default(0)
+  // Failure count for "the secret was wrong" or "validation failed"
+  failureCount Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([userId, active])
+}
+
+// Audit log for inbound webhook calls — what came in, what we did with it.
+// Separate from WebhookLog (outbound) so the indexes + query patterns
+// don't interfere.
+model WebhookInboundLog {
+  id          String   @id @default(cuid())
+  inboundId   String
+  // 'success' | 'auth_failed' | 'validation_failed' | 'action_failed'
+  status      String
+  // Truncated request body for debugging (4KB)
+  payload     String?
+  // For success: the created task id
+  resourceId  String?
+  // For failure: human-readable reason (1KB)
+  errorMsg    String?
+  // Caller IP for abuse tracking
+  ipAddress   String?
+  receivedAt  DateTime @default(now())
+  @@index([inboundId, receivedAt])
+}

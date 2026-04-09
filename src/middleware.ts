@@ -11,6 +11,11 @@ const PUBLIC_PATHS = [
   '/api/auth/logout',
   '/api/auth/me',
   '/api/workspace/invite/',
+  // Inbound webhooks — auth'd by per-row HMAC secret in
+  // X-OrangeBench-Inbound-Secret header, NOT by session cookie.
+  // Middleware must let them through so external systems (Zapier etc)
+  // can POST without an OB session.
+  '/api/webhooks/inbound/',
   '/_next',
   '/favicon.ico',
   '/icons',
