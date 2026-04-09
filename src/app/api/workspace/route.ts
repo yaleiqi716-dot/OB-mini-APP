@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, withWorkspaceOwner, isErrorResponse } from '@/lib/workspace-auth';
+import { ensureUserWorkspace } from '@/lib/user-setup';
 
 // POST — Create workspace (auto-adds owner as member)
 export async function POST(req: NextRequest) {
@@ -34,13 +35,16 @@ export async function POST(req: NextRequest) {
 }
 
 // GET — Get current user's workspace
+// Self-healing: bootstraps a default workspace for legacy users who signed
+// up before ensureUserWorkspace existed, so the client always sees a real
+// workspace instead of null.
 export async function GET(req: NextRequest) {
   try {
     const ctx = await withAuth(req);
     if (isErrorResponse(ctx)) return ctx;
 
     // Find workspace where user is a member
-    const membership = await prisma.workspaceMember.findFirst({
+    let membership = await prisma.workspaceMember.findFirst({
       where: { userId: ctx.userId, status: 'active' },
       include: {
         workspace: {
@@ -50,6 +54,29 @@ export async function GET(req: NextRequest) {
         },
       },
     });
+
+    if (!membership) {
+      // Legacy user — bootstrap default workspace on the spot.
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: ctx.userId },
+          select: { name: true },
+        });
+        await ensureUserWorkspace(ctx.userId, user?.name);
+        membership = await prisma.workspaceMember.findFirst({
+          where: { userId: ctx.userId, status: 'active' },
+          include: {
+            workspace: {
+              include: {
+                _count: { select: { members: { where: { status: 'active' } }, tasks: true } },
+              },
+            },
+          },
+        });
+      } catch (e) {
+        console.error('[WORKSPACE_GET] ensureUserWorkspace failed', e);
+      }
+    }
 
     if (!membership) return NextResponse.json(null);
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createSession } from '@/lib/auth'
 import { getPlanConfig } from '@/services/billing'
+import { ensureUserWorkspace } from '@/lib/user-setup'
 
 const SIGNUP_BONUS = 500;
 
@@ -64,6 +65,18 @@ export async function POST(req: NextRequest) {
         where: { id: user.id },
         data: { emailVerified: true },
       })
+    }
+
+    // Every user needs a default workspace from day one, otherwise any
+    // workspace-gated flow (e.g. "创建团队任务") dead-ends on 403.
+    // Idempotent: no-op for returning users who already have one.
+    try {
+      await ensureUserWorkspace(user.id, user.name)
+    } catch (e) {
+      console.error('[auth/verify-code] ensureUserWorkspace failed', e)
+      // Don't block login on workspace bootstrap failure — user can still
+      // use non-workspace features, and the backstop in withWorkspaceMember
+      // will retry on next workspace API call.
     }
 
     // 创建 session

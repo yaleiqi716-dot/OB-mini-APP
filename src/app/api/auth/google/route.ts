@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createSession } from '@/lib/auth'
 import { getPlanConfig } from '@/services/billing'
+import { ensureUserWorkspace } from '@/lib/user-setup'
 
 const SIGNUP_BONUS = 500;
 
@@ -116,6 +117,15 @@ export async function GET(req: NextRequest) {
           emailVerified: true,
         },
       })
+    }
+
+    // Every user needs a default workspace from day one. Idempotent for
+    // returning users; no-op if they already own or are a member of one.
+    try {
+      await ensureUserWorkspace(user.id, user.name)
+    } catch (e) {
+      console.error('[auth/google] ensureUserWorkspace failed', e)
+      // Don't block login on workspace bootstrap failure.
     }
 
     // 4. 创建 session
