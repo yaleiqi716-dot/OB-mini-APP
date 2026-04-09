@@ -513,6 +513,44 @@ function LoginPageInner() {
           )}
         </div>
 
+        {/* Public demo escape hatch — lets unauthenticated visitors see
+            the product actually work before committing an email. */}
+        <div
+          style={{
+            marginTop: 20,
+            padding: '14px 18px',
+            background: 'var(--ob-surface)',
+            border: '1px solid var(--ob-border)',
+            borderRadius: 10,
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              color: 'var(--ob-text-muted)',
+              marginBottom: 8,
+              lineHeight: 1.4,
+            }}
+          >
+            还没决定?先不登录,看它跑一个真实任务。
+          </div>
+          <a
+            href="/demo"
+            style={{
+              fontFamily: 'var(--ob-font-mono)',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'var(--ob-orange)',
+              textDecoration: 'none',
+            }}
+          >
+            看 Demo →
+          </a>
+        </div>
+
         <p
           style={{
             fontFamily: 'var(--ob-font-mono)',
@@ -521,7 +559,7 @@ function LoginPageInner() {
             textTransform: 'uppercase',
             color: 'var(--ob-text-dim)',
             textAlign: 'center',
-            marginTop: 24,
+            marginTop: 20,
           }}
         >
           登录即表示同意 服务条款 · 隐私政策

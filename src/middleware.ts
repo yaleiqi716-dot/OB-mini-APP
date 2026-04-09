@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 const PUBLIC_PATHS = [
   '/login',
   '/invite',
+  '/demo', // Public product showcase — no login required.
   '/api/auth/email-code',
   '/api/auth/verify-code',
   '/api/auth/google',
