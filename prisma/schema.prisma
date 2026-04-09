@@ -290,3 +290,51 @@ model Notification {
   createdAt DateTime @default(now())
   @@index([userId, read, createdAt])
 }
+
+// Outbound webhook subscriptions — Phase 3 of the Skills Integration Plan.
+// Each row is one URL the user wants to be notified at when an OB event
+// fires. Used as the OB → Zapier (and any other webhook receiver) bridge.
+// One user can have multiple endpoints filtering different events.
+model WebhookEndpoint {
+  id           String   @id @default(cuid())
+  userId       String
+  // Human-friendly name for the user — e.g. "Slack #team", "Notion archive"
+  name         String
+  // The URL we POST JSON to. Usually a Zapier "Webhooks by Zapier" trigger
+  // URL but can be any HTTPS endpoint that accepts JSON.
+  url          String
+  // JSON-encoded array of event type strings the user wants this endpoint
+  // notified about. Subset of:
+  //   task_assigned | task_submitted | task_revision | task_completed
+  //   workspace_invite_accepted | agent_task_completed
+  // null/empty array = subscribe to ALL events.
+  events       String?
+  // Soft-disable without deleting the row.
+  active       Boolean  @default(true)
+  // Auto-disable after N consecutive failures to protect us from runaway costs.
+  failureCount Int      @default(0)
+  lastFiredAt  DateTime?
+  lastError    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([userId, active])
+}
+
+// Audit trail for outbound webhook deliveries. Lets the user see "what got
+// delivered when, with what status code". Useful for debugging Zaps that
+// aren't firing the way the user expects.
+model WebhookLog {
+  id         String   @id @default(cuid())
+  endpointId String
+  // The event type that triggered this delivery. Same vocabulary as
+  // WebhookEndpoint.events.
+  event      String
+  // JSON payload we POST'd. Truncated to 4KB at write time to bound row size.
+  payload    String
+  statusCode Int?
+  // Truncated upstream error body if non-2xx. Truncated to 1KB.
+  errorMsg   String?
+  durationMs Int?
+  firedAt    DateTime @default(now())
+  @@index([endpointId, firedAt])
+}

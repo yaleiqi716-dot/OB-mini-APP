@@ -47,6 +47,9 @@ async function getWebhookUrl(workspaceId: string): Promise<string | null> {
 
 // recipientUserId = who gets the in-app notification
 
+// fireWebhooks is dynamically imported below to avoid a circular import
+// risk if/when webhook code grows to import from wecom for any reason.
+
 export async function notifyTaskAssigned(workspaceId: string, taskTitle: string, ownerName: string, taskId: string, recipientUserId?: string): Promise<void> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://orangebench.tech';
   const link = `${appUrl}/workspace/tasks/${taskId}`;
@@ -56,6 +59,14 @@ export async function notifyTaskAssigned(workspaceId: string, taskTitle: string,
   // In-app
   if (recipientUserId) {
     await createNotification(recipientUserId, 'task_assigned', `${ownerName} 给你分配了新任务`, taskTitle, `/workspace/tasks/${taskId}`);
+    // Outbound webhooks (Zapier / any HTTP receiver) — Phase 3.
+    // Fire-and-forget; dispatcher catches all errors internally.
+    const { fireWebhooks, payloads } = await import('./webhooks/dispatcher');
+    fireWebhooks(
+      recipientUserId,
+      'task_assigned',
+      payloads.taskAssigned({ workspaceId, taskId, taskTitle, ownerName, assigneeId: recipientUserId }),
+    ).catch(() => {});
   }
 }
 
@@ -66,6 +77,12 @@ export async function notifyTaskSubmitted(workspaceId: string, taskTitle: string
   if (url) await sendWecom(url, `## 待审核\n**${memberName}** 提交了任务交付物\n> ${taskTitle}\n[去审核](${link})`);
   if (recipientUserId) {
     await createNotification(recipientUserId, 'task_submitted', `${memberName} 提交了任务`, taskTitle, `/workspace/tasks/${taskId}`);
+    const { fireWebhooks, payloads } = await import('./webhooks/dispatcher');
+    fireWebhooks(
+      recipientUserId,
+      'task_submitted',
+      payloads.taskSubmitted({ workspaceId, taskId, taskTitle, memberName, ownerId: recipientUserId }),
+    ).catch(() => {});
   }
 }
 
@@ -76,6 +93,12 @@ export async function notifyTaskRevision(workspaceId: string, taskTitle: string,
   if (url) await sendWecom(url, `## 需要修改\n任务「${taskTitle}」被退回\n> ${feedbackPreview.slice(0, 80)}\n[查看详情](${link})`);
   if (recipientUserId) {
     await createNotification(recipientUserId, 'task_revision', `任务「${taskTitle}」被退回修改`, feedbackPreview.slice(0, 100), `/workspace/tasks/${taskId}`);
+    const { fireWebhooks, payloads } = await import('./webhooks/dispatcher');
+    fireWebhooks(
+      recipientUserId,
+      'task_revision',
+      payloads.taskRevision({ workspaceId, taskId, taskTitle, feedbackPreview: feedbackPreview.slice(0, 200), assigneeId: recipientUserId }),
+    ).catch(() => {});
   }
 }
 
@@ -86,6 +109,12 @@ export async function notifyTaskCompleted(workspaceId: string, taskTitle: string
   if (url) await sendWecom(url, `## 任务完成\n任务「${taskTitle}」已通过审核并完成\n[查看结果](${link})`);
   if (recipientUserId) {
     await createNotification(recipientUserId, 'task_completed', `任务「${taskTitle}」已完成`, undefined, `/workspace/tasks/${taskId}`);
+    const { fireWebhooks, payloads } = await import('./webhooks/dispatcher');
+    fireWebhooks(
+      recipientUserId,
+      'task_completed',
+      payloads.taskCompleted({ workspaceId, taskId, taskTitle, assigneeId: recipientUserId }),
+    ).catch(() => {});
   }
 }
 
