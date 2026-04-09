@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppHeader, WorkspaceSubNav } from '@/components/workspace/AppHeader';
+import { Toast } from '@/components/ui/Toast';
 
 interface Member {
   id: string;
@@ -181,7 +182,14 @@ export default function WorkspaceMembersPage() {
             {loading ? (
               <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', textAlign: 'center', padding: '20px 0' }}>加载中...</p>
             ) : members.length === 0 ? (
-              <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', textAlign: 'center', padding: '20px 0' }}>暂无成员</p>
+              <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ob-text)', marginBottom: 6 }}>
+                  还没有成员
+                </p>
+                <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', marginBottom: 0, lineHeight: 1.5 }}>
+                  使用上方的邀请链接或邮箱邀请<br />把第一个队友拉进来。
+                </p>
+              </div>
             ) : (
               members.map((m, i) => (
                 <div key={m.id} style={{
@@ -223,16 +231,7 @@ export default function WorkspaceMembersPage() {
         </div>
       </div>
 
-      {toast && (
-        <div className="animate-flow-in" style={{
-          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-          zIndex: 60, padding: '10px 20px', borderRadius: 9999,
-          background: 'rgba(201,184,158,0.92)', color: '#fff', fontSize: 13,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.12)', whiteSpace: 'nowrap', pointerEvents: 'none',
-        }}>
-          {toast}
-        </div>
-      )}
+      <Toast value={toast} />
     </div>
   );
 }

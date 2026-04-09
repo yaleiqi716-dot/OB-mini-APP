@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Spinner } from '@/components/ui/Spinner';
 import { AppHeader, AccountSubNav } from '@/components/workspace/AppHeader';
+import { Toast } from '@/components/ui/Toast';
 
 interface Product {
   code: string;
@@ -391,18 +392,7 @@ export default function BillingPage() {
           onDone={handlePayDone} onCancel={() => { setQrModal(null); setBuying(null); }} />
       )}
 
-      {/* Toast */}
-      {toast && (
-        <div className="animate-flow-in" style={{
-          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-          zIndex: 60, padding: '10px 20px', borderRadius: 9999,
-          background: toast.ok ? 'rgba(201,184,158,0.92)' : 'rgba(228,72,61,0.92)',
-          color: '#fff', fontSize: 13, boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-          whiteSpace: 'nowrap', pointerEvents: 'none',
-        }}>
-          {toast.text}
-        </div>
-      )}
+      <Toast value={toast} />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppHeader, WorkspaceSubNav } from '@/components/workspace/AppHeader';
+import { Spinner } from '@/components/ui/Spinner';
 
 interface WsTask {
   id: string;
@@ -116,7 +117,7 @@ export default function WorkspacePage() {
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <div style={{ width: 24, height: 24, border: '2px solid #FF5A1F', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+          <Spinner size="md" />
           <p style={{ fontSize: 14, color: 'rgba(245,245,240,0.55)' }}>加载工作区...</p>
         </div>
       </div>

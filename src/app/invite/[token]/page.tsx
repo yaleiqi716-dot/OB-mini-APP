@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { Spinner } from '@/components/ui/Spinner';
 
 type InviteState = 'loading' | 'valid' | 'invalid' | 'accepting' | 'success' | 'error';
 
@@ -94,7 +95,7 @@ export default function InviteAcceptPage() {
           {/* Loading */}
           {state === 'loading' && (
             <div style={{ padding: '24px 0' }}>
-              <div style={{ width: 24, height: 24, border: '2px solid var(--ob-orange)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto 16px' }} />
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}><Spinner size="md" /></div>
               <p style={{ fontSize: 14, color: 'var(--ob-text-muted)' }}>验证邀请链接...</p>
             </div>
           )}
@@ -182,7 +183,7 @@ export default function InviteAcceptPage() {
           {/* Accepting */}
           {state === 'accepting' && (
             <div style={{ padding: '24px 0' }}>
-              <div style={{ width: 24, height: 24, border: '2px solid var(--ob-orange)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto 16px' }} />
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}><Spinner size="md" /></div>
               <p style={{ fontSize: 14, color: 'var(--ob-text-muted)' }}>正在加入工作区...</p>
             </div>
           )}

@@ -13,6 +13,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Spinner } from '@/components/ui/Spinner';
+import { Toast } from '@/components/ui/Toast';
 import { AppHeader } from '@/components/workspace/AppHeader';
 
 interface ReviewTask {
@@ -446,17 +447,7 @@ export default function ReviewPage() {
         </div>
       </div>
 
-      {/* Toast */}
-      {toast && (
-        <div className="animate-flow-in" style={{
-          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-          zIndex: 60, padding: '10px 20px', borderRadius: 9999,
-          background: 'rgba(201,184,158,0.92)', color: '#fff', fontSize: 13,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.12)', whiteSpace: 'nowrap', pointerEvents: 'none',
-        }}>
-          {toast}
-        </div>
-      )}
+      <Toast value={toast} />
     </div>
   );
 }

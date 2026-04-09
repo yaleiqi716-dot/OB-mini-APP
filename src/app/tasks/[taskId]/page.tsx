@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { Spinner } from '@/components/ui/Spinner';
+import { Toast } from '@/components/ui/Toast';
 import { AppHeader } from '@/components/workspace/AppHeader';
 
 interface TaskEvent {
@@ -411,13 +412,7 @@ export default function TaskDetailPage() {
         </div>
       </div>
 
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-flow-in">
-          <div className={`px-4 py-2 rounded-lg text-white text-sm shadow-lg ${toast.ok ? 'bg-green-600/90' : 'bg-red-600/90'}`}>
-            {toast.msg}
-          </div>
-        </div>
-      )}
+      <Toast value={toast} />
     </div>
   );
 }
