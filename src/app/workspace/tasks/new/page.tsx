@@ -64,6 +64,33 @@ export default function NewWorkspaceTaskPage() {
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '40px 32px 60px' }}>
+          {/* Back breadcrumb — form-page escape hatch, matches /workspace/tasks/[id]. */}
+          <a
+            href="/workspace"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              fontFamily: 'var(--ob-font-mono)',
+              fontWeight: 500,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--ob-text-muted)',
+              textDecoration: 'none',
+              marginBottom: 20,
+              padding: '4px 0',
+              transition: 'color .15s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ob-orange)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ob-text-muted)')}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            返回工作区
+          </a>
           <h1 style={{ fontSize: 28, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 24px' }}>新建任务</h1>
 
           <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 24 }}>

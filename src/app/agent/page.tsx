@@ -535,6 +535,11 @@ function AgentPageInner() {
   });
 
   // ── Handle new conversation ──
+  // Uses router.replace instead of raw window.history.pushState so that
+  // useSearchParams() re-reads and the URL-sync useEffect above fires.
+  // Previously pushState updated the URL but left the React hook stale,
+  // which could cause the state-sync effect to skip when the user
+  // selected a conversation that happened to share an id prefix.
   async function handleNewChat() {
     setActiveTaskId(null);
     activeRef.current = null;
@@ -542,7 +547,7 @@ function AgentPageInner() {
     setTaskLoadError(false);
     setCurrentConversationId(null);
     currentConvRef.current = null;
-    window.history.pushState(null, '', '/agent');
+    router.replace('/agent');
     setSidebarOpen(false);
   }
 

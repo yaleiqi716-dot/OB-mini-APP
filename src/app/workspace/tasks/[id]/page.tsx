@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/workspace/AppHeader';
+import { Spinner } from '@/components/ui/Spinner';
+import { Toast } from '@/components/ui/Toast';
 import { FileUploader, AttachmentList, UploadedFile } from '@/components/workspace/FileUploader';
 
 interface AgentTaskRef { id: string; title: string; status: string; conversationId: string | null; createdAt: string; hasResult: boolean; }
@@ -181,7 +183,7 @@ export default function WorkspaceTaskDetailPage() {
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
         <AppHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 20, height: 20, border: '2px solid #FF5A1F', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+          <Spinner size="md" />
         </div>
       </div>
     );
@@ -193,6 +195,37 @@ export default function WorkspaceTaskDetailPage() {
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         <div className="ob-mission-atmosphere" style={{ maxWidth: 780, margin: '0 auto', padding: '40px 32px 60px' }}>
+
+          {/* Back breadcrumb — deep page escape hatch.
+              Previously this detail page had no link back to /workspace,
+              leaving users stranded once they clicked through from the
+              task board. Added as part of the S6 navigation pass. */}
+          <a
+            href="/workspace"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              fontFamily: 'var(--ob-font-mono)',
+              fontWeight: 500,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--ob-text-muted)',
+              textDecoration: 'none',
+              marginBottom: 20,
+              padding: '4px 0',
+              transition: 'color .15s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ob-orange)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ob-text-muted)')}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            返回工作区
+          </a>
 
           {/* Title + meta */}
           <div style={{ marginBottom: 20 }}>
@@ -410,11 +443,7 @@ export default function WorkspaceTaskDetailPage() {
         </div>
       </div>
 
-      {toast && (
-        <div className="animate-flow-in" style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 60, padding: '10px 20px', borderRadius: 9999, background: 'rgba(201,184,158,0.92)', color: '#fff', fontSize: 13, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
-          {toast}
-        </div>
-      )}
+      <Toast value={toast} />
     </div>
   );
 }
