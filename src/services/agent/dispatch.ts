@@ -2,6 +2,7 @@ import { RouterDecision, DispatchResult } from '@/types/agent';
 import { chatCompletion, LLMError } from '@/lib/openrouter';
 import { braveSearch } from '@/services/tools/brave';
 import { createImage } from '@/services/tools/leonardo';
+import { generateImageViaOpenRouter } from '@/services/tools/openrouter-image';
 // generateDesignImage (gstack design binary) is kept in the repo as a
 // dormant alternative for when OPENAI_API_KEY is available — see
 // src/services/tools/design.ts and handleDesign below.
@@ -12,7 +13,10 @@ import { createBrowserTask } from '@/services/tools/manus';
 
 // Async intents: these only create a job and return immediately.
 // The media-job-poller picks up results later.
-export const ASYNC_INTENTS = new Set(['image', 'design', 'video', 'avatar_video', 'browser_task']);
+// NOTE: 'design' was async in T2b (Leonardo) but is now SYNC in T2d
+// (OpenRouter image gen completes in ~8s). Keep it out of this set so
+// the worker treats handleDesign's response as a final result, not a job.
+export const ASYNC_INTENTS = new Set(['image', 'video', 'avatar_video', 'browser_task']);
 
 export interface AsyncJobInfo {
   engine: string;
@@ -139,49 +143,69 @@ async function handleImage(payload: Record<string, unknown>): Promise<DispatchRe
   };
 }
 
-// Design mockup generation via Leonardo.ai.
+// Design mockup generation via OpenRouter (gemini-2.5-flash-image / gpt-5-image).
 //
-// Unlike handleImage (which is generic image gen), handleDesign is
-// specialized for UI/product/marketing mockups. The difference is in
-// the prompt — we prepend UI-specific style cues so the same Leonardo
-// backend produces interface-shaped output instead of generic illustrations.
+// SYNCHRONOUS — completes in ~8-15 seconds, well within the worker
+// per-task budget. No externalJobId, no poller, same response shape
+// as handleText: { success, data: { type: 'image', imageUrl } }.
 //
-// Async pattern: identical to handleImage. Creates a Leonardo job,
-// returns { _async: true, jobId }, the worker writes externalJobId +
-// externalEngine, and media-job-poller (src/services/media-job-poller.ts)
-// polls every 10s until complete, then writes imageUrl back to task data.
+// History:
+//   T2  (gstack binary)    — needed OPENAI_API_KEY, not available
+//   T2b (Leonardo, async)  — TCP-blocked from this network, dead
+//   T2d (OpenRouter, sync) — works perfectly, single key, fastest path
 //
-// The gstack design binary path (src/services/tools/design.ts) is
-// kept in the repo as a dormant alternative — if OPENAI_API_KEY ever
-// becomes available, we can swap handleDesign back to it without
-// touching the router or the UI. See docs/skills-integration-plan-v1.md.
+// All three wrappers stay in the repo. handleDesign points at the
+// OpenRouter one because that's the path the user's environment can
+// actually use. To swap providers, change the import + the call below;
+// nothing else in the dispatch / router / UI / worker / poller cares.
+//
+// Default model: google/gemini-2.5-flash-image (per OPENROUTER_IMAGE_MODEL
+// env var). Alternatives: openai/gpt-5-image. Both verified via probe.
 async function handleDesign(
   payload: Record<string, unknown>,
   originalInput: string,
 ): Promise<DispatchResult> {
   const brief = String(payload.brief || payload.prompt || originalInput);
 
-  // Enhance the prompt with UI/design-specific style cues. This is the
-  // key difference from the generic 'image' intent — same Leonardo
-  // backend, different prompt engineering. Leonardo's default model
-  // (Leonardo Creative) handles photo/illustration well but needs
-  // explicit "UI design" keywords to produce interface mockups.
-  const designPrompt = `UI design mockup, ${brief}, clean modern interface, professional layout, high fidelity, product screenshot style, flat design`;
+  // Prepend UI-specific style cues so the multimodal model knows to
+  // produce interface-shaped output, not generic illustrations.
+  const designPrompt = `Generate a UI design mockup image. ${brief}. Style: clean modern interface, professional layout, high fidelity, product screenshot style, flat design.`;
 
-  const result = await createImage(designPrompt, 'UI mockup');
+  const result = await generateImageViaOpenRouter(designPrompt);
+
+  if (!result.success) {
+    // Bucket the wrapper's errorCode into LLMError so the existing
+    // P0-1b actionable-error pipeline (handleText shares it) renders
+    // a clean message in TaskCanvas instead of "当前能力暂不可用".
+    const llmCode =
+      result.errorCode === 'no_key'
+        ? 'LLM_AUTH'
+        : result.errorCode === 'no_credits'
+          ? 'LLM_QUOTA'
+          : result.errorCode === 'rate_limited'
+            ? 'LLM_RATE_LIMIT'
+            : result.errorCode === 'network'
+              ? 'LLM_UPSTREAM'
+              : 'LLM_UNKNOWN';
+    throw new LLMError(
+      llmCode,
+      result.error || '图像生成失败',
+      undefined,
+      result.errorCode,
+    );
+  }
 
   return {
     success: true,
     intent: 'design',
-    engine: 'leonardo',  // Same engine label as handleImage so the existing
-                         // media-job-poller picks it up without a new case.
+    engine: 'openrouter-image',
     data: {
       type: 'image',
-      _async: true,
-      jobId: result.generationId,
+      imageUrl: result.imageUrl,
       prompt: brief,
+      model: result.model,
     },
-    message: '设计稿正在生成中...',
+    message: '设计稿已生成',
   };
 }
 

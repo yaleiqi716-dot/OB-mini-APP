@@ -24,3 +24,4 @@ ecosystem.config.js
 
 # Dev-only design preview helper
 seed-test-user.mjs
+generated/
