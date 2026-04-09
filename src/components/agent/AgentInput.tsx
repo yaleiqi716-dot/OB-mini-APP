@@ -2,6 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { SkillRolePicker } from './SkillRolePicker';
 
 interface UploadedFile {
   id: string;
@@ -21,9 +22,13 @@ interface AgentInputProps {
    */
   prominent?: boolean;
   chatMode?: boolean;
+  // Active AI colleague (skill role). Controlled by parent so it can
+  // reset when switching conversations.
+  skillRoleId?: string | null;
+  onSkillRoleChange?: (roleId: string | null) => void;
 }
 
-export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMode }: AgentInputProps) {
+export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMode, skillRoleId, onSkillRoleChange }: AgentInputProps) {
   const [value, setValue] = useState('');
   const [attachments, setAttachments] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -306,6 +311,14 @@ export function AgentInput({ onSubmit, disabled, placeholder, prominent, chatMod
               gpt-4o
               <span style={{ color: 'var(--ob-text-muted)', fontSize: 9, marginLeft: 2 }}>▾</span>
             </span>
+            {/* AI colleague picker — sits next to the model pill in the toolbar. */}
+            {onSkillRoleChange && (
+              <SkillRolePicker
+                value={skillRoleId ?? null}
+                onChange={onSkillRoleChange}
+                disabled={disabled}
+              />
+            )}
           </div>
 
           {/* RIGHT: cost hint + kbd hint + circular send button */}

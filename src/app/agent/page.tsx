@@ -23,6 +23,7 @@ interface ConversationItem {
   createdAt: string;
   updatedAt: string;
   firstTaskInput: string;
+  skillRoleId?: string | null;
 }
 
 function parseTaskFromAPI(data: Record<string, unknown>): TaskState {
@@ -397,6 +398,10 @@ function AgentPageInner() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [taskLoadError, setTaskLoadError] = useState(false);
+  // Active AI colleague (skill role) for the current conversation.
+  // null = plain agent mode. Pinned to the conversation server-side on
+  // first task submit. Swapping mid-conversation updates the conversation.
+  const [skillRoleId, setSkillRoleId] = useState<string | null>(null);
   const canvasEndRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<string | null>(null);
@@ -411,8 +416,22 @@ function AgentPageInner() {
       setTasks([]);
       setCurrentConversationId(urlConvId);
       currentConvRef.current = urlConvId;
+      // Reset skill role when leaving a conversation; when landing on a
+      // new conversation, it'll be refilled from the convs list effect below.
+      if (!urlConvId) setSkillRoleId(null);
     }
   }, [urlConvId]);
+
+  // Sync skillRoleId when conversation list updates or current conversation
+  // changes — read the stored role from the server's conversation record.
+  useEffect(() => {
+    if (!currentConversationId) {
+      setSkillRoleId(null);
+      return;
+    }
+    const conv = conversations.find(c => c.id === currentConversationId);
+    if (conv) setSkillRoleId(conv.skillRoleId ?? null);
+  }, [currentConversationId, conversations]);
 
   // Listen for browser back/forward (popstate)
   useEffect(() => {
@@ -588,7 +607,15 @@ function AgentPageInner() {
       const r = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input, type, conversationId: convId, attachments: attachments || undefined }),
+        body: JSON.stringify({
+          input,
+          type,
+          conversationId: convId,
+          attachments: attachments || undefined,
+          // Pin the currently-selected AI colleague to this task's conversation.
+          // Runtime reads this + prepends the role's system prompt to input.
+          skillRoleId: skillRoleId || undefined,
+        }),
       });
       if (!r.ok) {
         const errData = await r.json().catch(() => ({}));
@@ -847,6 +874,8 @@ function AgentPageInner() {
                       : '继续对话...'
                   }
                   chatMode
+                  skillRoleId={skillRoleId}
+                  onSkillRoleChange={setSkillRoleId}
                 />
                 {isSubmitting && (
                   <div className="agent-submitting-hint">
@@ -910,6 +939,8 @@ function AgentPageInner() {
                     disabled={isSubmitting}
                     placeholder="输入任务：写一份行业调研报告、整理季度 PPT、帮我跟进客户邮件..."
                     prominent
+                    skillRoleId={skillRoleId}
+                    onSkillRoleChange={setSkillRoleId}
                   />
                   {isSubmitting && (
                     <div className="agent-submitting-hint">
