@@ -146,7 +146,7 @@ export const BROWSE_WHITELIST: Readonly<Record<BrowseSiteId, BrowseSite>> = {
   zhihu: {
     id: 'zhihu',
     label: '知乎创作中心',
-    hostnames: ['www.zhihu.com/creator', 'zhuanlan.zhihu.com'],
+    hostnames: ['www.zhihu.com', 'zhuanlan.zhihu.com'],
     loginUrl: 'https://www.zhihu.com/signin',
     description: '读取回答/文章阅读量、赞同、关注者。',
     capabilities: ['read'],
