@@ -95,8 +95,12 @@ export async function resolveServerForTool(
   for (const s of servers) {
     if (!s.cachedTools) continue;
     try {
-      const tools = JSON.parse(s.cachedTools) as string[];
-      if (Array.isArray(tools) && tools.includes(toolName)) {
+      const raw = JSON.parse(s.cachedTools);
+      // Support both old format (string[]) and new format ({name,...}[])
+      const names: string[] = Array.isArray(raw)
+        ? raw.map((item: unknown) => typeof item === 'string' ? item : (item as { name?: string })?.name || '')
+        : [];
+      if (names.includes(toolName)) {
         return s as unknown as McpServerRow;
       }
     } catch {

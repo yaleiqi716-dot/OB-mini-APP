@@ -1,6 +1,40 @@
 export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string | null;
+  // For assistant messages that include tool calls
+  tool_calls?: ToolCall[];
+  // For tool-result messages
+  tool_call_id?: string;
+}
+
+// ── Tool-use types (OpenAI-compatible) ──────────────────────────────
+
+export interface ToolFunction {
+  name: string;
+  description?: string;
+  parameters?: Record<string, unknown>; // JSON Schema
+}
+
+export interface Tool {
+  type: 'function';
+  function: ToolFunction;
+}
+
+export interface ToolCall {
+  id: string;
+  type: 'function';
+  function: { name: string; arguments: string }; // arguments is JSON string
+}
+
+export interface ToolUseResponse {
+  /** If the model returned text content (final answer) */
+  content: string | null;
+  /** If the model wants to call tool(s) instead */
+  toolCalls: ToolCall[];
+  /** Whether this response requires tool execution before we can get content */
+  needsToolExecution: boolean;
+  model: string;
+  usage: { prompt_tokens: number; completion_tokens: number };
 }
 
 export interface OpenRouterOptions {
@@ -210,6 +244,91 @@ export async function chatCompletion(
     // Network / DNS / unexpected — classify as UNKNOWN but preserve detail.
     const msg = error instanceof Error ? error.message : String(error);
     console.error('[LLM_ERROR]', 'LLM_UNKNOWN', msg.slice(0, 200), isGatewayMode() ? '(via gateway)' : '(direct)');
+    throw new LLMError('LLM_UNKNOWN', `AI 调用失败: ${msg.slice(0, 120)}`);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// ── Tool-use completion ──────────────────────────────────────────────
+//
+// P5.1a — like chatCompletion but accepts tools[] and returns tool_calls
+// when the model decides to use one. This is the primitive that lets the
+// agent call MCP tools mid-conversation.
+//
+// OpenRouter supports the OpenAI-compatible tools API on models that
+// have tool-use capability. The default model (gpt-4o or similar)
+// supports it. If a model doesn't, it ignores the tools field and
+// returns content only — which is fine, we treat that as "no tools used".
+
+export async function chatCompletionWithTools(
+  messages: ChatMessage[],
+  tools: Tool[],
+  options: OpenRouterOptions = {},
+): Promise<ToolUseResponse> {
+  const model = options.model || getDefaultModel();
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const endpoint = getLLMEndpoint();
+
+  const body: Record<string, unknown> = {
+    model,
+    messages,
+    temperature: options.temperature ?? 0.7,
+    max_tokens: options.maxTokens ?? 4096,
+    tools: tools.length > 0 ? tools : undefined,
+  };
+
+  if (options.jsonMode) {
+    body.response_format = { type: 'json_object' };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: buildHeaders(),
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => 'unknown');
+      const code = classifyHttpError(res.status, errorText);
+      throw new LLMError(code, `AI 调用失败 (${res.status})`, res.status, errorText.slice(0, 300));
+    }
+
+    const data = await res.json();
+    const choice = data.choices?.[0];
+    const msg = choice?.message;
+
+    // Case 1: model returned tool_calls
+    const toolCalls: ToolCall[] = Array.isArray(msg?.tool_calls) ? msg.tool_calls : [];
+    if (toolCalls.length > 0) {
+      return {
+        content: msg?.content || null,
+        toolCalls,
+        needsToolExecution: true,
+        model: data.model || model,
+        usage: data.usage || { prompt_tokens: 0, completion_tokens: 0 },
+      };
+    }
+
+    // Case 2: model returned content (no tool calls)
+    return {
+      content: msg?.content || null,
+      toolCalls: [],
+      needsToolExecution: false,
+      model: data.model || model,
+      usage: data.usage || { prompt_tokens: 0, completion_tokens: 0 },
+    };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new LLMError('LLM_TIMEOUT', 'AI 响应超时');
+    }
+    if (error instanceof LLMError) throw error;
+    const msg = error instanceof Error ? error.message : String(error);
     throw new LLMError('LLM_UNKNOWN', `AI 调用失败: ${msg.slice(0, 120)}`);
   } finally {
     clearTimeout(timeout);

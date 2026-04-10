@@ -1,5 +1,6 @@
 import { RouterDecision, DispatchResult } from '@/types/agent';
-import { chatCompletion, LLMError } from '@/lib/openrouter';
+import { chatCompletion, chatCompletionWithTools, LLMError, Tool, ChatMessage } from '@/lib/openrouter';
+import { dispatchMcpTool } from '@/services/mcp/dispatcher';
 import { braveSearch } from '@/services/tools/brave';
 import { createImage } from '@/services/tools/leonardo';
 import { generateImageViaOpenRouter } from '@/services/tools/openrouter-image';
@@ -62,7 +63,7 @@ export async function dispatch(
   try {
     switch (intent) {
       case 'text':
-        return await handleText(toolPayload, originalInput);
+        return await handleText(toolPayload, originalInput, ctx);
 
       case 'search':
         return await handleSearch(toolPayload, originalInput);
@@ -86,7 +87,7 @@ export async function dispatch(
         return await handleBrowserTask(toolPayload, originalInput, ctx);
 
       default:
-        return await handleText(toolPayload, originalInput);
+        return await handleText(toolPayload, originalInput, ctx);
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : '执行失败';
@@ -106,8 +107,29 @@ export async function dispatch(
 
 // ---- Synchronous handlers (complete in worker) ----
 
-async function handleText(payload: Record<string, unknown>, originalInput: string): Promise<DispatchResult> {
+async function handleText(
+  payload: Record<string, unknown>,
+  originalInput: string,
+  ctx: DispatchCtx = {},
+): Promise<DispatchResult> {
   const prompt = String(payload.prompt || originalInput);
+
+  // ── P5.1b — MCP tool-use loop ──────────────────────────────────────
+  // If the user has installed + enabled MCP servers, expose their tools
+  // to the LLM as function definitions. The LLM can then decide to call
+  // them mid-conversation. We run a loop (max 5 rounds) until the LLM
+  // returns final text content instead of tool_calls.
+  //
+  // If the user has no MCP tools, we fall back to the plain chatCompletion
+  // path (no overhead, same behavior as before P5.1).
+
+  const mcpTools = ctx.userId ? await loadUserMcpTools(ctx.userId) : [];
+
+  if (mcpTools.length > 0) {
+    return await handleTextWithMcpTools(prompt, mcpTools, ctx);
+  }
+
+  // ── Plain text path (no MCP tools) ─────────────────────────────────
   const result = await chatCompletion(
     [
       { role: 'system', content: '你是一个专业的工作助手。根据用户需求直接给出完整、实用的回答。内容完整、专业、简洁。' },
@@ -123,6 +145,175 @@ async function handleText(payload: Record<string, unknown>, originalInput: strin
     data: { type: 'direct', content: result.content },
     message: '已完成',
   };
+}
+
+// ── MCP tool helpers ─────────────────────────────────────────────────
+
+const MAX_TOOL_ROUNDS = 5;
+
+/** Load all enabled MCP tools for a user as LLM function definitions.
+ *  cachedTools stores full descriptors: [{name, description?, inputSchema?}, ...] */
+async function loadUserMcpTools(userId: string): Promise<Tool[]> {
+  const servers = await prisma.mcpServer.findMany({
+    where: { userId, enabled: true },
+    select: { cachedTools: true, name: true },
+  });
+  const tools: Tool[] = [];
+  for (const srv of servers) {
+    if (!srv.cachedTools) continue;
+    try {
+      const raw = JSON.parse(srv.cachedTools);
+      // Support both old format (string[]) and new format ({name,description?,inputSchema?}[])
+      const descriptors: Array<{ name: string; description?: string; inputSchema?: Record<string, unknown> }> =
+        Array.isArray(raw)
+          ? raw.map((item: unknown) =>
+              typeof item === 'string'
+                ? { name: item }
+                : (item as { name: string; description?: string; inputSchema?: Record<string, unknown> }),
+            )
+          : [];
+      for (const desc of descriptors) {
+        tools.push({
+          type: 'function',
+          function: {
+            name: desc.name,
+            description: desc.description || `[MCP: ${srv.name}] 工具 "${desc.name}"`,
+            parameters: desc.inputSchema || {
+              type: 'object',
+              properties: {},
+              additionalProperties: true,
+            },
+          },
+        });
+      }
+    } catch {
+      // malformed cachedTools — skip
+    }
+  }
+  return tools;
+}
+
+/** Text handler with MCP tool-use loop. */
+async function handleTextWithMcpTools(
+  prompt: string,
+  mcpTools: Tool[],
+  ctx: DispatchCtx,
+): Promise<DispatchResult> {
+  const toolNameList = mcpTools.map(t => t.function.name).join(', ');
+  const systemPrompt =
+    '你是 ORANGEBENCH 的专业工作助手。你可以调用以下工具来完成用户的请求:\n' +
+    `可用工具: ${toolNameList}\n\n` +
+    '规则:\n' +
+    '- 如果你需要工具才能完成任务,直接调用,不要问用户。\n' +
+    '- 工具返回结果后,基于结果给出完整回答。\n' +
+    '- 如果不需要工具,直接回答。\n' +
+    '- 用中文回复。';
+
+  const messages: ChatMessage[] = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: prompt },
+  ];
+
+  const toolCallLog: Array<{ tool: string; args: Record<string, unknown>; result: string; ms: number }> = [];
+
+  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+    const response = await chatCompletionWithTools(messages, mcpTools, {
+      temperature: 0.6,
+      maxTokens: 4096,
+    });
+
+    if (!response.needsToolExecution) {
+      // LLM returned final text — done
+      return {
+        success: true,
+        intent: 'text',
+        engine: 'chatgpt+mcp',
+        data: {
+          type: 'direct',
+          content: response.content || '(无内容)',
+          mcpToolCalls: toolCallLog.length > 0 ? toolCallLog : undefined,
+        },
+        message: '已完成',
+      };
+    }
+
+    // Append the assistant message with tool_calls to conversation
+    messages.push({
+      role: 'assistant',
+      content: response.content,
+      tool_calls: response.toolCalls,
+    });
+
+    // Execute each tool call via MCP dispatcher
+    for (const tc of response.toolCalls) {
+      let args: Record<string, unknown> = {};
+      try {
+        args = JSON.parse(tc.function.arguments || '{}');
+      } catch {
+        args = {};
+      }
+
+      console.log(`[MCP_TOOL_CALL] round=${round} tool=${tc.function.name} args=${JSON.stringify(args).slice(0, 200)}`);
+
+      let resultText: string;
+      let durationMs = 0;
+      if (ctx.userId) {
+        const mcpResult = await dispatchMcpTool({
+          userId: ctx.userId,
+          toolName: tc.function.name,
+          args,
+        });
+        durationMs = mcpResult.durationMs;
+        if (mcpResult.success) {
+          // Extract text from MCP content blocks
+          resultText = extractMcpText(mcpResult.content);
+        } else {
+          resultText = `错误: ${mcpResult.errorMsg || '调用失败'}`;
+        }
+      } else {
+        resultText = '错误: 无法确认用户身份';
+      }
+
+      toolCallLog.push({ tool: tc.function.name, args, result: resultText.slice(0, 500), ms: durationMs });
+
+      // Append tool result message
+      messages.push({
+        role: 'tool',
+        content: resultText,
+        tool_call_id: tc.id,
+      });
+    }
+  }
+
+  // Hit max rounds — return whatever we have
+  const lastContent = messages.filter(m => m.role === 'assistant' && m.content).pop()?.content;
+  return {
+    success: true,
+    intent: 'text',
+    engine: 'chatgpt+mcp',
+    data: {
+      type: 'direct',
+      content: lastContent || '(工具调用轮数已达上限)',
+      mcpToolCalls: toolCallLog,
+    },
+    message: '已完成',
+  };
+}
+
+/** Extract text from MCP content blocks (array of {type:'text', text:'...'} etc.) */
+function extractMcpText(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((block: unknown) => {
+        if (block && typeof block === 'object' && 'text' in block) {
+          return String((block as { text: unknown }).text);
+        }
+        return JSON.stringify(block);
+      })
+      .join('\n');
+  }
+  return JSON.stringify(content);
 }
 
 async function handleSearch(payload: Record<string, unknown>, originalInput: string): Promise<DispatchResult> {

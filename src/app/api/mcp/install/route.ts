@@ -141,11 +141,12 @@ export async function POST(req: NextRequest) {
           endpoint: created.endpoint,
           configEncrypted: created.configEncrypted,
         });
-        const toolNames = probe.tools.map(t => t.name);
-        toolCount = toolNames.length;
+        // Store full tool descriptors (name + description + inputSchema) so the
+        // LLM gets proper parameter definitions when building function calls.
+        toolCount = probe.tools.length;
         await prisma.mcpServer.update({
           where: { id: created.id },
-          data: { cachedTools: JSON.stringify(toolNames) },
+          data: { cachedTools: JSON.stringify(probe.tools) },
         });
       } catch (err) {
         probeError = err instanceof Error ? err.message : 'probe failed';

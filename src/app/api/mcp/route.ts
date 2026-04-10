@@ -43,8 +43,8 @@ export async function GET(req: NextRequest) {
         args: s.args,
         enabled: s.enabled,
         scopes: safeParseArray(s.scopes),
-        tools: safeParseArray(s.cachedTools),
-        toolCount: safeParseArray(s.cachedTools).length,
+        tools: extractToolNames(s.cachedTools),
+        toolCount: extractToolNames(s.cachedTools).length,
         hasConfig: s.configEncrypted.length > 0,
         lastUsedAt: s.lastUsedAt?.toISOString() || null,
         createdAt: s.createdAt.toISOString(),
@@ -53,6 +53,18 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error('[MCP_LIST_ERROR]', err);
     return NextResponse.json({ error: '获取失败' }, { status: 500 });
+  }
+}
+
+/** Extract tool names from cachedTools — supports both old string[] and new descriptor[] formats */
+function extractToolNames(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr.map((item: unknown) => typeof item === 'string' ? item : (item as { name?: string })?.name || '').filter(Boolean);
+  } catch {
+    return [];
   }
 }
 

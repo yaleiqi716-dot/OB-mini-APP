@@ -34,10 +34,10 @@ export async function POST(
         endpoint: server.endpoint,
         configEncrypted: server.configEncrypted,
       });
-      const toolNames = probe.tools.map(t => t.name);
+      // Store full tool descriptors so the LLM gets proper parameter schemas
       await prisma.mcpServer.update({
         where: { id: server.id },
-        data: { cachedTools: JSON.stringify(toolNames) },
+        data: { cachedTools: JSON.stringify(probe.tools) },
       });
       return NextResponse.json({
         success: true,
