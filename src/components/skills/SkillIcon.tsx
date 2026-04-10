@@ -268,7 +268,7 @@ export default function SkillIcon({ skillId, size = 40, connected, className }: 
         width: size,
         height: size,
         borderRadius: 12,
-        background: '#26262A',
+        background: 'var(--ob-surface-hi)',
       }}
     >
       {logoFn(innerSize)}
@@ -281,7 +281,7 @@ export default function SkillIcon({ skillId, size = 40, connected, className }: 
             width: 14,
             height: 14,
             borderRadius: '50%',
-            background: '#0B0B0C',
+            background: 'var(--ob-bg)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

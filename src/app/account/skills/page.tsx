@@ -198,7 +198,7 @@ export default function SkillsHubPage() {
     e.tags.some(t => t.toLowerCase().includes(sq));
 
   return (
-    <div className="min-h-screen" style={{ background: '#0B0B0C', color: '#F5F5F0' }}>
+    <div className="min-h-screen" style={{ background: 'var(--ob-bg)', color: 'var(--ob-text)' }}>
       <AppHeader />
       <AccountSubNav />
 
@@ -222,7 +222,7 @@ export default function SkillsHubPage() {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="w-full max-w-md px-4 py-2.5 text-sm rounded-xl outline-none"
-            style={{ background: '#17171A', border: '1px solid #2A2A2E', color: '#F5F5F0' }}
+            style={{ background: 'var(--ob-surface)', border: '1px solid var(--ob-border)', color: 'var(--ob-text)' }}
           />
         </div>
 
@@ -243,7 +243,7 @@ export default function SkillsHubPage() {
                 <div
                   key={skill.instanceId}
                   className="rounded-lg p-3 flex items-center gap-2.5 animate-fade-blur card-hover"
-                  style={{ background: '#17171A', border: `1px solid ${skill.status === 'active' ? '#FF5A1F22' : '#2A2A2E'}`, opacity: skill.status === 'active' ? 1 : 0.5 }}
+                  style={{ background: 'var(--ob-surface)', border: `1px solid ${skill.status === 'active' ? '#FF5A1F22' : 'var(--ob-border)'}`, opacity: skill.status === 'active' ? 1 : 0.5 }}
                 >
                   <SkillIcon skillId={skill.icon} size={32} connected={skill.status === 'active'} />
                   <div className="flex-1 min-w-0">
@@ -276,7 +276,7 @@ export default function SkillsHubPage() {
           return (
             <div key={section.id} className="mb-10">
               {/* Section header */}
-              <div className="mb-4 pb-3" style={{ borderBottom: '1px solid #1F1F23' }}>
+              <div className="mb-4 pb-3" style={{ borderBottom: '1px solid var(--ob-border)' }}>
                 <h3 className="text-base font-bold mb-1">{section.title}</h3>
                 <p className="text-xs opacity-50">{section.subtitle}</p>
               </div>
@@ -294,8 +294,8 @@ export default function SkillsHubPage() {
                       key={entry.id}
                       className="rounded-xl animate-fade-blur card-hover-glow"
                       style={{
-                        background: '#17171A',
-                        border: `1px solid ${isInstalling ? '#FF5A1F' : '#2A2A2E'}`,
+                        background: 'var(--ob-surface)',
+                        border: `1px solid ${isInstalling ? '#FF5A1F' : 'var(--ob-border)'}`,
                         padding: section.featured ? 16 : 12,
                       }}
                     >
@@ -331,10 +331,10 @@ export default function SkillsHubPage() {
                           disabled={isOAuthFuture}
                           className={`w-full py-1.5 rounded-lg font-medium mt-1 btn-press ${section.featured ? 'text-xs' : 'text-[10px]'}`}
                           style={{
-                            background: isOAuthFuture ? '#2A2A2E'
-                              : section.featured && !isConnected ? '#FF5A1F' : '#2A2A2E',
+                            background: isOAuthFuture ? 'var(--ob-border)'
+                              : section.featured && !isConnected ? '#FF5A1F' : 'var(--ob-border)',
                             color: isOAuthFuture ? '#5A5A60'
-                              : section.featured && !isConnected ? '#0B0B0C' : '#F5F5F0',
+                              : section.featured && !isConnected ? '#0B0B0C' : 'var(--ob-text)',
                             cursor: isOAuthFuture ? 'not-allowed' : 'pointer',
                           }}
                         >
@@ -344,7 +344,7 @@ export default function SkillsHubPage() {
 
                       {/* Inline install form */}
                       {isInstalling && entry.fields.length > 0 && (
-                        <div className="mt-2 pt-2 space-y-2" style={{ borderTop: '1px solid #2A2A2E' }}>
+                        <div className="mt-2 pt-2 space-y-2" style={{ borderTop: '1px solid var(--ob-border)' }}>
                           {entry.fields.map(field => (
                             <div key={field.name}>
                               <label className="text-[9px] opacity-50 block mb-0.5">
@@ -357,7 +357,7 @@ export default function SkillsHubPage() {
                                   placeholder={field.placeholder}
                                   rows={3}
                                   className="w-full px-2 py-1 text-[10px] font-mono rounded-lg outline-none resize-y"
-                                  style={{ background: '#0B0B0C', border: '1px solid #2A2A2E', color: '#F5F5F0' }}
+                                  style={{ background: 'var(--ob-bg)', border: '1px solid var(--ob-border)', color: 'var(--ob-text)' }}
                                 />
                               ) : (
                                 <input
@@ -366,7 +366,7 @@ export default function SkillsHubPage() {
                                   onChange={e => setFormValues(p => ({ ...p, [field.name]: e.target.value }))}
                                   placeholder={field.placeholder}
                                   className="w-full px-2 py-1 text-[10px] rounded-lg outline-none"
-                                  style={{ background: '#0B0B0C', border: '1px solid #2A2A2E', color: '#F5F5F0' }}
+                                  style={{ background: 'var(--ob-bg)', border: '1px solid var(--ob-border)', color: 'var(--ob-text)' }}
                                 />
                               )}
                             </div>
@@ -382,14 +382,14 @@ export default function SkillsHubPage() {
                               onClick={() => handleInstall(entry)}
                               disabled={submitting}
                               className="text-[10px] px-3 py-1 rounded-lg font-medium"
-                              style={{ background: '#FF5A1F', color: '#0B0B0C', opacity: submitting ? 0.5 : 1 }}
+                              style={{ background: '#FF5A1F', color: 'var(--ob-bg)', opacity: submitting ? 0.5 : 1 }}
                             >
                               {submitting ? '连接中...' : '确认'}
                             </button>
                             <button
                               onClick={() => { setInstallingId(null); setFormValues({}); }}
                               className="text-[10px] px-3 py-1 rounded-lg"
-                              style={{ background: '#2A2A2E' }}
+                              style={{ background: 'var(--ob-border)' }}
                             >
                               取消
                             </button>
@@ -427,10 +427,10 @@ export default function SkillsHubPage() {
 function QuotaCard({ label, used, limit }: { label: string; used: number; limit: number }) {
   const remaining = Math.max(0, limit - used);
   return (
-    <div className="flex-1 rounded-lg p-3" style={{ background: '#17171A', border: '1px solid #2A2A2E' }}>
+    <div className="flex-1 rounded-lg p-3" style={{ background: 'var(--ob-surface)', border: '1px solid var(--ob-border)' }}>
       <div className="text-[9px] uppercase tracking-widest opacity-40 mb-1">{label}</div>
       <div className="text-lg font-bold">
-        <span style={{ color: remaining < 10 ? '#FF5A1F' : '#F5F5F0' }}>{used}</span>
+        <span style={{ color: remaining < 10 ? '#FF5A1F' : 'var(--ob-text)' }}>{used}</span>
         <span className="opacity-25 text-xs"> / {limit}</span>
       </div>
     </div>

@@ -10,34 +10,33 @@
    component CSS. New code should use the --ob-* names directly.
    ═══════════════════════════════════════════════════════════════ */
 :root{
-  /* ─── v1.2 canonical tokens (prefer these in new code) ─────── */
+  /* ─── v2.0 LIGHT MODE — superpower.com inspired ──────────── */
+  /* Warm white surface stack — clean, airy, professional */
+  --ob-bg:            #FAFAF8;
+  --ob-surface:       #FFFFFF;
+  --ob-surface-hi:    #F3F3F0;
+  --ob-border:        #E5E5E0;
+  --ob-border-strong: #D0D0CC;
 
-  /* Warm dark surface stack */
-  --ob-bg:            #141417;
-  --ob-surface:       #1D1D20;
-  --ob-surface-hi:    #26262A;
-  --ob-border:        #2F2F34;
-  --ob-border-strong: #42424A;
+  /* Near-black text stack */
+  --ob-text:       #1A1A1A;
+  --ob-text-muted: #6B6B6B;
+  --ob-text-dim:   #9A9A9A;
 
-  /* Warm off-white text stack */
-  --ob-text:       #F5F5F0;
-  --ob-text-muted: #8A8A90;
-  --ob-text-dim:   #5A5A60;
-
-  /* Brand orange — ONE value */
+  /* Brand orange — vibrant on light bg */
   --ob-orange:         #FF5A1F;
   --ob-orange-hi:      #FF7340;
-  --ob-orange-lo:      #D9471A;
-  --ob-orange-a10:     rgba(255,90,31,0.10);
-  --ob-orange-a20:     rgba(255,90,31,0.20);
-  --ob-orange-ring:    rgba(255,90,31,0.17);
-  --ob-orange-glow:    0 0 18px rgba(255,90,31,0.22);
+  --ob-orange-lo:      #E84D15;
+  --ob-orange-a10:     rgba(255,90,31,0.08);
+  --ob-orange-a20:     rgba(255,90,31,0.15);
+  --ob-orange-ring:    rgba(255,90,31,0.20);
+  --ob-orange-glow:    0 0 18px rgba(255,90,31,0.15);
 
-  /* Warm earthy semantic — no green, no blue */
-  --ob-success: #C9B89E;  /* warm sand / parchment */
-  --ob-warning: #D4A017;  /* mustard */
-  --ob-error:   #E4483D;  /* rust red */
-  --ob-info:    #9A9591;  /* warm stone */
+  /* Semantic colors — brighter for light mode */
+  --ob-success: #16A34A;  /* green */
+  --ob-warning: #D97706;  /* amber */
+  --ob-error:   #DC2626;  /* red */
+  --ob-info:    #6B7280;  /* gray */
 
   /* Type */
   --ob-font-display: "Cabinet Grotesk", "General Sans", system-ui, sans-serif;
@@ -57,36 +56,36 @@
 
   /* ─── Legacy aliases (kept for backward compat, do not use in new code) ── */
 
-  /* Backgrounds map onto the new surface stack */
+  /* Backgrounds — light mode */
   --bg:           var(--ob-bg);
   --bg-hero:      var(--ob-bg);
   --bg-exec:      var(--ob-surface);
   --bg-ws:        var(--ob-surface-hi);
   --bg-billing:   var(--ob-surface-hi);
   --bg-mission:   var(--ob-bg);
-  --bg-sidebar:   #111113;
-  --bg-card:      rgba(29,29,32,0.88);
-  --bg-secondary: var(--ob-surface);
+  --bg-sidebar:   #F0F0ED;
+  --bg-card:      var(--ob-surface);
+  --bg-secondary: var(--ob-surface-hi);
   --bg-tertiary:  var(--ob-surface-hi);
   --bg-input:     var(--ob-surface);
   --bg-hover:     var(--ob-surface-hi);
-  --bg-elevated:  var(--ob-surface-hi);
+  --bg-elevated:  var(--ob-surface);
   --bg-conv:      var(--ob-surface);
 
-  /* Text maps onto the new warm-off-white stack */
+  /* Text — near-black on light bg */
   --text-primary:   var(--ob-text);
-  --text-secondary: rgba(245,245,240,0.55);
-  --text-muted:     rgba(245,245,240,0.35);
-  --text-label:     rgba(245,245,240,0.35);
-  --text-faint:     rgba(245,245,240,0.22);
+  --text-secondary: rgba(26,26,26,0.60);
+  --text-muted:     rgba(26,26,26,0.40);
+  --text-label:     rgba(26,26,26,0.40);
+  --text-faint:     rgba(26,26,26,0.20);
 
   /* Dots */
   --dot-online:  var(--ob-success);
   --dot-active:  var(--ob-orange);
-  --dot-idle:    rgba(245,245,240,0.18);
+  --dot-idle:    rgba(26,26,26,0.15);
 
   /* Card */
-  --card-bg:       rgba(29,29,32,0.88);
+  --card-bg:       var(--ob-surface);
   --card-border:   var(--ob-border);
   --border-orange: var(--ob-orange-a20);
 
@@ -167,11 +166,11 @@ body{
 /* Scrollbar */
 .scrollbar-hide{scrollbar-width:none;-ms-overflow-style:none}
 .scrollbar-hide::-webkit-scrollbar{display:none}
-.custom-scrollbar{scrollbar-width:thin;scrollbar-color:rgba(245,245,240,0.12) transparent}
+.custom-scrollbar{scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.12) transparent}
 .custom-scrollbar::-webkit-scrollbar{width:4px}
 .custom-scrollbar::-webkit-scrollbar-track{background:transparent}
-.custom-scrollbar::-webkit-scrollbar-thumb{background:rgba(245,245,240,0.12);border-radius:2px}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.15)}
+.custom-scrollbar::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.12);border-radius:2px}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.2)}
 
 /* ═══════════════════════════════════════════════════════════════
    MOTION SYSTEM — inspired by superpower.com
@@ -260,15 +259,15 @@ body{
              border-color .2s var(--ob-ease-out);
 }
 .card-hover:hover{
-  transform:translateY(-2px);
-  box-shadow:0 8px 24px -8px rgba(0,0,0,0.4);
+  transform:translateY(-3px);
+  box-shadow:0 12px 32px -8px rgba(0,0,0,0.12);
 }
 
 /* Card hover with orange glow */
 .card-hover-glow:hover{
-  transform:translateY(-2px);
-  box-shadow:0 8px 24px -8px rgba(255,90,31,0.15);
-  border-color:rgba(255,90,31,0.3) !important;
+  transform:translateY(-3px);
+  box-shadow:0 12px 32px -8px rgba(255,90,31,0.12),0 4px 12px rgba(0,0,0,0.06);
+  border-color:rgba(255,90,31,0.4) !important;
 }
 
 /* Group hover — dim siblings (Superpower nav pattern) */
