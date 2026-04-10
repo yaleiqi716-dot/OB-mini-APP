@@ -19,9 +19,7 @@ const ACCOUNT_NAV = [
   { href: '/account', label: '概览' },
   { href: '/profile', label: '个人资料' },
   { href: '/billing', label: '订阅 & 账单' },
-  { href: '/account/integrations', label: '集成 · Webhook' },
-  { href: '/account/browse-sites', label: '浏览站点' },
-  { href: '/account/ai-tools', label: 'AI 工具 · MCP' },
+  { href: '/account/skills', label: '技能中心' },
   { href: '/settings', label: '偏好设置' },
 ];
 
