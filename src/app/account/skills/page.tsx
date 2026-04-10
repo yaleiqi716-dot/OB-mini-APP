@@ -238,11 +238,11 @@ export default function SkillsHubPage() {
         {connected.length > 0 && (
           <div className="mb-10">
             <h2 className="text-base font-bold mb-3">已连接 ({connected.length})</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 stagger-children">
               {connected.map(skill => (
                 <div
                   key={skill.instanceId}
-                  className="rounded-lg p-3 flex items-center gap-2.5"
+                  className="rounded-lg p-3 flex items-center gap-2.5 animate-fade-blur card-hover"
                   style={{ background: '#17171A', border: `1px solid ${skill.status === 'active' ? '#FF5A1F22' : '#2A2A2E'}`, opacity: skill.status === 'active' ? 1 : 0.5 }}
                 >
                   <SkillIcon skillId={skill.icon} size={32} connected={skill.status === 'active'} />
@@ -282,7 +282,7 @@ export default function SkillsHubPage() {
               </div>
 
               {/* Cards grid */}
-              <div className={`grid gap-3 ${section.featured ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'}`}>
+              <div className={`grid gap-3 stagger-children ${section.featured ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'}`}>
                 {entries.map(entry => {
                   const isInstalling = installingId === entry.id;
                   const isConnected = connectedIds.has(entry.id);
@@ -292,7 +292,7 @@ export default function SkillsHubPage() {
                   return (
                     <div
                       key={entry.id}
-                      className="rounded-xl"
+                      className="rounded-xl animate-fade-blur card-hover-glow"
                       style={{
                         background: '#17171A',
                         border: `1px solid ${isInstalling ? '#FF5A1F' : '#2A2A2E'}`,
@@ -329,7 +329,7 @@ export default function SkillsHubPage() {
                             }
                           }}
                           disabled={isOAuthFuture}
-                          className={`w-full py-1.5 rounded-lg font-medium mt-1 ${section.featured ? 'text-xs' : 'text-[10px]'}`}
+                          className={`w-full py-1.5 rounded-lg font-medium mt-1 btn-press ${section.featured ? 'text-xs' : 'text-[10px]'}`}
                           style={{
                             background: isOAuthFuture ? '#2A2A2E'
                               : section.featured && !isConnected ? '#FF5A1F' : '#2A2A2E',

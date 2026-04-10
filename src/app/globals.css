@@ -173,17 +173,170 @@ body{
 .custom-scrollbar::-webkit-scrollbar-thumb{background:rgba(245,245,240,0.12);border-radius:2px}
 .custom-scrollbar::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.15)}
 
-/* Animations */
-@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+/* ═══════════════════════════════════════════════════════════════
+   MOTION SYSTEM — inspired by superpower.com
+   Key principles:
+   1. Every element enters with purpose (fade+translate+blur)
+   2. Interactive elements have tactile feedback (scale on press)
+   3. Groups dim non-hovered siblings (focus attention)
+   4. Motion is fast (200-400ms) and eased (ease-out for entry)
+   5. Respects prefers-reduced-motion
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Keyframes ──────────────────────────────────────────────── */
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes heroReveal{
+  from{opacity:0;filter:blur(6px);transform:scale(1.04)}
+  to{opacity:1;filter:blur(0);transform:scale(1)}
+}
+@keyframes fadeInBlur{
+  from{opacity:0;filter:blur(4px);transform:translateY(12px)}
+  to{opacity:1;filter:blur(0);transform:translateY(0)}
+}
+@keyframes slideInRight{
+  from{opacity:0;transform:translateX(16px)}
+  to{opacity:1;transform:translateX(0)}
+}
+@keyframes slideInLeft{
+  from{opacity:0;transform:translateX(-16px)}
+  to{opacity:1;transform:translateX(0)}
+}
+@keyframes scaleIn{
+  from{opacity:0;transform:scale(0.92)}
+  to{opacity:1;transform:scale(1)}
+}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @keyframes spin{to{transform:rotate(360deg)}}
-.animate-flow-in        {animation:fadeUp .2s ease-out both}
-.animate-progress-pulse {animation:pulse 2s ease-in-out infinite}
-.progress-bar-fill      {transition:width .4s ease-out}
-.pb-safe                {padding-bottom:env(safe-area-inset-bottom,0px)}
+@keyframes shimmer{
+  from{background-position:-200% 0}
+  to{background-position:200% 0}
+}
+@keyframes float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-4px)}
+}
+
+/* ── Entrance animations ────────────────────────────────────── */
+
+.animate-flow-in       {animation:fadeUp .25s var(--ob-ease-out) both}
+.animate-hero-reveal   {animation:heroReveal .8s var(--ob-ease-out) both}
+.animate-fade-blur     {animation:fadeInBlur .5s var(--ob-ease-out) both}
+.animate-slide-right   {animation:slideInRight .35s var(--ob-ease-out) both}
+.animate-slide-left    {animation:slideInLeft .35s var(--ob-ease-out) both}
+.animate-scale-in      {animation:scaleIn .3s var(--ob-ease-out) both}
+.animate-progress-pulse{animation:pulse 2s ease-in-out infinite}
+.animate-shimmer       {animation:shimmer 2s infinite;background-size:200% 100%}
+.animate-float         {animation:float 3s ease-in-out infinite}
+.progress-bar-fill     {transition:width .4s ease-out}
+
+/* Staggered children — add .stagger-children to parent,
+   each child gets incremental delay */
+.stagger-children > *:nth-child(1){animation-delay:0ms}
+.stagger-children > *:nth-child(2){animation-delay:60ms}
+.stagger-children > *:nth-child(3){animation-delay:120ms}
+.stagger-children > *:nth-child(4){animation-delay:180ms}
+.stagger-children > *:nth-child(5){animation-delay:240ms}
+.stagger-children > *:nth-child(6){animation-delay:300ms}
+.stagger-children > *:nth-child(7){animation-delay:360ms}
+.stagger-children > *:nth-child(8){animation-delay:420ms}
+.stagger-children > *:nth-child(9){animation-delay:480ms}
+.stagger-children > *:nth-child(10){animation-delay:540ms}
+.stagger-children > *{animation-fill-mode:both}
+
+/* ── Interactive feedback ───────────────────────────────────── */
+
+/* Button press — tactile scale-down like Superpower */
+.btn-press{transition:transform .12s var(--ob-ease-out),box-shadow .12s var(--ob-ease-out)}
+.btn-press:active{transform:scale(0.97)}
+
+/* Card hover — lift + glow */
+.card-hover{
+  transition:transform .2s var(--ob-ease-out),
+             box-shadow .2s var(--ob-ease-out),
+             border-color .2s var(--ob-ease-out);
+}
+.card-hover:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 24px -8px rgba(0,0,0,0.4);
+}
+
+/* Card hover with orange glow */
+.card-hover-glow:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 24px -8px rgba(255,90,31,0.15);
+  border-color:rgba(255,90,31,0.3) !important;
+}
+
+/* Group hover — dim siblings (Superpower nav pattern) */
+.group-hover-dim{transition:opacity .2s ease}
+.group-hover-dim-parent:hover .group-hover-dim{opacity:0.5}
+.group-hover-dim-parent:hover .group-hover-dim:hover{opacity:1}
+
+/* Link hover — arrow nudge */
+.link-arrow{transition:transform .15s var(--ob-ease-out)}
+.link-arrow:hover{transform:translateX(3px)}
+
+/* Focus ring — consistent across all interactive */
+.focus-ring:focus-visible{
+  outline:2px solid var(--ob-orange);
+  outline-offset:2px;
+}
+
+/* ── Global defaults ────────────────────────────────────────── */
+
+/* All interactive elements get smooth transitions */
+a,button,input,select,textarea,[role="button"]{
+  transition-property:color,background-color,border-color,box-shadow,opacity,transform;
+  transition-duration:.15s;
+  transition-timing-function:var(--ob-ease-out);
+}
+
+/* Anti-aliasing for crisp text */
+*{
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* ── Safe area ──────────────────────────────────────────────── */
+.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px)}
+
+/* ── Reduced motion ─────────────────────────────────────────── */
 @media(prefers-reduced-motion:reduce){
-  .animate-flow-in,.animate-progress-pulse{animation:none}
+  .animate-flow-in,.animate-hero-reveal,.animate-fade-blur,
+  .animate-slide-right,.animate-slide-left,.animate-scale-in,
+  .animate-progress-pulse,.animate-shimmer,.animate-float{animation:none!important}
+  .stagger-children > *{animation-delay:0s!important}
+  .card-hover:hover,.card-hover-glow:hover{transform:none}
   *{transition-duration:0s!important}
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS — iPad / Phone / Laptop
+   Mobile-first with breakpoints at:
+   - sm:  640px  (large phone landscape)
+   - md:  768px  (iPad portrait)
+   - lg:  1024px (iPad landscape / small laptop)
+   - xl:  1280px (laptop)
+   - 2xl: 1440px (desktop)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Touch device improvements */
+@media(hover:none){
+  /* Larger touch targets on mobile */
+  a,button,[role="button"]{min-height:44px}
+  /* Disable hover effects that can "stick" on touch */
+  .card-hover:hover{transform:none;box-shadow:none}
+  .card-hover-glow:hover{transform:none;box-shadow:none}
+  .group-hover-dim-parent:hover .group-hover-dim{opacity:1}
+}
+
+/* Phone (< 640px) */
+@media(max-width:639px){
+  .stagger-children > *{animation-delay:0ms!important}
 }
 
 

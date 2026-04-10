@@ -234,9 +234,10 @@ function LoginPageInner() {
 
   return (
     <div style={pageStyle}>
-      {/* Editorial poster — huge wordmark cropped behind the card */}
+      {/* Editorial poster — huge wordmark with hero reveal animation */}
       <div
         aria-hidden="true"
+        className="animate-hero-reveal"
         style={{
           position: 'absolute',
           top: '50%',
@@ -258,7 +259,7 @@ function LoginPageInner() {
         ORANGEBENCH
       </div>
 
-      <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1 }}>
+      <div className="animate-fade-blur" style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1, animationDelay: '200ms' }}>
         {/* Top wordmark — real, not poster */}
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
           <div
