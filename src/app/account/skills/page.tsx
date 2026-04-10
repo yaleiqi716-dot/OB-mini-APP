@@ -1,11 +1,10 @@
 'use client';
 
-// /account/skills — Skills Hub
+// /account/skills — Skills Hub (v2: section-based layout)
 //
-// Unified entry point for all external capabilities:
-// Webhooks (notification/automation) + Browse sites (data) + MCP tools.
-// Replaces the three separate pages: /account/integrations,
-// /account/browse-sites, /account/ai-tools.
+// Replaces tab-based flat grid with structured sections:
+// 推荐 → 通知推送 → 数据抓取 → AI 工具 → 开发者·高级
+// Each section has a prominent header + subtitle + search filtering.
 
 import { useEffect, useState, useCallback } from 'react';
 import { AppHeader, AccountSubNav } from '@/components/workspace/AppHeader';
@@ -13,10 +12,9 @@ import { Toast } from '@/components/ui/Toast';
 import SkillIcon from '@/components/skills/SkillIcon';
 import {
   SKILL_CATALOG,
-  CATEGORY_LABELS,
   CONNECTION_METHOD_LABELS,
-  type SkillCategory,
   type SkillCatalogEntry,
+  type SkillCategory,
 } from '@/services/skills/catalog';
 
 interface ConnectedSkill {
@@ -30,9 +28,6 @@ interface ConnectedSkill {
   toolCount?: number;
   lastUsedAt?: string | null;
   failureCount?: number;
-  webhookUrl?: string;
-  browseSiteId?: string;
-  expiresAt?: string | null;
 }
 
 interface Quota {
@@ -40,13 +35,58 @@ interface Quota {
   mcp: { used: number; limit: number };
 }
 
-type CatFilter = 'all' | SkillCategory;
+// Section definitions with display order, titles, subtitles
+const SECTIONS: {
+  id: string;
+  title: string;
+  subtitle: string;
+  filter: (e: SkillCatalogEntry) => boolean;
+  featured?: boolean;
+}[] = [
+  {
+    id: 'recommended',
+    title: '推荐',
+    subtitle: '零配置,一键启用,立即可用',
+    filter: e => e.preInstalled === true || e.connectionMethod === 'builtin',
+    featured: true,
+  },
+  {
+    id: 'notification',
+    title: '通知推送',
+    subtitle: '任务状态变更时自动发消息到团队工具',
+    filter: e => e.category === 'notification',
+  },
+  {
+    id: 'data',
+    title: '数据抓取',
+    subtitle: '用浏览器登录白名单平台,帮你拉数据、截图',
+    filter: e => e.category === 'data',
+  },
+  {
+    id: 'ai-tool',
+    title: 'AI 工具',
+    subtitle: '让 Agent 直接操作你的文件、数据库、云服务',
+    filter: e => e.category === 'ai-tool' && e.connectionMethod !== 'builtin',
+  },
+  {
+    id: 'automation',
+    title: '自动化',
+    subtitle: '连接 Zapier 等平台,把 OB 事件接入你的工作流',
+    filter: e => e.category === 'automation',
+  },
+  {
+    id: 'dev',
+    title: '开发者 · 高级',
+    subtitle: '面向技术用户的工具和自定义入口',
+    filter: e => e.category === 'dev' && !e.preInstalled,
+  },
+];
 
 export default function SkillsHubPage() {
   const [connected, setConnected] = useState<ConnectedSkill[]>([]);
   const [quota, setQuota] = useState<Quota | null>(null);
   const [loading, setLoading] = useState(true);
-  const [catFilter, setCatFilter] = useState<CatFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -65,16 +105,14 @@ export default function SkillsHubPage() {
         setConnected(data.connected || []);
         setQuota(data.quota || null);
       }
-    } catch { /* empty state handles it */ }
+    } catch {}
     finally { setLoading(false); }
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  // ── Install handlers (dispatch to the right backend by type) ──────
-
+  // Install handlers (same logic as before, dispatches by type)
   async function handleInstall(entry: SkillCatalogEntry) {
-    // Validate required fields
     for (const f of entry.fields) {
       if (f.required && !formValues[f.name]?.trim()) {
         showToast(`请填写 ${f.label}`, false);
@@ -106,7 +144,6 @@ export default function SkillsHubPage() {
           }),
         });
       } else {
-        // MCP
         res = await fetch('/api/mcp/install', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -118,19 +155,13 @@ export default function SkillsHubPage() {
         });
       }
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        showToast(body.error || '操作失败', false);
-        return;
-      }
+      if (!res.ok) { showToast(body.error || '操作失败', false); return; }
       showToast(`${entry.name} 已连接`, true);
       setInstallingId(null);
       setFormValues({});
       await refresh();
-    } catch {
-      showToast('网络错误', false);
-    } finally {
-      setSubmitting(false);
-    }
+    } catch { showToast('网络错误', false); }
+    finally { setSubmitting(false); }
   }
 
   async function handleDisconnect(skill: ConnectedSkill) {
@@ -144,9 +175,7 @@ export default function SkillsHubPage() {
       if (!res.ok) { showToast('操作失败', false); return; }
       showToast('已断开', true);
       await refresh();
-    } catch {
-      showToast('网络错误', false);
-    }
+    } catch { showToast('网络错误', false); }
   }
 
   async function handleToggle(skill: ConnectedSkill, enabled: boolean) {
@@ -154,26 +183,19 @@ export default function SkillsHubPage() {
       let url = '';
       if (skill.type === 'webhook') url = `/api/webhooks/${skill.instanceId}`;
       else if (skill.type === 'mcp') url = `/api/mcp/${skill.instanceId}`;
-      else return; // browse has no toggle
-      await fetch(url, {
-        method: 'PATCH',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ active: enabled, enabled }),
-      });
+      else return;
+      await fetch(url, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ active: enabled, enabled }) });
       await refresh();
-    } catch {
-      showToast('操作失败', false);
-    }
+    } catch { showToast('操作失败', false); }
   }
 
-  // ── Filter catalog ────────────────────────────────────────────────
-
   const connectedIds = new Set(connected.map(c => c.skillId));
-  const filteredCatalog = SKILL_CATALOG.filter(e =>
-    catFilter === 'all' || e.category === catFilter,
-  );
 
-  const categories: CatFilter[] = ['all', 'notification', 'data', 'ai-tool', 'automation', 'dev'];
+  // Search filter
+  const sq = searchQuery.trim().toLowerCase();
+  const matchesSearch = (e: SkillCatalogEntry) =>
+    !sq || e.name.toLowerCase().includes(sq) || e.description.toLowerCase().includes(sq) ||
+    e.tags.some(t => t.toLowerCase().includes(sq));
 
   return (
     <div className="min-h-screen" style={{ background: '#0B0B0C', color: '#F5F5F0' }}>
@@ -182,217 +204,218 @@ export default function SkillsHubPage() {
 
       <main className="mx-auto max-w-5xl px-6 py-12">
         {/* Hero */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="text-xs uppercase tracking-widest opacity-60 mb-3">SKILLS HUB</div>
           <h1 className="text-4xl font-black tracking-tight mb-3" style={{ fontFamily: '"Cabinet Grotesk", system-ui, sans-serif' }}>
             技能中心
           </h1>
           <p className="text-sm leading-relaxed max-w-2xl opacity-75">
-            扩展 Agent 的能力 — 连接外部服务推送通知、操作白名单网站抓取数据、安装 MCP 工具让 Agent 直接调用。
+            扩展 Agent 的能力 — 连接外部服务推送通知、操作白名单网站抓数据、安装 MCP 工具让 Agent 直接调用。
           </p>
+        </div>
+
+        {/* Search */}
+        <div className="mb-8">
+          <input
+            type="text"
+            placeholder="搜索技能... 例如:飞书 / 文件系统 / Notion"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full max-w-md px-4 py-2.5 text-sm rounded-xl outline-none"
+            style={{ background: '#17171A', border: '1px solid #2A2A2E', color: '#F5F5F0' }}
+          />
         </div>
 
         {/* Quota */}
         {quota && (
-          <div className="mb-10 flex gap-4">
+          <div className="mb-8 flex gap-4">
             <QuotaCard label="浏览" used={quota.browse.used} limit={quota.browse.limit} />
             <QuotaCard label="MCP 工具" used={quota.mcp.used} limit={quota.mcp.limit} />
           </div>
         )}
 
         {/* Connected */}
-        <div className="mb-10">
-          <h2 className="text-lg font-bold mb-4">已连接 ({connected.length})</h2>
-          {loading ? (
-            <div className="opacity-60">加载中...</div>
-          ) : connected.length === 0 ? (
-            <div className="rounded-xl p-8 text-center text-sm opacity-50" style={{ background: '#17171A', border: '1px dashed #2A2A2E' }}>
-              还没有连接任何技能。从下面选一个开始。
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {connected.length > 0 && (
+          <div className="mb-10">
+            <h2 className="text-base font-bold mb-3">已连接 ({connected.length})</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
               {connected.map(skill => (
                 <div
                   key={skill.instanceId}
-                  className="rounded-xl p-4 flex items-start gap-3"
-                  style={{ background: '#17171A', border: `1px solid ${skill.status === 'active' ? '#FF5A1F33' : '#2A2A2E'}`, opacity: skill.status === 'active' ? 1 : 0.6 }}
+                  className="rounded-lg p-3 flex items-center gap-2.5"
+                  style={{ background: '#17171A', border: `1px solid ${skill.status === 'active' ? '#FF5A1F22' : '#2A2A2E'}`, opacity: skill.status === 'active' ? 1 : 0.5 }}
                 >
-                  <SkillIcon skillId={skill.icon} size={40} connected={skill.status === 'active'} />
+                  <SkillIcon skillId={skill.icon} size={32} connected={skill.status === 'active'} />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-bold truncate">{skill.name}</div>
-                    <div className="text-[10px] opacity-50 mt-0.5">
-                      {skill.type === 'mcp' && skill.toolCount ? `${skill.toolCount} 个工具 · ` : ''}
-                      {skill.lastUsedAt ? `上次 ${new Date(skill.lastUsedAt).toLocaleDateString('zh-CN')}` : '未使用'}
-                    </div>
-                    <div className="flex gap-2 mt-2">
-                      {(skill.type === 'webhook' || skill.type === 'mcp') && (
-                        <button
-                          onClick={() => handleToggle(skill, skill.status !== 'active')}
-                          className="text-[10px] px-2 py-0.5 rounded"
-                          style={{ background: '#2A2A2E' }}
-                        >
-                          {skill.status === 'active' ? '禁用' : '启用'}
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDisconnect(skill)}
-                        className="text-[10px] px-2 py-0.5 rounded"
-                        style={{ color: '#E4483D' }}
-                      >
-                        断开
-                      </button>
+                    <div className="text-xs font-medium truncate">{skill.name}</div>
+                    <div className="text-[9px] opacity-40">
+                      {skill.toolCount ? `${skill.toolCount} 工具` : skill.type}
                     </div>
                   </div>
+                  <button
+                    onClick={() => skill.type !== 'browse'
+                      ? handleToggle(skill, skill.status !== 'active')
+                      : handleDisconnect(skill)
+                    }
+                    className="text-[9px] opacity-40 hover:opacity-80"
+                  >
+                    {skill.status === 'active' ? '·' : '◦'}
+                  </button>
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Category tabs */}
-        <div className="mb-6 flex gap-2 flex-wrap">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setCatFilter(cat)}
-              className="text-xs px-3 py-1.5 rounded-lg transition-colors"
-              style={{
-                background: catFilter === cat ? '#FF5A1F' : '#17171A',
-                color: catFilter === cat ? '#0B0B0C' : '#F5F5F0',
-                border: `1px solid ${catFilter === cat ? '#FF5A1F' : '#2A2A2E'}`,
-              }}
-            >
-              {cat === 'all' ? '全部' : CATEGORY_LABELS[cat]}
-            </button>
-          ))}
-        </div>
+        {loading && <div className="opacity-60 text-sm">加载中...</div>}
 
-        {/* Catalog */}
-        <div className="mb-10">
-          <h2 className="text-lg font-bold mb-4">可连接</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredCatalog.map(entry => {
-              const isInstalling = installingId === entry.id;
-              const isConnected = connectedIds.has(entry.id);
-              const method = CONNECTION_METHOD_LABELS[entry.connectionMethod];
-              const isOAuthFuture = entry.connectionMethod === 'oauth' && !entry.fields.length;
+        {/* Catalog sections */}
+        {!loading && SECTIONS.map(section => {
+          const entries = SKILL_CATALOG.filter(section.filter).filter(matchesSearch);
+          if (entries.length === 0) return null;
+          return (
+            <div key={section.id} className="mb-10">
+              {/* Section header */}
+              <div className="mb-4 pb-3" style={{ borderBottom: '1px solid #1F1F23' }}>
+                <h3 className="text-base font-bold mb-1">{section.title}</h3>
+                <p className="text-xs opacity-50">{section.subtitle}</p>
+              </div>
 
-              return (
-                <div
-                  key={entry.id}
-                  className="rounded-xl p-4"
-                  style={{ background: '#17171A', border: `1px solid ${isInstalling ? '#FF5A1F' : '#2A2A2E'}` }}
-                >
-                  <div className="flex items-start gap-3 mb-2">
-                    <SkillIcon skillId={entry.icon} size={40} connected={isConnected} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold">{entry.name}</span>
-                        <span
-                          className="text-[9px] px-1.5 py-0.5 rounded-full whitespace-nowrap"
-                          style={{ background: `${method.color}20`, color: method.color, border: `1px solid ${method.color}40` }}
-                        >
-                          {method.label}
-                        </span>
-                      </div>
-                      <div className="text-[11px] opacity-60 mt-1 line-clamp-2">{entry.description}</div>
-                    </div>
-                  </div>
+              {/* Cards grid */}
+              <div className={`grid gap-3 ${section.featured ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'}`}>
+                {entries.map(entry => {
+                  const isInstalling = installingId === entry.id;
+                  const isConnected = connectedIds.has(entry.id);
+                  const method = CONNECTION_METHOD_LABELS[entry.connectionMethod];
+                  const isOAuthFuture = entry.connectionMethod === 'oauth' && !entry.fields.length;
 
-                  {!isInstalling && (
-                    <button
-                      onClick={() => {
-                        if (isOAuthFuture) { showToast('OAuth 连接即将上线,敬请期待', false); return; }
-                        if (entry.preInstalled && !isConnected && entry.fields.length === 0) {
-                          // Zero-config pre-installed: install directly
-                          setInstallingId(entry.id);
-                          setFormValues({});
-                          // Auto-submit
-                          setTimeout(() => {
-                            const btn = document.getElementById(`install-btn-${entry.id}`);
-                            btn?.click();
-                          }, 100);
-                          return;
-                        }
-                        setInstallingId(entry.id);
-                        setFormValues({});
-                      }}
-                      disabled={isOAuthFuture}
-                      className="w-full text-xs py-2 rounded-lg mt-2 font-medium transition-colors"
+                  return (
+                    <div
+                      key={entry.id}
+                      className="rounded-xl"
                       style={{
-                        background: isOAuthFuture ? '#2A2A2E' : (isConnected ? '#2A2A2E' : '#FF5A1F'),
-                        color: isOAuthFuture ? '#5A5A60' : (isConnected ? '#F5F5F0' : '#0B0B0C'),
-                        cursor: isOAuthFuture ? 'not-allowed' : 'pointer',
+                        background: '#17171A',
+                        border: `1px solid ${isInstalling ? '#FF5A1F' : '#2A2A2E'}`,
+                        padding: section.featured ? 16 : 12,
                       }}
                     >
-                      {isOAuthFuture ? '即将上线' : (isConnected ? '+ 再添一个' : (entry.preInstalled ? '一键启用' : '连接'))}
-                    </button>
-                  )}
-
-                  {/* Inline install form */}
-                  {isInstalling && (
-                    <div className="mt-3 pt-3 space-y-2" style={{ borderTop: '1px solid #2A2A2E' }}>
-                      {entry.fields.map(field => (
-                        <div key={field.name}>
-                          <label className="text-[10px] opacity-60 block mb-1">
-                            {field.label}{field.required && <span style={{ color: '#FF5A1F' }}> *</span>}
-                          </label>
-                          {field.type === 'password' ? (
-                            <textarea
-                              value={formValues[field.name] || ''}
-                              onChange={e => setFormValues(prev => ({ ...prev, [field.name]: e.target.value }))}
-                              placeholder={field.placeholder}
-                              rows={3}
-                              className="w-full px-2 py-1.5 text-[11px] font-mono rounded-lg outline-none resize-y"
-                              style={{ background: '#0B0B0C', border: '1px solid #2A2A2E', color: '#F5F5F0' }}
-                            />
-                          ) : (
-                            <input
-                              type="text"
-                              value={formValues[field.name] || ''}
-                              onChange={e => setFormValues(prev => ({ ...prev, [field.name]: e.target.value }))}
-                              placeholder={field.placeholder}
-                              className="w-full px-2 py-1.5 text-xs rounded-lg outline-none"
-                              style={{ background: '#0B0B0C', border: '1px solid #2A2A2E', color: '#F5F5F0' }}
-                            />
-                          )}
-                          {field.help && <div className="text-[9px] opacity-40 mt-0.5">{field.help}</div>}
+                      <div className="flex items-start gap-3 mb-2">
+                        <SkillIcon skillId={entry.icon} size={section.featured ? 40 : 32} connected={isConnected} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`font-bold ${section.featured ? 'text-sm' : 'text-xs'}`}>{entry.name}</span>
+                            <span
+                              className="text-[8px] px-1 py-px rounded-full whitespace-nowrap"
+                              style={{ background: `${method.color}15`, color: method.color, border: `1px solid ${method.color}30` }}
+                            >
+                              {method.label}
+                            </span>
+                          </div>
+                          <div className={`opacity-50 mt-0.5 line-clamp-2 ${section.featured ? 'text-[11px]' : 'text-[10px]'}`}>
+                            {entry.description}
+                          </div>
                         </div>
-                      ))}
-                      {entry.confirmWarning && (
-                        <div className="text-[10px] p-2 rounded-lg" style={{ background: '#2A1717', color: '#FFB99A' }}>
-                          ⚠️ {entry.confirmWarning}
+                      </div>
+
+                      {!isInstalling && (
+                        <button
+                          onClick={() => {
+                            if (isOAuthFuture) { showToast('OAuth 连接即将上线', false); return; }
+                            setInstallingId(entry.id);
+                            setFormValues({});
+                            if (entry.fields.length === 0) {
+                              // Zero-config: auto-submit after a tick
+                              setTimeout(() => document.getElementById(`install-btn-${entry.id}`)?.click(), 50);
+                            }
+                          }}
+                          disabled={isOAuthFuture}
+                          className={`w-full py-1.5 rounded-lg font-medium mt-1 ${section.featured ? 'text-xs' : 'text-[10px]'}`}
+                          style={{
+                            background: isOAuthFuture ? '#2A2A2E'
+                              : section.featured && !isConnected ? '#FF5A1F' : '#2A2A2E',
+                            color: isOAuthFuture ? '#5A5A60'
+                              : section.featured && !isConnected ? '#0B0B0C' : '#F5F5F0',
+                            cursor: isOAuthFuture ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {isOAuthFuture ? '即将上线' : isConnected ? '+ 再添一个' : entry.preInstalled ? '一键启用' : '连接'}
+                        </button>
+                      )}
+
+                      {/* Inline install form */}
+                      {isInstalling && entry.fields.length > 0 && (
+                        <div className="mt-2 pt-2 space-y-2" style={{ borderTop: '1px solid #2A2A2E' }}>
+                          {entry.fields.map(field => (
+                            <div key={field.name}>
+                              <label className="text-[9px] opacity-50 block mb-0.5">
+                                {field.label}{field.required && <span style={{ color: '#FF5A1F' }}> *</span>}
+                              </label>
+                              {field.type === 'password' ? (
+                                <textarea
+                                  value={formValues[field.name] || ''}
+                                  onChange={e => setFormValues(p => ({ ...p, [field.name]: e.target.value }))}
+                                  placeholder={field.placeholder}
+                                  rows={3}
+                                  className="w-full px-2 py-1 text-[10px] font-mono rounded-lg outline-none resize-y"
+                                  style={{ background: '#0B0B0C', border: '1px solid #2A2A2E', color: '#F5F5F0' }}
+                                />
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={formValues[field.name] || ''}
+                                  onChange={e => setFormValues(p => ({ ...p, [field.name]: e.target.value }))}
+                                  placeholder={field.placeholder}
+                                  className="w-full px-2 py-1 text-[10px] rounded-lg outline-none"
+                                  style={{ background: '#0B0B0C', border: '1px solid #2A2A2E', color: '#F5F5F0' }}
+                                />
+                              )}
+                            </div>
+                          ))}
+                          {entry.confirmWarning && (
+                            <div className="text-[9px] p-1.5 rounded" style={{ background: '#2A1717', color: '#FFB99A' }}>
+                              ⚠️ {entry.confirmWarning}
+                            </div>
+                          )}
+                          <div className="flex gap-1.5">
+                            <button
+                              id={`install-btn-${entry.id}`}
+                              onClick={() => handleInstall(entry)}
+                              disabled={submitting}
+                              className="text-[10px] px-3 py-1 rounded-lg font-medium"
+                              style={{ background: '#FF5A1F', color: '#0B0B0C', opacity: submitting ? 0.5 : 1 }}
+                            >
+                              {submitting ? '连接中...' : '确认'}
+                            </button>
+                            <button
+                              onClick={() => { setInstallingId(null); setFormValues({}); }}
+                              className="text-[10px] px-3 py-1 rounded-lg"
+                              style={{ background: '#2A2A2E' }}
+                            >
+                              取消
+                            </button>
+                          </div>
                         </div>
                       )}
-                      <div className="flex gap-2">
+
+                      {/* Zero-config hidden submit */}
+                      {isInstalling && entry.fields.length === 0 && (
                         <button
                           id={`install-btn-${entry.id}`}
                           onClick={() => handleInstall(entry)}
-                          disabled={submitting}
-                          className="text-xs px-3 py-1.5 rounded-lg font-medium"
-                          style={{ background: '#FF5A1F', color: '#0B0B0C', opacity: submitting ? 0.5 : 1 }}
-                        >
-                          {submitting ? '连接中...' : '确认连接'}
-                        </button>
-                        <button
-                          onClick={() => { setInstallingId(null); setFormValues({}); }}
-                          className="text-xs px-3 py-1.5 rounded-lg"
-                          style={{ background: '#2A2A2E' }}
-                        >
-                          取消
-                        </button>
-                      </div>
+                          style={{ display: 'none' }}
+                        />
+                      )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
 
         {/* Footer */}
-        <div className="text-[11px] opacity-40 leading-relaxed">
-          <p>所有凭证使用 AES-256-GCM 加密存储,密钥在服务端环境变量中。浏览站点仅支持 10 个白名单平台。自定义 MCP 运行任意代码,安全责任自担。</p>
+        <div className="text-[10px] opacity-30 mt-6">
+          凭证 AES-256-GCM 加密 · 浏览仅限 10 个白名单平台 · 自定义 MCP 安全自担
         </div>
       </main>
 
@@ -404,11 +427,11 @@ export default function SkillsHubPage() {
 function QuotaCard({ label, used, limit }: { label: string; used: number; limit: number }) {
   const remaining = Math.max(0, limit - used);
   return (
-    <div className="flex-1 rounded-xl p-4" style={{ background: '#17171A', border: '1px solid #2A2A2E' }}>
-      <div className="text-[10px] uppercase tracking-widest opacity-50 mb-1">{label}</div>
-      <div className="text-xl font-bold">
+    <div className="flex-1 rounded-lg p-3" style={{ background: '#17171A', border: '1px solid #2A2A2E' }}>
+      <div className="text-[9px] uppercase tracking-widest opacity-40 mb-1">{label}</div>
+      <div className="text-lg font-bold">
         <span style={{ color: remaining < 10 ? '#FF5A1F' : '#F5F5F0' }}>{used}</span>
-        <span className="opacity-30 text-sm"> / {limit}</span>
+        <span className="opacity-25 text-xs"> / {limit}</span>
       </div>
     </div>
   );
