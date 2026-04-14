@@ -45,12 +45,12 @@ export default function ProfilePage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Avatar + basic info — hero card uses 16px radius */}
-              <div style={{ borderRadius: 16, border: '1px solid var(--ob-border)', background: 'var(--ob-surface)', padding: 24, display: 'flex', alignItems: 'center', gap: 18 }}>
+              <div style={{ borderRadius: 14, border: '1px solid rgba(255,255,255,0.07)', background: '#1A1A18', padding: 24, display: 'flex', alignItems: 'center', gap: 18 }}>
                 <div style={{
                   width: 56, height: 56, borderRadius: '50%',
-                  background: 'var(--ob-orange)', color: '#fff',
+                  background: 'rgba(255,90,31,0.18)', color: '#FF5A1F',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 22, fontWeight: 700, flexShrink: 0,
+                  fontSize: 18, fontWeight: 700, flexShrink: 0,
                   fontFamily: 'var(--ob-font-display)',
                 }}>
                   {userId ? userId.slice(0, 1).toUpperCase() : 'U'}
@@ -58,14 +58,14 @@ export default function ProfilePage() {
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ob-text)' }}>{userId || '未知用户'}</div>
                   <div style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 11, color: 'var(--ob-text-dim)', marginTop: 4, letterSpacing: '0.04em' }}>
-                    USER ID · {user?.id || userId}
+                    USER ID &middot; {user?.id || userId}
                   </div>
                 </div>
               </div>
 
               {/* Plan & credits — body card uses 12px radius */}
-              <div style={{ borderRadius: 12, border: '1px solid var(--ob-border)', background: 'var(--ob-surface)', padding: 24 }}>
-                <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 10, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 16px' }}>账户状态</p>
+              <div style={{ borderRadius: 14, border: '1px solid rgba(255,255,255,0.07)', background: '#1A1A18', padding: '20px 24px' }}>
+                <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 12, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(245,245,240,0.35)', margin: '0 0 16px' }}>账户状态</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
                   <div>
                     <div style={{ fontSize: 11, color: 'var(--ob-text-dim)', marginBottom: 4, fontFamily: 'var(--ob-font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>当前套餐</div>
@@ -73,7 +73,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <div style={{ fontSize: 11, color: 'var(--ob-text-dim)', marginBottom: 4, fontFamily: 'var(--ob-font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>剩余额度</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--ob-orange)', fontFamily: 'var(--ob-font-mono)' }}>{user?.credits ?? '--'} <span style={{ fontSize: 11, color: 'var(--ob-text-muted)' }}>credits</span></div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: '#FF5A1F', fontFamily: 'var(--ob-font-mono)' }}>{user?.credits ?? '--'} <span style={{ fontSize: 12, color: 'rgba(245,245,240,0.35)' }}>credits</span></div>
                   </div>
                   {user?.expireAt && (
                     <div>
@@ -89,8 +89,8 @@ export default function ProfilePage() {
               </div>
 
               {/* Quick links — body card 12px */}
-              <div style={{ borderRadius: 12, border: '1px solid var(--ob-border)', background: 'var(--ob-surface)', padding: '20px 24px' }}>
-                <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 10, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 12px' }}>快捷操作</p>
+              <div style={{ borderRadius: 14, border: '1px solid rgba(255,255,255,0.07)', background: '#1A1A18', padding: '20px 24px' }}>
+                <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 10, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(245,245,240,0.35)', margin: '0 0 12px' }}>快捷操作</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {[
                     { href: '/billing', label: '充值与套餐' },

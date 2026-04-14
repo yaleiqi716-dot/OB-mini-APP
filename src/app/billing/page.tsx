@@ -248,7 +248,7 @@ export default function BillingPage() {
             const pct = Math.min(100, Math.round((user.credits / maxCredits) * 100));
             const isLow = user.credits < 20;
             return (
-              <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 24, marginBottom: 28 }}>
+              <div style={{ background: '#1A1A18', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '24px 28px', marginBottom: 28 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
@@ -285,7 +285,7 @@ export default function BillingPage() {
                   const isRecommended = p.recommended;
                   return (
                   <div key={p.code} className={isRecommended ? 'ob-tier-recommended' : ''} style={{
-                    background: 'var(--ob-surface)', border: isRecommended ? undefined : '1px solid rgba(245,245,240,0.08)', borderRadius: 16,
+                    background: '#1A1A18', border: isRecommended ? undefined : '1px solid rgba(255,255,255,0.08)', borderRadius: 16,
                     padding: 20, display: 'flex', flexDirection: 'column', position: 'relative',
                     transition: 'border-color .2s, box-shadow .2s',
                   }}
@@ -304,12 +304,13 @@ export default function BillingPage() {
                       onClick={() => handleBuy(p.code)}
                       disabled={!!buying}
                       style={{
-                        height: 40, borderRadius: 6, fontSize: 14, fontWeight: 600,
+                        height: 40, borderRadius: 9999, fontSize: 13, fontWeight: 600,
                         border: isRecommended ? 'none' : '1px solid #FF5A1F',
                         background: isRecommended ? '#FF5A1F' : 'transparent',
                         color: isRecommended ? '#fff' : '#FF5A1F',
                         cursor: buying ? 'wait' : 'pointer', opacity: buying ? 0.5 : 1,
-                        transition: 'background .2s', marginTop: 'auto',
+                        transition: 'all .15s ease', marginTop: 'auto',
+                        boxShadow: isRecommended ? '0 4px 16px rgba(255,90,31,0.30)' : 'none',
                       }}
                     >
                       {buying === p.code ? '创建订单...' : user?.plan === p.plan ? '续费' : '订阅'}
@@ -343,10 +344,10 @@ export default function BillingPage() {
                       onClick={() => handleBuy(p.code)}
                       disabled={!!buying}
                       style={{
-                        height: 40, borderRadius: 12, fontSize: 14, fontWeight: 600,
-                        border: '2px solid #FF5A1F', background: 'transparent', color: '#FF5A1F',
+                        height: 40, borderRadius: 9999, fontSize: 13, fontWeight: 600,
+                        border: '1px solid #FF5A1F', background: 'transparent', color: '#FF5A1F',
                         cursor: buying ? 'wait' : 'pointer', opacity: buying ? 0.5 : 1,
-                        transition: 'background .2s', marginTop: 'auto',
+                        transition: 'all .15s ease', marginTop: 'auto',
                       }}
                     >
                       {buying === p.code ? '创建订单...' : '购买'}

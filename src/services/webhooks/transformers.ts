@@ -14,12 +14,12 @@ export type WebhookKind = 'generic' | 'feishu' | 'dingtalk' | 'wecom';
 
 // Human labels for each event — used in markdown bodies.
 const EVENT_LABELS: Record<WebhookEvent, { emoji: string; title: string; verb: string }> = {
-  task_assigned: { emoji: '📋', title: '新任务分配', verb: '分配了新任务' },
-  task_submitted: { emoji: '📤', title: '待审核', verb: '提交了交付物' },
-  task_revision: { emoji: '✏️', title: '需要修改', verb: '被退回修改' },
-  task_completed: { emoji: '✅', title: '任务完成', verb: '通过审核' },
-  workspace_invite_accepted: { emoji: '👋', title: '新成员加入', verb: '加入了工作区' },
-  agent_task_completed: { emoji: '🤖', title: 'Agent 任务完成', verb: '执行完成' },
+  task_assigned: { emoji: '[+]', title: '新任务分配', verb: '分配了新任务' },
+  task_submitted: { emoji: '[>]', title: '待审核', verb: '提交了交付物' },
+  task_revision: { emoji: '[~]', title: '需要修改', verb: '被退回修改' },
+  task_completed: { emoji: '[v]', title: '任务完成', verb: '通过审核' },
+  workspace_invite_accepted: { emoji: '[*]', title: '新成员加入', verb: '加入了工作区' },
+  agent_task_completed: { emoji: '[A]', title: 'Agent 任务完成', verb: '执行完成' },
 };
 
 // Pull a sensible "title" string out of the data block. Each event puts

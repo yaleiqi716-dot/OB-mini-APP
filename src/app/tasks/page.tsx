@@ -58,20 +58,21 @@ function StatusBadge({ status }: { status: string }) {
   const isFailed = status === 'failed';
   const isReview = ['submitted', 'revision'].includes(status);
 
-  let bg = 'rgba(156,163,175,0.10)';
+  let bg = 'rgba(156,163,175,0.08)';
   let color = 'var(--ob-text-muted)';
-  if (isRunning)   { bg = 'rgba(255,90,31,0.10)'; color = 'var(--ob-orange)'; }
-  if (isCompleted) { bg = 'rgba(201,184,158,0.10)'; color = 'var(--ob-success)'; }
-  if (isFailed)    { bg = 'rgba(228,72,61,0.10)';  color = '#E4483D'; }
-  if (isReview)    { bg = 'rgba(154,149,145,0.10)';  color = '#9A9591'; }
+  let border = '1px solid rgba(156,163,175,0.15)';
+  if (isRunning)   { bg = 'rgba(255,90,31,0.12)'; color = '#FF8C5A'; border = '1px solid rgba(255,90,31,0.20)'; }
+  if (isCompleted) { bg = 'rgba(22,163,74,0.12)'; color = '#6EE7A0'; border = '1px solid rgba(22,163,74,0.20)'; }
+  if (isFailed)    { bg = 'rgba(220,38,38,0.12)'; color = '#F87171'; border = '1px solid rgba(220,38,38,0.20)'; }
+  if (isReview)    { bg = 'rgba(234,179,8,0.12)'; color = '#FCD34D'; border = '1px solid rgba(234,179,8,0.20)'; }
 
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center',
-      height: 22, padding: '0 10px',
+      height: 22, padding: '0 8px',
       fontSize: 11, fontWeight: 500,
-      borderRadius: 9999,
-      background: bg, color,
+      borderRadius: 6,
+      background: bg, color, border,
       whiteSpace: 'nowrap',
     }}>
       {STATUS_LABEL[status] || status}
@@ -198,40 +199,22 @@ export default function MyTasksPage() {
       <AppHeader />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
-        <div style={{ maxWidth: 980, margin: '0 auto', padding: '40px 32px 60px' }}>
+        <div style={{ maxWidth: 980, margin: '0 auto', padding: '0 0 60px' }}>
 
-          {/* ── Top area: title + search ── */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
-            <div>
-              <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 8px' }}>
-                <span style={{ color: 'var(--ob-orange)' }}>●</span> Tasks
-              </p>
-              <h1 style={{ fontFamily: 'var(--ob-font-display)', fontSize: 44, fontWeight: 800, color: 'var(--ob-text)', lineHeight: 1, letterSpacing: '-0.025em', margin: 0 }}>任务</h1>
+          {/* ── Compact header — Monday style ── */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h1 style={{ fontSize: 18, fontWeight: 700, color: 'rgba(245,245,240,0.92)', margin: 0 }}>我的任务</h1>
             </div>
-            {/* Search box */}
             <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--ob-text-muted)', pointerEvents: 'none' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              </span>
-              <input
-                type="text"
-                placeholder="搜索任务..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{
-                  width: 220, height: 36, borderRadius: 12,
-                  border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)',
-                  padding: '0 12px 0 34px', fontSize: 13,
-                  color: 'var(--ob-text)', outline: 'none',
-                  transition: 'border-color .2s, box-shadow .2s',
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#FF5A1F'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255,90,31,0.12)'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--ob-border)'; e.currentTarget.style.boxShadow = 'none'; }}
+              <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'rgba(245,245,240,0.28)', pointerEvents: 'none' }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input placeholder="搜索任务..." value={search} onChange={(e) => setSearch(e.target.value)}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, height: 32, paddingLeft: 30, paddingRight: 12, fontSize: 13, color: 'rgba(245,245,240,0.80)', width: 200, outline: 'none', transition: 'border-color 0.15s' }}
+                onFocus={e => (e.target.style.borderColor = 'rgba(255,90,31,0.40)')}
+                onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
               />
             </div>
           </div>
-
-          <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', margin: '0 0 16px' }}>查看你的 AI 执行记录与结果</p>
 
           {/* ── View mode tabs ── */}
           {hasWorkspace && (
@@ -252,7 +235,7 @@ export default function MyTasksPage() {
           )}
 
           {/* ── Filter chips ── */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 6, padding: '10px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
             {FILTER_OPTIONS.map((opt) => {
               const active = filter === opt.value;
               return (
@@ -260,13 +243,13 @@ export default function MyTasksPage() {
                   key={opt.value}
                   onClick={() => setFilter(opt.value)}
                   style={{
-                    height: 32, padding: '0 14px',
-                    borderRadius: 9999, fontSize: 13, fontWeight: active ? 500 : 400,
-                    border: active ? 'none' : '1px solid rgba(245,245,240,0.08)',
-                    background: active ? 'rgba(255,90,31,0.10)' : 'var(--ob-surface)',
-                    color: active ? '#FF5A1F' : 'var(--ob-text-muted)',
+                    height: 30, padding: '0 14px',
+                    borderRadius: 9999, fontSize: 12, fontWeight: 500,
+                    border: active ? '1px solid rgba(255,90,31,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                    background: active ? 'rgba(255,90,31,0.12)' : 'rgba(255,255,255,0.04)',
+                    color: active ? '#FF5A1F' : 'rgba(245,245,240,0.55)',
                     cursor: 'pointer',
-                    transition: 'all .2s ease',
+                    transition: 'all .15s ease',
                   }}
                 >
                   {opt.label}
@@ -277,8 +260,20 @@ export default function MyTasksPage() {
 
           {/* ── Content ── */}
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-              <Spinner size="md" />
+            /* Skeleton shimmer rows */
+            <div>
+              {Array.from({length: 6}).map((_, i) => (
+                <div key={i} style={{
+                  display: 'grid', gridTemplateColumns: 'minmax(200px,1fr) 80px 100px 120px',
+                  alignItems: 'center', padding: '0 20px', height: 46,
+                  borderBottom: '1px solid rgba(255,255,255,0.04)', gap: 16,
+                }}>
+                  <div className="ob-skeleton" style={{ height: 14, width: `${50 + i * 8}%` }} />
+                  <div className="ob-skeleton" style={{ height: 12, width: 50 }} />
+                  <div className="ob-skeleton" style={{ height: 12, width: 60 }} />
+                  <div />
+                </div>
+              ))}
             </div>
           ) : error ? (
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
@@ -315,154 +310,78 @@ export default function MyTasksPage() {
               </a>
             </div>
           ) : (
-            /* ── Task card list ── */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            /* ── Task row list — Monday-style compact rows ── */
+            <div>
+              {/* Table header */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'minmax(200px,1fr) 80px 100px 120px',
+                padding: '6px 20px', fontSize: 11, letterSpacing: '0.10em', textTransform: 'uppercase',
+                color: 'rgba(245,245,240,0.22)', borderBottom: '1px solid rgba(255,255,255,0.06)',
+                fontFamily: 'var(--ob-font-mono)',
+              }}>
+                <span>任务</span><span>时间</span><span>状态</span><span style={{ textAlign: 'right' }}>操作</span>
+              </div>
+
               {filtered.map((t) => {
                 const isTeam = viewMode === 'team';
                 const failed = isTeam ? false : t.status === 'failed';
-                const completed = isTeam ? t.status === 'completed' : t.status === 'completed';
-                const running = isTeam ? ['assigned', 'in_progress', 'revision'].includes(t.status) : isRunning(t.status);
                 const displayTitle = t.title || t.input?.slice(0, 60) || '未命名任务';
                 const detailUrl = isTeam ? `/workspace/tasks/${t.id}` : `/tasks/${t.id}`;
-                const displayInput = t.input && t.input !== displayTitle ? t.input.slice(0, 100) : '';
-
-                const actionBtnStyle: React.CSSProperties = {
-                  height: 30, padding: '0 12px',
-                  borderRadius: 9999, fontSize: 12, fontWeight: 500,
-                  border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)',
-                  color: 'var(--ob-text-muted)', textDecoration: 'none', cursor: 'pointer',
-                  display: 'inline-flex', alignItems: 'center',
-                  transition: 'border-color .2s, background .2s, color .2s',
-                };
-                const hoverIn = (e: React.MouseEvent<HTMLElement>) => {
-                  e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)';
-                  e.currentTarget.style.background = 'rgba(255,90,31,0.06)';
-                  e.currentTarget.style.color = '#FF5A1F';
-                };
-                const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
-                  e.currentTarget.style.borderColor = 'var(--ob-border)';
-                  e.currentTarget.style.background = '#FFFFFF';
-                  e.currentTarget.style.color = 'var(--ob-text-muted)';
-                };
+                const openUrl = t.conversationId ? `/agent?conversationId=${t.conversationId}` : detailUrl;
 
                 return (
                   <div
                     key={t.id}
                     style={{
-                      background: 'var(--ob-surface)',
-                      border: '1px solid rgba(245,245,240,0.08)',
-                      borderRadius: 16,
-                      padding: 18,
-                      minHeight: 96,
-                      display: 'flex',
-                      alignItems: 'center',
-                      transition: 'transform .2s ease, box-shadow .2s ease',
-                      cursor: 'default',
+                      display: 'grid', gridTemplateColumns: 'minmax(200px,1fr) 80px 100px 120px',
+                      alignItems: 'center', padding: '0 20px', height: 46,
+                      borderBottom: '1px solid rgba(255,255,255,0.04)',
+                      borderLeft: failed ? '3px solid rgba(248,113,113,0.45)' : '3px solid transparent',
+                      cursor: 'pointer', transition: 'background 0.1s',
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.05)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    onClick={() => window.location.href = openUrl}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, width: '100%' }}>
-                      {/* Left: content */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        {/* Title row */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: displayInput ? 6 : 0 }}>
-                          <p style={{
-                            fontSize: 17, fontWeight: 600, color: 'var(--ob-text)',
-                            margin: 0, overflow: 'hidden', textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap', flex: 1, minWidth: 0,
-                          }}>
-                            {displayTitle}
-                          </p>
-                          <StatusBadge status={t.status} />
-                        </div>
+                    {/* Title */}
+                    <span style={{
+                      fontSize: 14, fontWeight: 500, color: 'rgba(245,245,240,0.88)',
+                      overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', paddingRight: 16,
+                    }}>
+                      {displayTitle}
+                    </span>
 
-                        {/* Input summary — max 2 lines */}
-                        {displayInput && (
-                          <p style={{
-                            fontSize: 13, color: 'var(--ob-text-muted)', margin: 0, lineHeight: 1.5,
-                            overflow: 'hidden', display: '-webkit-box',
-                            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                          }}>
-                            {displayInput}
-                          </p>
-                        )}
+                    {/* Time */}
+                    <span style={{ fontSize: 12, color: 'rgba(245,245,240,0.32)' }}>
+                      {timeAgo(t.updatedAt || t.createdAt)}
+                    </span>
 
-                        {/* Time — fixed below, 8px gap from summary */}
-                        <span style={{ display: 'block', fontSize: 12, color: 'var(--ob-text-muted)', marginTop: 8 }}>
-                          {timeAgo(t.updatedAt || t.createdAt)}
-                        </span>
+                    {/* Status */}
+                    <StatusBadge status={t.status} />
 
-                        {/* Failed: short hint (no stale "当前能力暂不可用"
-                            copy — that lived here before the P0-1b bucketed
-                            error system landed, and was the only place in the
-                            app still shipping that dead-end message). The real
-                            error detail lives in the task conversation now;
-                            this is just a one-word explanation for the list
-                            view so the red status badge isn't unexplained. */}
-                        {failed && (
-                          <p style={{ fontSize: 12, color: 'var(--ob-error)', marginTop: 6 }}>
-                            执行失败 · 点"打开"查看原因和重试
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Right: action buttons — V2 simplified.
-                          Previously up to 5 different buttons (重试 / 查看详情 /
-                          继续对话 / 查看结果 / 查看进度) conditionally rendered
-                          based on status. The mental model was incoherent — the
-                          same task in two different states showed different
-                          button labels pointing at conceptually equivalent
-                          destinations. New rule:
-                            - ONE primary "打开" button per row. Routes to the
-                              task's conversation if it has one, otherwise to
-                              the detail page. Label never changes.
-                            - Failed tasks additionally get a small circular
-                              ↻ retry icon button before "打开", which re-queues
-                              the task in place without navigating. */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                        {failed && (
-                          <button
-                            onClick={() => handleRetry(t.id)}
-                            disabled={retrying === t.id}
-                            aria-label="重试任务"
-                            style={{
-                              width: 32, height: 32, padding: 0,
-                              borderRadius: '50%',
-                              border: '1px solid var(--ob-border)',
-                              background: 'var(--ob-surface)',
-                              color: 'var(--ob-error)',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              cursor: retrying === t.id ? 'wait' : 'pointer',
-                              opacity: retrying === t.id ? 0.5 : 1,
-                              transition: 'border-color .15s, background .15s',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.borderColor = 'var(--ob-error)';
-                              e.currentTarget.style.background = 'var(--ob-surface-hi)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.borderColor = 'var(--ob-border)';
-                              e.currentTarget.style.background = 'var(--ob-surface)';
-                            }}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="1 4 1 10 7 10" />
-                              <path d="M3.51 15a9 9 0 1 0 .49-4.5" />
-                            </svg>
-                          </button>
-                        )}
-                        <a
-                          href={t.conversationId ? `/agent?conversationId=${t.conversationId}` : detailUrl}
-                          style={actionBtnStyle}
-                          onMouseEnter={hoverIn}
-                          onMouseLeave={hoverOut}
-                        >
-                          打开
-                        </a>
-                      </div>
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
+                      {failed && (
+                        <button
+                          onClick={() => handleRetry(t.id)}
+                          disabled={retrying === t.id}
+                          style={{
+                            fontSize: 12, color: 'rgba(245,245,240,0.45)',
+                            border: '1px solid rgba(255,255,255,0.10)', borderRadius: 99,
+                            padding: '3px 12px', background: 'transparent', cursor: 'pointer',
+                            opacity: retrying === t.id ? 0.5 : 1, transition: 'all .12s',
+                          }}
+                        >重试</button>
+                      )}
+                      <a
+                        href={openUrl}
+                        style={{
+                          fontSize: 12, color: 'rgba(245,245,240,0.70)',
+                          border: '1px solid rgba(255,255,255,0.14)', borderRadius: 99,
+                          padding: '3px 12px', background: 'transparent', textDecoration: 'none',
+                          transition: 'all .12s',
+                        }}
+                      >打开</a>
                     </div>
                   </div>
                 );

@@ -62,19 +62,19 @@ export default function SettingsPage() {
   };
   const rowStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    minHeight: 56, padding: '12px 0',
+    minHeight: 56, padding: '14px 0',
   };
   const rowBorder: React.CSSProperties = {
-    borderBottom: '1px solid rgba(245,245,240,0.08)',
+    borderBottom: '1px solid rgba(255,255,255,0.05)',
   };
   const labelStyle: React.CSSProperties = {
-    fontSize: 14, fontWeight: 500, color: 'var(--ob-text)',
+    fontSize: 13, fontWeight: 500, color: 'rgba(245,245,240,0.75)',
   };
   const sublabelStyle: React.CSSProperties = {
     fontSize: 12, color: 'var(--ob-text-muted)', marginTop: 2,
   };
   const valueStyle: React.CSSProperties = {
-    fontSize: 14, color: 'var(--ob-text-muted)',
+    fontSize: 13, color: 'rgba(245,245,240,0.45)',
   };
   const actionBtnStyle: React.CSSProperties = {
     height: 30, padding: '0 12px', borderRadius: 9999,
@@ -353,18 +353,19 @@ export default function SettingsPage() {
                       onClick={() => setSection(item.id)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10,
-                        height: 40, padding: '0 12px', borderRadius: 12,
+                        height: 40, padding: '0 12px',
+                        borderRadius: active ? '0 8px 8px 0' : 8,
                         fontSize: 14, border: 'none',
-                        background: active ? 'rgba(255,90,31,0.06)' : 'transparent',
-                        color: active ? 'var(--ob-text)' : 'var(--ob-text-muted)',
+                        background: active ? 'rgba(255,90,31,0.10)' : 'transparent',
+                        color: active ? '#fff' : 'rgba(245,245,240,0.50)',
                         fontWeight: active ? 550 : 500,
                         cursor: 'pointer',
                         borderLeft: active ? '2px solid #FF5A1F' : '2px solid transparent',
-                        transition: 'all .2s',
+                        transition: 'all .15s',
                         width: '100%', textAlign: 'left',
                       }}
-                      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--ob-surface)'; }}
-                      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+                      onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(245,245,240,0.80)'; } }}
+                      onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(245,245,240,0.50)'; } }}
                     >
                       <NavIcon name={item.icon} />
                       {item.label}

@@ -41,6 +41,11 @@ const STATUS_LABEL: Record<string, string> = {
   submitted: '已提交', revision: '需修改', completed: '已完成',
 };
 
+const STATUS_DOT: Record<string, string> = {
+  draft: '#6B7280', assigned: '#6B7280', in_progress: '#FF8C5A',
+  submitted: '#FBBF24', revision: '#FBBF24', completed: '#34D399',
+};
+
 const FILTER_OPTIONS = [
   { value: 'all', label: '全部' },
   { value: 'pending', label: '待处理' },
@@ -49,18 +54,9 @@ const FILTER_OPTIONS = [
   { value: 'done', label: '已完成' },
 ];
 
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, { bg: string; color: string }> = {
-    draft: { bg: 'rgba(156,163,175,0.10)', color: 'rgba(245,245,240,0.28)' },
-    assigned: { bg: 'rgba(255,90,31,0.10)', color: 'var(--ob-orange)' },
-    in_progress: { bg: 'rgba(255,90,31,0.10)', color: 'var(--ob-orange)' },
-    submitted: { bg: 'rgba(154,149,145,0.10)', color: '#9A9591' },
-    revision: { bg: 'rgba(228,72,61,0.10)', color: '#E4483D' },
-    completed: { bg: 'rgba(201,184,158,0.10)', color: 'var(--ob-success)' },
-  };
-  const c = colors[status] || colors.draft;
-  return <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px', fontSize: 11, fontWeight: 500, borderRadius: 9999, background: c.bg, color: c.color }}>{STATUS_LABEL[status] || status}</span>;
-}
+const PRIORITY_LABEL: Record<number, string> = {
+  0: '普通', 1: '中', 2: '高', 3: '紧急',
+};
 
 function timeAgo(d: string): string {
   const diff = Date.now() - new Date(d).getTime();
@@ -148,126 +144,145 @@ export default function WorkspacePage() {
       <AppHeader />
       <WorkspaceSubNav />
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }} className="custom-scrollbar">
-        {/* Command center atmosphere */}
-        {/* Command atmosphere + dot grid — separate layers for full coverage */}
-        <div className="ob-command-atmosphere" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 500, pointerEvents: 'none', zIndex: 0 }} />
-        <div className="ob-dotgrid ob-dotgrid--ws" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 500, zIndex: 0 }} />
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px', position: 'relative', zIndex: 1 }}>
-          {/* Title + new task */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
-            <div>
-              <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 8px' }}>
-                <span style={{ color: 'var(--ob-orange)' }}>●</span> Workspace · {ws.role === 'owner' ? 'Owner' : 'Member'}
-              </p>
-              <h1 style={{ fontFamily: 'var(--ob-font-display)', fontSize: 40, fontWeight: 800, color: 'var(--ob-text)', margin: '0 0 8px', letterSpacing: '-0.025em', lineHeight: 1 }}>{ws.name}</h1>
-              <p style={{ fontFamily: 'var(--ob-font-body)', fontSize: 13, color: 'var(--ob-text-muted)', margin: 0 }}>{ws.memberCount} 位成员 · {ws.taskCount} 个任务</p>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px 60px', position: 'relative', zIndex: 1 }}>
+
+          {/* ── Board header (Monday-style compact) ── */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 18, fontWeight: 700, color: 'rgba(245,245,240,0.92)' }}>工作区</span>
+              <span style={{ fontSize: 12, color: 'rgba(245,245,240,0.28)', marginLeft: 4 }}>{ws.memberCount} 位成员</span>
             </div>
-            {ws.role === 'owner' && (
-              <a href="/workspace/tasks/new" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 40, padding: '0 18px', borderRadius: 8, fontFamily: 'var(--ob-font-body)', fontSize: 14, fontWeight: 600, background: 'var(--ob-orange)', color: '#fff', textDecoration: 'none', transition: 'all .15s cubic-bezier(.2,.7,.3,1)' }}>
-                + 新建任务
-              </a>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,90,31,0.2)', color: '#FF5A1F', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Y</div>
+              <a href="/workspace/members" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 99, fontSize: 12, border: '1px solid rgba(255,255,255,0.14)', color: 'rgba(245,245,240,0.55)', background: 'transparent', textDecoration: 'none', transition: 'all 0.12s' }}
+                onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.borderColor = 'rgba(255,90,31,0.40)'; e.currentTarget.style.color = '#FF5A1F'; }}
+                onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.color = 'rgba(245,245,240,0.55)'; }}
+              >邀请 / {ws.memberCount}</a>
+            </div>
           </div>
 
-          {/* Command center summary */}
-          {tasks.length > 0 && (() => {
-            const active = tasks.filter(t => ['assigned', 'in_progress'].includes(t.businessStatus)).length;
-            const review = tasks.filter(t => ['submitted', 'revision'].includes(t.businessStatus)).length;
-            const done = tasks.filter(t => t.businessStatus === 'completed').length;
-            const overdue = tasks.filter(t => t.dueAt && new Date(t.dueAt).getTime() < Date.now() && t.businessStatus !== 'completed').length;
-            return (
-              <div className="ob-command-bar">
-                <div className="ob-command-stat ob-command-stat--accent">
-                  <span className="ob-px-dot ob-px-dot--active" style={{ animation: active > 0 ? 'statusCycle 2s ease-in-out infinite' : 'none', background: active > 0 ? '#FF5A1F' : 'var(--ob-text-dim)', boxShadow: active > 0 ? '0 0 6px rgba(255,90,31,0.4)' : 'none' }} />
-                  <span><strong>{active}</strong> 进行中</span>
-                </div>
-                <div className="ob-command-stat" style={{ color: review > 0 ? '#9A9591' : undefined }}>
-                  <span><strong>{review}</strong> 待审核</span>
-                </div>
-                <div className="ob-command-stat ob-command-stat--green">
-                  <span><strong>{done}</strong> 已完成</span>
-                </div>
-                {overdue > 0 && (
-                  <div className="ob-command-stat ob-command-stat--red">
-                    <span><strong>{overdue}</strong> 已逾期</span>
-                  </div>
-                )}
-                <div style={{ flex: 1 }} />
-                <span style={{ fontSize: 10, color: 'rgba(245,245,240,0.28)', letterSpacing: '0.05em' }}>ACTIVE</span>
-                <span style={{ fontSize: 12, color: 'rgba(245,245,240,0.55)' }}>{ws?.memberCount} 位成员协作中</span>
-              </div>
-            );
-          })()}
+          {/* View tabs */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            {[{ key: 'table', label: '看板' }, { key: 'calendar', label: '日历' }].map(v => (
+              <span key={v.key} style={{ padding: '7px 18px', fontSize: 14, cursor: 'pointer', fontWeight: v.key === 'table' ? 500 : 400, color: v.key === 'table' ? '#fff' : 'rgba(245,245,240,0.38)', borderBottom: v.key === 'table' ? '2px solid #FF5A1F' : '2px solid transparent', marginBottom: -1, transition: 'all 0.12s' }}>{v.label}</span>
+            ))}
+          </div>
 
-          {/* Search + filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-            <div style={{ position: 'relative', flex: 1, maxWidth: 260 }}>
-              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'rgba(245,245,240,0.55)', pointerEvents: 'none' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              </span>
-              <input
-                type="text" placeholder="搜索任务..." value={search}
-                onChange={e => setSearch(e.target.value)}
-                style={{ width: '100%', height: 36, borderRadius: 12, border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)', padding: '0 12px 0 34px', fontSize: 13, color: 'var(--ob-text)', outline: 'none', transition: 'border-color .2s' }}
-                onFocus={e => (e.currentTarget.style.borderColor = '#FF5A1F')}
-                onBlur={e => (e.currentTarget.style.borderColor = 'var(--ob-border)')}
-              />
+          {/* Toolbar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: 4 }}>
+            <div style={{ display: 'flex', marginRight: 10 }}>
+              <a href="/workspace/tasks/new" style={{ padding: '6px 16px', borderRadius: '99px 0 0 99px', background: '#FF5A1F', color: '#fff', border: 'none', borderRight: '1px solid rgba(255,255,255,0.25)', fontSize: 13, fontWeight: 600, textDecoration: 'none', transition: 'background 0.12s' }}
+                onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.background = '#E84D15')}
+                onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.background = '#FF5A1F')}
+              >+ 新建任务</a>
+              <span style={{ padding: '6px 10px', borderRadius: '0 99px 99px 0', background: '#FF5A1F', color: '#fff', fontSize: 12, cursor: 'pointer' }}>&#9662;</span>
             </div>
-            <div style={{ display: 'flex', gap: 6 }}>
+            {['搜索', '筛选', '排序'].map(b => (
+              <button key={b} className="ob-toolbar-btn">{b}</button>
+            ))}
+            <div style={{ flex: 1 }} />
+            <div style={{ display: 'flex', gap: 4 }}>
               {FILTER_OPTIONS.map(f => (
                 <button key={f.value} onClick={() => setFilter(f.value)} style={{
-                  height: 32, padding: '0 14px', borderRadius: 9999, fontSize: 13,
-                  fontWeight: filter === f.value ? 500 : 400,
-                  border: filter === f.value ? 'none' : '1px solid rgba(245,245,240,0.08)',
-                  background: filter === f.value ? 'rgba(255,90,31,0.10)' : 'var(--ob-surface)',
-                  color: filter === f.value ? '#FF5A1F' : 'var(--ob-text-muted)',
-                  cursor: 'pointer', transition: 'all .2s',
+                  height: 26, padding: '0 12px', borderRadius: 9999, fontSize: 11, fontWeight: filter === f.value ? 500 : 400,
+                  border: filter === f.value ? '1px solid rgba(255,90,31,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                  background: filter === f.value ? 'rgba(255,90,31,0.12)' : 'transparent',
+                  color: filter === f.value ? '#FF5A1F' : 'rgba(245,245,240,0.45)', cursor: 'pointer', transition: 'all .12s',
                 }}>{f.label}</button>
               ))}
             </div>
           </div>
 
-          {/* Task list */}
+          {/* ── Task table ── */}
           {filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 16, background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CCCCCC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            /* Monday-style guided empty state */
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center' }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 12,
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+              }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,240,0.20)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="16" x2="12" y2="16"/>
                 </svg>
               </div>
-              <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--ob-text)', marginBottom: 6 }}>
-                {search || filter !== 'all' ? '没有匹配的任务' : '还没有任务'}
+              <p style={{ fontSize: 16, fontWeight: 500, color: 'rgba(245,245,240,0.85)', marginBottom: 8 }}>
+                {search || filter !== 'all' ? '没有匹配的任务' : '还没有任何任务'}
               </p>
-              <p style={{ fontSize: 14, color: 'rgba(245,245,240,0.55)', marginBottom: search || filter !== 'all' ? 0 : 20 }}>
-                {search || filter !== 'all' ? '换个条件试试' : '创建第一个任务，分配给团队成员'}
+              <p style={{ fontSize: 13, color: 'rgba(245,245,240,0.35)', marginBottom: 24, maxWidth: 320, lineHeight: 1.6 }}>
+                {search || filter !== 'all' ? '换个条件试试' : '在 Agent 里完成的任务会同步到这里，也可以手动创建分配给团队'}
               </p>
-              {!(search || filter !== 'all') && ws?.role === 'owner' && (
-                <a href="/workspace/tasks/new" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 9999, fontSize: 14, fontWeight: 500, background: '#FF5A1F', color: '#fff', textDecoration: 'none' }}>
-                  + 新建任务
-                </a>
+              {!(search || filter !== 'all') && (
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <a href="/agent" style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4, height: 36, padding: '0 18px',
+                    borderRadius: 9999, fontSize: 13, fontWeight: 500,
+                    border: '1px solid rgba(255,90,31,0.40)', color: '#FF5A1F',
+                    background: 'transparent', textDecoration: 'none', transition: 'all .15s',
+                  }}
+                    onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = '#FF5A1F'; e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#FF5A1F'; }}
+                  >
+                    去发起任务
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                  </a>
+                  {ws?.role === 'owner' && (
+                    <a href="/workspace/tasks/new" style={{
+                      display: 'inline-flex', alignItems: 'center', height: 36, padding: '0 18px',
+                      borderRadius: 9999, fontSize: 13, fontWeight: 600,
+                      background: '#FF5A1F', color: '#fff', textDecoration: 'none',
+                      boxShadow: '0 4px 16px rgba(255,90,31,0.30)',
+                    }}>
+                      + 手动创建
+                    </a>
+                  )}
+                </div>
               )}
             </div>
           ) : (
-            filter === 'all' && !search.trim() ? (
-              // Grouped by status
-              STATUS_GROUPS.map(group => {
-                const groupTasks = filtered.filter(t => group.statuses.includes(t.businessStatus));
-                if (groupTasks.length === 0) return null;
-                return (
-                  <div key={group.key} style={{ marginBottom: 20 }}>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: 'rgba(245,245,240,0.55)', marginBottom: 10 }}>{group.label} ({groupTasks.length})</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {groupTasks.map(t => <TaskCard key={t.id} task={t} />)}
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              // Flat list when filtering or searching
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {filtered.map(t => <TaskCard key={t.id} task={t} />)}
+            /* Monday-style table rows */
+            <div>
+              {/* Table header */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'minmax(200px,1fr) 100px 80px 100px 100px',
+                padding: '6px 16px', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase',
+                color: 'rgba(245,245,240,0.25)', borderBottom: '1px solid rgba(255,255,255,0.07)',
+                fontFamily: 'var(--ob-font-mono)',
+              }}>
+                <span>任务</span>
+                <span>状态</span>
+                <span>优先级</span>
+                <span>截止</span>
+                <span style={{ textAlign: 'right' }}>更新</span>
               </div>
-            )
+
+              {/* Task rows */}
+              {filtered.map(task => (
+                <TaskRow key={task.id} task={task} />
+              ))}
+
+              {/* + Add task ghost row */}
+              {ws?.role === 'owner' && (
+                <a
+                  href="/workspace/tasks/new"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 16px 8px 42px',
+                    fontSize: 13, color: 'rgba(245,245,240,0.22)',
+                    cursor: 'pointer', transition: 'color 0.12s',
+                    borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    textDecoration: 'none',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'rgba(245,245,240,0.55)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(245,245,240,0.22)')}
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  添加任务
+                </a>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -275,73 +290,68 @@ export default function WorkspacePage() {
   );
 }
 
-function TaskCard({ task }: { task: WsTask }) {
+function TaskRow({ task }: { task: WsTask }) {
   const hasDue = !!task.dueAt;
   const isOverdue = hasDue && new Date(task.dueAt!).getTime() < Date.now() && task.businessStatus !== 'completed';
+  const isFailed = task.businessStatus === 'revision';
+  const dotColor = STATUS_DOT[task.businessStatus] || '#6B7280';
 
   return (
     <a
       href={`/workspace/tasks/${task.id}`}
       style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 14,
-        padding: '14px 16px', textDecoration: 'none',
-        transition: 'transform .2s, box-shadow .2s',
+        display: 'grid', gridTemplateColumns: 'minmax(200px,1fr) 100px 80px 100px 100px',
+        alignItems: 'center', padding: '0 16px', height: 48, textDecoration: 'none',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        borderLeft: isFailed ? '3px solid rgba(220,38,38,0.50)' : '3px solid transparent',
+        transition: 'background 0.12s', cursor: 'pointer',
       }}
-      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.04)'; }}
-      onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
-      {/* Assignee avatar */}
-      {task.assigneeName ? (
-        <div style={{
-          width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-          background: 'rgba(255,90,31,0.10)', color: '#FF5A1F',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 12, fontWeight: 600,
-        }}>
-          {task.assigneeName.slice(0, 1).toUpperCase()}
-        </div>
-      ) : (
-        <div style={{
-          width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-          background: 'var(--ob-text)', color: 'rgba(245,245,240,0.55)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 12,
-        }}>?</div>
-      )}
-
-      {/* Content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Title row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ob-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>{task.title}</span>
-          <StatusBadge status={task.businessStatus} />
-          {task.priority >= 2 && <span style={{ fontSize: 11, color: '#E4483D', fontWeight: 500 }}>紧急</span>}
-        </div>
-
-        {/* Meta row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'rgba(245,245,240,0.55)' }}>
-          {task.assigneeName && <span>{task.assigneeName}</span>}
-          <span>{timeAgo(task.updatedAt)}</span>
-          {hasDue && (
-            <span style={{ color: isOverdue ? '#E4483D' : 'var(--ob-text-muted)' }}>
-              {isOverdue ? '已逾期' : `截止 ${new Date(task.dueAt!).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}`}
-            </span>
-          )}
-          {task.attachmentCount > 0 && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-              {task.attachmentCount}
-            </span>
-          )}
-          {task.commentCount > 0 && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              {task.commentCount}
-            </span>
-          )}
-        </div>
+      {/* Task name */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+        {task.assigneeName ? (
+          <div style={{
+            width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+            background: 'rgba(255,90,31,0.12)', color: '#FF5A1F',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, fontWeight: 600,
+          }}>
+            {task.assigneeName.slice(0, 1).toUpperCase()}
+          </div>
+        ) : (
+          <div style={{
+            width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+            background: 'rgba(255,255,255,0.06)', color: 'rgba(245,245,240,0.30)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11,
+          }}>?</div>
+        )}
+        <span style={{
+          fontSize: 14, fontWeight: 500, color: 'rgba(245,245,240,0.90)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{task.title}</span>
       </div>
+
+      {/* Status — Monday solid pill */}
+      <span className={`ob-status-pill ob-status-pill--${task.businessStatus}`}>
+        {STATUS_LABEL[task.businessStatus] || task.businessStatus}
+      </span>
+
+      {/* Priority */}
+      <span style={{ fontSize: 12, color: task.priority >= 2 ? '#F87171' : 'rgba(245,245,240,0.45)' }}>
+        {PRIORITY_LABEL[task.priority] || '普通'}
+      </span>
+
+      {/* Due date */}
+      <span style={{ fontSize: 12, color: isOverdue ? '#F87171' : 'rgba(245,245,240,0.40)' }}>
+        {hasDue ? (isOverdue ? '已逾期' : new Date(task.dueAt!).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })) : '-'}
+      </span>
+
+      {/* Updated */}
+      <span style={{ fontSize: 12, color: 'rgba(245,245,240,0.35)', textAlign: 'right' }}>
+        {timeAgo(task.updatedAt)}
+      </span>
     </a>
   );
 }

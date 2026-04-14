@@ -206,7 +206,7 @@ export default function SkillsHubPage() {
     e.tags.some(t => t.toLowerCase().includes(sq));
 
   return (
-    <div style={{ background: '#FAFAF8', color: '#1A1A1A', minHeight: '100vh' }}>
+    <div style={{ background: 'var(--ob-bg)', color: 'var(--ob-text)', minHeight: '100vh' }}>
       <AppHeader />
       <AccountSubNav />
 
@@ -222,17 +222,7 @@ export default function SkillsHubPage() {
           overflow: 'hidden',
         }}
       >
-        {/* Background decorative text */}
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%) scale(1.1)',
-          fontFamily: 'var(--ob-font-display)', fontWeight: 900,
-          fontSize: 'clamp(120px, 18vw, 300px)', lineHeight: 0.85,
-          letterSpacing: '-0.04em', color: 'rgba(255,255,255,0.03)',
-          whiteSpace: 'nowrap', userSelect: 'none', pointerEvents: 'none',
-        }}>
-          SKILLS
-        </div>
+        {/* Background decorative removed for clean Monday-style */}
 
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 680, margin: '0 auto' }}>
           <div style={{
@@ -246,34 +236,37 @@ export default function SkillsHubPage() {
           </div>
           <h1 style={{
             fontFamily: 'var(--ob-font-display)', fontWeight: 800,
-            fontSize: 'clamp(36px, 5vw, 56px)', lineHeight: 1.1,
+            fontSize: 32, lineHeight: 1.1,
             letterSpacing: '-0.03em', margin: '16px 0',
           }}>
             扩展 Agent 的能力
           </h1>
           <p style={{
-            fontSize: 17, lineHeight: 1.7, opacity: 0.6,
+            fontSize: 15, lineHeight: 1.7, color: 'rgba(245,245,240,0.45)',
             maxWidth: 520, margin: '0 auto 32px',
           }}>
-            连接你的工作工具,让 AI 助手真正帮你干活。<br />
-            推送通知、抓取数据、操作文档,一个入口搞定。
+            连接你的工具，让 AI 真正帮你干活
           </p>
 
-          {/* Search in hero */}
-          <div style={{ maxWidth: 440, margin: '0 auto' }}>
-            <input
-              type="text"
-              placeholder="搜索技能... 飞书、Notion、文件系统"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%', height: 48, padding: '0 20px',
-                borderRadius: 12, border: '1px solid rgba(255,255,255,0.15)',
-                background: 'rgba(255,255,255,0.08)', color: '#fff',
-                fontSize: 15, outline: 'none',
-                backdropFilter: 'blur(8px)',
-              }}
-            />
+          {/* Search with gradient border — Monday Vibe style */}
+          <div style={{ maxWidth: 680, margin: '0 auto' }}>
+            <div style={{
+              position: 'relative', borderRadius: 16, padding: '1.5px',
+              background: 'linear-gradient(135deg, #FF5A1F 0%, rgba(255,90,31,0.4) 50%, rgba(255,255,255,0.08) 100%)',
+            }}>
+              <input
+                type="text"
+                placeholder="搜索技能... 飞书、Notion、文件系统"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%', height: 48, padding: '0 20px',
+                  borderRadius: 14, border: 'none',
+                  background: '#1A1A18', color: 'rgba(245,245,240,0.80)',
+                  fontSize: 14, outline: 'none',
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -291,7 +284,7 @@ export default function SkillsHubPage() {
 
       {/* ═══ CONNECTED — white section ═══ */}
       {connected.length > 0 && (
-        <RevealSection style={{ padding: '64px 24px', background: '#fff' }}>
+        <RevealSection style={{ padding: '64px 24px', background: 'var(--ob-bg)' }}>
           <div style={{ maxWidth: 1080, margin: '0 auto' }}>
             <SectionHeader title={`已连接 · ${connected.length}`} subtitle="当前 Agent 可以使用的技能" />
             <div style={{
@@ -304,7 +297,7 @@ export default function SkillsHubPage() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 12,
                     padding: '16px 20px', borderRadius: 12,
-                    background: '#FAFAF8', border: '1px solid #E5E5E0',
+                    background: '#1A1A18', border: '1px solid rgba(255,255,255,0.07)',
                     transition: 'all 0.2s ease',
                     cursor: 'pointer',
                   }}
@@ -329,33 +322,32 @@ export default function SkillsHubPage() {
         <div style={{ padding: 64, textAlign: 'center', color: '#9A9A9A' }}>加载中...</div>
       )}
 
-      {/* ═══ CATALOG SECTIONS — alternating dark/light ═══ */}
+      {/* ═══ CATALOG SECTIONS — unified dark with Monday card grid ═══ */}
       {!loading && SECTIONS.map(section => {
         const entries = SKILL_CATALOG.filter(section.filter).filter(matchesSearch);
         if (entries.length === 0) return null;
-        const isDark = section.dark;
 
         return (
           <RevealSection
             key={section.id}
             style={{
-              padding: '80px 24px',
-              background: isDark ? '#0A0A0A' : '#FFFFFF',
-              color: isDark ? '#fff' : '#1A1A1A',
+              padding: '48px 24px',
+              background: 'var(--ob-bg)',
+              color: 'var(--ob-text)',
             }}
           >
             <div style={{ maxWidth: 1080, margin: '0 auto' }}>
               <SectionHeader
                 title={section.title}
                 subtitle={section.subtitle}
-                dark={isDark}
+                dark
               />
 
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                gap: 20,
-                marginTop: 40,
+                gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+                gap: 16,
+                marginTop: 28,
               }}>
                 {entries.map(entry => (
                   <SkillCard
@@ -363,7 +355,7 @@ export default function SkillsHubPage() {
                     entry={entry}
                     isConnected={connectedIds.has(entry.id)}
                     isInstalling={installingId === entry.id}
-                    dark={isDark}
+                    dark
                     formValues={formValues}
                     submitting={submitting}
                     onStartInstall={() => {
@@ -402,19 +394,19 @@ export default function SkillsHubPage() {
 
 // ── Sub-components ───────────────────────────────────────────────────
 
-function SectionHeader({ title, subtitle, dark }: { title: string; subtitle: string; dark?: boolean }) {
+function SectionHeader({ title, subtitle }: { title: string; subtitle: string; dark?: boolean }) {
   return (
     <div>
       <h2 style={{
         fontFamily: 'var(--ob-font-display)', fontWeight: 700,
-        fontSize: 'clamp(24px, 3vw, 36px)', letterSpacing: '-0.02em',
-        lineHeight: 1.2, marginBottom: 8,
+        fontSize: 20, letterSpacing: '-0.02em',
+        lineHeight: 1.2, marginBottom: 6,
       }}>
         {title}
       </h2>
       <p style={{
-        fontSize: 15, lineHeight: 1.6,
-        color: dark ? 'rgba(255,255,255,0.5)' : '#6B6B6B',
+        fontSize: 13, lineHeight: 1.6,
+        color: 'rgba(245,245,240,0.40)',
         maxWidth: 480,
       }}>
         {subtitle}
@@ -458,82 +450,79 @@ function SkillCard({
 }) {
   const method = CONNECTION_METHOD_LABELS[entry.connectionMethod];
   const isOAuthFuture = entry.connectionMethod === 'oauth' && !entry.fields.length;
-  const cardBg = dark ? 'rgba(255,255,255,0.05)' : '#FAFAF8';
-  const cardBorder = dark ? 'rgba(255,255,255,0.08)' : '#E5E5E0';
-  const cardHoverBorder = isInstalling ? '#FF5A1F' : cardBorder;
+  const cardBorder = isInstalling ? '#FF5A1F' : 'rgba(255,255,255,0.08)';
 
   return (
     <div
       style={{
-        borderRadius: 16, padding: 24,
-        background: cardBg,
-        border: `1px solid ${cardHoverBorder}`,
-        transition: 'all 0.25s cubic-bezier(0.25,0.1,0.25,1)',
+        borderRadius: 14, padding: 20,
+        background: '#1A1A18',
+        border: `1px solid ${cardBorder}`,
+        transition: 'all 0.18s cubic-bezier(0.2,0.7,0.3,1)',
         display: 'flex', flexDirection: 'column',
       }}
       className="card-hover"
       onMouseEnter={e => {
         if (!isInstalling) {
-          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 32px -8px rgba(255,90,31,0.12)';
-          (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,90,31,0.3)';
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 28px rgba(0,0,0,0.35)';
+          (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,90,31,0.28)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
         }
       }}
       onMouseLeave={e => {
         if (!isInstalling) {
           (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
-          (e.currentTarget as HTMLDivElement).style.borderColor = cardBorder;
+          (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.08)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'none';
         }
       }}
     >
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 16 }}>
-        <SkillIcon skillId={entry.icon} size={44} connected={isConnected} />
+      {/* Header — Monday card style */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,90,31,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <SkillIcon skillId={entry.icon} size={20} connected={isConnected} />
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 16, fontWeight: 700 }}>{entry.name}</span>
-            {/* Connection method badge — superpower style orange tint */}
-            <span style={{
-              fontSize: 10, fontWeight: 600, letterSpacing: '0.05em',
-              padding: '3px 10px', borderRadius: 9999,
-              background: `${method.color}15`,
-              color: method.color,
-              border: `1px solid ${method.color}30`,
-              whiteSpace: 'nowrap',
-            }}>
-              {method.label}
-            </span>
-          </div>
-          <p style={{
-            fontSize: 13, lineHeight: 1.6, marginTop: 6,
-            color: dark ? 'rgba(255,255,255,0.55)' : '#6B6B6B',
-          }}>
-            {entry.description}
-          </p>
+          <span style={{ fontSize: 14, fontWeight: 600 }}>{entry.name}</span>
+          <div style={{ fontSize: 11, color: 'rgba(245,245,240,0.35)' }}>{method.label}</div>
         </div>
       </div>
+      {/* Description */}
+      <p style={{
+        fontSize: 12, lineHeight: 1.6, marginBottom: 14,
+        color: 'rgba(245,245,240,0.45)',
+        overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+      }}>
+        {entry.description}
+      </p>
 
-      {/* CTA */}
+      {/* CTA — Monday card bottom with connected badge */}
       {!isInstalling && (
-        <button
-          onClick={onStartInstall}
-          disabled={isOAuthFuture}
-          className="btn-press"
-          style={{
-            width: '100%', height: 44, borderRadius: 10,
-            border: 'none', fontSize: 14, fontWeight: 600,
-            cursor: isOAuthFuture ? 'not-allowed' : 'pointer',
-            marginTop: 'auto',
-            background: isOAuthFuture ? (dark ? 'rgba(255,255,255,0.06)' : '#E5E5E0')
-              : isConnected ? (dark ? 'rgba(255,255,255,0.08)' : '#F3F3F0')
-              : '#FF5A1F',
-            color: isOAuthFuture ? '#9A9A9A'
-              : isConnected ? (dark ? 'rgba(255,255,255,0.7)' : '#1A1A1A')
-              : '#fff',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          {isOAuthFuture ? '即将上线' : isConnected ? '+ 再添一个' : entry.preInstalled ? '一键启用' : '连接'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
+          <span style={{
+            fontSize: 11, padding: '3px 10px', borderRadius: 9999,
+            border: isConnected ? '1px solid rgba(52,211,153,0.30)' : '1px solid rgba(255,255,255,0.10)',
+            color: isConnected ? '#34D399' : 'rgba(245,245,240,0.40)',
+            background: isConnected ? 'rgba(52,211,153,0.08)' : 'transparent',
+          }}>
+            {isConnected ? 'Connected' : 'Not connected'}
+          </span>
+          <button
+            onClick={onStartInstall}
+            disabled={isOAuthFuture}
+            className="btn-press"
+            style={{
+              height: 30, padding: '0 14px', borderRadius: 9999, fontSize: 12, fontWeight: 500,
+              cursor: isOAuthFuture ? 'not-allowed' : 'pointer',
+              border: isOAuthFuture ? '1px solid rgba(255,255,255,0.08)' : isConnected ? '1px solid rgba(255,255,255,0.12)' : 'none',
+              background: isOAuthFuture ? 'transparent' : isConnected ? 'transparent' : '#FF5A1F',
+              color: isOAuthFuture ? 'rgba(245,245,240,0.30)' : isConnected ? 'rgba(245,245,240,0.60)' : '#fff',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            {isOAuthFuture ? '即将上线' : isConnected ? '+ 再添一个' : entry.preInstalled ? '启用' : '连接'}
+          </button>
+        </div>
       )}
 
       {/* Install form */}

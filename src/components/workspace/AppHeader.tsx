@@ -118,9 +118,12 @@ export function AppHeader() {
     <header style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       height: 56, padding: '0 28px',
-      borderBottom: '1px solid var(--ob-border)',
-      background: 'var(--ob-bg)', flexShrink: 0,
-      fontFamily: 'var(--ob-font-body)',
+      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      background: 'rgba(12,12,10,0.85)',
+      backdropFilter: 'blur(12px) saturate(160%)',
+      WebkitBackdropFilter: 'blur(12px) saturate(160%)',
+      flexShrink: 0, fontFamily: 'var(--ob-font-body)',
+      position: 'sticky', top: 0, zIndex: 30,
     }}>
       <a href="/agent" style={{ display: 'flex', alignItems: 'center', gap: 0, textDecoration: 'none' }}>
         <span style={{ fontFamily: 'var(--ob-font-display)', color: 'var(--ob-orange)', fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em' }}>ORANGE</span>
@@ -134,7 +137,7 @@ export function AppHeader() {
               <a key={n.href} href={n.href} style={{
                 fontSize: 13, textDecoration: 'none', padding: '7px 12px', borderRadius: 6,
                 fontWeight: active ? 600 : 500,
-                color: active ? 'var(--ob-text)' : 'var(--ob-text-muted)',
+                color: active ? '#fff' : 'rgba(245,245,240,0.50)',
                 background: 'transparent',
                 transition: 'color .12s cubic-bezier(.2,.7,.3,1)',
                 position: 'relative',
@@ -144,9 +147,9 @@ export function AppHeader() {
                 {active && (
                   <span style={{
                     position: 'absolute', bottom: -1, left: '50%', transform: 'translateX(-50%)',
-                    width: 14, height: 2, borderRadius: 1,
-                    background: 'var(--ob-orange)',
-                    boxShadow: '0 0 8px rgba(255,90,31,0.5)',
+                    width: 16, height: 2, borderRadius: 1,
+                    background: '#FF5A1F',
+                    boxShadow: 'none',
                   }} />
                 )}
               </a>
@@ -260,8 +263,8 @@ export function AccountSubNav() {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 4,
       padding: '0 28px', height: 42,
-      borderBottom: '1px solid var(--ob-border)',
-      background: 'var(--ob-bg)',
+      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      background: 'transparent',
       fontFamily: 'var(--ob-font-body)',
     }}>
       {ACCOUNT_NAV.map(n => {
@@ -269,9 +272,10 @@ export function AccountSubNav() {
         return (
           <a key={n.href} href={n.href} style={{
             fontSize: 13, fontWeight: active ? 600 : 500,
-            color: active ? 'var(--ob-text)' : 'var(--ob-text-muted)',
-            textDecoration: 'none', padding: '7px 14px', borderRadius: 6,
-            background: active ? 'var(--ob-surface-hi)' : 'transparent',
+            color: active ? '#fff' : 'rgba(245,245,240,0.50)',
+            textDecoration: 'none', padding: '8px 16px',
+            borderRadius: active ? '8px 8px 0 0' : 6,
+            background: active ? 'rgba(255,255,255,0.07)' : 'transparent',
             transition: 'all .15s cubic-bezier(.2,.7,.3,1)',
           }}>{n.label}</a>
         );
@@ -290,8 +294,8 @@ export function WorkspaceSubNav() {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 4,
       padding: '0 28px', height: 42,
-      borderBottom: '1px solid var(--ob-border)',
-      background: 'var(--ob-bg)',
+      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      background: 'transparent',
       fontFamily: 'var(--ob-font-body)',
     }}>
       {WS_NAV.map(n => {
@@ -299,9 +303,10 @@ export function WorkspaceSubNav() {
         return (
           <a key={n.href} href={n.href} style={{
             fontSize: 13, fontWeight: active ? 600 : 500,
-            color: active ? 'var(--ob-text)' : 'var(--ob-text-muted)',
-            textDecoration: 'none', padding: '7px 14px', borderRadius: 6,
-            background: active ? 'var(--ob-surface-hi)' : 'transparent',
+            color: active ? '#fff' : 'rgba(245,245,240,0.50)',
+            textDecoration: 'none', padding: '8px 16px',
+            borderRadius: active ? '8px 8px 0 0' : 6,
+            background: active ? 'rgba(255,255,255,0.07)' : 'transparent',
             transition: 'all .15s cubic-bezier(.2,.7,.3,1)',
           }}>{n.label}</a>
         );

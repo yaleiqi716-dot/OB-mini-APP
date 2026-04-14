@@ -240,7 +240,7 @@ function FirstTaskCoach({ onPickExample }: FirstTaskCoachProps) {
           fontWeight: 600,
         }}
       >
-        👋 欢迎 · 第一步
+        欢迎 · 第一步
       </div>
 
       <div
@@ -707,6 +707,40 @@ function AgentPageInner() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+      </div>
+
+      {/* Workspace quick links */}
+      <div style={{
+        padding: '6px 8px 8px',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        marginBottom: 8,
+      }}>
+        {[
+          { href: '/tasks', label: '我的任务', iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
+          { href: '/workspace', label: '团队工作区', iconPath: 'M4 6h16M4 10h16M4 14h16M4 18h16' },
+          { href: '/account/skills', label: '技能中心', iconPath: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
+        ].map(item => (
+          <a key={item.href} href={item.href} style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '7px 10px', borderRadius: 8,
+            fontSize: 13, color: 'rgba(245,245,240,0.45)',
+            textDecoration: 'none', transition: 'all 0.12s',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+            e.currentTarget.style.color = 'rgba(245,245,240,0.85)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'rgba(245,245,240,0.45)';
+          }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d={item.iconPath} />
+            </svg>
+            <span>{item.label}</span>
+          </a>
+        ))}
       </div>
 
       {/* Conversation list grouped */}

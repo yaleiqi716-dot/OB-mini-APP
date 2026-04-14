@@ -28,26 +28,26 @@ interface SkillRolePickerProps {
   disabled?: boolean;
 }
 
-// Department emoji icons for visual hierarchy
+// Department abbreviation icons — no emoji, pure text
 const DEPT_ICONS: Record<string, string> = {
-  marketing: '🎯',
-  design: '🎨',
-  sales: '🤝',
-  hr: '👥',
-  product: '📋',
-  'project-management': '📊',
-  support: '💬',
-  specialized: '⚡',
-  finance: '💰',
-  legal: '⚖️',
-  engineering: '💻',
-  'paid-media': '📢',
-  'supply-chain': '📦',
-  testing: '🔍',
-  'game-development': '🎮',
-  'spatial-computing': '🥽',
-  academic: '📚',
-  strategy: '🧭',
+  marketing: 'MK',
+  design: 'DS',
+  sales: 'SL',
+  hr: 'HR',
+  product: 'PM',
+  'project-management': 'PJ',
+  support: 'SP',
+  specialized: 'SZ',
+  finance: 'FN',
+  legal: 'LG',
+  engineering: 'EN',
+  'paid-media': 'AD',
+  'supply-chain': 'SC',
+  testing: 'QA',
+  'game-development': 'GD',
+  'spatial-computing': 'XR',
+  academic: 'AC',
+  strategy: 'ST',
 };
 
 // Module-level cache
@@ -327,8 +327,8 @@ export function SkillRolePicker({ value, onChange, disabled }: SkillRolePickerPr
                     onMouseEnter={e => { e.currentTarget.style.background = 'var(--ob-surface-hi)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <span style={{ fontSize: 18, width: 24, textAlign: 'center' }}>
-                      {DEPT_ICONS[dept.key] || '📁'}
+                    <span style={{ fontSize: 10, fontWeight: 700, width: 24, textAlign: 'center', fontFamily: 'var(--ob-font-mono)', letterSpacing: '0.02em', color: 'var(--ob-orange)', opacity: 0.8 }}>
+                      {DEPT_ICONS[dept.key] || '--'}
                     </span>
                     <span style={{ flex: 1 }}>{dept.label}</span>
                     <span

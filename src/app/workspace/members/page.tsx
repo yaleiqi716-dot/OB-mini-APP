@@ -97,9 +97,9 @@ export default function WorkspaceMembersPage() {
   }
 
   const actionBtn: React.CSSProperties = {
-    height: 28, padding: '0 10px', borderRadius: 9999, fontSize: 12, fontWeight: 500,
-    border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)', cursor: 'pointer',
-    transition: 'border-color .2s, color .2s',
+    height: 28, padding: '0 12px', borderRadius: 9999, fontSize: 12, fontWeight: 500,
+    border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: 'rgba(245,245,240,0.50)', cursor: 'pointer',
+    transition: 'border-color .15s, color .15s',
   };
 
   // header replaced by shared component
@@ -114,8 +114,8 @@ export default function WorkspaceMembersPage() {
         <div style={{ maxWidth: 780, margin: '0 auto', padding: '40px 32px 60px' }}>
 
           <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 32, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 8px' }}>成员管理</h1>
-            <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', margin: 0 }}>邀请成员加入工作区</p>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--ob-text)', margin: '0 0 6px', letterSpacing: '-0.02em' }}>成员管理</h1>
+            <p style={{ fontSize: 13, color: 'rgba(245,245,240,0.40)', margin: 0 }}>邀请成员加入工作区</p>
           </div>
 
           {/* Invite form (owner only) */}
@@ -141,11 +141,13 @@ export default function WorkspaceMembersPage() {
                   onClick={handleInvite}
                   disabled={!inviteEmail.includes('@') || inviting}
                   style={{
-                    height: 40, padding: '0 20px', borderRadius: 12, fontSize: 14, fontWeight: 600,
-                    border: 'none', background: '#FF5A1F', color: '#fff', cursor: 'pointer',
+                    height: 40, padding: '0 20px', borderRadius: 9999, fontSize: 14, fontWeight: 600,
+                    border: '1px solid rgba(255,90,31,0.40)', background: 'transparent', color: '#FF5A1F', cursor: 'pointer',
                     opacity: (!inviteEmail.includes('@') || inviting) ? 0.5 : 1,
-                    transition: 'background .2s',
+                    transition: 'all .15s',
                   }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#FF5A1F'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#FF5A1F'; }}
                 >
                   {inviting ? '发送中...' : '发送邀请'}
                 </button>
@@ -193,33 +195,36 @@ export default function WorkspaceMembersPage() {
             ) : (
               members.map((m, i) => (
                 <div key={m.id} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 0',
-                  borderBottom: i < members.length - 1 ? '1px solid rgba(245,245,240,0.08)' : 'none',
+                  display: 'grid', gridTemplateColumns: '40px 1fr 100px 80px',
+                  alignItems: 'center', gap: 8,
+                  padding: '10px 0', height: 48,
+                  borderBottom: i < members.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                      width: 32, height: 32, borderRadius: '50%',
-                      background: 'rgba(255,90,31,0.10)', color: '#FF5A1F',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 13, fontWeight: 600,
-                    }}>
-                      {(m.name || m.email || 'U').slice(0, 1).toUpperCase()}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--ob-text)' }}>{m.name || m.email}</div>
-                      {m.name && <div style={{ fontSize: 12, color: 'var(--ob-text-muted)' }}>{m.email}</div>}
-                    </div>
+                  {/* Avatar */}
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: 'rgba(255,90,31,0.15)', color: '#FF5A1F',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, fontWeight: 600,
+                  }}>
+                    {(m.name || m.email || 'U').slice(0, 1).toUpperCase()}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px',
-                      borderRadius: 9999, fontSize: 11, fontWeight: 500,
-                      background: m.role === 'owner' ? 'rgba(255,90,31,0.10)' : 'rgba(156,163,175,0.10)',
-                      color: m.role === 'owner' ? 'var(--ob-orange)' : 'var(--ob-text-muted)',
-                    }}>
-                      {m.role === 'owner' ? 'Owner' : '成员'}
-                    </span>
+                  {/* Name + email */}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--ob-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name || m.email}</div>
+                    {m.name && <div style={{ fontSize: 12, color: 'rgba(245,245,240,0.40)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.email}</div>}
+                  </div>
+                  {/* Role */}
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 22, padding: '0 10px',
+                    borderRadius: 9999, fontSize: 11, fontWeight: 500,
+                    background: m.role === 'owner' ? 'rgba(255,90,31,0.10)' : 'rgba(255,255,255,0.06)',
+                    color: m.role === 'owner' ? '#FF5A1F' : 'rgba(245,245,240,0.45)',
+                  }}>
+                    {m.role === 'owner' ? 'Owner' : '成员'}
+                  </span>
+                  {/* Action */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     {isOwner && m.role !== 'owner' && (
                       <button onClick={() => handleRemoveMember(m.id)} style={actionBtn}>移除</button>
                     )}

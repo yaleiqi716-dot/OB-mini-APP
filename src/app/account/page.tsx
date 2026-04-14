@@ -177,29 +177,28 @@ export default function AccountPage() {
 
   // ── Shared styles ──
   const cardStyle: React.CSSProperties = {
-    background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 20,
+    background: '#1A1A18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: 20,
   };
   const actionBtnStyle: React.CSSProperties = {
     height: 30, padding: '0 12px', borderRadius: 9999,
     fontSize: 12, fontWeight: 500,
-    border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)',
-    color: 'var(--ob-text-muted)', cursor: 'pointer', textDecoration: 'none',
+    border: '1px solid rgba(255,255,255,0.12)', background: 'transparent',
+    color: 'rgba(245,245,240,0.60)', cursor: 'pointer', textDecoration: 'none',
     display: 'inline-flex', alignItems: 'center',
-    transition: 'border-color .2s, background .2s, color .2s',
+    transition: 'border-color .15s, color .15s',
   };
   const hoverIn = (e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)';
-    e.currentTarget.style.background = 'rgba(255,90,31,0.06)';
-    e.currentTarget.style.color = '#FF5A1F';
+    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)';
+    e.currentTarget.style.color = '#fff';
   };
   const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.borderColor = 'var(--ob-border)';
-    e.currentTarget.style.background = 'var(--ob-surface)';
-    e.currentTarget.style.color = 'var(--ob-text-muted)';
+    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+    e.currentTarget.style.color = 'rgba(245,245,240,0.60)';
   };
   const rowStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     minHeight: 56, padding: '12px 0',
+    borderBottom: '1px solid rgba(255,255,255,0.05)',
   };
   const rowBorder: React.CSSProperties = { borderBottom: '1px solid rgba(245,245,240,0.08)' };
   const placeholderTag: React.CSSProperties = {
@@ -230,89 +229,51 @@ export default function AccountPage() {
       <AccountSubNav />
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 0 60px' }}>
 
-          {/* ── Top area ── */}
-          <div style={{ marginBottom: 28 }}>
-            <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 8px' }}>
-              <span style={{ color: 'var(--ob-orange)' }}>●</span> Account
-            </p>
-            <h1 style={{ fontFamily: 'var(--ob-font-display)', fontSize: 44, fontWeight: 800, color: 'var(--ob-text)', lineHeight: 1, letterSpacing: '-0.025em', margin: '0 0 12px' }}>账户</h1>
-            <p style={{ fontFamily: 'var(--ob-font-body)', fontSize: 14, color: 'var(--ob-text-muted)', margin: 0, maxWidth: 520 }}>查看你的账号信息、套餐与使用权益</p>
+          {/* ── User bar (compact) ── */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, background: 'rgba(255,90,31,0.18)', color: '#FF5A1F', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {userName.slice(0, 1).toUpperCase()}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(245,245,240,0.88)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userName}</div>
+              <div style={{ fontSize: 12, color: 'rgba(245,245,240,0.28)', marginTop: 1 }}>{userId}</div>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 99, background: 'rgba(255,255,255,0.07)', color: 'rgba(245,245,240,0.55)' }}>{planInfo.label}</span>
+              <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 99, background: statusBg, border: `1px solid ${isExpiringSoon ? 'rgba(228,72,61,0.20)' : 'rgba(52,211,153,0.20)'}`, color: statusColor }}>{statusLabel}</span>
+            </div>
+            <a href="/settings" style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>管理设置</a>
           </div>
 
-          {/* ── Account overview card ── */}
-          <div style={{ ...cardStyle, minHeight: 140, marginBottom: 20, display: 'flex', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%' }}>
-              {/* Avatar */}
-              <div style={{
-                width: 56, height: 56, borderRadius: '50%',
-                background: 'rgba(255,90,31,0.12)', color: '#FF5A1F',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, fontWeight: 600, flexShrink: 0,
-              }}>
-                {userName.slice(0, 1).toUpperCase()}
-              </div>
-
-              {/* Info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--ob-text)' }}>{userName}</span>
-                  {/* Plan badge */}
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center',
-                    height: 24, padding: '0 10px', borderRadius: 9999,
-                    fontSize: 11, fontWeight: 500,
-                    background: 'rgba(255,90,31,0.10)', color: 'var(--ob-orange)',
-                  }}>
-                    {planInfo.label}
-                  </span>
-                  {/* Status badge */}
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center',
-                    height: 24, padding: '0 10px', borderRadius: 9999,
-                    fontSize: 11, fontWeight: 500,
-                    background: statusBg, color: statusColor,
-                  }}>
-                    {statusLabel}
-                  </span>
+          {/* ── Credits stat grid (4 cols) ── */}
+          <div style={{ padding: '16px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(245,245,240,0.80)' }}>积分概览</span>
+              <a href="/billing" style={{ fontSize: 12, padding: '5px 16px', borderRadius: 99, border: '1px solid rgba(255,90,31,0.40)', color: '#FF5A1F', background: 'transparent', textDecoration: 'none', transition: 'all .15s' }}
+                onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = '#FF5A1F'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#FF5A1F'; }}
+              >充值</a>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+              {[
+                { label: '总可用积分', value: String(user?.credits ?? 0), highlight: true },
+                { label: '每日体验赠额', value: String(user?.dailyTrialCredits ?? 0), sub: '每日刷新' },
+                { label: '新人赠送', value: String(user?.signupBonusCredits ?? 0), sub: '一次性' },
+                { label: '订阅积分', value: String(user?.subscriptionCredits ?? 0), sub: '按月发放' },
+              ].map(stat => (
+                <div key={stat.label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '14px 16px' }}>
+                  <div style={{ fontSize: 11, color: 'rgba(245,245,240,0.28)', marginBottom: 6, letterSpacing: '0.04em' }}>{stat.label}</div>
+                  <div style={{ fontSize: stat.highlight ? 28 : 22, fontWeight: 700, lineHeight: 1, color: stat.highlight ? '#FF5A1F' : 'rgba(245,245,240,0.85)' }}>{stat.value}</div>
+                  {stat.sub && <div style={{ fontSize: 11, color: 'rgba(245,245,240,0.22)', marginTop: 4 }}>{stat.sub}</div>}
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--ob-text-muted)' }}>{userId}</span>
-                {user?.expireAt && plan !== 'free' && (
-                  <span style={{ fontSize: 12, color: 'var(--ob-text-muted)', marginLeft: 12 }}>
-                    到期 {new Date(user.expireAt).toLocaleDateString('zh-CN')}
-                  </span>
-                )}
-              </div>
-
-              {/* Action */}
-              <a href="/settings" style={actionBtnStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
-                管理设置
-              </a>
+              ))}
             </div>
           </div>
 
-          {/* ── Total credits card ── */}
-          <div style={{ ...cardStyle, marginBottom: 20, padding: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <div>
-                <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', margin: '0 0 6px' }}>总可用积分</p>
-                <p style={{ fontSize: 36, fontWeight: 700, color: '#FF5A1F', margin: 0, lineHeight: 1 }}>
-                  {user?.credits ?? 0}
-                </p>
-              </div>
-              <a href="/billing" style={{
-                ...actionBtnStyle,
-                border: '1px solid #FF5A1F', color: '#FF5A1F',
-              }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,90,31,0.08)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'var(--ob-surface)'; }}
-              >
-                充值
-              </a>
-            </div>
-
-            {/* ── Credit bucket breakdown ── */}
+          {/* ── Detailed credits (legacy compat) ── */}
+          <div style={{ padding: '0 24px 20px' }}>
             <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ob-text)', margin: '0 0 12px' }}>积分明细</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
               {([
@@ -324,10 +285,10 @@ export default function AccountPage() {
                 ...(hasLegacy ? [{ label: '历史兼容积分', value: legacyCredits, note: '旧版遗留，优先级最低' }] : []),
               ] as const).map((bucket, i) => (
                 <div key={i} style={{
-                  background: 'var(--ob-bg)', borderRadius: 12, padding: '12px 14px',
-                  border: '1px solid rgba(255,255,255,0.03)',
+                  background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '12px 14px',
+                  border: '1px solid rgba(255,255,255,0.06)',
                 }}>
-                  <p style={{ fontSize: 11, color: 'var(--ob-text-muted)', margin: '0 0 4px' }}>{bucket.label}</p>
+                  <p style={{ fontSize: 11, color: 'rgba(245,245,240,0.40)', margin: '0 0 4px' }}>{bucket.label}</p>
                   <p style={{ fontSize: 20, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 2px', lineHeight: 1 }}>
                     {bucket.value}
                   </p>
