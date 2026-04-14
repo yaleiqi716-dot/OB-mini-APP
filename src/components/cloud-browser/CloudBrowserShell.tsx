@@ -3,54 +3,230 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { getMessages } from '@/lib/i18n';
-import { ProductShell, Panel, SegmentControl, StatusPill, ActionChip } from '@/components/product-shell/ProductShell';
+import { ProductShell, Panel, SegmentControl, StatusPill, ActionChip, EmptyState } from '@/components/product-shell/ProductShell';
 
 type SessionState = 'ready' | 'booting' | 'active' | 'ended';
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
 
+interface CloudSessionView {
+  sessionId: string;
+  status: SessionState;
+  region: string;
+  deviceMode: DeviceMode;
+  duration: number;
+  usagePercent: number;
+  isMock: boolean;
+  lastUpdated: string;
+  errorMessage?: string;
+}
+
+interface CloudBrowserAdapter {
+  createSession(): Promise<CloudSessionView>;
+  reconnectSession(sessionId: string): Promise<CloudSessionView>;
+  endSession(sessionId: string): Promise<CloudSessionView>;
+  getSessionStatus(sessionId: string): Promise<SessionState>;
+  getUsage(sessionId: string): Promise<number>;
+  setDeviceMode(sessionId: string, deviceMode: DeviceMode): Promise<DeviceMode>;
+}
+
 const t = getMessages('zh-CN');
+const DEFAULT_REGION = t.cloudBrowser.region;
 
 function toDisplayTime(totalSeconds: number) {
-  const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
-  const s = (totalSeconds % 60).toString().padStart(2, '0');
+  const m = Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, '0');
+  const s = (totalSeconds % 60)
+    .toString()
+    .padStart(2, '0');
   return `${m}:${s}`;
 }
 
-export function CloudBrowserShell({ sessionId }: { sessionId?: string }) {
-  const [state, setState] = useState<SessionState>(sessionId ? 'active' : 'ready');
-  const [device, setDevice] = useState<DeviceMode>('desktop');
-  const [seconds, setSeconds] = useState(sessionId ? 132 : 0);
-  const [usagePercent, setUsagePercent] = useState(sessionId ? 32 : 0);
+function toClock(iso: string) {
+  return new Date(iso).toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+function makeMockSession(sessionId: string, patch?: Partial<CloudSessionView>): CloudSessionView {
+  return {
+    sessionId,
+    status: 'ready',
+    region: DEFAULT_REGION,
+    deviceMode: 'desktop',
+    duration: 0,
+    usagePercent: 0,
+    isMock: true,
+    lastUpdated: new Date().toISOString(),
+    ...patch,
+  };
+}
+
+const mockAdapter: CloudBrowserAdapter = {
+  async createSession() {
+    const sessionId = `demo-${Date.now().toString().slice(-6)}`;
+    return makeMockSession(sessionId, { status: 'active', usagePercent: 3 });
+  },
+  async reconnectSession(sessionId) {
+    return makeMockSession(sessionId, { status: 'active', usagePercent: 24, duration: 92 });
+  },
+  async endSession(sessionId) {
+    return makeMockSession(sessionId, { status: 'ended', usagePercent: 41, duration: 188 });
+  },
+  async getSessionStatus() {
+    return 'active';
+  },
+  async getUsage() {
+    return Math.floor(Math.random() * 40) + 10;
+  },
+  async setDeviceMode(_sessionId, deviceMode) {
+    return deviceMode;
+  },
+};
+
+export function CloudBrowserShell({ sessionId, mode = 'lobby' }: { sessionId?: string; mode?: 'lobby' | 'session' }) {
+  const adapter = useMemo(() => mockAdapter, []);
+  const initialSessionId = useMemo(() => sessionId || `demo-${Date.now().toString().slice(-6)}`, [sessionId]);
+  const [session, setSession] = useState<CloudSessionView>(() => makeMockSession(initialSessionId));
+
+  const isSessionPage = mode === 'session';
 
   useEffect(() => {
-    if (state !== 'active') return;
-    const iv = setInterval(() => {
-      setSeconds((prev) => prev + 1);
-      setUsagePercent((prev) => Math.min(prev + 1, 100));
+    let cancelled = false;
+
+    async function bootstrap() {
+      if (!isSessionPage || !sessionId) return;
+
+      setSession((prev) => ({
+        ...prev,
+        sessionId,
+        status: 'booting',
+        errorMessage: undefined,
+        lastUpdated: new Date().toISOString(),
+      }));
+
+      try {
+        const status = await adapter.getSessionStatus(sessionId);
+        const usage = await adapter.getUsage(sessionId);
+        if (cancelled) return;
+
+        setSession((prev) => ({
+          ...prev,
+          sessionId,
+          status,
+          usagePercent: usage,
+          duration: Math.max(prev.duration, 120),
+          lastUpdated: new Date().toISOString(),
+          errorMessage: undefined,
+        }));
+      } catch {
+        if (cancelled) return;
+        setSession((prev) => ({
+          ...prev,
+          status: 'ready',
+          errorMessage: '会话状态获取失败，请重连会话。',
+          lastUpdated: new Date().toISOString(),
+        }));
+      }
+    }
+
+    bootstrap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [adapter, isSessionPage, sessionId]);
+
+  useEffect(() => {
+    if (session.status !== 'active') return;
+
+    const timer = setInterval(async () => {
+      const usage = await adapter.getUsage(session.sessionId);
+      setSession((prev) => ({
+        ...prev,
+        duration: prev.duration + 1,
+        usagePercent: Math.min(Math.max(prev.usagePercent, usage), 100),
+        lastUpdated: new Date().toISOString(),
+      }));
     }, 1000);
-    return () => clearInterval(iv);
-  }, [state]);
 
-  const currentSessionId = useMemo(() => sessionId || `demo-${new Date().getTime().toString().slice(-6)}`, [sessionId]);
-  const sessionLabel = sessionId ? `${t.cloudBrowser.labels.session} ${sessionId}` : t.cloudBrowser.labels.lobby;
-  const isMockSession = !sessionId;
+    return () => clearInterval(timer);
+  }, [adapter, session.sessionId, session.status]);
 
-  function handleCreateSession() {
-    setState('booting');
-    setTimeout(() => {
-      setState('active');
-      setSeconds(0);
-      setUsagePercent(3);
-    }, 1200);
+  async function handleCreateSession() {
+    setSession((prev) => ({
+      ...prev,
+      status: 'booting',
+      errorMessage: undefined,
+      lastUpdated: new Date().toISOString(),
+    }));
+
+    try {
+      const next = await adapter.createSession();
+      setSession(next);
+    } catch {
+      setSession((prev) => ({
+        ...prev,
+        status: 'ready',
+        errorMessage: '创建会话失败，请稍后重试。',
+        lastUpdated: new Date().toISOString(),
+      }));
+    }
   }
 
-  function handleReconnect() {
-    setState('booting');
-    setTimeout(() => setState('active'), 900);
+  async function handleReconnect() {
+    setSession((prev) => ({
+      ...prev,
+      status: 'booting',
+      errorMessage: undefined,
+      lastUpdated: new Date().toISOString(),
+    }));
+
+    try {
+      const next = await adapter.reconnectSession(session.sessionId);
+      setSession(next);
+    } catch {
+      setSession((prev) => ({
+        ...prev,
+        status: 'ready',
+        errorMessage: '重连会话失败，请稍后重试。',
+        lastUpdated: new Date().toISOString(),
+      }));
+    }
   }
 
-  function handleEnd() {
-    setState('ended');
+  async function handleEnd() {
+    try {
+      const next = await adapter.endSession(session.sessionId);
+      setSession(next);
+    } catch {
+      setSession((prev) => ({
+        ...prev,
+        errorMessage: '结束会话失败，请稍后重试。',
+        lastUpdated: new Date().toISOString(),
+      }));
+    }
+  }
+
+  async function handleDeviceModeChange(value: string) {
+    const nextMode = value as DeviceMode;
+
+    try {
+      const resolvedMode = await adapter.setDeviceMode(session.sessionId, nextMode);
+      setSession((prev) => ({
+        ...prev,
+        deviceMode: resolvedMode,
+        lastUpdated: new Date().toISOString(),
+      }));
+    } catch {
+      setSession((prev) => ({
+        ...prev,
+        errorMessage: '设备模式切换失败，请稍后重试。',
+        lastUpdated: new Date().toISOString(),
+      }));
+    }
   }
 
   return (
@@ -58,28 +234,37 @@ export function CloudBrowserShell({ sessionId }: { sessionId?: string }) {
       hero={
         <div>
           <h1>{t.cloudBrowser.title}</h1>
-          <p>{t.cloudBrowser.subtitle} · {t.cloudBrowser.labels.region}：{t.cloudBrowser.region}</p>
+          <p>
+            {isSessionPage ? t.cloudBrowser.subtitleSession : t.cloudBrowser.subtitleLobby} · {t.cloudBrowser.labels.region}：
+            {session.region} · {t.cloudBrowser.labels.mockMode}：{t.cloudBrowser.labels.interfaceReady}
+          </p>
         </div>
       }
       rightRail={
         <div className="ob-grid-gap">
-          <Panel title={t.cloudBrowser.panels.controls} description="create / reconnect / end 接口边界">
+          <Panel title={t.cloudBrowser.panels.controls} description={t.cloudBrowser.hints.controlBoundary}>
             <div className="ob-chip-row">
               <ActionChip>{t.cloudBrowser.controls.create}</ActionChip>
               <ActionChip>{t.cloudBrowser.controls.reconnect}</ActionChip>
               <ActionChip>{t.cloudBrowser.controls.end}</ActionChip>
             </div>
             <div className="ob-control-buttons">
-              <button className="ob-solid-btn" onClick={handleCreateSession}>{t.cloudBrowser.controls.create}</button>
-              <button className="ob-outline-btn" onClick={handleReconnect}>{t.cloudBrowser.controls.reconnect}</button>
-              <button className="ob-outline-btn" onClick={handleEnd}>{t.cloudBrowser.controls.end}</button>
+              <button className="ob-solid-btn" onClick={handleCreateSession}>
+                {t.cloudBrowser.controls.create}
+              </button>
+              <button className="ob-outline-btn" onClick={handleReconnect}>
+                {t.cloudBrowser.controls.reconnect}
+              </button>
+              <button className="ob-outline-btn" onClick={handleEnd}>
+                {t.cloudBrowser.controls.end}
+              </button>
             </div>
           </Panel>
 
-          <Panel title={t.cloudBrowser.panels.deviceView} description="桌面 / 平板 / 手机">
+          <Panel title={t.cloudBrowser.panels.deviceView} description={t.cloudBrowser.hints.deviceBoundary}>
             <SegmentControl
-              value={device}
-              onChange={(value) => setDevice(value as DeviceMode)}
+              value={session.deviceMode}
+              onChange={handleDeviceModeChange}
               options={[
                 { value: 'desktop', label: t.cloudBrowser.devices.desktop },
                 { value: 'tablet', label: t.cloudBrowser.devices.tablet },
@@ -88,47 +273,79 @@ export function CloudBrowserShell({ sessionId }: { sessionId?: string }) {
             />
           </Panel>
 
-          <Panel title={t.cloudBrowser.panels.statusUsage} description={`${t.common.duration} / ${t.common.quotaUsage} · ${t.common.usageSummary}`}>
-            <StatusPill>{t.cloudBrowser.states[state]}</StatusPill>
-            <p className="ob-panel-hint">{t.common.duration}：{toDisplayTime(seconds)}</p>
-            <p className="ob-panel-hint">{t.common.quotaUsage}：{usagePercent}%</p>
-            <div className="ob-usage-track"><div className="ob-usage-fill" style={{ width: `${usagePercent}%` }} /></div>
+          <Panel title={t.cloudBrowser.panels.statusUsage} description={t.common.usageSummary}>
+            <StatusPill>{t.cloudBrowser.states[session.status]}</StatusPill>
+            <p className="ob-panel-hint">
+              {t.cloudBrowser.labels.duration}：{toDisplayTime(session.duration)}
+            </p>
+            <p className="ob-panel-hint">
+              {t.cloudBrowser.labels.usagePercent}：{session.usagePercent}%
+            </p>
+            <div className="ob-usage-track">
+              <div className="ob-usage-fill" style={{ width: `${session.usagePercent}%` }} />
+            </div>
           </Panel>
 
-          <Panel title={t.cloudBrowser.panels.taskMount} description="自动化任务进入云浏览器执行链路">
-            <p className="ob-panel-hint">后续接入：任务队列、浏览器动作回放、结果回传。</p>
+          <Panel title={t.cloudBrowser.panels.taskMount} description={t.cloudBrowser.hints.taskMount}>
+            <p className="ob-panel-hint">{t.cloudBrowser.hints.mockBoundary}</p>
           </Panel>
         </div>
       }
     >
       <div className="ob-grid-gap">
         <div className="ob-browser-bar">
-          <strong>{sessionLabel}</strong>
-          <StatusPill>{t.cloudBrowser.states[state]}</StatusPill>
-          <span>{t.cloudBrowser.labels.region}：{t.cloudBrowser.region}</span>
-          <span>{t.cloudBrowser.labels.device}：{t.cloudBrowser.devices[device]}</span>
-          {sessionId ? (
-            <Link href="/cloud-browser" className="ob-mini-link">{t.cloudBrowser.labels.returnLobby}</Link>
+          <strong>{isSessionPage ? `${t.cloudBrowser.labels.session} ${session.sessionId}` : t.cloudBrowser.labels.lobby}</strong>
+          <StatusPill>{t.cloudBrowser.states[session.status]}</StatusPill>
+          <span>
+            {t.cloudBrowser.labels.region}：{session.region}
+          </span>
+          <span>
+            {t.cloudBrowser.labels.device}：{t.cloudBrowser.devices[session.deviceMode]}
+          </span>
+          {isSessionPage ? (
+            <Link href="/cloud-browser" className="ob-mini-link">
+              {t.cloudBrowser.labels.returnLobby}
+            </Link>
           ) : (
-            <Link href={`/cloud-browser/${currentSessionId}`} className="ob-mini-link">{t.cloudBrowser.labels.enterSession}</Link>
+            <Link href={`/cloud-browser/${session.sessionId}`} className="ob-mini-link">
+              {t.cloudBrowser.labels.enterSession}
+            </Link>
           )}
         </div>
 
-        <div className={`ob-browser-viewport ob-browser-viewport--${device}`}>
+        <div className={`ob-browser-viewport ob-browser-viewport--${session.deviceMode}`}>
           <div>
-            <p>{sessionId ? `${t.cloudBrowser.labels.viewportSession}：${sessionId}` : t.cloudBrowser.labels.viewportLobby}</p>
-            <p className="ob-panel-hint">NEKO 容器稳定挂载位（当前未接真实容器，仅前端结构）。</p>
+            <p>{isSessionPage ? `${t.cloudBrowser.labels.viewportSession}：${session.sessionId}` : t.cloudBrowser.labels.viewportLobby}</p>
+            <p className="ob-panel-hint">{t.cloudBrowser.hints.viewport}</p>
           </div>
         </div>
 
-        <Panel title={t.cloudBrowser.panels.sessionInfo} description={sessionId ? `${t.cloudBrowser.labels.session} route：${t.cloudBrowser.labels.routeDriven}` : `${t.cloudBrowser.labels.lobby}：${t.cloudBrowser.labels.mockState}`}>
+        <Panel title={t.cloudBrowser.panels.sessionInfo} description={isSessionPage ? t.cloudBrowser.labels.routeDriven : t.cloudBrowser.labels.lobby}>
           <div className="ob-browser-info-grid">
-            <div><span>{t.cloudBrowser.labels.session}</span><strong>{currentSessionId}</strong></div>
-            <div><span>{t.common.currentStatus}</span><strong>{t.cloudBrowser.states[state]}</strong></div>
-            <div><span>{t.cloudBrowser.labels.accessType}</span><strong>{isMockSession ? t.cloudBrowser.labels.mockState : t.cloudBrowser.labels.routeAndMock}</strong></div>
-            <div><span>{t.cloudBrowser.labels.extension}</span><strong>create / reconnect / end / usage</strong></div>
+            <div>
+              <span>{t.cloudBrowser.labels.sessionId}</span>
+              <strong>{session.sessionId}</strong>
+            </div>
+            <div>
+              <span>{t.common.currentStatus}</span>
+              <strong>{t.cloudBrowser.states[session.status]}</strong>
+            </div>
+            <div>
+              <span>{t.cloudBrowser.labels.mockMode}</span>
+              <strong>{session.isMock ? t.cloudBrowser.labels.interfaceReady : t.cloudBrowser.labels.routeAndMock}</strong>
+            </div>
+            <div>
+              <span>{t.cloudBrowser.labels.lastUpdated}</span>
+              <strong>{toClock(session.lastUpdated)}</strong>
+            </div>
           </div>
         </Panel>
+
+        {session.errorMessage ? (
+          <Panel title={t.cloudBrowser.labels.error} description={t.cloudBrowser.hints.mockBoundary}>
+            <EmptyState title={t.cloudBrowser.labels.error} description={session.errorMessage} />
+          </Panel>
+        ) : null}
       </div>
     </ProductShell>
   );

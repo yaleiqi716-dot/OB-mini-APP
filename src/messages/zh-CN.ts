@@ -13,6 +13,7 @@ export const zhCN: Messages = {
   },
   common: {
     workspaceStatus: '当前状态',
+    currentStatus: '当前状态',
     focusAsset: '当前焦点',
     openQueue: '打开队列',
     reuseLastPrompt: '复用上次提示',
@@ -21,11 +22,6 @@ export const zhCN: Messages = {
     readyInStudio: '可在创作台开始生成',
     dropRefImages: '拖入参考图片',
     ready: '就绪',
-    currentStatus: '当前状态',
-    currentFocus: '当前焦点',
-    taskQueue: '任务队列',
-    duration: '会话时长',
-    quotaUsage: '配额使用',
     usageSummary: '状态、时长与配额保持同步显示',
   },
   agent: {
@@ -203,6 +199,8 @@ export const zhCN: Messages = {
   cloudBrowser: {
     title: '云浏览器',
     subtitle: '统一会话工作台 · 任务执行 · 浏览器协作',
+    subtitleLobby: '会话大厅 · 启动与管理入口',
+    subtitleSession: '运行中工作台 · 会话状态与任务挂载',
     region: '新加坡',
     states: {
       ready: '就绪',
@@ -222,6 +220,13 @@ export const zhCN: Messages = {
       taskMount: '任务挂载位',
       sessionInfo: '会话信息',
     },
+    hints: {
+      controlBoundary: '前端骨架：create / reconnect / end',
+      deviceBoundary: '前端骨架：setDeviceMode',
+      taskMount: '任务挂载位：后续接入任务队列、动作回放、结果回传。',
+      viewport: 'NEKO 容器挂载位（当前仅前端骨架模拟）。',
+      mockBoundary: '说明：当前为 NEKO 第一阶段前端接入骨架，未接通真实后端。',
+    },
     controls: {
       create: '创建会话',
       reconnect: '重连会话',
@@ -230,8 +235,14 @@ export const zhCN: Messages = {
     labels: {
       lobby: '会话大厅',
       session: '会话',
+      sessionId: '会话 ID',
       region: '地区',
       device: '设备',
+      duration: '时长',
+      usagePercent: '配额使用',
+      mockMode: '接入模式',
+      lastUpdated: '最后更新时间',
+      error: '错误信息',
       returnLobby: '返回会话大厅',
       enterSession: '进入会话页（模拟）',
       viewportLobby: '会话大厅视口',
@@ -241,6 +252,7 @@ export const zhCN: Messages = {
       routeDriven: '路由参数驱动',
       mockState: '前端模拟状态',
       routeAndMock: '路由态 + 前端模拟状态',
+      interfaceReady: '可接真实接口骨架',
     },
   },
 };
