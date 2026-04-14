@@ -23,27 +23,14 @@ export interface Messages {
   agent: {
     title: string;
     subtitle: string;
-    brandSub: string;
     launcherTitle: string;
     launcherSubtitle: string;
-    launcherPlaceholder: string;
     taskStatus: string;
-    taskStatusHint: string;
-    statusReady: string;
     quickActions: string;
     collaboration: string;
     jumpLabel: string;
     typing: string;
     launching: string;
-    reconnecting: string;
-    replyPlaceholder: string;
-    continuePlaceholder: string;
-    loadFailed: string;
-    retry: string;
-    coachDismiss: string;
-    coachKicker: string;
-    coachTitle: string;
-    coachSubtitle: string;
   };
   studio: {
     title: string;
