@@ -124,8 +124,8 @@ function LiveStatusCycle() {
   return (
     <div className="ob-live-status">
       <span className="ob-live-dot" />
-      <span>READY</span>
-      <span style={{ width: 1, height: 10, background: 'var(--ob-border-strong)' }} />
+      <span>{t.agent.statusReady}</span>
+      <span className="ob-live-separator" />
       <span>{STATUS_WORDS[idx]}</span>
     </div>
   );
@@ -193,138 +193,32 @@ function FirstTaskCoach({ onPickExample }: FirstTaskCoachProps) {
   }
   if (dismissed) return null;
   return (
-    <div
-      className="ob-first-task-coach"
-      style={{
-        width: '100%',
-        maxWidth: 720,
-        margin: '0 auto 28px',
-        padding: '22px 24px 20px',
-        background: 'var(--ob-surface)',
-        border: '1px solid var(--ob-border)',
-        borderRadius: 16,
-        position: 'relative',
-        boxShadow: '0 1px 0 rgba(255,90,31,0.06) inset',
-      }}
-    >
+    <div className="ob-first-task-coach">
       <button
         onClick={dismiss}
-        aria-label="关闭引导"
-        style={{
-          position: 'absolute',
-          top: 14,
-          right: 14,
-          width: 28,
-          height: 28,
-          background: 'transparent',
-          border: 'none',
-          borderRadius: 8,
-          color: 'var(--ob-text-muted)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'background .15s',
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--ob-surface-hi)')}
-        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+        aria-label={t.agent.coachDismiss}
+        className="ob-coach-close-btn"
       >
         <CoachIcon name="close" />
       </button>
 
-      <div
-        style={{
-          fontFamily: 'var(--ob-font-mono)',
-          fontSize: 10,
-          letterSpacing: '0.18em',
-          textTransform: 'uppercase',
-          color: 'var(--ob-orange)',
-          marginBottom: 8,
-          fontWeight: 600,
-        }}
-      >
-        欢迎 · 第一步
-      </div>
+      <div className="ob-coach-kicker">{t.agent.coachKicker}</div>
 
-      <div
-        style={{
-          fontSize: 18,
-          fontWeight: 600,
-          color: 'var(--ob-text)',
-          marginBottom: 6,
-          lineHeight: 1.35,
-        }}
-      >
-        点一个例子,10 秒后你就会看到第一个结果。
-      </div>
-      <div
-        style={{
-          fontSize: 13,
-          color: 'var(--ob-text-muted)',
-          marginBottom: 16,
-          lineHeight: 1.5,
-        }}
-      >
-        不用自己想说什么,也不用填表。选一个真实的任务,看它怎么处理。
-      </div>
+      <div className="ob-coach-title">{t.agent.coachTitle}</div>
+      <div className="ob-coach-subtitle">{t.agent.coachSubtitle}</div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 10,
-        }}
-      >
+      <div className="ob-coach-grid">
         {COACH_EXAMPLE_PROMPTS.map((ex) => (
           <button
             key={ex.label}
             onClick={() => pick(ex.prompt)}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              gap: 6,
-              padding: '14px 16px',
-              background: 'var(--ob-surface-hi)',
-              border: '1px solid var(--ob-border)',
-              borderRadius: 12,
-              color: 'var(--ob-text)',
-              cursor: 'pointer',
-              textAlign: 'left',
-              fontFamily: 'var(--ob-font-body)',
-              transition: 'all .15s cubic-bezier(.2,.7,.3,1)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--ob-orange)';
-              e.currentTarget.style.background = 'var(--ob-surface)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--ob-border)';
-              e.currentTarget.style.background = 'var(--ob-surface-hi)';
-            }}
+            className="ob-coach-example-btn"
           >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                color: 'var(--ob-orange)',
-              }}
-            >
+            <div className="ob-coach-example-head">
               <CoachIcon name={ex.icon} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ob-text)' }}>
-                {ex.label}
-              </span>
+              <span className="ob-coach-example-label">{ex.label}</span>
             </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: 'var(--ob-text-muted)',
-                lineHeight: 1.4,
-              }}
-            >
-              {ex.desc}
-            </div>
+            <div className="ob-coach-example-desc">{ex.desc}</div>
           </button>
         ))}
       </div>
@@ -674,7 +568,7 @@ function AgentPageInner() {
 
   const conversationGroups = useMemo(() => groupByDate(filteredConversations), [filteredConversations]);
 
-  if (!authChecked) return <div style={{ height: '100dvh', background: '#F7F7F5' }} />;
+  if (!authChecked) return <div className="ob-agent-boot-placeholder" />;
 
   // ── Sidebar content ──
   const sidebarContent = (
@@ -682,10 +576,10 @@ function AgentPageInner() {
       {/* Brand */}
       <div className="ob-sidebar-brand">
         <div className="ob-sidebar-brand-title">
-          <span style={{ color: 'var(--accent)' }}>ORANGE</span>
-          <span style={{ color: 'var(--text-primary)' }}>BENCH</span>
+          <span className="ob-brand-accent">ORANGE</span>
+          <span className="ob-brand-text">BENCH</span>
         </div>
-        <div className="ob-sidebar-brand-sub">AI AGENT</div>
+        <div className="ob-sidebar-brand-sub">{t.agent.brandSub}</div>
       </div>
 
       {/* New chat button */}
@@ -716,31 +610,13 @@ function AgentPageInner() {
       </div>
 
       {/* Workspace quick links */}
-      <div style={{
-        padding: '6px 8px 8px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        marginBottom: 8,
-      }}>
+      <div className="ob-sidebar-shortcuts">
         {[
           { href: '/tasks', label: '我的任务', iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
           { href: '/workspace', label: '团队工作区', iconPath: 'M4 6h16M4 10h16M4 14h16M4 18h16' },
           { href: '/account/skills', label: '技能中心', iconPath: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
         ].map(item => (
-          <a key={item.href} href={item.href} style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '7px 10px', borderRadius: 8,
-            fontSize: 13, color: 'rgba(245,245,240,0.45)',
-            textDecoration: 'none', transition: 'all 0.12s',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-            e.currentTarget.style.color = 'rgba(245,245,240,0.85)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = 'rgba(245,245,240,0.45)';
-          }}
-          >
+          <a key={item.href} href={item.href} className="ob-sidebar-shortcut-link">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d={item.iconPath} />
             </svg>
@@ -753,7 +629,7 @@ function AgentPageInner() {
       <div className="ob-sidebar-scroll custom-scrollbar">
         {conversationGroups.length > 0 ? (
           conversationGroups.map((group) => (
-            <div key={group.label} style={{ marginBottom: 4 }}>
+            <div key={group.label} className="ob-conversation-group">
               <div className="ob-section-label">{group.label}</div>
               {group.items.map((conv) => (
                 <button
@@ -801,7 +677,7 @@ function AgentPageInner() {
   return (
     <div className="agent-root">
       {reconnecting && (
-        <div className="ob-reconnect agent-reconnect-banner">连接中断，正在重连...</div>
+        <div className="ob-reconnect agent-reconnect-banner">{t.agent.reconnecting}</div>
       )}
 
       <ProductShell
@@ -816,7 +692,7 @@ function AgentPageInner() {
           <div className="ob-grid-gap">
             <Panel title={t.agent.taskStatus} description="当前执行链路">
               <StatusPill>{activeTask?.status || t.common.ready}</StatusPill>
-              <p className="ob-panel-hint">对话 / 任务 / SSE 状态保持原链路。</p>
+              <p className="ob-panel-hint">{t.agent.taskStatusHint}</p>
             </Panel>
             <Panel title={t.agent.quickActions} description="一键发起常用任务">
               <div className="ob-chip-row">
@@ -875,11 +751,11 @@ function AgentPageInner() {
             tasks.length > 0 ? (
             <>
               {/* Scrollable conversation — with chat atmosphere */}
-              <div ref={scrollRef} className="ob-scroll agent-scroll custom-scrollbar ob-chat-atmosphere" key={currentConversationId} style={{ position: 'relative' }}>
+              <div ref={scrollRef} className="ob-scroll agent-scroll custom-scrollbar ob-chat-atmosphere ob-chat-scroll" key={currentConversationId}>
                 {/* Exec overlays — left vertical lines + right dot grid */}
                 <div className="ob-exec-vlines" />
-                <div className="ob-dotgrid ob-dotgrid--exec" style={{ bottom: 0 }} />
-                <div className="ob-messages agent-content-wrap" style={{ position: 'relative', zIndex: 2 }}>
+                <div className="ob-dotgrid ob-dotgrid--exec ob-exec-dotgrid-bottom" />
+                <div className="ob-messages agent-content-wrap ob-chat-messages-layer">
                   {tasks.map((task) => (
                     <div key={task.id}>
                       {/* User message — orange bubble */}
@@ -932,8 +808,8 @@ function AgentPageInner() {
                     activeTask?.currentInteraction &&
                     activeTask?.status === 'interacting' &&
                     (activeTask.currentInteraction.type === 'text_input' || activeTask.currentInteraction.type === 'confirm')
-                      ? '回复上面的问题...'
-                      : '继续对话...'
+                      ? t.agent.replyPlaceholder
+                      : t.agent.continuePlaceholder
                   }
                   chatMode
                   skillRoleId={skillRoleId}
@@ -948,12 +824,12 @@ function AgentPageInner() {
               </div>
             </>
             ) : taskLoadError ? (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                <p style={{ fontSize: 14, color: 'rgba(245,245,240,0.55)' }}>对话加载失败</p>
-                <button onClick={() => currentConversationId && fetchConversationTasks(currentConversationId)} style={{ fontSize: 13, color: '#FF5A1F', background: 'none', border: 'none', cursor: 'pointer' }}>重试</button>
+              <div className="ob-task-load-state">
+                <p className="ob-task-load-error">{t.agent.loadFailed}</p>
+                <button onClick={() => currentConversationId && fetchConversationTasks(currentConversationId)} className="ob-task-load-retry">{t.agent.retry}</button>
               </div>
             ) : (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="ob-task-load-state ob-task-load-state--loading">
                 <Spinner size="sm" />
               </div>
             )
@@ -993,7 +869,7 @@ function AgentPageInner() {
                   <AgentInput
                     onSubmit={(input, attachments) => handleSubmit(input, undefined, attachments)}
                     disabled={isSubmitting}
-                    placeholder="输入任务：写一份行业调研报告、整理季度 PPT、帮我跟进客户邮件..."
+                    placeholder={t.agent.launcherPlaceholder}
                     prominent
                     skillRoleId={skillRoleId}
                     onSkillRoleChange={setSkillRoleId}
@@ -1023,7 +899,7 @@ function AgentPageInner() {
                       <div className="ob-action-icon">
                         <ActionIcon name={a.icon} />
                       </div>
-                      <div style={{ textAlign: 'left' }}>
+                      <div className="ob-action-meta">
                         <div className="ob-action-label">{a.label}</div>
                         <div className="ob-action-desc">{a.desc}</div>
                       </div>
@@ -1079,7 +955,7 @@ function AgentPageInner() {
       )}
       {/* Success toast */}
       {successToast && (
-        <div className="ob-toast animate-flow-in" style={{ background: 'rgba(201,184,158,0.92)', color: '#fff', bottom: errorToast ? '80px' : '24px' }}>
+        <div className={`ob-toast animate-flow-in ob-success-toast ${errorToast ? 'ob-success-toast--stacked' : ''}`}>
           {successToast}
         </div>
       )}
@@ -1089,7 +965,7 @@ function AgentPageInner() {
 
 export default function AgentPage() {
   return (
-    <Suspense fallback={<div style={{ height: '100dvh', background: '#F7F7F5' }} />}>
+    <Suspense fallback={<div className="ob-agent-boot-placeholder" />}>
       <AgentPageInner />
     </Suspense>
   );
