@@ -24,6 +24,8 @@ export interface Messages {
     title: string;
     subtitle: string;
     launcherTitle: string;
+    launcherTitleLead: string;
+    launcherTitleAccent: string;
     launcherSubtitle: string;
     taskStatus: string;
     quickActions: string;
@@ -31,6 +33,18 @@ export interface Messages {
     jumpLabel: string;
     typing: string;
     launching: string;
+    quickNavDesc: {
+      tasks: string;
+      workspace: string;
+      account: string;
+    };
+    statusWords: {
+      understand: string;
+      breakdown: string;
+      plan: string;
+      generate: string;
+      deliver: string;
+    };
   };
   studio: {
     title: string;

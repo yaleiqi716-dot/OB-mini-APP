@@ -921,6 +921,11 @@ header{background:rgba(10,10,8,0.88) !important;backdrop-filter:blur(12px) satur
 
 /* ===== Round 3 agent shell consolidation ===== */
 .ob-agent-welcome{position:relative}
+.ob-agent-welcome-stage{min-height:calc(100dvh - var(--header-h))}
+.ob-agent-exec-scroll{padding-top:8px}
+.ob-agent-exec-stage{max-width:var(--chat-max)}
+.ob-agent-input-dock{border-top:1px solid rgba(255,255,255,0.04)}
+.ob-agent-quick-nav{max-width:760px}
 .ob-agent-dotgrid{bottom:0}
 .ob-agent-atmosphere-content{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 24px 48px;max-width:900px;margin:0 auto;width:100%}
 .ob-agent-live-wrap{margin-bottom:24px}

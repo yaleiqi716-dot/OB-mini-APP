@@ -26,6 +26,8 @@ export const zhCN: Messages = {
     title: 'AI协作',
     subtitle: '主入口 · 任务执行 · 流式协作',
     launcherTitle: '告诉我任务，推进到完成',
+    launcherTitleLead: '告诉我任务',
+    launcherTitleAccent: '推进到完成',
     launcherSubtitle: '理解任务 · 拆解执行 · 过程协作 · 结果交付',
     taskStatus: '任务状态',
     quickActions: '快捷操作',
@@ -33,6 +35,18 @@ export const zhCN: Messages = {
     jumpLabel: '或去',
     typing: '正在处理...',
     launching: '正在启动任务...',
+    quickNavDesc: {
+      tasks: '查看所有执行进度',
+      workspace: '分配任务 · 管理成员',
+      account: '积分 · 充值 · 设置',
+    },
+    statusWords: {
+      understand: '理解任务中',
+      breakdown: '拆解需求中',
+      plan: '组织方案中',
+      generate: '生成内容中',
+      deliver: '整理交付中',
+    },
   },
   studio: {
     title: '设计工作室',
