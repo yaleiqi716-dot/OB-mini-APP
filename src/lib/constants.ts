@@ -1,24 +1,25 @@
 import { TaskType, TaskStatus } from '@/types/task';
 
+// icon field is now a key string (no emoji), used by WorkCardList SVG renderer
 export const TASK_TYPES: { value: TaskType; label: string; icon: string }[] = [
-  { value: 'ppt', label: '演示文稿', icon: '📊' },
-  { value: 'website', label: '网站页面', icon: '🌐' },
-  { value: 'video', label: '视频脚本', icon: '🎬' },
-  { value: 'email', label: '邮件撰写', icon: '✉️' },
-  { value: 'proposal', label: '方案策划', icon: '📋' },
+  { value: 'ppt',      label: '演示文稿', icon: 'chart' },
+  { value: 'website',  label: '网站页面', icon: 'globe' },
+  { value: 'video',    label: '视频脚本', icon: 'video' },
+  { value: 'email',    label: '邮件撰写', icon: 'mail' },
+  { value: 'proposal', label: '方案策划', icon: 'file' },
 ];
 
 // 与 TaskStatus 类型定义、prisma/schema.prisma 注释保持一致
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
-  pending: '等待中',
-  queued: '排队中',
-  understanding: '理解中',
-  structuring: '生成结构',
-  interacting: '交互中',
-  executing: '执行中',
+  pending: '正在处理',
+  queued: '正在处理',
+  understanding: 'AI正在执行',
+  structuring: 'AI正在执行',
+  interacting: 'AI正在执行',
+  executing: 'AI正在执行',
   blocked: '等待充值',
-  completed: '已完成',
-  failed: '失败',
+  completed: '',           // completed: show result directly, no status label
+  failed: '执行失败，请重试',
 };
 
 export const VALID_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {

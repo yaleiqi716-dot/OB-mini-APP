@@ -1,0 +1,81 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { withAuth, isErrorResponse } from '@/lib/workspace-auth';
+import { rateLimit, getClientIp, rateLimitedResponse } from '@/lib/rate-limit';
+
+// GET — Validate invite token (public — no auth required)
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { token: string } }
+) {
+  try {
+    // Public endpoint — rate limit by IP to stop token enumeration.
+    const limit = rateLimit(getClientIp(req), {
+      key: 'invite-validate',
+      max: 30,
+      windowMs: 60 * 1000,
+    });
+    if (!limit.ok) return rateLimitedResponse(limit);
+
+    const invite = await prisma.workspaceInvite.findUnique({
+      where: { token: params.token },
+      include: { workspace: { select: { name: true } } },
+    });
+
+    if (!invite) {
+      return NextResponse.json({ valid: false, reason: 'not_found' });
+    }
+
+    if (invite.status !== 'pending') {
+      return NextResponse.json({ valid: false, reason: invite.status });
+    }
+
+    if (invite.expiresAt < new Date()) {
+      return NextResponse.json({ valid: false, reason: 'expired' });
+    }
+
+    return NextResponse.json({
+      valid: true,
+      workspaceName: invite.workspace.name,
+      email: invite.email,
+      role: invite.role,
+    });
+  } catch (error) {
+    console.error('[INVITE_VALIDATE_ERROR]', error);
+    return NextResponse.json({ valid: false, reason: 'error' });
+  }
+}
+
+// DELETE — Revoke invite by token (owner only)
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { token: string } }
+) {
+  try {
+    const ctx = await withAuth(req);
+    if (isErrorResponse(ctx)) return ctx;
+
+    const invite = await prisma.workspaceInvite.findUnique({
+      where: { token: params.token },
+      include: { workspace: true },
+    });
+
+    if (!invite) return NextResponse.json({ error: '邀请不存在' }, { status: 404 });
+    if (invite.workspace.ownerId !== ctx.userId) {
+      return NextResponse.json({ error: '无权限' }, { status: 403 });
+    }
+    if (invite.status !== 'pending') {
+      return NextResponse.json({ error: '只能撤销待接受的邀请' }, { status: 400 });
+    }
+
+    await prisma.workspaceInvite.update({
+      where: { id: invite.id },
+      data: { status: 'revoked' },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[INVITE_REVOKE_ERROR]', error);
+    return NextResponse.json({ error: '操作失败' }, { status: 500 });
+  }
+}

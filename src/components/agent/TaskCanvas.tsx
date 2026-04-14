@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
@@ -9,6 +10,15 @@ import { Typewriter } from './Typewriter';
 import { Interaction, ConfirmInteraction, ApprovalType } from '@/types/interaction';
 import { TaskStatus } from '@/types/task';
 import { TASK_TYPES } from '@/lib/constants';
+
+// SVG icon renderer for ApprovalCard — no emoji
+function ApprovalIcon({ name }: { name: string }) {
+  const s = { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (name === 'mail')  return <svg {...s}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>;
+  if (name === 'chart') return <svg {...s}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
+  if (name === 'file')  return <svg {...s}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>;
+  return <svg {...s}><rect x="3" y="3" width="18" height="18" rx="2"/></svg>;
+}
 
 interface TaskEvent {
   type: string;
@@ -208,6 +218,65 @@ function buildThinkingPhases(events: TaskEvent[]): ThinkingPhase[] {
   return phases;
 }
 
+// ---- Execution Timeline (time-based, instant feedback) ----
+
+const EXEC_PHASES = [
+  { label: '思考中...', delay: 0 },
+  { label: '正在调用 AI 模型...', delay: 1800 },
+  { label: '生成中...', delay: 4000 },
+];
+
+function ExecutionTimeline({ status, events }: { status: TaskStatus; events: TaskEvent[] }) {
+  const [phaseIdx, setPhaseIdx] = useState(0);
+  const [completedPhases, setCompletedPhases] = useState<number[]>([]);
+  const startRef = useRef(Date.now());
+
+  useEffect(() => {
+    // Reset when task starts
+    startRef.current = Date.now();
+    setPhaseIdx(0);
+    setCompletedPhases([]);
+
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    EXEC_PHASES.forEach((phase, i) => {
+      if (i === 0) return;
+      timers.push(setTimeout(() => {
+        setCompletedPhases(prev => [...prev, i - 1]);
+        setPhaseIdx(i);
+      }, phase.delay));
+    });
+    return () => timers.forEach(clearTimeout);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Don't show if we already have real thinking events
+  const hasRealThinking = events.some(e => e.type === 'thinking' || e.type === 'step_update' || e.type === 'log');
+  if (hasRealThinking) return null;
+  if (status === 'completed' || status === 'failed') return null;
+
+  return (
+    <div className="space-y-2">
+      {EXEC_PHASES.map((phase, i) => {
+        const isDone = completedPhases.includes(i);
+        const isCurrent = phaseIdx === i;
+        if (i > phaseIdx) return null; // not yet shown
+        return (
+          <div key={i} className={`flex items-center gap-2 text-xs transition-all duration-500 ${isDone ? 'text-content-tertiary/50' : 'text-content-secondary'}`}>
+            {isDone ? (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-green-500/60 flex-shrink-0">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            ) : isCurrent ? (
+              <span className="w-2.5 h-2.5 rounded-full bg-accent/60 animate-pulse flex-shrink-0" />
+            ) : null}
+            <span className={isDone ? 'line-through' : isCurrent ? 'animate-progress-pulse' : ''}>{phase.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ---- Narrative mode ----
 
 type NarrativeMode = 'interaction' | 'executing' | 'thinking' | 'result' | 'error' | 'blocked' | 'idle';
@@ -229,6 +298,8 @@ export function TaskCanvas({
   onInteractionSubmit, onApprove, onReject, onAdjustStructure, onAdjustProposal, onReviseEmail,
   actionLoading, result, loading, credits, executionStrategy, modelName, onNewTask,
 }: TaskCanvasProps) {
+  // Expose taskId to ResultContainer via context
+  const taskIdRef = taskId;
   const prevTaskIdRef = useRef(taskId);
   if (taskId !== prevTaskIdRef.current) {
     prevTaskIdRef.current = taskId;
@@ -304,57 +375,56 @@ export function TaskCanvas({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header — light, not system-like */}
-      <div className="px-4 md:px-5 py-3 md:py-3.5 border-b border-border/40">
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="text-base flex-shrink-0">{typeInfo?.icon || '📎'}</span>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-medium text-content-primary truncate">{title || '新任务'}</h3>
-            <div className="flex items-center gap-2 mt-0.5">
-              <Badge status={status} />
-              <span className="text-xs text-content-tertiary">{TYPE_LABELS[type] || type}</span>
-            </div>
-          </div>
-        </div>
+      {/* Pure chat flow — no header card */}
+      <div className="flex-1 overflow-y-auto px-0 py-0">
+        <div className="ob-messages agent-content-wrap" style={{ paddingBottom: 0 }}>
 
-        {statusBarText && (mode === 'executing' || mode === 'thinking') ? (
-          <div className="mt-3 animate-flow-in">
-            <div className="flex items-center gap-2 text-xs text-content-secondary">
-              <Spinner size="sm" />
-              <span className="animate-progress-pulse">{statusBarText}</span>
-            </div>
-            {progress ? (
-              <div className="mt-2 h-1 rounded-full bg-surface-tertiary overflow-hidden">
-                <div className="h-full rounded-full bg-accent progress-bar-fill"
-                  style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} />
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      {/* Execution flow */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4">
-
-        {/* User input */}
-        {input ? (
-          <div className="flex gap-3">
-            <div className="h-7 w-7 rounded-full bg-accent/15 flex items-center justify-center flex-shrink-0">
-              <span className="text-xs text-accent font-medium">你</span>
-            </div>
-            <div className="pt-1">
-              <p className="text-sm text-content-primary leading-relaxed">{input}</p>
-            </div>
-          </div>
-        ) : null}
-
-        {/* AI response */}
+        {/* AI response area — user bubble is rendered by parent page */}
         {(events.length > 0 || isActive) ? (
-          <div className="flex gap-3">
-            <div className="h-7 w-7 rounded-full bg-surface-tertiary flex items-center justify-center flex-shrink-0">
-              <span className="text-xs text-content-tertiary font-medium">{typeInfo?.icon || 'AI'}</span>
+          <div className="ob-msg-ai chat-ai-area">
+            {/* AI avatar row */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-full bg-[#FF5A1F]/10 flex items-center justify-center flex-shrink-0">
+                {/* AI avatar icon — SVG, no emoji */}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF5A1F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="8" r="4"/>
+                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 500, color: 'rgba(245,245,240,0.28)' }}>ORANGEBENCH</span>
+              {isActive ? (
+                <span style={{ fontSize: 11, color: 'var(--ob-orange)', fontWeight: 500, background: 'rgba(255,90,31,0.08)', padding: '2px 8px', borderRadius: 9999 }}>执行中</span>
+              ) : mode === 'result' ? (
+                <span style={{ fontSize: 11, color: '#C9B89E', fontWeight: 500, background: 'rgba(201,184,158,0.08)', padding: '2px 8px', borderRadius: 9999 }}>已完成</span>
+              ) : null}
             </div>
-            <div className="flex-1 min-w-0 space-y-3 pt-1">
+
+            {/* Mission phase indicator */}
+            {isActive && (
+              <div className="ob-mission-phase" style={{ marginLeft: 36 }}>
+                <span className={`ob-mission-dot ${status === 'understanding' || status === 'structuring' ? 'ob-mission-dot--active' : status === 'executing' || status === 'completed' ? 'ob-mission-dot--done' : 'ob-mission-dot--active'}`} />
+                <span style={{ fontFamily: "var(--ob-font-mono)", fontSize: 10, color: '#8A8A90', letterSpacing: '1px', flexShrink: 0 }}>
+                  {status === 'queued' || status === 'pending' ? 'READY' :
+                   status === 'understanding' ? 'SIGNAL' :
+                   status === 'structuring' ? 'PLAN' :
+                   status === 'executing' ? 'RUNNING' :
+                   status === 'interacting' ? 'WAIT' : 'LIVE'}
+                </span>
+                <span className="ob-mission-label" style={{ flex: 1 }}>
+                  {status === 'queued' || status === 'pending' ? '准备启动' :
+                   status === 'understanding' ? '理解任务需求' :
+                   status === 'structuring' ? '整理执行方案' :
+                   status === 'executing' ? '正在生成内容' :
+                   status === 'interacting' ? '等待你的确认' :
+                   '推进中'}
+                </span>
+                <span className="ob-mission-sub" style={{ fontFamily: "var(--ob-font-mono)", fontSize: 10, letterSpacing: '1px', color: '#8A8A90' }}>
+                  {completedSteps.length > 0 ? `${completedSteps.length} DONE` : ''}
+                </span>
+              </div>
+            )}
+
+            <div className="flex-1 min-w-0 space-y-3 pl-9" style={{ fontSize: 14, color: '#8A8A90', lineHeight: 1.65 }}>
 
               {/* Logs — only during review */}
               {visibleLogs.map((event, i) => (
@@ -370,18 +440,24 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {/* Completed steps — action feed (brighter than thinking) */}
+              {/* Completed steps — lightweight step blocks */}
               {completedSteps.length > 0 ? (
-                <div className="space-y-2 animate-flow-in">
-                  {completedSteps.map((step, i) => (
-                    <div key={`step-${i}`} className="flex items-start gap-2 text-[13px] text-content-primary leading-relaxed">
-                      <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-                      <span className="flex-1">{step.text}</span>
-                      {step.current !== undefined && step.total !== undefined ? (
-                        <span className="text-content-tertiary text-xs tabular-nums flex-shrink-0 mt-0.5">{step.current}/{step.total}</span>
-                      ) : null}
-                    </div>
-                  ))}
+                <div className="ob-steps-container animate-flow-in">
+                  {completedSteps.map((step, i) => {
+                    const isLast = i === completedSteps.length - 1;
+                    const isDone = !isLast || mode === 'result';
+                    return (
+                      <div key={`step-${i}`} className={`ob-step-block ${isLast && !isDone ? 'ob-step-block--active' : ''}`}>
+                        <span className={`ob-step-dot ${isDone ? 'ob-step-dot--done' : 'ob-step-dot--active'}`} />
+                        <span className="ob-step-text">
+                          {step.text}
+                          {step.current !== undefined && step.total !== undefined ? (
+                            <span style={{ color: 'rgba(245,245,240,0.55)', fontSize: 12, marginLeft: 6, fontVariantNumeric: 'tabular-nums' }}>{step.current}/{step.total}</span>
+                          ) : null}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : null}
 
@@ -403,10 +479,15 @@ export function TaskCanvas({
                 </div>
               ) : null}
 
-              {/* Queued hint */}
-              {status === 'queued' ? (
+              {/* Execution Timeline — instant feedback before real events arrive */}
+              {(status === 'queued' || status === 'pending' || status === 'executing' || status === 'understanding') && (
+                <ExecutionTimeline status={status} events={events} />
+              )}
+
+              {/* Queued / pending hint — only if no real events yet */}
+              {(status === 'queued' || status === 'pending') && events.length <= 1 ? (
                 <p className="text-xs text-content-secondary/60 italic animate-progress-pulse">
-                  任务已提交，排队等待处理...
+                  正在处理，请稍候...
                 </p>
               ) : null}
 
@@ -417,12 +498,7 @@ export function TaskCanvas({
                 </p>
               ) : null}
 
-              {/* Pending hint */}
-              {status === 'pending' && events.length <= 1 ? (
-                <p className="text-xs text-content-secondary/50 italic animate-progress-pulse">
-                  收到，我马上开始...
-                </p>
-              ) : null}
+
 
               {/* Transition line before approval — context-specific */}
               {isApprovalGate && approvalType === 'send_email' ? (
@@ -439,7 +515,7 @@ export function TaskCanvas({
               {/* Approval cards */}
               {isApprovalGate && approvalType === 'send_email' ? (
                 <div className="animate-flow-in">
-                  <ApprovalCard icon="✉️" label="邮件预览" loading={actionLoading}
+                  <ApprovalCard icon="mail" label="邮件预览" loading={actionLoading}
                     onApprove={() => onApprove('send_email')} approveLabel="确认发送" loadingLabel="发送中..."
                     onSecondary={onReviseEmail} secondaryLabel="继续修改"
                     onReject={() => onReject('send_email')}>
@@ -450,7 +526,7 @@ export function TaskCanvas({
 
               {isApprovalGate && approvalType === 'use_structure' ? (
                 <div className="animate-flow-in">
-                  <ApprovalCard icon="📊" label="演示文稿结构" loading={actionLoading}
+                  <ApprovalCard icon="chart" label="演示文稿结构" loading={actionLoading}
                     onApprove={() => onApprove('use_structure')} approveLabel="继续生成"
                     onSecondary={onAdjustStructure} secondaryLabel="调整结构"
                     onReject={() => onReject('use_structure')}>
@@ -461,7 +537,7 @@ export function TaskCanvas({
 
               {isApprovalGate && approvalType === 'use_proposal_structure' ? (
                 <div className="animate-flow-in">
-                  <ApprovalCard icon="📋" label="方案结构" loading={actionLoading}
+                  <ApprovalCard icon="file" label="方案结构" loading={actionLoading}
                     onApprove={() => onApprove('use_proposal_structure')} approveLabel="继续生成"
                     onSecondary={onAdjustProposal} secondaryLabel="调整结构"
                     onReject={() => onReject('use_proposal_structure')}>
@@ -471,59 +547,72 @@ export function TaskCanvas({
               ) : null}
 
               {isGenericInteraction ? (
-                <div className="animate-flow-in p-4 rounded-xl border border-accent/20 bg-accent/5">
-                  <InteractionPanel interaction={currentInteraction!} onSubmit={onInteractionSubmit} />
+                <div className="animate-flow-in space-y-3">
+                  {/* AI 质问—显示在聊天气泡里 */}
+                  <p className="text-sm text-content-primary leading-relaxed">
+                    {currentInteraction!.question}
+                  </p>
+                  {/* single_choice / yes_no — 行内 chip 选项，点击即提交 */}
+                  {(currentInteraction!.type === 'single_choice') && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {(currentInteraction as import('@/types/interaction').SingleChoiceInteraction).options.map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => onInteractionSubmit(currentInteraction!.stepId, opt.value)}
+                          className="px-4 py-1.5 rounded-full border border-border text-sm text-content-primary hover:bg-surface-tertiary hover:border-accent transition-colors"
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {(currentInteraction!.type === 'yes_no') && (
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={() => onInteractionSubmit(currentInteraction!.stepId, true)}
+                        className="px-5 py-1.5 rounded-full border border-border text-sm text-content-primary hover:bg-surface-tertiary hover:border-accent transition-colors"
+                      >是</button>
+                      <button
+                        onClick={() => onInteractionSubmit(currentInteraction!.stepId, false)}
+                        className="px-5 py-1.5 rounded-full border border-border text-sm text-content-primary hover:bg-surface-tertiary hover:border-accent transition-colors"
+                      >否</button>
+                    </div>
+                  )}
+                  {/* text_input — 底部输入框会自动进入回复模式，无需额外提示 */}
                 </div>
               ) : null}
 
               {mode === 'result' ? (
-                <div className="animate-flow-in">
+                <div className="animate-flow-in ob-result-node">
                   {result !== null && (result as Record<string, unknown>)?._preview === true ? (
                     <div className="space-y-3">
                       <div className="relative">
                         <div className="max-h-36 overflow-hidden opacity-60">
                           <ResultView result={result} />
                         </div>
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-surface-primary" />
+                        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent, var(--bg))' }} />
                       </div>
-                      <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">🔒</span>
-                          <p className="text-sm font-medium text-amber-400">内容已生成（预览）</p>
+                      <div className="ob-error-hint">
+                        <div className="ob-error-hint-icon">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         </div>
-                        <p className="text-xs text-content-tertiary">
-                          解锁完整内容需 {Number((result as Record<string, unknown>)?._unlockCost) || 10} credits
-                        </p>
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="ob-error-hint-body">
+                          <div className="ob-error-hint-title">内容已生成（预览）</div>
+                          <div className="ob-error-hint-desc">解锁完整内容需 {Number((result as Record<string, unknown>)?._unlockCost) || 10} credits</div>
                           <button
                             onClick={() => {
                               fetch(`/api/tasks/${taskId}/unlock`, { method: 'POST' })
                                 .then(r => r.json())
-                                .then(d => {
-                                  if (d.success) window.location.reload();
-                                  else if (d.required) window.location.href = '/billing';
-                                });
+                                .then(d => { if (d.success) window.location.reload(); });
                             }}
-                            className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors"
-                          >
-                            立即解锁（{Number((result as Record<string, unknown>)?._unlockCost) || 10} credits）
-                          </button>
-                          <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg border border-accent text-accent hover:bg-accent/10 transition-colors">
-                            去充值
-                          </a>
+                            className="ob-error-hint-retry"
+                          >立即解锁</button>
                         </div>
                       </div>
                     </div>
                   ) : result !== null ? (
-                    <ResultView result={result} />
-                  ) : (
-                    <div className="space-y-2 pt-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-400 text-sm">✓</span>
-                        <span className="text-sm font-medium text-green-400">任务已完成</span>
-                      </div>
-                    </div>
-                  )}
+                    <ResultView result={result} taskId={taskIdRef} />
+                  ) : null}
                   {/* Cost display */}
                   {(() => {
                     const costEvent = events.findLast((e) => e.type === 'task_completed' && typeof e.data.cost === 'number');
@@ -533,126 +622,184 @@ export function TaskCanvas({
                     ) : null;
                   })()}
 
-                  {/* Review actions */}
-                  <div className="flex flex-wrap gap-2 mt-3">
+                  {/* Result action buttons */}
+                  <div className="ob-result-actions">
                     <button
-                      onClick={() => fetch(`/api/tasks/${taskId}/review`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'feedback' }),
-                      })}
-                      className="text-[11px] px-2.5 py-1 rounded-lg border border-border bg-surface-secondary hover:bg-surface-tertiary text-content-secondary transition-all"
-                    >
-                      让员工修改
-                    </button>
+                      onClick={() => onNewTask?.('帮我再优化一下这个结果', type)}
+                      className="ob-result-action-btn"
+                    >再优化一下</button>
                     <button
-                      onClick={() => fetch(`/api/tasks/${taskId}/review`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'ai_optimize' }),
-                      }).then(() => window.location.reload())}
-                      className="text-[11px] px-2.5 py-1 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 text-accent transition-all"
-                    >
-                      AI帮我优化
-                    </button>
+                      onClick={() => onNewTask?.('帮我换一种表达方式重新写', type)}
+                      className="ob-result-action-btn"
+                    >换一种表达</button>
                     <button
-                      onClick={() => fetch(`/api/tasks/${taskId}/review`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'approve' }),
-                      })}
-                      className="text-[11px] px-2.5 py-1 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 transition-all"
-                    >
-                      通过
-                    </button>
+                      onClick={() => onNewTask?.('把上面的结果做成 PPT', 'ppt')}
+                      className="ob-result-action-btn"
+                    >做成 PPT</button>
+                    <button
+                      onClick={() => {
+                        const el = document.querySelector('.ob-result-card-body');
+                        const text = el?.textContent || '';
+                        if (!text.trim()) return;
+                        const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `orangebench-result-${taskId.slice(0, 8)}.md`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        const btn = document.activeElement as HTMLButtonElement;
+                        if (btn) { const orig = btn.textContent; btn.textContent = '已下载'; setTimeout(() => { btn.textContent = orig; }, 1500); }
+                      }}
+                      className="ob-result-action-btn"
+                    >导出</button>
                   </div>
 
                   {/* Next-step suggestions — server-driven with static fallback */}
-                  {onNewTask ? (() => {
-                    // Prefer server-driven suggestions from event
-                    const sugEvent = events.findLast((e) => e.type === 'next_suggestions');
-                    const serverSugs = sugEvent?.data?.suggestions as { label: string; prompt: string; type: string; cost?: number }[] | undefined;
-                    const resultType = (result?.type as string) || type;
-                    const suggestions = serverSugs || SUGGESTIONS[resultType] || SUGGESTIONS.direct || [];
-                    return suggestions.length > 0 ? (
-                      <div className="mt-4 space-y-2">
-                        <p className="text-xs text-content-tertiary">你还可以继续：</p>
-                        <div className="flex flex-wrap gap-2">
-                          {suggestions.map((s, i) => (
-                            <button
-                              key={i}
-                              onClick={() => onNewTask(s.prompt, s.type)}
-                              className="text-xs px-3 py-1.5 rounded-lg border border-border bg-surface-secondary hover:bg-surface-tertiary hover:border-accent/30 text-content-primary transition-all flex items-center gap-1.5"
-                            >
-                              {s.label}
-                              {'cost' in s && typeof s.cost === 'number' ? (
-                                <span className="text-accent font-medium">-{s.cost}</span>
-                              ) : null}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null;
-                  })() : null}
+                  {/* Action buttons are now rendered by parent result section above */}
                 </div>
               ) : null}
 
               {/* Blocked — payment required */}
-              {mode === 'blocked' ? (() => {
-                const payEvent = events.findLast((e) => e.type === 'payment_required');
-                const required = payEvent ? (payEvent.data.required as number) : 0;
-                const current = payEvent ? (payEvent.data.current as number) : 0;
-                return (
-                  <div className="animate-flow-in p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
-                    <p className="text-sm font-medium text-amber-400">余额不足，任务已暂停</p>
-                    {required > 0 ? (
-                      <div className="text-xs text-content-tertiary space-y-1">
-                        <p>需要 <span className="text-amber-400 font-medium">{required}</span> credits</p>
-                        <p>当前余额 <span className="text-red-400 font-medium">{current}</span></p>
-                      </div>
-                    ) : null}
-                    <p className="text-xs text-content-tertiary">充值后任务将自动恢复执行</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors">
-                        充值 ¥19（100 credits）
-                      </a>
-                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg border border-accent text-accent hover:bg-accent/10 transition-colors">
-                        充值 ¥79（500 credits）
-                      </a>
-                    </div>
+              {mode === 'blocked' ? (
+                <div className="animate-flow-in ob-error-hint">
+                  <div className="ob-error-hint-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
                   </div>
-                );
-              })() : null}
+                  <div className="ob-error-hint-body">
+                    <div className="ob-error-hint-title">额度不足，任务已暂停</div>
+                    <div className="ob-error-hint-desc">充值后任务将自动恢复执行</div>
+                  </div>
+                </div>
+              ) : null}
 
               {mode === 'error' ? (() => {
-                const errMsg = events.find((e) => e.type === 'error')
-                  ? String(events.find((e) => e.type === 'error')!.data.message || '')
-                  : '';
+                const errEvent = events.find((e) => e.type === 'error');
+                const errMsg = errEvent ? String(errEvent.data.message || '') : '';
+                // Structured error code from failTask → emitEvent.
+                // Codes from src/lib/openrouter.ts LLMErrorCode union:
+                // LLM_AUTH, LLM_RATE_LIMIT, LLM_QUOTA, LLM_UPSTREAM,
+                // LLM_TIMEOUT, LLM_EMPTY, LLM_UNKNOWN
+                const errCode = errEvent ? String(errEvent.data.code || '') : '';
                 const hasInsufficientEvent = events.some((e) => e.type === 'insufficient_credits');
                 const isCreditsError = hasInsufficientEvent || errMsg.includes('余额不足') || errMsg.includes('额度不足');
+                const isImageError = errMsg.includes('LEONARDO') || errMsg.includes('leonardo');
+                const isVideoError = errMsg.includes('MINIMAX') || errMsg.includes('minimax') || errMsg.includes('AKOOL') || errMsg.includes('akool');
 
-                return isCreditsError ? (
-                  <div className="animate-flow-in p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
-                    <p className="text-sm text-amber-400">余额不足，任务已暂停</p>
-                    <p className="text-xs text-content-tertiary">充值后任务将自动恢复执行</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors">
-                        充值 ¥19（100 credits）
-                      </a>
-                      <a href="/billing" className="text-xs px-3 py-1.5 rounded-lg border border-accent text-accent hover:bg-accent/10 transition-colors">
-                        充值 ¥79（500 credits）
-                      </a>
+                // Bucketed, actionable messages. Every non-credits bucket
+                // tells the user (a) what happened in their language and
+                // (b) what they can actually do next.
+                type Bucket = { title: string; desc: string; retryable: boolean };
+                const buckets: Record<string, Bucket> = {
+                  LLM_AUTH: {
+                    title: 'AI 服务配置异常',
+                    desc: '工程师已收到告警。通常 5 分钟内恢复。如持续出现,请联系 support@orangebench.tech',
+                    retryable: false,
+                  },
+                  LLM_RATE_LIMIT: {
+                    title: 'AI 服务繁忙',
+                    desc: '当前请求量超过上限,请等 30 秒后重试。',
+                    retryable: true,
+                  },
+                  LLM_QUOTA: {
+                    title: 'AI 服务配额不足',
+                    desc: '平台账单到期或积分耗尽,工程师已收到告警。',
+                    retryable: false,
+                  },
+                  LLM_UPSTREAM: {
+                    title: 'AI 上游服务异常',
+                    desc: '供应商侧故障。我们正在切换备用通道,1 分钟后重试通常可恢复。',
+                    retryable: true,
+                  },
+                  LLM_TIMEOUT: {
+                    title: 'AI 响应超时',
+                    desc: '任务已保存,可直接重试。如连续超时,试着把任务描述写短一点。',
+                    retryable: true,
+                  },
+                  LLM_EMPTY: {
+                    title: 'AI 返回了空响应',
+                    desc: '有时候供应商会返回空内容,直接重试通常就好。如持续,换个模型试试。',
+                    retryable: true,
+                  },
+                  LLM_UNKNOWN: {
+                    title: '任务执行失败',
+                    desc: '发生了未知错误。重试一次通常就好;如持续出现,请联系 support@orangebench.tech',
+                    retryable: true,
+                  },
+                };
+
+                let friendlyMsg: string;
+                let friendlyDesc: string;
+                let retryable = true;
+
+                if (isCreditsError) {
+                  friendlyMsg = '额度不足,充值后任务会自动恢复';
+                  friendlyDesc = '充值后任务将自动恢复执行';
+                  retryable = false;
+                } else if (isImageError) {
+                  friendlyMsg = '图片生成功能暂未开启';
+                  friendlyDesc = '联系管理员启用,或选择其他任务类型。';
+                  retryable = false;
+                } else if (isVideoError) {
+                  friendlyMsg = '视频生成功能暂未开启';
+                  friendlyDesc = '联系管理员启用,或选择其他任务类型。';
+                  retryable = false;
+                } else if (errCode && buckets[errCode]) {
+                  const b = buckets[errCode];
+                  friendlyMsg = b.title;
+                  friendlyDesc = b.desc;
+                  retryable = b.retryable;
+                } else if (errMsg && !errMsg.includes('Error') && !errMsg.includes('error') && !errMsg.includes('API') && !errMsg.includes('KEY')) {
+                  // Legacy path: raw message was already user-friendly.
+                  friendlyMsg = errMsg;
+                  friendlyDesc = '任务已保存,可重试一次。';
+                } else {
+                  // Fallback when no structured code exists (pre-LLMError errors).
+                  friendlyMsg = '任务执行失败';
+                  friendlyDesc = '请重试一次。如持续出现,请联系 support@orangebench.tech';
+                }
+
+                return (
+                  <div className="animate-flow-in ob-error-hint">
+                    <div className="ob-error-hint-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                      </svg>
                     </div>
-                  </div>
-                ) : (
-                  <div className="animate-flow-in p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-                    <p className="text-sm text-red-400">
-                      {errMsg || '遇到了一些问题，如果需要我可以重新试一下'}
-                    </p>
+                    <div className="ob-error-hint-body">
+                      <div className="ob-error-hint-title">{friendlyMsg}</div>
+                      <div className="ob-error-hint-desc">{friendlyDesc}</div>
+                      {taskId && !isCreditsError && retryable && (
+                        <button
+                          onClick={() => {
+                            fetch(`/api/tasks/${taskId}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ status: 'queued' }),
+                            })
+                              .then(r => r.json())
+                              .then(d => { if (d.success) window.location.reload(); });
+                          }}
+                          className="ob-error-hint-retry"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
+                          重试
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })() : null}
             </div>
           </div>
         ) : null}
-      </div>
+
+        </div>{/* end ob-messages */}
+      </div>{/* end scroll area */}
     </div>
   );
 }
@@ -663,7 +810,7 @@ function CompletedStructure({ structure }: { structure: string[] }) {
   return (
     <div className="pl-3 border-l-2 border-green-400/20 py-1">
       <div className="flex items-center gap-2 mb-1.5">
-        <span className="text-green-400 text-xs">✓</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#C9B89E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         <span className="text-xs text-content-tertiary">结构已确认 · {structure.length} 项</span>
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -687,7 +834,8 @@ function ApprovalCard({
   return (
     <div className="rounded-xl border border-accent/25 bg-accent/[0.03] p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <span className="text-sm">{icon}</span>
+        {/* icon key → SVG, no emoji */}
+        <ApprovalIcon name={icon} />
         <span className="text-accent text-sm font-medium">{label}</span>
       </div>
       {children}
@@ -748,14 +896,14 @@ function StructureList({ structure }: { structure: string[] }) {
   );
 }
 
-function ResultView({ result }: { result: Record<string, unknown> }) {
+function ResultView({ result, taskId: rvTaskId }: { result: Record<string, unknown>; taskId?: string }) {
   const data = result;
   const resultType = data.type as string;
 
   if (resultType === 'ppt' && data.slides) {
     const slides = data.slides as { index: number; title: string; content: string[]; notes: string }[];
     return (
-      <ResultContainer title="演示文稿已经帮你整理好了，你看一下" subtitle={`共 ${slides.length} 页`}>
+      <ResultContainer title="演示文稿已经帮你整理好了，你看一下" subtitle={`共 ${slides.length} 页`} taskId={rvTaskId}>
         {slides.map((slide) => (
           <div key={slide.index} className="p-4 rounded-lg bg-surface-tertiary border border-border">
             <p className="text-sm font-medium text-content-primary mb-2">第 {slide.index + 1} 页：{slide.title}</p>
@@ -774,7 +922,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   if (resultType === 'email' && data.content) {
     const email = data.content as { subject: string; body: string };
     return (
-      <ResultContainer title="邮件已经帮你准备好了，随时可以发送">
+      <ResultContainer title="邮件已经帮你准备好了，随时可以发送" taskId={rvTaskId}>
         <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
           <p className="text-sm font-medium text-content-primary mb-3">主题：{email.subject}</p>
           <p className="text-sm text-content-secondary whitespace-pre-wrap leading-relaxed">{email.body}</p>
@@ -788,7 +936,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     const proposalTitle = (data.title as string) || '策划方案';
     const summary = data.summary as string | undefined;
     return (
-      <ResultContainer title="方案已经帮你写好了，你看看内容" subtitle={summary}>
+      <ResultContainer title="方案已经帮你写好了，你看看内容" subtitle={summary} taskId={rvTaskId}>
         <p className="text-sm font-medium text-content-primary px-1">{proposalTitle}</p>
         {sections?.map((s, i) => (
           <div key={i} className="p-4 rounded-lg bg-surface-tertiary border border-border">
@@ -804,7 +952,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     const history = data.history as { action: string; result: string }[] | undefined;
     const summary = data.summary as string || '已完成';
     return (
-      <ResultContainer title={summary} subtitle={`${data.iterations || 0} 轮推进`}>
+      <ResultContainer title={summary} subtitle={`${data.iterations || 0} 轮推进`} taskId={rvTaskId}>
         {history && history.length > 0 ? (
           <div className="space-y-1.5">
             {history.map((h, i) => (
@@ -822,7 +970,7 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
   if (resultType === 'orchestrator' && data.plan) {
     const plan = data.plan as { type: string; input: string }[];
     return (
-      <ResultContainer title="已帮你拆解并分发任务" subtitle={`共 ${plan.length} 个子任务`}>
+      <ResultContainer title="已帮你拆解并分发任务" subtitle={`共 ${plan.length} 个子任务`} taskId={rvTaskId}>
         <div className="space-y-2">
           {plan.map((t, i) => (
             <div key={i} className="flex items-center gap-2 text-xs text-content-secondary">
@@ -837,9 +985,19 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     );
   }
 
+  if (resultType === 'text' || (resultType === undefined && data.text)) {
+    const textContent = (data.text || data.content || data.message) as string;
+    return (
+      <ResultContainer title="已帮你完成，你看一下" taskId={rvTaskId}>
+        <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
+          <p className="text-sm text-content-secondary whitespace-pre-wrap leading-relaxed">{textContent}</p>
+        </div>
+      </ResultContainer>
+    );
+  }
   if (resultType === 'direct' && data.content) {
     return (
-      <ResultContainer title="已经帮你完成了，你看一下结果">
+      <ResultContainer title="已经帮你完成了，你看一下结果" taskId={rvTaskId}>
         <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
           <p className="text-sm text-content-secondary whitespace-pre-wrap leading-relaxed">{data.content as string}</p>
         </div>
@@ -847,24 +1005,107 @@ function ResultView({ result }: { result: Record<string, unknown> }) {
     );
   }
 
+  // Image result — Leonardo / any image tool
+  if (resultType === 'image' || data.imageUrl || data.image_url) {
+    const imgUrl = (data.imageUrl || data.image_url || data.url) as string;
+    const imgList = (data.images as string[]) || (imgUrl ? [imgUrl] : []);
+    return (
+      <ResultContainer title="我帮你生成了这张图，你可以直接使用或告诉我调整方向" taskId={rvTaskId}>
+        <div className="grid gap-3" style={{ gridTemplateColumns: imgList.length > 1 ? 'repeat(2, 1fr)' : '1fr' }}>
+          {imgList.map((url, i) => (
+            <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+              className="block rounded-xl overflow-hidden border border-border hover:opacity-90 transition-opacity">
+              <img src={url} alt={`生成图片 ${i + 1}`} className="w-full h-auto object-cover" loading="lazy" />
+            </a>
+          ))}
+          {imgList.length === 0 && (
+            <p className="text-sm text-content-tertiary">图片链接暂时不可用</p>
+          )}
+        </div>
+        {imgList.length > 0 && (
+          <a href={imgList[0]} target="_blank" rel="noopener noreferrer"
+            className="text-xs text-accent hover:underline mt-1 inline-block">在新标签页打开原图</a>
+        )}
+      </ResultContainer>
+    );
+  }
+  // Video result — Minimax / Akool / any video tool
+  if (resultType === 'video' || data.videoUrl || data.video_url) {
+    const vidUrl = (data.videoUrl || data.video_url || data.url) as string;
+    const coverUrl = (data.coverUrl || data.cover_url || data.thumbnail) as string | undefined;
+    return (
+      <ResultContainer title="视频已经生成好了，适合直接用于内容发布或演示，你看一下效果" taskId={rvTaskId}>
+        {vidUrl ? (
+          <div className="rounded-xl overflow-hidden border border-border bg-surface-tertiary">
+            <video src={vidUrl} poster={coverUrl} controls preload="metadata"
+              className="w-full max-h-[360px] object-contain" />
+            <div className="px-4 py-2 flex items-center justify-between">
+              <span className="text-xs text-content-tertiary">视频已生成</span>
+              <a href={vidUrl} target="_blank" rel="noopener noreferrer" download
+                className="text-xs text-accent hover:underline">下载视频</a>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 rounded-xl bg-surface-tertiary border border-border text-sm text-content-tertiary">
+            视频链接暂时不可用，请稍后刷新查看
+          </div>
+        )}
+      </ResultContainer>
+    );
+  }
+  // Fallback — friendly message, not raw JSON
+  const fallbackContent = (data.content || data.summary || data.text || data.message) as string | undefined;
   return (
-    <ResultContainer title="已经帮你完成了，你看一下结果">
+    <ResultContainer title="已经帮你完成了，你看一下结果" taskId={rvTaskId}>
       <div className="p-4 rounded-lg bg-surface-tertiary border border-border">
-        <pre className="text-xs text-content-secondary whitespace-pre-wrap font-sans">{JSON.stringify(data, null, 2)}</pre>
+        <p className="text-sm text-content-secondary whitespace-pre-wrap leading-relaxed">
+          {fallbackContent || '任务已完成，但结果格式暂不支持直接展示。'}
+        </p>
       </div>
     </ResultContainer>
   );
 }
 
-function ResultContainer({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+function ResultContainer({ title, subtitle, children, taskId: rcTaskId }: { title: string; subtitle?: string; children: React.ReactNode; taskId?: string }) {
+  const [copied, setCopied] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const handleCopy = useCallback(() => {
+    const text = contentRef.current?.textContent || '';
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, []);
   return (
-    <div className="space-y-3 pt-2">
-      <div className="flex items-center gap-2">
-        <span className="text-green-400 text-sm">✓</span>
-        <span className="text-sm font-medium text-green-400">{title}</span>
-        {subtitle ? <span className="text-xs text-content-tertiary">{subtitle}</span> : null}
+    <div className="ob-result-card animate-flow-in">
+      {/* Result header — white card top bar */}
+      <div className="ob-result-card-header">
+        <div className="flex items-center gap-2">
+          <span style={{ display: 'inline-flex', width: 6, height: 6, borderRadius: '50%', background: '#C9B89E' }} />
+          <span style={{ fontFamily: "var(--ob-font-mono)", fontSize: 10, fontWeight: 600, color: '#C9B89E', textTransform: 'uppercase' as const, letterSpacing: '1.5px' }}>RESULT</span>
+          {subtitle && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>{subtitle}</span>}
+        </div>
+        <button
+          onClick={handleCopy}
+          aria-label="复制内容"
+          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 6, fontSize: 11, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', transition: 'background .2s ease' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          {copied ? (
+            <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#C9B89E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span style={{ color: '#C9B89E' }}>已复制</span></>
+          ) : (
+            <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>复制</span></>
+          )}
+        </button>
       </div>
-      <div className="space-y-3">{children}</div>
+      {/* Result body */}
+      <div className="ob-result-card-body">
+        <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 16 }}>{title}</p>
+        <div className="ob-result-card-inner" style={{ color: 'rgba(245,245,240,0.55)', lineHeight: 1.75 }}>
+          <div className="space-y-3" ref={contentRef}>{children}</div>
+        </div>
+      </div>
     </div>
   );
 }

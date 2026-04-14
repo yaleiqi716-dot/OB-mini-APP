@@ -28,7 +28,7 @@ export function formatTask(t: {
   context: string; currentStep: string; result: string | null;
   errorMessage: string | null; source: string;
   estimatedCost?: number; actualCost?: number; userId?: string | null; assigneeId?: string | null;
-  businessStatus?: string; charged?: boolean; cost?: number;
+  businessStatus?: string; charged?: boolean; cost?: number; priority?: number;
   createdAt: Date; updatedAt: Date;
   events?: { id: string; taskId: string; type: string; data: string; createdAt: Date }[];
 }) {
@@ -58,7 +58,7 @@ export function formatTask(t: {
     estimatedCost: t.estimatedCost || 0,
     actualCost: t.actualCost || 0,
     assigneeId: t.assigneeId || null,
-    businessStatus: t.businessStatus || 'assigned',
+    priority: t.priority ?? 0,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
     events: t.events?.map(formatEvent) ?? [],
@@ -76,7 +76,7 @@ function truncateResult(result: Record<string, unknown>, unlockCost: number): Re
       const firstLine = bodyStr.split('\n').find(l => l.trim()) || '';
       preview.content = {
         subject: c.subject,
-        body: firstLine.slice(0, 60) + '...\n\n🔒 完整内容需解锁',
+        body: firstLine.slice(0, 60) + '...\n\n[已锁定] 完整内容需解锁',
       };
       return preview;
     }
@@ -85,14 +85,14 @@ function truncateResult(result: Record<string, unknown>, unlockCost: number): Re
   // Direct text: show first 20% capped at 100 chars
   if (typeof result.content === 'string') {
     const cap = Math.min(Math.ceil(result.content.length * 0.2), 100);
-    preview.content = result.content.slice(0, cap) + '...\n\n🔒 完整内容需解锁';
+    preview.content = result.content.slice(0, cap) + '...\n\n[已锁定] 完整内容需解锁';
     return preview;
   }
 
   // PPT slides: show titles only, no content
   if (Array.isArray(result.slides)) {
     const slides = result.slides as { title: string; content?: string[] }[];
-    preview.slides = slides.map(s => ({ title: s.title, content: ['🔒 ...'] }));
+    preview.slides = slides.map(s => ({ title: s.title, content: ['[已锁定]'] }));
     preview._totalSlides = slides.length;
     return preview;
   }
@@ -100,7 +100,7 @@ function truncateResult(result: Record<string, unknown>, unlockCost: number): Re
   // Proposal sections: show headings only
   if (Array.isArray(result.sections)) {
     const sections = result.sections as { heading: string; content?: string }[];
-    preview.sections = sections.map(s => ({ heading: s.heading, content: '🔒 ...' }));
+    preview.sections = sections.map(s => ({ heading: s.heading, content: '[已锁定]' }));
     preview._totalSections = sections.length;
     return preview;
   }
@@ -108,13 +108,13 @@ function truncateResult(result: Record<string, unknown>, unlockCost: number): Re
   // Optimized content: first 20%
   if (typeof result.optimizedContent === 'string') {
     const cap = Math.min(Math.ceil(result.optimizedContent.length * 0.2), 100);
-    preview.optimizedContent = result.optimizedContent.slice(0, cap) + '...\n\n🔒 完整内容需解锁';
+    preview.optimizedContent = result.optimizedContent.slice(0, cap) + '...\n\n[已锁定] 完整内容需解锁';
     return preview;
   }
 
   // Fallback: stringify first 80 chars
   const raw = JSON.stringify(result);
-  preview.content = raw.slice(0, 80) + '...\n\n🔒 完整内容需解锁';
+  preview.content = raw.slice(0, 80) + '...\n\n[已锁定] 完整内容需解锁';
   return preview;
 }
 
@@ -133,7 +133,7 @@ export function formatEvent(e: { id: string; taskId: string; type: string; data:
 export async function createTask(
   input: string,
   source: TaskSource = 'agent',
-  opts?: { userId?: string; estimatedCost?: number; assigneeId?: string }
+  opts?: { userId?: string; estimatedCost?: number; assigneeId?: string; attachments?: Array<{ id: string; name: string; size: number; type?: string }> }
 ) {
   const task = await prisma.task.create({
     data: {
@@ -141,10 +141,11 @@ export async function createTask(
       input,
       source,
       status: 'pending',
-      userId: opts?.userId || null,
+      ...(opts?.userId ? { user: { connect: { id: opts.userId } } } : {}),
       estimatedCost: opts?.estimatedCost || 0,
       assigneeId: opts?.assigneeId || null,
       businessStatus: opts?.assigneeId ? 'assigned' : 'assigned',
+      attachments: opts?.attachments ? JSON.stringify(opts.attachments) : null,
     },
   });
 
@@ -266,7 +267,7 @@ function getNextSuggestions(type: string, input: string): { label: string; promp
   return map[type] || map.direct;
 }
 
-export async function failTask(taskId: string, errorMessage: string) {
+export async function failTask(taskId: string, errorMessage: string, errorCode?: string) {
   // Idempotency: skip if already completed or failed
   const existing = await prisma.task.findUnique({ where: { id: taskId } });
   if (existing?.status === 'completed' || existing?.status === 'failed') {
@@ -282,7 +283,10 @@ export async function failTask(taskId: string, errorMessage: string) {
     },
   });
 
-  await emitEvent(taskId, 'error', { message: errorMessage });
+  // errorCode carries a structured bucket (e.g. LLM_AUTH, LLM_RATE_LIMIT)
+  // so the UI can render an actionable, bucketed message instead of a
+  // generic "当前能力暂不可用". Optional for non-LLM failures.
+  await emitEvent(taskId, 'error', errorCode ? { message: errorMessage, code: errorCode } : { message: errorMessage });
   await emitEvent(taskId, 'status_change', { status: 'failed' });
 }
 

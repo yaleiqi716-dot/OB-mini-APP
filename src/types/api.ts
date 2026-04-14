@@ -7,6 +7,13 @@ export interface CreateTaskRequest {
   metadata?: Record<string, string>;
   assigneeId?: string;
   parentTaskId?: string;
+  conversationId?: string;
+  attachments?: Array<{ id: string; name: string; size: number; type?: string }>;
+  // Optional: AI colleague persona to activate for this task.
+  // If omitted and conversation already has one, the existing role persists.
+  // If provided, pins the conversation to this role (switches mid-chat if different).
+  // See src/lib/skills/registry.ts STARTER_ROLE_IDS for valid values.
+  skillRoleId?: string;
 }
 
 export interface CreateTaskResponse {

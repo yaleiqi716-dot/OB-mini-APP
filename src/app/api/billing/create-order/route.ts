@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  const { ALL_PRODUCTS, formatAmount: fmt } = await import('@/lib/billing-config');
+  const { ALL_PRODUCTS, formatAmount: fmt, FREE_TIER } = await import('@/lib/billing-config');
   return NextResponse.json({
     products: ALL_PRODUCTS.map(p => ({
       code: p.code,
@@ -82,8 +82,24 @@ export async function GET() {
       label: p.label,
       amount: p.amount,
       amountLabel: fmt(p.amount),
-      credits: p.credits,
-      ...(p.type === 'subscription' ? { plan: p.plan, durationDays: p.durationDays } : {}),
+      ...(p.type === 'subscription' ? {
+        plan: (p as any).plan,
+        credits: (p as any).credits,
+        dailyTrialCredits: (p as any).dailyTrialCredits,
+        durationDays: (p as any).durationDays,
+        concurrency: (p as any).concurrency,
+        scheduledTasks: (p as any).scheduledTasks,
+        features: (p as any).features,
+        description: (p as any).description,
+        recommended: (p as any).recommended || false,
+        teamPerSeat: (p as any).teamPerSeat || false,
+      } : {
+        baseCredits: (p as any).baseCredits,
+        bonusCredits: (p as any).bonusCredits,
+        totalCredits: (p as any).totalCredits,
+        displayLabel: (p as any).displayLabel,
+      }),
     })),
+    freeTier: FREE_TIER,
   });
 }

@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const signature = req.headers.get('wechatpay-signature') || '';
     const serial = req.headers.get('wechatpay-serial') || '';
 
-    const valid = verifyWebhookSignature({ timestamp, nonce, signature, serial }, body);
+    const valid = await verifyWebhookSignature({ timestamp, nonce, signature, serial }, body);
     if (!valid) {
       return NextResponse.json({ code: 'FAIL', message: '签名验证失败' }, { status: 401 });
     }
@@ -50,11 +50,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: 'SUCCESS', message: 'OK' });
     }
 
-    // Atomic transaction: update order + fulfill in one go
+    // Atomic transaction: idempotency gate + fulfill in one go
     const product = getProduct(order.productCode);
 
-    await prisma.$transaction(async (tx) => {
-      // 1. Mark order as paid
+    const result = await prisma.$transaction(async (tx) => {
+      // Re-read order inside transaction to prevent concurrent double-credit
+      const freshOrder = await tx.order.findUnique({ where: { id: order!.id } });
+      if (!freshOrder || freshOrder.status === 'paid') {
+        // Another webhook already processed this — idempotent exit
+        return { alreadyPaid: true };
+      }
+
+      // 1. Mark order as paid FIRST (this is the idempotency gate)
       await tx.order.update({
         where: { id: order!.id },
         data: {
@@ -71,6 +78,11 @@ export async function POST(req: NextRequest) {
       if (order!.productType === 'subscription' && product && product.type === 'subscription') {
         const subProduct = product as SubscriptionProduct;
         const now = new Date();
+        const periodStart = now;
+        const periodEnd = new Date(now);
+        periodEnd.setDate(periodEnd.getDate() + subProduct.durationDays);
+
+        // expireAt extends from current expiry if still valid, else from now
         const baseDate = user.expireAt && user.expireAt > now ? user.expireAt : now;
         const expireAt = new Date(baseDate);
         expireAt.setDate(expireAt.getDate() + subProduct.durationDays);
@@ -80,21 +92,36 @@ export async function POST(req: NextRequest) {
           data: {
             plan: subProduct.plan,
             expireAt,
-            credits: user.credits + subProduct.credits,
+            currentPeriodStart: periodStart,
+            currentPeriodEnd: periodEnd,
+            // Reset subscription credits to new plan allowance (no carryover)
+            subscriptionCredits: subProduct.credits,
+            subscriptionResetAt: periodStart.toISOString().split('T')[0],
+            // Clear cancel/downgrade flags on renewal
+            cancelAtPeriodEnd: false,
+            canceledAt: null,
+            pendingPlan: null,
           },
         });
 
-        console.log(`[WECHAT_WEBHOOK] Subscription: ${order!.userId} → ${subProduct.plan}, +${subProduct.credits}cr, expires ${expireAt.toISOString()}`);
+        console.log(`[WECHAT_WEBHOOK] Subscription: ${order!.userId} → ${subProduct.plan}, ${subProduct.credits}cr (reset), period ${periodStart.toISOString()} → ${periodEnd.toISOString()}`);
       } else {
         // Credits purchase
         await tx.user.update({
           where: { id: order!.userId },
-          data: { credits: user.credits + order!.credits },
+          data: { generalCredits: (user.generalCredits || 0) + order!.credits },
         });
 
         console.log(`[WECHAT_WEBHOOK] Credits: ${order!.userId} +${order!.credits}`);
       }
+
+      return { alreadyPaid: false };
     });
+
+    // If already processed by concurrent webhook, return success
+    if (result.alreadyPaid) {
+      return NextResponse.json({ code: 'SUCCESS', message: 'OK' });
+    }
 
     // Requeue blocked tasks (outside transaction — best effort)
     await requeueBlockedTasks(order.userId);

@@ -9,7 +9,7 @@ import { dispatch, ASYNC_INTENTS } from './agent/dispatch';
 // ---- Concurrency control ----
 
 const MAX_CONCURRENT = 3;
-const TASK_TIMEOUT_MS = 30_000; // 30s — async tools return immediately, no need for 120s
+const TASK_TIMEOUT_MS = 180_000; // 180s — Router + LLM can take 60-150s
 
 let runningCount = 0;
 let workerInterval: ReturnType<typeof setInterval> | null = null;
@@ -43,61 +43,157 @@ async function fetchNextQueuedTask() {
   });
 }
 
+// ---- Step event helpers ----
+
+async function emitStepStarted(taskId: string, stepId: string, label: string, detail?: string) {
+  return emitEvent(taskId, 'step_update', {
+    stepId,
+    label,
+    detail: detail || '',
+    status: 'running',
+  });
+}
+
+async function emitStepCompleted(taskId: string, stepId: string, label: string, note?: string) {
+  return emitEvent(taskId, 'step_complete', {
+    stepId,
+    label,
+    status: 'done',
+    note: note || '',
+  });
+}
+
+async function emitStepFailed(taskId: string, stepId: string, label: string, reason: string, retryable = true) {
+  return emitEvent(taskId, 'step_update', {
+    stepId,
+    label,
+    status: 'retrying',
+    note: reason,
+    retryable,
+  });
+}
+
+// ---- Intent → human-readable step label ----
+
+function intentToStepLabel(intent: string): { label: string; detail: string } {
+  const map: Record<string, { label: string; detail: string }> = {
+    text:         { label: '生成内容',       detail: '调用语言模型，根据需求生成完整输出' },
+    search:       { label: '搜索并整理',     detail: '联网获取最新信息，提炼关键内容' },
+    image:        { label: '生成图片',       detail: '将描述转化为视觉图像' },
+    design:       { label: '设计 UI 稿',     detail: '调用 gstack design 引擎生成界面设计稿' },
+    video:        { label: '生成视频',       detail: '合成视频内容，可能需要几分钟' },
+    avatar_video: { label: '生成数字人视频', detail: '克隆形象并合成口播视频' },
+    automation:   { label: '触发自动化',     detail: '调用外部系统执行操作' },
+    browser_task: { label: '浏览器操作',     detail: '打开页面，执行网页交互任务' },
+  };
+  return map[intent] || { label: '处理任务', detail: '执行中...' };
+}
+
 // ---- Single execution chain: Router → Dispatch → Tool ----
 
 async function executeTask(taskId: string, input: string) {
+  // ── Step 1: 理解需求 ──────────────────────────────────────────────────────
   await updateTaskStatus(taskId, 'understanding');
-  await emitLog(taskId, '正在分析任务...');
-  await emitThinking(taskId, '我先帮你拆解一下需求...');
+  await emitStepStarted(taskId, 'step_understand', '理解需求', '分析你的输入，判断任务类型和执行方向');
+  await emitThinking(taskId, '先看看你要做什么...');
 
-  // Step 1: Router — ChatGPT decides intent
-  const decision = await routeIntent(input);
+  let decision;
+  try {
+    decision = await routeIntent(input);
+  } catch (err) {
+    await emitStepFailed(taskId, 'step_understand', '理解需求', '路由分析失败，使用默认文本处理', true);
+    decision = {
+      intent: 'text' as const,
+      reason: '默认文本处理',
+      needsClarification: false,
+      questions: [],
+      toolPayload: { prompt: input },
+    };
+  }
 
   await updateTaskContext(taskId, {
     agentIntent: decision.intent,
     agentReason: decision.reason,
   });
 
-  console.log(`[WORKER] Task ${taskId} routed: intent=${decision.intent}, needsClarification=${decision.needsClarification}`);
-
-  // Step 2: Clarification needed → ask user
-  if (decision.needsClarification && decision.questions.length > 0) {
-    await requestInteraction(taskId, {
-      id: `clarify_${Date.now()}`,
-      taskId,
-      stepId: 'agent_clarification',
-      type: 'text_input',
-      question: decision.questions.join('\n'),
-      placeholder: '请补充以上信息',
-    });
-    return;
+  // Emit real thinking from LLM reason
+  if (decision.reason) {
+    await emitThinking(taskId, decision.reason);
   }
 
-  // Step 3: Dispatch — all intents go through dispatch, no exceptions
-  const intentType = decision.intent;
-  const cost = estimateCost(intentType);
-  await prisma.task.update({ where: { id: taskId }, data: { estimatedCost: cost } });
+  await emitStepCompleted(taskId, 'step_understand', '理解需求', `决定使用：${intentToStepLabel(decision.intent).label}`);
 
-  const title = input.slice(0, 50);
+  console.log(`[WORKER] Task ${taskId} routed: intent=${decision.intent}`);
+
+  // ── Step 2: 规划执行 ──────────────────────────────────────────────────────
+  const intentType = decision.intent;
+  const { label: execLabel, detail: execDetail } = intentToStepLabel(intentType);
+  const cost = estimateCost(intentType);
+
+  await prisma.task.update({ where: { id: taskId }, data: { estimatedCost: cost } });
+  // Strip preambles when deriving the task title. The task.input may have
+  // been injected in two ways:
+  //   1. Skill role preamble from /api/tasks:
+  //        【AI 同事角色】<name>\n...\n---\n\n【用户任务】<real input>
+  //   2. Workspace task preamble from /api/workspace/tasks/[id]/agent:
+  //        【工作区任务】<title>\n【任务描述】...\n【当前指令】请根据以上任务要求执行
+  //   3. Both combined (role + workspace):
+  //        【AI 同事角色】<name>\n...\n---\n\n【用户任务】【工作区任务】<title>\n...
+  //
+  // Strategy: prefer 【工作区任务】 when present (pulls clean task title
+  // directly), else fall back to 【用户任务】, else use the raw input.
+  const WS_TASK_MARKER = '【工作区任务】';
+  const USER_INTENT_MARKER = '【用户任务】';
+  let title: string;
+  const wsIdx = input.indexOf(WS_TASK_MARKER);
+  if (wsIdx >= 0) {
+    // Workspace task — title is the first line after 【工作区任务】.
+    const afterMarker = input.slice(wsIdx + WS_TASK_MARKER.length);
+    const firstLine = afterMarker.split('\n')[0] || afterMarker;
+    title = firstLine.trim().slice(0, 50);
+  } else {
+    const markerIdx = input.indexOf(USER_INTENT_MARKER);
+    const userIntent = markerIdx >= 0
+      ? input.slice(markerIdx + USER_INTENT_MARKER.length).trim()
+      : input;
+    title = userIntent.slice(0, 50);
+  }
   await updateTaskType(taskId, 'unknown' as TaskType, title);
   await updateTaskContext(taskId, { executionStrategy: 'agent_dispatch', engine: intentType });
-  await emitLog(taskId, `执行方式：${intentType}`);
-  await updateTaskStatus(taskId, 'executing');
-  await emitThinking(taskId, '正在执行任务...');
 
-  const result = await dispatch(decision, input);
+  await emitStepStarted(taskId, 'step_plan', '制定方案', `确认执行策略：${execLabel}`);
+  await emitThinking(taskId, `好，用${execLabel}来处理这个...`);
+  await emitStepCompleted(taskId, 'step_plan', '制定方案', `策略：${execLabel}`);
+
+  // ── Step 3: 执行 ──────────────────────────────────────────────────────────
+  await updateTaskStatus(taskId, 'executing');
+  await emitStepStarted(taskId, 'step_execute', execLabel, execDetail);
+  await emitThinking(taskId, '开始干活了...');
+
+  // P4c4 — dispatch ctx for browser_task gstack path (needs userId +
+  // taskId for credential resolution + quota + TaskEvent artifact tracking)
+  const dispatchTask = await prisma.task
+    .findUnique({ where: { id: taskId }, select: { userId: true } })
+    .catch(() => null);
+  const result = await dispatch(decision, input, {
+    taskId,
+    userId: dispatchTask?.userId ?? undefined,
+  });
 
   if (!result.success) {
+    await emitStepFailed(taskId, 'step_execute', execLabel, result.message || '执行失败', true);
     const { failTask } = await import('./task-manager');
-    await failTask(taskId, result.message || '执行失败');
+    // Propagate structured error code (e.g. LLM_AUTH, LLM_RATE_LIMIT) so
+    // the UI can render an actionable, bucketed message.
+    const errorCode = typeof result.data?.errorCode === 'string' ? result.data.errorCode : undefined;
+    await failTask(taskId, result.message || '执行失败', errorCode);
     return;
   }
 
-  // Step 4: Check if async (image/video/avatar_video/browser_task)
+  // ── Step 4: 异步任务（图片/视频/浏览器）────────────────────────────────────
   const isAsync = ASYNC_INTENTS.has(intentType) && result.data._async;
 
   if (isAsync) {
-    // Store jobId on task — media-job-poller will pick it up
     const jobId = String(result.data.jobId || '');
     await prisma.task.update({
       where: { id: taskId },
@@ -106,14 +202,20 @@ async function executeTask(taskId: string, input: string) {
         externalEngine: result.engine,
       },
     });
-    await emitLog(taskId, result.message);
-    // Task stays in "executing" — poller will complete it
+    await emitStepCompleted(taskId, 'step_execute', execLabel, result.message);
+    await emitStepStarted(taskId, 'step_wait', '等待结果', `任务已提交，等待 ${result.engine} 返回结果`);
+    await emitThinking(taskId, `已提交给 ${result.engine}，等结果回来...`);
     console.log(`[WORKER] Task ${taskId} async job created: ${result.engine}/${jobId}`);
+    // Task stays in "executing" — poller will complete it and emit step_complete for step_wait
     return;
   }
 
-  // Synchronous result — complete immediately
+  // ── Step 5: 同步完成 ──────────────────────────────────────────────────────
+  await emitStepCompleted(taskId, 'step_execute', execLabel, result.message);
+  await emitThinking(taskId, '完成了，整理一下结果...');
+  await emitStepStarted(taskId, 'step_finish', '整理结果', '格式化输出，准备呈现');
   await completeTask(taskId, result.data, result.message);
+  await emitStepCompleted(taskId, 'step_finish', '整理结果', '已完成');
 }
 
 // ---- Process one task ----

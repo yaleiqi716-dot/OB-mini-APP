@@ -2,123 +2,845 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --surface-primary: #ffffff;
-  --surface-secondary: #f9fafb;
-  --surface-tertiary: #f3f4f6;
-  --content-primary: #111827;
-  --content-secondary: #4b5563;
-  --content-tertiary: #9ca3af;
-  --border-color: #e5e7eb;
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN TOKENS — ORANGEBENCH v1.2
+   Source of truth: DESIGN.md in repo root.
+   Legacy token names (--bg, --accent, ...) are kept as aliases
+   pointing at the v1.2 values for backward compat with existing
+   component CSS. New code should use the --ob-* names directly.
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  /* ─── v3.0 DARK MODE — superpower.com inspired ──────────── */
+  /* Deep warm-black surface stack — immersive, cinematic */
+  --ob-bg:            #0C0C0A;
+  --ob-surface:       #1A1A18;
+  --ob-surface-hi:    #222220;
+  --ob-border:        rgba(255,255,255,0.08);
+  --ob-border-strong: rgba(255,255,255,0.14);
+
+  /* Warm off-white text stack */
+  --ob-text:       #F5F5F0;
+  --ob-text-muted: rgba(245,245,240,0.55);
+  --ob-text-dim:   rgba(245,245,240,0.30);
+
+  /* Brand orange — glowing on dark bg */
+  --ob-orange:         #FF5A1F;
+  --ob-orange-hi:      #FF7340;
+  --ob-orange-lo:      #E84D15;
+  --ob-orange-a10:     rgba(255,90,31,0.10);
+  --ob-orange-a20:     rgba(255,90,31,0.18);
+  --ob-orange-ring:    rgba(255,90,31,0.20);
+  --ob-orange-glow:    0 0 20px rgba(255,90,31,0.20);
+
+  /* Semantic colors — bright for dark mode */
+  --ob-success: #34D399;  /* green */
+  --ob-warning: #FBBF24;  /* amber */
+  --ob-error:   #F87171;  /* red */
+  --ob-info:    #60A5FA;  /* blue */
+
+  /* Type */
+  --ob-font-display: "Cabinet Grotesk", "General Sans", system-ui, sans-serif;
+  --ob-font-body:    "Geist", "HarmonyOS Sans SC", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  --ob-font-mono:    "Geist Mono", "SF Mono", ui-monospace, monospace;
+
+  /* Radius */
+  --ob-r-input:  4px;
+  --ob-r-btn:    8px;
+  --ob-r-card:   12px;
+  --ob-r-card-lg:16px;
+  --ob-r-pill:   9999px;
+
+  /* Motion */
+  --ob-ease-out:    cubic-bezier(.2,.7,.3,1);
+  --ob-ease-in-out: cubic-bezier(.4,0,.2,1);
+
+  /* ─── Legacy aliases (kept for backward compat, do not use in new code) ── */
+
+  /* Backgrounds — dark mode */
+  --bg:           var(--ob-bg);
+  --bg-hero:      var(--ob-bg);
+  --bg-exec:      var(--ob-surface);
+  --bg-ws:        var(--ob-surface-hi);
+  --bg-billing:   var(--ob-surface-hi);
+  --bg-mission:   var(--ob-bg);
+  --bg-sidebar:   #111110;
+  --bg-card:      var(--ob-surface);
+  --bg-secondary: var(--ob-surface-hi);
+  --bg-tertiary:  var(--ob-surface-hi);
+  --bg-input:     var(--ob-surface);
+  --bg-hover:     var(--ob-surface-hi);
+  --bg-elevated:  var(--ob-surface);
+  --bg-conv:      var(--ob-surface);
+
+  /* Text — warm off-white on dark bg */
+  --text-primary:   var(--ob-text);
+  --text-secondary: rgba(245,245,240,0.60);
+  --text-muted:     rgba(245,245,240,0.40);
+  --text-label:     rgba(245,245,240,0.40);
+  --text-faint:     rgba(245,245,240,0.20);
+
+  /* Dots */
+  --dot-online:  var(--ob-success);
+  --dot-active:  var(--ob-orange);
+  --dot-idle:    rgba(245,245,240,0.15);
+
+  /* Card */
+  --card-bg:       var(--ob-surface);
+  --card-border:   var(--ob-border);
+  --border-orange: var(--ob-orange-a20);
+
+  /* Border */
+  --border:        var(--ob-border);
+  --border-strong: var(--ob-border-strong);
+
+  /* Brand alias — legacy code still uses var(--accent) */
+  --accent:        var(--ob-orange);
+  --accent-hover:  var(--ob-orange-lo);
+  --accent-subtle: var(--ob-orange-a10);
+  --accent-ring:   var(--ob-orange-ring);
+  --accent-glow:   var(--ob-orange-glow);
+
+  /* Status — mapped to the warm earthy semantic palette */
+  --status-success: var(--ob-success);
+  --status-warning: var(--ob-warning);
+  --status-danger:  var(--ob-error);
+  --status-info:    var(--ob-info);
+
+  /* Focus */
+  --input-focus-color: var(--ob-orange);
+  --input-focus-ring:  0 0 0 3px var(--ob-orange-ring);
+
+  /* Send btn */
+  --send-bg:       var(--ob-orange);
+  --send-bg-hover: var(--ob-orange-lo);
+  --send-bg-off:   rgba(245,245,240,0.12);
+
+  /* Layout */
+  --sidebar-w:    220px;
+  --content-max:  760px;
+  --chat-max:     780px;
+  --header-h:     52px;
+
+  /* Legacy surface/content/border aliases */
+  --surface-primary:   var(--ob-bg);
+  --surface-secondary: var(--ob-surface);
+  --surface-tertiary:  var(--ob-surface-hi);
+  --content-primary:   var(--ob-text);
+  --content-secondary: rgba(245,245,240,0.55);
+  --content-tertiary:  rgba(245,245,240,0.35);
+  --border-color:      var(--ob-border);
+  --sidebar-bg:        #111110;
+  --sidebar-width:     220px;
 }
 
-.dark {
-  --surface-primary: #0a0a0a;
-  --surface-secondary: #141414;
-  --surface-tertiary: #1c1c1c;
-  --content-primary: #f5f5f5;
-  --content-secondary: #a3a3a3;
-  --content-tertiary: #525252;
-  --border-color: #262626;
+html{color-scheme:dark}
+*{box-sizing:border-box}
+
+body{
+  background:var(--ob-bg);
+  color:var(--ob-text);
+  font-family:var(--ob-font-body);
+  font-size:14px;
+  line-height:1.6;
+  font-feature-settings:"ss01","cv11";
+  overscroll-behavior:none;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
 }
 
-html {
-  color-scheme: dark;
+/* Tailwind bridge — dark mode */
+.text-content-primary   {color:var(--text-primary)!important}
+.text-content-secondary {color:var(--text-secondary)!important}
+.text-content-tertiary  {color:var(--text-muted)!important}
+.bg-surface-primary     {background:var(--bg)!important}
+.bg-surface-secondary   {background:var(--bg-secondary)!important}
+.bg-surface-tertiary    {background:var(--bg-tertiary)!important}
+.border-border          {border-color:var(--border)!important}
+.text-accent            {color:var(--accent)!important}
+.bg-accent              {background:var(--accent)!important}
+.bg-accent\/15          {background:rgba(255,90,31,.15)!important}
+.bg-accent\/5           {background:rgba(255,90,31,.05)!important}
+.hover\:bg-accent\/10:hover{background:rgba(255,90,31,.10)!important}
+.border-accent\/30      {border-color:rgba(255,90,31,.30)!important}
+
+/* Scrollbar */
+.scrollbar-hide{scrollbar-width:none;-ms-overflow-style:none}
+.scrollbar-hide::-webkit-scrollbar{display:none}
+.custom-scrollbar{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.12) transparent}
+.custom-scrollbar::-webkit-scrollbar{width:4px}
+.custom-scrollbar::-webkit-scrollbar-track{background:transparent}
+.custom-scrollbar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:2px}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2)}
+
+/* ═══════════════════════════════════════════════════════════════
+   MOTION SYSTEM — inspired by superpower.com
+   Key principles:
+   1. Every element enters with purpose (fade+translate+blur)
+   2. Interactive elements have tactile feedback (scale on press)
+   3. Groups dim non-hovered siblings (focus attention)
+   4. Motion is fast (200-400ms) and eased (ease-out for entry)
+   5. Respects prefers-reduced-motion
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Keyframes ──────────────────────────────────────────────── */
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes heroReveal{
+  from{opacity:0;filter:blur(6px);transform:scale(1.04)}
+  to{opacity:1;filter:blur(0);transform:scale(1)}
+}
+@keyframes fadeInBlur{
+  from{opacity:0;filter:blur(4px);transform:translateY(12px)}
+  to{opacity:1;filter:blur(0);transform:translateY(0)}
+}
+@keyframes slideInRight{
+  from{opacity:0;transform:translateX(16px)}
+  to{opacity:1;transform:translateX(0)}
+}
+@keyframes slideInLeft{
+  from{opacity:0;transform:translateX(-16px)}
+  to{opacity:1;transform:translateX(0)}
+}
+@keyframes scaleIn{
+  from{opacity:0;transform:scale(0.92)}
+  to{opacity:1;transform:scale(1)}
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{
+  from{background-position:-200% 0}
+  to{background-position:200% 0}
+}
+@keyframes float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-4px)}
+}
+@keyframes dropdownIn{
+  from{opacity:0;transform:scale(0.96) translateY(-6px)}
+  to{opacity:1;transform:scale(1) translateY(0)}
 }
 
-html.dark {
-  color-scheme: dark;
+/* ── Entrance animations ────────────────────────────────────── */
+
+.animate-flow-in       {animation:fadeUp .25s var(--ob-ease-out) both}
+.animate-hero-reveal   {animation:heroReveal .8s var(--ob-ease-out) both}
+.animate-fade-blur     {animation:fadeInBlur .5s var(--ob-ease-out) both}
+.animate-slide-right   {animation:slideInRight .35s var(--ob-ease-out) both}
+.animate-slide-left    {animation:slideInLeft .35s var(--ob-ease-out) both}
+.animate-scale-in      {animation:scaleIn .3s var(--ob-ease-out) both}
+.animate-progress-pulse{animation:pulse 2s ease-in-out infinite}
+.animate-shimmer       {animation:shimmer 2s infinite;background-size:200% 100%}
+.animate-float         {animation:float 3s ease-in-out infinite}
+.progress-bar-fill     {transition:width .4s ease-out}
+
+/* Staggered children — add .stagger-children to parent,
+   each child gets incremental delay */
+.stagger-children > *:nth-child(1){animation-delay:0ms}
+.stagger-children > *:nth-child(2){animation-delay:60ms}
+.stagger-children > *:nth-child(3){animation-delay:120ms}
+.stagger-children > *:nth-child(4){animation-delay:180ms}
+.stagger-children > *:nth-child(5){animation-delay:240ms}
+.stagger-children > *:nth-child(6){animation-delay:300ms}
+.stagger-children > *:nth-child(7){animation-delay:360ms}
+.stagger-children > *:nth-child(8){animation-delay:420ms}
+.stagger-children > *:nth-child(9){animation-delay:480ms}
+.stagger-children > *:nth-child(10){animation-delay:540ms}
+.stagger-children > *{animation-fill-mode:both}
+
+/* ── Interactive feedback ───────────────────────────────────── */
+
+/* Button press — tactile scale-down like Superpower */
+.btn-press{transition:transform .12s var(--ob-ease-out),box-shadow .12s var(--ob-ease-out)}
+.btn-press:active{transform:scale(0.97)}
+
+/* Card hover — lift + glow */
+.card-hover{
+  transition:transform .2s var(--ob-ease-out),
+             box-shadow .2s var(--ob-ease-out),
+             border-color .2s var(--ob-ease-out);
+}
+.card-hover:hover{
+  transform:translateY(-3px);
+  box-shadow:0 12px 32px -8px rgba(0,0,0,0.12);
 }
 
-html:not(.dark) {
-  color-scheme: light;
+/* Card hover with orange glow */
+.card-hover-glow:hover{
+  transform:translateY(-3px);
+  box-shadow:0 12px 32px -8px rgba(255,90,31,0.12),0 4px 12px rgba(0,0,0,0.06);
+  border-color:rgba(255,90,31,0.4) !important;
 }
 
-body {
-  background: var(--surface-primary);
-  color: var(--content-primary);
-  /* Prevent iOS bounce/overscroll */
-  overscroll-behavior: none;
+/* Group hover — dim siblings (Superpower nav pattern) */
+.group-hover-dim{transition:opacity .2s ease}
+.group-hover-dim-parent:hover .group-hover-dim{opacity:0.5}
+.group-hover-dim-parent:hover .group-hover-dim:hover{opacity:1}
+
+/* Link hover — arrow nudge */
+.link-arrow{transition:transform .15s var(--ob-ease-out)}
+.link-arrow:hover{transform:translateX(3px)}
+
+/* Focus ring — consistent across all interactive */
+.focus-ring:focus-visible{
+  outline:2px solid var(--ob-orange);
+  outline-offset:2px;
 }
 
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+/* ── Global defaults ────────────────────────────────────────── */
+
+/* All interactive elements get smooth transitions */
+a,button,input,select,textarea,[role="button"]{
+  transition-property:color,background-color,border-color,box-shadow,opacity,transform;
+  transition-duration:.15s;
+  transition-timing-function:var(--ob-ease-out);
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 2px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--content-tertiary);
+/* Anti-aliasing for crisp text */
+*{
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
 }
 
-/* Smooth base transitions */
-* {
-  transition-property: color, background-color, border-color;
-  transition-timing-function: ease;
-  transition-duration: 100ms;
+/* ── Safe area ──────────────────────────────────────────────── */
+.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px)}
+
+/* ── Reduced motion ─────────────────────────────────────────── */
+@media(prefers-reduced-motion:reduce){
+  .animate-flow-in,.animate-hero-reveal,.animate-fade-blur,
+  .animate-slide-right,.animate-slide-left,.animate-scale-in,
+  .animate-progress-pulse,.animate-shimmer,.animate-float{animation:none!important}
+  .stagger-children > *{animation-delay:0s!important}
+  .card-hover:hover,.card-hover-glow:hover{transform:none}
+  *{transition-duration:0s!important}
 }
 
-button, a, input, textarea {
-  transition-duration: 150ms;
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS — iPad / Phone / Laptop
+   Mobile-first with breakpoints at:
+   - sm:  640px  (large phone landscape)
+   - md:  768px  (iPad portrait)
+   - lg:  1024px (iPad landscape / small laptop)
+   - xl:  1280px (laptop)
+   - 2xl: 1440px (desktop)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Touch device improvements */
+@media(hover:none){
+  /* Larger touch targets on mobile */
+  a,button,[role="button"]{min-height:44px}
+  /* Disable hover effects that can "stick" on touch */
+  .card-hover:hover{transform:none;box-shadow:none}
+  .card-hover-glow:hover{transform:none;box-shadow:none}
+  .group-hover-dim-parent:hover .group-hover-dim{opacity:1}
 }
 
-/* Execution flow animations */
-@keyframes fadeSlideIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Phone (< 640px) */
+@media(max-width:639px){
+  .stagger-children > *{animation-delay:0ms!important}
 }
 
-@keyframes progressPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+
+/* ═══════════════════════════════════════════════════════════════
+   LOGIN PAGE
+   ═══════════════════════════════════════════════════════════════ */
+.login-root{min-height:100dvh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px 16px}
+.login-card{width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center}
+.login-brand{display:flex;align-items:center;gap:2px;margin-bottom:36px}
+.login-brand-orange{font-size:22px;font-weight:700;color:var(--accent);letter-spacing:-.5px}
+.login-brand-text  {font-size:22px;font-weight:700;color:var(--text-primary);letter-spacing:-.5px}
+.login-title   {font-size:28px;font-weight:600;color:var(--text-primary);text-align:center;margin-bottom:8px;letter-spacing:-.5px}
+.login-subtitle{font-size:14px;color:var(--text-muted);text-align:center;margin-bottom:32px}
+.login-form    {width:100%;display:flex;flex-direction:column;gap:12px}
+.login-input{width:100%;height:48px;padding:0 16px;border-radius:12px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:14px;outline:none;transition:border-color .2s ease,box-shadow .2s ease}
+.login-input::placeholder{color:var(--text-faint)}
+.login-input:focus{border-color:var(--accent);box-shadow:var(--input-focus-ring)}
+.login-btn{width:100%;height:48px;border-radius:12px;background:var(--accent);color:#fff;font-size:15px;font-weight:600;border:none;cursor:pointer;transition:background .2s ease,transform .1s ease;margin-top:4px}
+.login-btn:hover:not(:disabled){background:var(--accent-hover)}
+.login-btn:active:not(:disabled){transform:scale(.98)}
+.login-btn:disabled{opacity:.35;cursor:not-allowed}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SHELL
+   ═══════════════════════════════════════════════════════════════ */
+.ob-shell,.agent-root{height:100dvh;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+.ob-body,.agent-layout{flex:1;display:flex;overflow:hidden}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR — 232px
+   ═══════════════════════════════════════════════════════════════ */
+.ob-sidebar,.agent-sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--bg-sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.ob-sidebar-drawer,.agent-sidebar--mobile{position:fixed;top:0;left:0;bottom:0;z-index:50;width:var(--sidebar-w);background:var(--bg-sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+.ob-sidebar-overlay,.agent-sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.2);z-index:40}
+
+/* Brand — Cabinet Grotesk wordmark + mono kicker */
+.ob-sidebar-brand{flex-shrink:0;height:64px;display:flex;flex-direction:column;justify-content:center;padding:0 18px;border-bottom:1px solid var(--ob-border)}
+.ob-sidebar-brand-title{font-family:var(--ob-font-display);font-size:22px;font-weight:800;letter-spacing:-.025em;display:flex;align-items:center;gap:0;line-height:1}
+.ob-sidebar-brand-sub{font-family:var(--ob-font-mono);font-size:9px;font-weight:500;color:var(--ob-text-muted);letter-spacing:.16em;text-transform:uppercase;margin-top:6px}
+
+/* New chat — sharper radius, less puffy */
+.ob-sidebar-top{flex-shrink:0;padding:16px 16px 0}
+.ob-new-chat-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 14px;height:36px;border-radius:99px;background:transparent !important;border:1px solid rgba(255,90,31,0.40) !important;color:#FF5A1F !important;font-family:var(--ob-font-body);font-size:13px;font-weight:500;letter-spacing:.01em;cursor:pointer;transition:all .15s var(--ob-ease-out,cubic-bezier(.2,.7,.3,1))}
+.ob-new-chat-btn:hover{background:#FF5A1F !important;color:#fff !important;transform:translateY(-1px);box-shadow:none}
+.ob-new-chat-btn:active{transform:translateY(0)}
+
+/* Search — flat token-driven */
+.ob-sidebar-search{flex-shrink:0;padding:12px 16px 8px}
+.ob-sidebar-search-wrap{position:relative}
+.ob-sidebar-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ob-text-dim);pointer-events:none}
+.ob-sidebar-search-input{width:100%;height:34px;border-radius:6px;border:1px solid var(--ob-border);background:var(--ob-surface-hi);padding:0 12px 0 34px;font-family:var(--ob-font-body);font-size:13px;color:var(--ob-text);outline:none;transition:border-color .15s var(--ob-ease-out)}
+.ob-sidebar-search-input::placeholder{color:var(--ob-text-dim)}
+.ob-sidebar-search-input:focus{border-color:var(--ob-border-strong);box-shadow:none}
+
+/* Scroll area */
+.ob-sidebar-scroll,.sidebar-scroll{flex:1;overflow-y:auto;padding:4px 8px 8px}
+
+/* Section labels — mono uppercase tracked (editorial kicker) */
+.ob-section-label,.sidebar-section-title{font-family:var(--ob-font-mono);font-size:10px;font-weight:500;color:rgba(245,245,240,0.25);padding:16px 12px 6px;letter-spacing:.14em;text-transform:uppercase}
+
+/* Conversation items */
+.ob-session-row,.sidebar-task-row{width:100%;text-align:left;padding:4px 0 !important;border:none;background:transparent;cursor:pointer;border-radius:6px;transition:background .12s var(--ob-ease-out);display:block;margin-bottom:1px !important;font-size:13px}
+.ob-session-row:hover:not(.ob-session-row--active),.sidebar-task-row--idle:hover{background:var(--ob-surface-hi)}
+.ob-session-row--active{background:var(--ob-orange-a10,rgba(255,90,31,.10));border-left:2px solid var(--ob-orange);border-radius:0 6px 6px 0;padding-left:8px}
+.ob-session-inner,.sidebar-task-row-inner{padding:0 12px;display:flex;align-items:center;gap:6px;height:34px}
+.ob-session-title,.sidebar-task-title{font-family:var(--ob-font-body);font-size:13px;color:var(--ob-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;flex:1;min-width:0}
+.ob-session-row:hover .ob-session-title{color:var(--ob-text)}
+.ob-session-row--active .ob-session-title{font-weight:600;color:var(--ob-text)}
+
+/* Empty */
+.ob-sidebar-empty,.sidebar-empty-hint{font-size:13px;color:var(--ob-text-dim);text-align:center;padding:40px 16px;line-height:1.6}
+
+/* Footer nav — token-driven, hover lifts to text color */
+.ob-sidebar-footer,.sidebar-footer{flex-shrink:0;padding:14px;border-top:1px solid var(--ob-border);display:flex;flex-direction:column;gap:2px}
+.ob-sidebar-footer-item{display:flex;align-items:center;gap:10px;padding:0 12px;height:34px;border-radius:6px;font-family:var(--ob-font-body);font-size:13px;color:var(--ob-text-muted);text-decoration:none;transition:all .12s var(--ob-ease-out);border:none;background:transparent;cursor:pointer;width:100%;text-align:left}
+.ob-sidebar-footer-item:hover{color:var(--ob-text);background:var(--ob-surface-hi)}
+
+/* Status dots (legacy compat) */
+.ob-status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ob-status-dot--running{background:#C9B89E;animation:pulse 2s ease-in-out infinite}
+.ob-status-dot--waiting{background:#D4A017}
+.ob-status-dot--failed {background:#E4483D}
+.ob-unread-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN AREA
+   ═══════════════════════════════════════════════════════════════ */
+.ob-main,.agent-main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;background:var(--bg)}
+
+/* Mobile topbar */
+.ob-mobile-bar,.agent-mobile-topbar{flex-shrink:0;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--border)}
+.agent-mobile-menu-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:var(--text-secondary);background:transparent;border:none;cursor:pointer;transition:background .2s ease}
+.agent-mobile-menu-btn:hover{background:rgba(255,255,255,.06)}
+.agent-mobile-title{font-size:14px;font-weight:700;color:var(--text-primary)}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   WELCOME / HERO
+   ═══════════════════════════════════════════════════════════════ */
+.ob-welcome,.agent-welcome{flex:1;display:flex;flex-direction:column;overflow-y:auto}
+.ob-welcome-body,.agent-welcome-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:92px 24px 40px;max-width:var(--content-max);margin:0 auto;width:100%}
+.ob-welcome-title,.agent-welcome-title{font-family:var(--ob-font-display);font-size:56px;font-weight:800;color:var(--ob-text);text-align:center;margin-bottom:10px;letter-spacing:-.025em;line-height:1.05}
+.agent-welcome-subtitle{font-family:var(--ob-font-mono);font-size:11px;color:var(--ob-text-muted);text-align:center;margin-bottom:22px;line-height:1.7;max-width:520px;letter-spacing:.14em;text-transform:uppercase}
+
+/* Chips — mono system pills (Geist Mono, no Courier New) */
+.ob-chips,.agent-examples{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:800px;width:100%;margin-top:16px}
+.ob-chip,.agent-example-btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--ob-font-mono);font-size:11px;font-weight:500;letter-spacing:.04em;color:var(--ob-text-muted);background:transparent;border:1px solid var(--ob-border);border-radius:9999px;padding:7px 14px;cursor:pointer;transition:all .12s var(--ob-ease-out);white-space:nowrap}
+.ob-chip:hover:not(:disabled),.agent-example-btn:hover:not(:disabled){background:var(--ob-orange-a10,rgba(255,90,31,.10));border-color:var(--ob-orange);color:var(--ob-orange)}
+.ob-chip:disabled,.agent-example-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* Capability cards — token-driven, sharper */
+.ob-cap-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:600px;width:100%;margin-top:28px}
+.ob-cap-card{height:108px;padding:18px;background:var(--ob-surface);border:1px solid var(--ob-border);border-radius:12px;display:flex;flex-direction:column;justify-content:center;transition:all .15s var(--ob-ease-out)}
+.ob-cap-card:hover{transform:translateY(-1px);border-color:var(--ob-border-strong)}
+.ob-cap-card-icon{width:28px;height:28px;margin-bottom:10px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:var(--ob-orange-a10,rgba(255,90,31,.10));color:var(--ob-orange)}
+.ob-cap-card-title{font-family:var(--ob-font-display);font-size:17px;font-weight:700;color:var(--ob-text);margin-bottom:3px;letter-spacing:-.01em}
+.ob-cap-card-desc{font-family:var(--ob-font-body);font-size:12px;color:var(--ob-text-muted);line-height:1.5}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   CONVERSATION SCROLL
+   ═══════════════════════════════════════════════════════════════ */
+/* Conversation area: distinct layer from page bg */
+/* Conversation scroll — exec bg with left-side lines overlay */
+.ob-scroll,.agent-scroll{flex:1;overflow-y:auto;background:var(--bg-exec);position:relative}
+.ob-messages,.agent-content-wrap{max-width:var(--chat-max);margin:0 auto;padding:32px 24px 28px}
+
+/* User bubble — orange bg, dark text per DESIGN.md v1.2 (V1 polish).
+   Previously used color:#fff which is lower contrast on orange and
+   harder to read for CJK at 14px. /demo proved dark-on-orange is
+   cleaner. Also simplified the asymmetric border-radius to uniform
+   14px for visual stillness and dropped the decorative shadow. */
+.ob-msg-user,.chat-user-bubble-row{display:flex;justify-content:flex-end;margin-bottom:16px;padding-right:24px}
+.ob-msg-user-bubble,.chat-user-bubble{max-width:72%;background:var(--ob-orange);color:#0B0B0C;font-family:var(--ob-font-body);font-size:14px;font-weight:500;line-height:1.55;padding:12px 16px;border-radius:14px;white-space:pre-wrap;word-break:break-word}
+
+/* AI response area */
+.ob-msg-ai,.chat-ai-area{padding-bottom:16px;animation:fadeInBlur 0.3s cubic-bezier(.2,.7,.3,1) both}
+
+/* Step container — token-driven, matches /demo timeline look (V1 polish).
+   Previously used legacy --bg-tertiary / --border / --accent / etc.
+   which predated DESIGN.md v1.2. Now token-only + sand success dots
+   matching the /demo pre-baked conversation. */
+.ob-steps-container{background:var(--ob-surface);border:1px solid var(--ob-border);border-radius:12px;padding:10px 12px;margin-bottom:14px}
+
+/* Step blocks — lightweight execution steps */
+.ob-step-block{display:flex;align-items:center;gap:10px;height:30px;padding:0 8px;border-radius:8px}
+.ob-step-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ob-step-dot--active{background:var(--ob-orange);box-shadow:0 0 0 3px var(--ob-orange-a10,rgba(255,90,31,0.12))}
+.ob-step-dot--done{background:var(--ob-success)}
+.ob-step-text{font-size:13px;color:var(--ob-text-muted);line-height:1;font-family:var(--ob-font-body)}
+.ob-step-block--active{background:var(--ob-surface-hi)}
+.ob-step-block--active .ob-step-text{color:var(--ob-text);font-weight:500}
+
+/* Result card — token-driven, editorial */
+.ob-result-card{background:var(--ob-surface);border:1px solid var(--ob-border);border-radius:12px;overflow:hidden}
+.ob-result-card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--ob-border);font-family:var(--ob-font-display);font-weight:700;font-size:15px;color:var(--ob-text)}
+.ob-result-card-body{padding:22px}
+.ob-result-card-inner{background:var(--ob-surface-hi);border-radius:8px;padding:18px}
+
+/* Result action buttons */
+.ob-result-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;padding-bottom:4px}
+.ob-result-action-btn{display:inline-flex;align-items:center;gap:6px;height:32px;font-size:13px;color:var(--text-secondary);background:var(--bg-card);border:1px solid var(--border);border-radius:9999px;padding:0 16px;cursor:pointer;transition:border-color .2s ease,color .2s ease,background .2s ease}
+.ob-result-action-btn:hover{border-color:rgba(255,90,31,.25);color:var(--accent)}
+
+/* Error hint card */
+.ob-error-hint{background:rgba(228,72,61,0.06);border:1px solid rgba(228,72,61,0.15);border-radius:16px;padding:16px;display:flex;align-items:flex-start;gap:12px}
+.ob-error-hint-icon{width:20px;height:20px;flex-shrink:0;color:#E4483D;margin-top:1px}
+.ob-error-hint-body{flex:1}
+.ob-error-hint-title{font-size:14px;font-weight:600;color:#E4483D;margin-bottom:4px}
+.ob-error-hint-desc{font-size:13px;color:var(--text-secondary);line-height:1.5}
+.ob-error-hint-retry{margin-top:10px;display:inline-flex;align-items:center;gap:6px;height:32px;font-size:13px;font-weight:500;color:var(--accent);background:var(--accent-subtle);border:none;border-radius:9999px;padding:0 16px;cursor:pointer;transition:background .2s ease}
+.ob-error-hint-retry:hover{background:rgba(255,90,31,.14)}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   INPUT AREA
+   ═══════════════════════════════════════════════════════════════ */
+.ob-input-area,.agent-input-area{flex-shrink:0;padding:0 24px 24px;background:transparent}
+.ob-input-wrap,.agent-input-wrap{max-width:var(--content-max);margin:0 auto}
+.ob-input-wrap--chat{max-width:var(--chat-max)}
+.agent-submitting-hint{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;font-size:11px;color:var(--text-faint)}
+
+/* Input box — welcome (prominent) */
+.ob-input-box,.agent-input-box{display:flex;flex-direction:column;border-radius:24px;border:1px solid var(--border);background:var(--bg-card);overflow:hidden;transition:border-color .2s ease,box-shadow .2s ease;box-shadow:none}
+.ob-input-box:focus-within,.agent-input-box:focus-within{border-color:rgba(255,90,31,0.4);box-shadow:var(--input-focus-ring),var(--accent-glow)}
+.ob-input-box--prominent,.agent-input-box--prominent{min-height:56px;box-shadow:none}
+.ob-input-box--prominent:hover{box-shadow:0 0 24px rgba(255,90,31,0.06)}
+
+/* Chat input box — smaller radius */
+.ob-input-box--chat,.agent-input-box--chat{border-radius:20px;min-height:72px}
+
+/* Textarea */
+.ob-textarea,.agent-input-textarea{flex:1;min-height:56px;max-height:200px;font-size:16px;line-height:1.6;resize:none;background:transparent;color:var(--text-primary);outline:none;border:none;font-family:inherit;padding:0 20px}
+.ob-textarea::placeholder,.agent-input-textarea::placeholder{color:rgba(245,245,240,0.30);font-size:15px}
+
+/* Input toolbar */
+.ob-input-toolbar{display:flex;align-items:center;justify-content:space-between;padding:6px 14px 14px;gap:8px}
+.ob-input-toolbar-left{display:flex;align-items:center;gap:4px}
+.ob-input-toolbar-right{display:flex;align-items:center;gap:8px}
+.ob-toolbar-btn{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--text-muted);cursor:pointer;transition:background .2s ease,color .2s ease;flex-shrink:0}
+.ob-toolbar-btn:hover{background:rgba(255,255,255,.06);color:var(--text-primary)}
+.ob-toolbar-btn:disabled{opacity:.4;cursor:not-allowed}
+.ob-toolbar-label{font-size:13px;color:var(--text-muted);padding:4px 10px;border-radius:6px;cursor:pointer;transition:background .2s ease,color .2s ease;border:none;background:transparent}
+.ob-toolbar-label:hover{background:rgba(255,255,255,.06);color:var(--text-primary)}
+.ob-toolbar-label:disabled{opacity:.4;cursor:not-allowed}
+
+/* Auto badge */
+.ob-auto-badge{height:24px;font-size:11px;font-weight:500;color:var(--accent);background:var(--accent-subtle);border-radius:9999px;padding:0 10px;border:none;cursor:default;display:inline-flex;align-items:center}
+
+/* Send button */
+.ob-send-btn,.agent-send-btn{flex-shrink:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:background .2s ease,transform .1s ease}
+.ob-send-btn--on,.agent-send-btn--active{background:var(--accent);color:#fff;box-shadow:0 0 12px rgba(255,90,31,0.3)}
+.ob-send-btn--on:hover,.agent-send-btn--active:hover{background:var(--accent-hover);box-shadow:0 0 16px rgba(255,90,31,0.4)}
+.ob-send-btn--on:active,.agent-send-btn--active:active{transform:scale(.93);box-shadow:0 6px 20px -4px rgba(255,90,31,0.65)}
+
+/* Composer v2 focus glow — dark mode orange ring */
+.ob-composer-v2:focus-within{border-color:var(--ob-orange) !important;box-shadow:0 0 0 4px rgba(255,90,31,0.12),0 4px 24px rgba(0,0,0,0.3) !important}
+.ob-send-btn--off,.agent-send-btn--idle{background:var(--send-bg-off);color:#fff;cursor:not-allowed}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   ATMOSPHERE LAYERS — structural containers for bg assets
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Base atmosphere: positioned behind content, ready for bg images/gradients */
+.ob-atmosphere{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.ob-atmosphere-content{position:relative;z-index:1}
+
+/* Hero atmosphere — pure token bg (no missing image, no gradient slop).
+   The poster watermark below is the editorial signature. */
+.ob-hero-atmosphere{position:absolute;inset:0;pointer-events:none;z-index:0;background:var(--ob-bg)}
+.ob-hero-atmosphere::before{display:none}
+.ob-hero-atmosphere::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 0%,transparent 70%,rgba(20,20,23,.65) 100%)}
+/* Launcher atmosphere — disabled. Composer v2 has its own focus glow. */
+.ob-launcher-atmosphere{position:relative}
+
+/* Chat/exec atmosphere — pure token bg, no missing image */
+.ob-chat-atmosphere{position:relative;background:var(--ob-bg)}
+
+/* Mission atmosphere */
+.ob-mission-atmosphere{position:relative}
+
+/* Command atmosphere — pure token bg */
+.ob-command-atmosphere{position:relative;overflow:hidden;background:var(--ob-bg)}
+
+/* Fuel atmosphere — pure token bg */
+.ob-fuel-atmosphere{position:relative;overflow:hidden;background:var(--ob-bg)}
+
+
+/* Dropdown / picker popover — frosted glass */
+[aria-label="AI 同事选择器"]{backdrop-filter:blur(20px) saturate(160%);animation:dropdownIn 0.18s cubic-bezier(.2,.7,.3,1) both}
+
+/* Dot grid overlays disabled — editorial confident is clean, not patterned. */
+.ob-dotgrid,.ob-dotgrid--hero,.ob-dotgrid--exec,.ob-dotgrid--ws,.ob-dotgrid--billing{display:none}
+.ob-exec-vlines{display:none}
+
+/* Mono utility — Geist Mono via design system var */
+.ob-mono{font-family:var(--ob-font-mono)}
+
+/* ═══════════════════════════════════════════════════════════════
+   PIXEL DETAIL HOOKS — status lights, node dots, indicator lamps
+   ═══════════════════════════════════════════════════════════════ */
+/* Pixel status lamp: 4x4 square dot for minimal indicators */
+.ob-px-dot{width:4px;height:4px;border-radius:1px;flex-shrink:0;display:inline-block}
+.ob-px-dot--active{background:var(--ob-orange);box-shadow:0 0 6px rgba(255,90,31,0.4)}
+.ob-px-dot--success{background:var(--ob-success);box-shadow:0 0 6px rgba(201,184,158,0.3)}
+.ob-px-dot--danger{background:var(--ob-error);box-shadow:0 0 6px rgba(228,72,61,0.3)}
+.ob-px-dot--warning{background:var(--ob-warning)}
+.ob-px-dot--muted{background:var(--ob-text-dim)}
+.ob-px-dot--pulse{animation:statusCycle 1.5s ease-in-out infinite}
+
+/* Nav tail lamp: thin accent line at bottom of active nav item */
+.ob-nav-lamp{position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);width:12px;height:2px;background:var(--ob-orange);border-radius:1px;box-shadow:0 0 8px rgba(255,90,31,0.4)}
+
+/* Notification signal lamp */
+.ob-signal-lamp{background:var(--ob-orange);box-shadow:0 0 8px rgba(255,90,31,0.5),0 0 2px rgba(255,90,31,0.8)}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   CONTRAST & BREATHING — readability fixes
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Ensure muted text is readable on dark surfaces */
+.ob-text-muted{color:rgba(245,245,240,0.55) !important}
+.ob-text-faint{color:rgba(245,245,240,0.35) !important}
+
+/* Breathing space utilities */
+.ob-breathe-sm{padding-top:8px;padding-bottom:8px}
+.ob-breathe-md{padding-top:16px;padding-bottom:16px}
+.ob-breathe-lg{padding-top:32px;padding-bottom:32px}
+.ob-breathe-xl{padding-top:48px;padding-bottom:48px}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FIRST IMPRESSION — Task Launcher & Mission Control
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Status pulse animation */
+@keyframes statusCycle{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,90,31,0)}50%{box-shadow:0 0 0 8px rgba(255,90,31,.08)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* Hero headline — Cabinet Grotesk display, NO gradient (DESIGN.md anti-pattern) */
+.ob-hero-title{font-family:var(--ob-font-display);font-size:64px;font-weight:800;color:var(--ob-text);letter-spacing:-.025em;line-height:1;text-align:center;margin:0 0 16px;animation:fadeUp 0.5s 0.1s both}
+.ob-hero-accent{color:var(--ob-orange);background:none;-webkit-text-fill-color:var(--ob-orange)}
+.ob-hero-sub{font-family:var(--ob-font-mono);font-size:11px;color:var(--ob-text-muted);text-align:center;line-height:1.6;max-width:520px;margin:0 auto 32px;letter-spacing:.14em;text-transform:uppercase;animation:fadeUp 0.4s 0.2s both}
+.agent-welcome-subtitle{animation:fadeUp 0.4s 0.2s both}
+
+/* Task launcher input */
+/* .ob-launcher is a transparent sleeve — the composer v2 inside provides
+   its own background, border, padding, and focus glow. Keep the width
+   constraint and center alignment here. */
+.ob-launcher{width:min(760px,92%);background:transparent;border:none;border-radius:0;padding:0;box-shadow:none;display:flex;justify-content:center;animation:fadeUp 0.5s 0.3s both}
+.ob-launcher:focus-within{box-shadow:none}
+.ob-launcher:hover:not(:focus-within){box-shadow:none}
+
+/* Quick actions grid — token-driven, editorial */
+.ob-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:760px;margin-top:32px;animation:fadeUp 0.4s 0.45s both;overflow:visible}
+.ob-action-card{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#1A1A18;border:1px solid rgba(255,255,255,0.07);box-shadow:0 1px 0 rgba(255,255,255,0.04) inset;border-radius:14px;cursor:pointer;transition:all .18s cubic-bezier(.2,.7,.3,1);text-decoration:none;text-align:left;overflow:hidden}
+.ob-action-card:hover{border-color:rgba(255,90,31,0.30);background:rgba(255,90,31,0.04);box-shadow:0 4px 20px rgba(255,90,31,0.10);transform:translateY(-2px)}
+.ob-action-card:hover .ob-action-label{color:var(--ob-text)}
+.ob-action-card:hover .ob-action-icon{background:var(--ob-orange-a20,rgba(255,90,31,.20))}
+.ob-action-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--ob-orange-a10,rgba(255,90,31,.10));color:var(--ob-orange);transition:background .15s var(--ob-ease-out)}
+.ob-action-label{font-family:var(--ob-font-body);font-size:14px;font-weight:600;color:var(--ob-text);letter-spacing:-.005em}
+.ob-action-desc{font-family:var(--ob-font-mono);font-size:10px;color:var(--ob-text-muted);margin-top:3px;letter-spacing:.08em;text-transform:uppercase}
+
+/* Live status indicator — editorial mono pill */
+.ob-live-status{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:9999px;background:var(--ob-surface);border:1px solid var(--ob-border);font-family:var(--ob-font-mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ob-text-muted);margin-bottom:28px;animation:fadeUp 0.4s 0.0s both}
+.ob-live-dot{width:6px;height:6px;border-radius:50%;background:var(--ob-orange);box-shadow:0 0 6px var(--ob-orange-a20,rgba(255,90,31,.20));animation:statusCycle 2s ease-in-out infinite}
+
+/* Mission progress bar */
+.ob-mission-phase{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-elevated);border:none;border-radius:12px;margin-bottom:12px}
+/* Square pixel mission dots */
+.ob-mission-dot{width:4px;height:4px;border-radius:1px;flex-shrink:0}
+.ob-mission-dot--active{background:#FF5A1F;box-shadow:0 0 6px rgba(255,90,31,0.4);animation:statusCycle 1.5s ease-in-out infinite}
+.ob-mission-dot--done{background:#C9B89E;box-shadow:0 0 6px rgba(201,184,158,0.3)}
+.ob-mission-dot--pending{background:#666666}
+.ob-mission-label{font-size:13px;font-weight:500;color:#F5F5F5}
+.ob-mission-sub{font-size:12px;color:#8A8A90}
+
+/* Result node — token-driven, solid accent bar (no gradient) */
+.ob-result-node{position:relative;background:var(--ob-surface);border:1px solid var(--ob-border);border-radius:var(--ob-r-card-lg,12px);overflow:hidden;margin-top:8px}
+.ob-result-node::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ob-orange)}
+.ob-result-node-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--ob-border);font-family:var(--ob-font-display);font-weight:700;font-size:14px;color:var(--ob-text)}
+.ob-result-node-body{padding:20px}
+
+/* Command center summary bar — token-driven */
+.ob-command-bar{display:flex;align-items:center;gap:16px;padding:14px 20px;background:var(--ob-surface);border:1px solid var(--ob-border);border-radius:12px;margin-bottom:20px;font-family:var(--ob-font-body)}
+.ob-command-stat{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ob-text-muted)}
+.ob-command-stat strong{font-weight:650;color:var(--ob-text)}
+.ob-command-stat--accent strong{color:var(--ob-orange)}
+.ob-command-stat--green strong{color:var(--ob-success)}
+.ob-command-stat--red strong{color:var(--ob-error)}
+
+/* Fuel gauge (billing) — solid fill, no gradient */
+.ob-fuel-gauge{position:relative;height:8px;border-radius:4px;background:var(--ob-surface-hi);overflow:hidden;margin:8px 0;border:1px solid var(--ob-border)}
+.ob-fuel-fill{height:100%;border-radius:4px;background:var(--ob-orange);transition:width .6s ease}
+.ob-fuel-fill--low{background:var(--ob-error)}
+
+/* Billing tier card highlight */
+.ob-tier-recommended{border:2px solid #FF5A1F;position:relative}
+.ob-tier-badge{position:absolute;top:-1px;right:16px;background:#FF5A1F;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:0 0 6px 6px;letter-spacing:0.04em;box-shadow:0 0 12px rgba(255,90,31,0.25)}
+
+@media(max-width:768px){
+  .ob-hero-title{font-size:28px}
+  .ob-hero-sub{font-size:14px}
+  .ob-actions{grid-template-columns:repeat(2,1fr)}
+  .ob-launcher{padding:16px}
+  .ob-command-bar{flex-wrap:wrap;gap:10px}
 }
 
-.animate-flow-in {
-  animation: fadeSlideIn 0.3s ease-out both;
+/* ═══════════════════════════════════════════════════════════════
+   RECONNECT / TOAST
+   ═══════════════════════════════════════════════════════════════ */
+.ob-reconnect,.agent-reconnect-banner{flex-shrink:0;background:rgba(255,90,31,.06);border-bottom:1px solid rgba(255,90,31,.15);text-align:center;font-size:12px;color:#d4a017;padding:6px 16px}
+.ob-toast,.agent-error-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:88px;z-index:60;padding:10px 20px;border-radius:9999px;background:rgba(228,72,61,.92);color:#fff;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.12);white-space:nowrap;pointer-events:none}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════ */
+@media(max-width:768px){
+  .ob-messages,.agent-content-wrap{padding:20px 16px 0}
+  .ob-input-area,.agent-input-area{padding:0 12px 16px}
+  .ob-welcome-title,.agent-welcome-title{font-size:28px;margin-bottom:8px}
+  .ob-welcome-body,.agent-welcome-body{padding:48px 16px 24px}
+  .ob-chips,.agent-examples{gap:8px}
+  .ob-chip,.agent-example-btn{font-size:12px;padding:0 12px;height:28px}
+  .ob-msg-user-bubble,.chat-user-bubble{max-width:85%}
+  .ob-textarea,.agent-input-textarea{min-height:44px;font-size:14px}
+  .ob-cap-cards{grid-template-columns:1fr;max-width:320px}
+  .ob-input-box--prominent,.agent-input-box--prominent{min-height:52px}
+  .agent-welcome-subtitle{font-size:14px}
 }
 
-.animate-progress-pulse {
-  animation: progressPulse 2s ease-in-out infinite;
+
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL UI POLISH — v3.1
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Select dropdowns ─────────────────────────────────────── */
+select{appearance:none;background:#1E1E1C url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(245,245,240,0.4)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 12px center;border:1px solid rgba(255,255,255,0.10);border-radius:8px;color:rgba(245,245,240,0.85);padding:8px 36px 8px 12px;font-size:14px;cursor:pointer;transition:border-color .15s}
+select:hover{border-color:rgba(255,255,255,0.20)}
+select:focus{border-color:#FF5A1F;outline:none;box-shadow:0 0 0 3px rgba(255,90,31,0.12)}
+
+/* ── Global input styles ──────────────────────────────────── */
+input[type=text],input[type=email],input[type=date],textarea{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:8px;color:rgba(245,245,240,0.90);padding:10px 14px;font-size:14px;transition:border-color .15s,box-shadow .15s}
+input[type=text]:focus,input[type=email]:focus,input[type=date]:focus,textarea:focus{border-color:#FF5A1F;outline:none;box-shadow:0 0 0 3px rgba(255,90,31,0.10)}
+
+/* ── Primary button ───────────────────────────────────────── */
+.btn-primary,button[type=submit]:not(.ob-new-chat-btn):not(.ob-send-btn):not(.ob-send-btn--on):not(.ob-send-btn--off){background:#FF5A1F;border:none;border-radius:99px;color:#fff;font-size:13px;font-weight:600;padding:9px 24px;cursor:pointer;transition:all .15s ease}
+.btn-primary:hover{background:#E84D15;transform:translateY(-1px)}
+.btn-primary:active{transform:scale(0.97)}
+
+/* ── Dropdown / Popover global ────────────────────────────── */
+[data-radix-popper-content-wrapper],[role=listbox],[role=menu]{background:#1E1E1C !important;border:1px solid rgba(255,255,255,0.12) !important;border-radius:12px !important;box-shadow:0 8px 32px rgba(0,0,0,0.55),0 2px 8px rgba(0,0,0,0.3) !important;animation:dropdownIn 0.16s cubic-bezier(.2,.7,.3,1) both !important}
+
+/* ── Modal / Dialog ───────────────────────────────────────── */
+[role=dialog]{background:#1A1A18 !important;border:1px solid rgba(255,255,255,0.10) !important;border-radius:16px !important;box-shadow:0 24px 64px rgba(0,0,0,0.6) !important;animation:fadeInBlur 0.2s cubic-bezier(.2,.7,.3,1) both}
+[role=dialog]~[data-overlay],[role=dialog]+.overlay,.modal-overlay{background:rgba(0,0,0,0.65) !important;backdrop-filter:blur(4px) !important}
+
+/* ── Page kicker labels ───────────────────────────────────── */
+.ob-kicker{font-family:var(--ob-font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(245,245,240,0.35)}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FIX BATCH v3.2 — A through K
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── A. Mobile layout fix — hide desktop sidebar below md ── */
+@media(max-width:767px){
+  .ob-sidebar.agent-sidebar{display:none !important;width:0 !important;overflow:hidden !important}
+  .ob-main,.agent-main{width:100% !important;max-width:100% !important;margin-left:0 !important}
+  .ob-shell{flex-direction:column !important}
+}
+.ob-hero-title{font-size:clamp(28px,8vw,56px)}
+
+/* ── B. New-chat button — forced pill outline ──────────── */
+.ob-new-chat-btn{background:transparent !important;border:1px solid rgba(255,90,31,0.45) !important;color:#FF5A1F !important;border-radius:99px !important;box-shadow:none !important}
+.ob-new-chat-btn:hover{background:#FF5A1F !important;color:#fff !important;box-shadow:0 4px 14px rgba(255,90,31,0.30) !important}
+
+/* ── C. User message bubble — lighter ──────────────────── */
+.ob-msg-user-bubble,.chat-user-bubble{background:rgba(255,90,31,0.12) !important;border:1px solid rgba(255,90,31,0.22) !important;color:rgba(245,245,240,0.92) !important;border-radius:16px 16px 4px 16px !important}
+
+/* ── D. Error hint card — lighter ──────────────────────── */
+.ob-error-hint{background:rgba(220,38,38,0.07) !important;border:1px solid rgba(220,38,38,0.18) !important;border-left:3px solid rgba(220,38,38,0.55) !important;border-radius:10px !important;padding:14px 16px !important}
+.ob-error-hint-title{color:#FCA5A5 !important}
+.ob-error-hint-desc{color:rgba(245,245,240,0.60) !important}
+.ob-error-hint-icon{color:#FCA5A5 !important}
+
+/* ── H. Mobile filter pill overflow ────────────────────── */
+@media(max-width:640px){
+  .ob-filter-pills,[style*="gap: 8px"][style*="marginBottom"]{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap !important;padding-bottom:4px}
+  .ob-filter-pills::-webkit-scrollbar{display:none}
 }
 
-.progress-bar-fill {
-  transition: width 0.5s ease-out;
-}
+/* ── I. Global nav backdrop-blur (reinforcement) ──────── */
+header{background:rgba(10,10,8,0.88) !important;backdrop-filter:blur(12px) saturate(150%) !important;-webkit-backdrop-filter:blur(12px) saturate(150%) !important;border-bottom:1px solid rgba(255,255,255,0.06) !important}
 
-/* Mobile safe area */
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
+/* ── K. Global scrollbar ──────────────────────────────── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.10);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.18)}
 
-/* Mobile sidebar overlay */
-@media (max-width: 768px) {
-  .mobile-sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 40;
-    background: rgba(0, 0, 0, 0.4);
-  }
-  .mobile-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    z-index: 50;
-    width: 280px;
-    background: var(--surface-primary);
-    border-right: 1px solid var(--border-color);
-    overflow-y: auto;
-  }
-}
+
+/* ═══════════════════════════════════════════════════════════════
+   BATCH v4 — Skeleton, Badges, Toolbar, Settings, Toast
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Skeleton shimmer ──────────────────────────────────── */
+@keyframes ob-shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
+.ob-skeleton{background:linear-gradient(90deg,rgba(255,255,255,0.04) 0%,rgba(255,255,255,0.09) 50%,rgba(255,255,255,0.04) 100%);background-size:600px 100%;animation:ob-shimmer 1.5s ease-in-out infinite;border-radius:4px}
+
+/* ── Status badges ─────────────────────────────────────── */
+.ob-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500}
+.ob-badge--fail{background:rgba(248,113,113,0.12);color:#F87171;border:1px solid rgba(248,113,113,0.22)}
+.ob-badge--ok{background:rgba(52,211,153,0.12);color:#34D399;border:1px solid rgba(52,211,153,0.22)}
+.ob-badge--warn{background:rgba(251,191,36,0.12);color:#FBBF24;border:1px solid rgba(251,191,36,0.22)}
+.ob-badge--running{background:rgba(255,140,90,0.12);color:#FF8C5A;border:1px solid rgba(255,140,90,0.22)}
+
+/* ── Toolbar button ────────────────────────────────────── */
+.ob-toolbar-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;font-size:13px;color:rgba(245,245,240,0.50);background:transparent;border:none;cursor:pointer;transition:all 0.12s}
+.ob-toolbar-btn:hover{background:rgba(255,255,255,0.07);color:rgba(245,245,240,0.85)}
+
+/* ── Settings nav ──────────────────────────────────────── */
+.settings-field-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.settings-field-row:last-child{border-bottom:none}
+.settings-field-label{font-size:13px;font-weight:500;color:rgba(245,245,240,0.75)}
+.settings-field-value{font-size:13px;color:rgba(245,245,240,0.40)}
+
+/* ── Monday-style status pills (solid color, small radius) ── */
+.ob-status-pill{display:inline-flex;align-items:center;justify-content:center;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:500;color:#fff;min-width:72px;text-align:center;white-space:nowrap}
+.ob-status-pill--processing,.ob-status-pill--running,.ob-status-pill--executing,.ob-status-pill--structuring,.ob-status-pill--understanding,.ob-status-pill--queued{background:#FDAB3D}
+.ob-status-pill--interacting,.ob-status-pill--submitted,.ob-status-pill--revision{background:#FFCB00;color:#333}
+.ob-status-pill--completed{background:#00C875}
+.ob-status-pill--failed{background:#E2445C}
+.ob-status-pill--pending,.ob-status-pill--draft,.ob-status-pill--assigned,.ob-status-pill--in_progress{background:#676879}
+
+/* ── Drawer slide-in ──────────────────────────────────── */
+@keyframes ob-drawer-in{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}

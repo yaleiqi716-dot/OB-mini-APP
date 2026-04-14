@@ -1,133 +1,390 @@
 'use client';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Spinner } from '@/components/ui/Spinner';
+import { Toast } from '@/components/ui/Toast';
+import { AppHeader } from '@/components/workspace/AppHeader';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+interface TaskRef {
+  id: string;
+  title: string;
+  type: string;
+  status?: string;
+  priority?: number;
+  updatedAt?: string;
+  createdAt?: string;
+  conversationId?: string;
+}
 
 interface Summary {
   total: number;
-  assigned: number;
-  submitted: number;
+  running: number;
   completed: number;
+  failed: number;
   pausedAutoTasks: number;
   highlights: string[];
   risks: string[];
   aiSuggestions: string[];
+  waitingReviewTasks?: TaskRef[];
+  highPriorityTasks?: TaskRef[];
+  recentTasks?: TaskRef[];
+  failedTasks?: (TaskRef & { errorMessage?: string | null })[];
 }
 
+const STATUS_LABEL: Record<string, string> = {
+  queued: '排队中', running: '执行中', executing: '执行中',
+  interacting: '等待确认', completed: '已完成', failed: '失败',
+  understanding: '理解中', structuring: '规划中',
+};
+
+function timeAgo(dateStr?: string): string {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return '刚刚';
+  if (mins < 60) return `${mins} 分钟前`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} 小时前`;
+  const days = Math.floor(hrs / 24);
+  return days < 7 ? `${days} 天前` : new Date(dateStr).toLocaleDateString('zh-CN');
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const isRunning = ['queued', 'understanding', 'running', 'executing', 'interacting', 'structuring'].includes(status);
+  const isCompleted = status === 'completed';
+  const isFailed = status === 'failed';
+  let bg = 'rgba(156,163,175,0.10)'; let color = 'var(--ob-text-muted)';
+  if (isRunning)   { bg = 'rgba(255,90,31,0.10)'; color = 'var(--ob-orange)'; }
+  if (isCompleted) { bg = 'rgba(201,184,158,0.10)'; color = 'var(--ob-success)'; }
+  if (isFailed)    { bg = 'rgba(228,72,61,0.10)';  color = '#E4483D'; }
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px', fontSize: 11, fontWeight: 500, borderRadius: 9999, background: bg, color, whiteSpace: 'nowrap' }}>
+      {STATUS_LABEL[status] || status}
+    </span>
+  );
+}
+
+type TimeRange = 'today' | 'week' | 'month';
+
 export default function DashboardPage() {
+  const router = useRouter();
   const [data, setData] = useState<Summary | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState<TimeRange>('week');
+  const [wsSummary, setWsSummary] = useState<{ name: string; assigned: number; submitted: number; completed: number } | null>(null);
 
   useEffect(() => {
-    fetch('/api/summary')
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => {});
+    const m = document.cookie.match(/ob-user-id=([^;]+)/);
+    if (!m || !m[1]) { router.replace('/login'); }
+  }, [router]);
+
+  const showToast = useCallback((msg: string, ok: boolean) => {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 3000);
   }, []);
 
-  if (!data) {
+  const loadData = useCallback(() => {
+    fetch('/api/summary')
+      .then((r) => { if (!r.ok) throw new Error('加载失败'); return r.json(); })
+      .then(setData)
+      .catch(() => setError('数据加载失败，请刷新重试'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  // Fetch workspace summary
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/workspace').then(r => r.json()),
+      fetch('/api/workspace/tasks').then(r => r.json()),
+    ]).then(([ws, tasks]) => {
+      if (ws?.id && Array.isArray(tasks)) {
+        setWsSummary({
+          name: ws.name,
+          assigned: tasks.filter((t: { businessStatus: string }) => ['assigned', 'in_progress'].includes(t.businessStatus)).length,
+          submitted: tasks.filter((t: { businessStatus: string }) => ['submitted', 'revision'].includes(t.businessStatus)).length,
+          completed: tasks.filter((t: { businessStatus: string }) => t.businessStatus === 'completed').length,
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  async function handleRetry(taskId: string) {
+    if (actionLoading) return;
+    setActionLoading(taskId);
+    try {
+      const r = await fetch(`/api/tasks/${taskId}/retry`, { method: 'POST' });
+      if (r.ok) { showToast('已重新提交执行', true); loadData(); }
+      else showToast('重试失败', false);
+    } catch { showToast('网络错误', false); }
+    finally { setActionLoading(null); }
+  }
+
+  if (loading) {
     return (
-      <div className="h-screen bg-surface-primary flex items-center justify-center">
-        <p className="text-content-tertiary text-sm">加载中...</p>
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
+        <AppHeader />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Spinner size="md" />
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-surface-primary">
-      <header className="flex items-center justify-between px-6 h-12 border-b border-border/50">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            <span className="text-accent font-semibold text-sm">ORANGE</span>
-            <span className="text-content-primary font-semibold text-sm">BENCH</span>
-          </div>
-          <span className="text-xs text-content-tertiary">决策台</span>
+  if (error || !data) {
+    return (
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
+        <AppHeader />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+          <p style={{ fontSize: 14, color: 'var(--ob-text-muted)' }}>{error || '数据加载失败'}</p>
+          <button onClick={() => window.location.reload()} style={{ fontSize: 13, color: '#FF5A1F', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>刷新页面</button>
         </div>
-        <div className="flex items-center gap-4">
-          <Link href="/tasks" className="text-xs text-content-tertiary hover:text-accent transition-colors">
-            任务
-          </Link>
-          <Link href="/billing" className="text-xs text-content-tertiary hover:text-accent transition-colors">
-            充值
-          </Link>
-          <Link href="/review" className="text-xs text-accent hover:text-accent-hover transition-colors">
-            审核
-          </Link>
-        </div>
-      </header>
-
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="全部任务" value={data.total} color="text-content-primary" />
-          <StatCard label="待处理" value={data.assigned} color="text-amber-400" />
-          <StatCard label="待审核" value={data.submitted} color="text-blue-400" />
-          <StatCard label="已完成" value={data.completed} color="text-green-400" />
-        </div>
-
-        {/* Highlights */}
-        {data.highlights.length > 0 ? (
-          <Section title="已完成" icon="✓">
-            {data.highlights.map((h, i) => (
-              <p key={i} className="text-sm text-content-secondary">{h}</p>
-            ))}
-          </Section>
-        ) : null}
-
-        {/* Risks */}
-        {data.risks.length > 0 ? (
-          <Section title="风险" icon="⚠">
-            {data.risks.map((r, i) => (
-              <p key={i} className="text-sm text-amber-400">{r}</p>
-            ))}
-          </Section>
-        ) : null}
-
-        {/* AI Suggestions */}
-        {data.aiSuggestions.length > 0 ? (
-          <Section title="AI 建议" icon="→">
-            {data.aiSuggestions.map((s, i) => (
-              <p key={i} className="text-sm text-content-secondary">{s}</p>
-            ))}
-          </Section>
-        ) : null}
-
-        {/* Quick actions */}
-        {data.submitted > 0 ? (
-          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-            <p className="text-sm text-blue-400">{data.submitted} 个任务等待你审核</p>
-            <Link href="/review" className="text-xs text-accent mt-2 inline-block">去审核 →</Link>
-          </div>
-        ) : null}
-
-        {data.pausedAutoTasks > 0 ? (
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2">
-            <p className="text-sm text-amber-400">⚠ {data.pausedAutoTasks} 个自动任务已暂停</p>
-            <p className="text-xs text-content-tertiary">免费版自动任务限运行 3 次，开通 Basic 可无限运行</p>
-            <Link href="/billing" className="text-xs text-accent inline-block">开通 Basic（¥39/月）→</Link>
-          </div>
-        ) : null}
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div className="p-4 rounded-xl border border-border bg-surface-secondary">
-      <p className="text-xs text-content-tertiary mb-1">{label}</p>
-      <p className={`text-2xl font-semibold ${color}`}>{value}</p>
-    </div>
-  );
-}
+  const recentTasks = (data.recentTasks ?? []).slice(0, 5);
+  const needAttention = [
+    ...(data.failedTasks ?? []).map(t => ({ ...t, reason: 'failed' as const })),
+    ...(data.recentTasks ?? []).filter(t => ['running', 'executing', 'queued'].includes(t.status || '')).slice(0, 3).map(t => ({ ...t, reason: 'running' as const, errorMessage: undefined as string | null | undefined })),
+  ];
 
-function Section({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+  const statCards: { label: string; value: number; accent?: string }[] = [
+    { label: '总任务数', value: data.total },
+    { label: '进行中', value: data.running, accent: 'var(--ob-orange)' },
+    { label: '已完成', value: data.completed, accent: 'var(--ob-success)' },
+    { label: '失败', value: data.failed, accent: '#E4483D' },
+  ];
+
+  const timeChips: { value: TimeRange; label: string }[] = [
+    { value: 'today', label: '今天' },
+    { value: 'week', label: '近7天' },
+    { value: 'month', label: '本月' },
+  ];
+
+  const aiText = data.aiSuggestions.length > 0
+    ? data.aiSuggestions.join('\n\n')
+    : null;
+
+  const actionBtnStyle: React.CSSProperties = {
+    height: 30, padding: '0 12px', borderRadius: 9999,
+    fontSize: 12, fontWeight: 500,
+    border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)',
+    color: 'var(--ob-text-muted)', textDecoration: 'none', cursor: 'pointer',
+    display: 'inline-flex', alignItems: 'center',
+    transition: 'border-color .2s, background .2s, color .2s',
+  };
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <span className="text-accent text-sm">{icon}</span>
-        <h2 className="text-sm font-medium text-content-primary">{title}</h2>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ob-bg)' }}>
+      <AppHeader />
+
+      <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 60px' }}>
+
+          {/* ── Top area ── */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div>
+              <p style={{ fontFamily: 'var(--ob-font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ob-text-muted)', margin: '0 0 8px' }}>
+                <span style={{ color: 'var(--ob-orange)' }}>●</span> Dashboard
+              </p>
+              <h1 style={{ fontFamily: 'var(--ob-font-display)', fontSize: 44, fontWeight: 800, color: 'var(--ob-text)', lineHeight: 1, letterSpacing: '-0.025em', margin: 0 }}>总览</h1>
+            </div>
+            {/* Time range chips */}
+            <div style={{ display: 'flex', gap: 6 }}>
+              {timeChips.map(c => (
+                <button
+                  key={c.value}
+                  onClick={() => setTimeRange(c.value)}
+                  style={{
+                    height: 32, padding: '0 14px', borderRadius: 9999,
+                    fontSize: 13, fontWeight: timeRange === c.value ? 500 : 400,
+                    border: timeRange === c.value ? 'none' : '1px solid rgba(245,245,240,0.08)',
+                    background: timeRange === c.value ? 'rgba(255,90,31,0.10)' : 'var(--ob-surface)',
+                    color: timeRange === c.value ? '#FF5A1F' : 'var(--ob-text-muted)',
+                    cursor: 'pointer', transition: 'all .2s',
+                  }}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', margin: '0 0 24px' }}>查看当前任务进展与 AI 工作概览</p>
+
+          {/* ── Row 1: 4 stat cards ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 }}>
+            {statCards.map(s => (
+              <div key={s.label} style={{
+                background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16,
+                padding: 18, height: 108,
+                display: 'flex', flexDirection: 'column', justifyContent: 'center',
+              }}>
+                <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', margin: '0 0 6px' }}>{s.label}</p>
+                <p style={{ fontSize: 28, fontWeight: 650, color: s.accent || 'var(--ob-text)', margin: 0, lineHeight: 1 }}>{s.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Workspace summary card ── */}
+          {wsSummary && (
+            <div style={{
+              background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16,
+              padding: 18, marginBottom: 20,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                <div>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 4px' }}>
+                    工作区：{wsSummary.name}
+                  </p>
+                  <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', margin: 0 }}>团队任务概览</p>
+                </div>
+                <div style={{ display: 'flex', gap: 16, marginLeft: 16 }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: 20, fontWeight: 650, color: 'var(--ob-orange)', margin: 0 }}>{wsSummary.assigned}</p>
+                    <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: 0 }}>进行中</p>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: 20, fontWeight: 650, color: 'var(--ob-info)', margin: 0 }}>{wsSummary.submitted}</p>
+                    <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: 0 }}>待审核</p>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: 20, fontWeight: 650, color: 'var(--ob-success)', margin: 0 }}>{wsSummary.completed}</p>
+                    <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: 0 }}>已完成</p>
+                  </div>
+                </div>
+              </div>
+              <a href="/workspace" style={{
+                height: 30, padding: '0 14px', borderRadius: 9999, fontSize: 13, fontWeight: 500,
+                border: '1px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)', color: 'var(--ob-text-muted)',
+                textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
+                transition: 'border-color .2s, color .2s',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)'; e.currentTarget.style.color = '#FF5A1F'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--ob-border)'; e.currentTarget.style.color = 'var(--ob-text-muted)'; }}
+              >查看工作区</a>
+            </div>
+          )}
+
+          {/* ── Row 2: Recent tasks + AI Summary ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: 20, marginBottom: 20 }}>
+
+            {/* Left: Recent tasks */}
+            <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 18 }}>
+              <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 14px' }}>最近任务</p>
+              {recentTasks.length > 0 ? (
+                <div>
+                  {recentTasks.map((t, i) => (
+                    <a
+                      key={t.id}
+                      href={t.conversationId ? `/agent?conversationId=${t.conversationId}` : `/tasks/${t.id}`}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        height: 56, padding: '0 4px', textDecoration: 'none',
+                        borderBottom: i < recentTasks.length - 1 ? '1px solid rgba(245,245,240,0.08)' : 'none',
+                        transition: 'background .2s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.015)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ob-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {t.title || '未命名任务'}
+                        </span>
+                        <span style={{ fontSize: 12, color: 'var(--ob-text-muted)' }}>{timeAgo(t.updatedAt || t.createdAt)}</span>
+                      </div>
+                      {t.status && <StatusBadge status={t.status} />}
+                    </a>
+                  ))}
+                  <a href="/tasks" style={{ display: 'block', textAlign: 'center', fontSize: 13, color: '#FF5A1F', textDecoration: 'none', marginTop: 12, transition: 'opacity .2s' }}>
+                    查看全部任务
+                  </a>
+                </div>
+              ) : (
+                <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', textAlign: 'center', padding: '24px 0' }}>暂无任务记录</p>
+              )}
+            </div>
+
+            {/* Right: AI Summary */}
+            <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 20, minHeight: 260 }}>
+              <div style={{ marginBottom: 14 }}>
+                <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: 0 }}>AI 总结</p>
+                <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: '2px 0 0' }}>基于你的任务数据自动生成</p>
+              </div>
+              {aiText ? (
+                <p style={{ fontSize: 14, color: '#8A8A90', lineHeight: 1.75, margin: 0, whiteSpace: 'pre-wrap' }}>{aiText}</p>
+              ) : (
+                <p style={{ fontSize: 14, color: 'var(--ob-text-muted)', lineHeight: 1.75, margin: 0 }}>
+                  等任务多一点后，ORANGEBENCH 会在这里帮你总结趋势和重点。
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* ── Row 3: Needs attention ── */}
+          <div style={{ background: 'var(--ob-surface)', border: '1px solid rgba(245,245,240,0.08)', borderRadius: 16, padding: 18 }}>
+            <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--ob-text)', margin: '0 0 14px' }}>需要关注</p>
+            {needAttention.length > 0 ? (
+              <div>
+                {needAttention.map((t, i) => (
+                  <div
+                    key={t.id + t.reason}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 4px',
+                      borderBottom: i < needAttention.length - 1 ? '1px solid rgba(245,245,240,0.08)' : 'none',
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ob-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {t.title || '未命名任务'}
+                        </span>
+                        {t.status && <StatusBadge status={t.status} />}
+                      </div>
+                      <p style={{ fontSize: 12, color: 'var(--ob-text-muted)', margin: '4px 0 0' }}>
+                        {t.reason === 'failed' ? '当前能力暂不可用 · 请稍后重试' : `${timeAgo(t.updatedAt || t.createdAt)} 开始执行`}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                      {t.reason === 'failed' && (
+                        <button
+                          onClick={() => handleRetry(t.id)}
+                          disabled={actionLoading === t.id}
+                          aria-label="重试"
+                          style={{ ...actionBtnStyle, color: '#E4483D', opacity: actionLoading === t.id ? 0.5 : 1 }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)'; e.currentTarget.style.background = 'rgba(255,90,31,0.06)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--ob-border)'; e.currentTarget.style.background = '#FFFFFF'; }}
+                        >
+                          {actionLoading === t.id ? '重试中...' : '重试'}
+                        </button>
+                      )}
+                      <a
+                        href={t.conversationId ? `/agent?conversationId=${t.conversationId}` : `/tasks/${t.id}`}
+                        style={actionBtnStyle}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,90,31,0.3)'; e.currentTarget.style.background = 'rgba(255,90,31,0.06)'; e.currentTarget.style.color = '#FF5A1F'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--ob-border)'; e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = 'var(--ob-text-muted)'; }}
+                      >
+                        查看
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ fontSize: 13, color: 'var(--ob-text-muted)', textAlign: 'center', padding: '16px 0' }}>目前没有需要关注的任务</p>
+            )}
+          </div>
+
+        </div>
       </div>
-      <div className="pl-5 space-y-1">{children}</div>
+
+      <Toast value={toast} />
     </div>
   );
 }

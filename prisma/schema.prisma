@@ -2,27 +2,90 @@ datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
-
 generator client {
   provider = "prisma-client-js"
 }
 
 model User {
   id             String   @id @default(cuid())
-  credits        Int      @default(100)
-  plan           String   @default("free") // free | basic | pro | team
-  expireAt       DateTime?
-  dailyTaskCount Int      @default(0)
-  dailyResetDate String   @default("")
+  email          String?  @unique
+  emailVerified  Boolean  @default(false)
+  passwordHash   String?
+  googleId       String?  @unique
+  name           String?
+  avatarUrl      String?
+  credits              Int      @default(0)       // Legacy mixed field (kept for compat)
+  signupBonusCredits   Int      @default(0)       // 新人赠送 (one-time, 500 for new users)
+  dailyTrialCredits    Int      @default(0)       // 每日体验赠额 (refreshed daily)
+  subscriptionCredits  Int      @default(0)       // 订阅积分 (monthly, no carryover)
+  generalCredits       Int      @default(0)       // 通用积分 (purchased, persistent)
+  rewardCredits        Int      @default(0)       // 奖励积分 (boss-issued, future)
+  dailyCreditsGrantedAt String  @default("")      // Date string for daily grant tracking
+  plan                 String   @default("free")
+  expireAt             DateTime?
+  cancelAtPeriodEnd    Boolean  @default(false)   // User requested cancel at period end
+  canceledAt           DateTime?                  // When user clicked cancel
+  pendingPlan          String?                    // Downgrade target plan (null = no change)
+  currentPeriodStart   DateTime?                  // Start of current billing period
+  currentPeriodEnd     DateTime?                  // End of current billing period
+  subscriptionResetAt  String   @default("")      // Date string: last subscription credits reset
+  dailyTaskCount       Int      @default(0)
+  dailyResetDate       String   @default("")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   tasks          Task[]
   orders         Order[]
+  sessions       Session[]
+  verificationCodes VerificationCode[]
+  workspaceMemberships WorkspaceMember[]
+  ownedWorkspaces      Workspace[]      @relation("WorkspaceOwner")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique @default(cuid())
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([token])
+  @@index([userId])
+}
+
+model VerificationCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([email, code])
+}
+
+
+model Conversation {
+  id          String     @id @default(uuid())
+  userId      String
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
+  title       String?
+  // Active AI colleague persona for this conversation. Nullable = no
+  // persona active (plain agent). When set, the role's system prompt
+  // is injected before every task input. See src/lib/skills/ for the
+  // role library. id format: '{department}/{filename-without-.md}'.
+  skillRoleId String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  tasks       Task[]
+  @@index([userId, createdAt])
+  @@index([workspaceId])
 }
 
 model Task {
   id            String      @id @default(cuid())
-  type          String      // ppt | website | video | email | proposal | unknown
+  type          String
   status        String      @default("pending")
   title         String      @default("")
   input         String
@@ -38,15 +101,24 @@ model Task {
   processing    Boolean     @default(false)
   isExecuting   Boolean     @default(false)
   priority      Int         @default(0)
-  assigneeId     String?
-  businessStatus String  @default("assigned")
+  assigneeId    String?
+  businessStatus String     @default("assigned")
+  attachments    String?          // JSON: [{id,name,size,type}]
   externalJobId  String?
   externalEngine String?
-  userId        String?
-  user          User?       @relation(fields: [userId], references: [id])
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  events        TaskEvent[]
+  conversationId   String?
+  conversation     Conversation?  @relation(fields: [conversationId], references: [id])
+  userId           String?
+  user             User?          @relation(fields: [userId], references: [id])
+  teamId           String?
+  workspaceTaskId  String?
+  workspaceTask    WorkspaceTask? @relation(fields: [workspaceTaskId], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  events           TaskEvent[]
+  @@index([conversationId])
+  @@index([userId, createdAt])
+  @@index([workspaceTaskId])
 }
 
 model TaskEvent {
@@ -57,15 +129,24 @@ model TaskEvent {
   data      String
   createdAt DateTime @default(now())
 
+  // P4c1 — tool-call artifact tracking. Nullable so existing events stay
+  // untouched. Populated by src/services/tools/* handlers (browse, design,
+  // future). toolName is namespaced (e.g. 'browse.screenshot'), toolInput
+  // is the JSON args the agent emitted, toolOutput is a path to a file
+  // or truncated raw JSON (capped at ~8KB to keep row size sane).
+  toolName   String?
+  toolInput  String?
+  toolOutput String?
+
   @@index([taskId, createdAt])
 }
 
 model AutoTask {
   id        String   @id @default(cuid())
   userId    String
-  type      String   // ppt | email | proposal | etc.
+  type      String
   input     String
-  schedule  String   // cron expression (e.g. "0 9 * * *")
+  schedule  String
   enabled   Boolean  @default(true)
   lastRunAt DateTime?
   createdAt DateTime @default(now())
@@ -73,9 +154,9 @@ model AutoTask {
 
 model ScheduledTask {
   id           String   @id @default(cuid())
-  type         String   // ppt | email | proposal | unknown
+  type         String
   input        String
-  cron         String   // "daily" | "weekly"
+  cron         String
   nextRunAt    DateTime
   userId       String
   enabled      Boolean  @default(true)
@@ -87,19 +168,375 @@ model Order {
   id              String    @id @default(cuid())
   userId          String
   user            User      @relation(fields: [userId], references: [id])
-  productType     String    // subscription | credits
-  productCode     String    // basic_monthly | pro_monthly | team_monthly | credits_100 | credits_500 | credits_2000
-  amount          Int       // price in fen (cents CNY)
+  productType     String
+  productCode     String
+  amount          Int
   currency        String    @default("CNY")
-  credits         Int       @default(0) // credits to add
-  status          String    @default("pending") // pending | paid | failed | cancelled
+  credits         Int       @default(0)
+  status          String    @default("pending")
   provider        String    @default("wechat")
   providerOrderId String?
   providerPayload String?
   paidAt          DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-
   @@index([providerOrderId])
   @@index([userId, status])
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// WORKSPACE MODELS — Team Task Flow MVP v1.0
+// ═══════════════════════════════════════════════════════════════
+
+model Workspace {
+  id              String             @id @default(cuid())
+  name            String
+  ownerId         String
+  owner           User               @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  wecomWebhookUrl String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  members         WorkspaceMember[]
+  invites         WorkspaceInvite[]
+  tasks           WorkspaceTask[]
+  conversations   Conversation[]
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String    @default("member")
+  status      String    @default("active")
+  invitedAt   DateTime  @default(now())
+  joinedAt    DateTime?
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model WorkspaceInvite {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email          String
+  role           String    @default("member")
+  invitedBy      String
+  token          String    @unique
+  status         String    @default("pending")
+  expiresAt      DateTime
+  acceptedUserId String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  @@index([token])
+  @@index([workspaceId, email])
+  @@index([email, status])
+}
+
+model WorkspaceTask {
+  id                String              @id @default(cuid())
+  workspaceId       String
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  title             String
+  description       String?
+  businessStatus    String              @default("draft")
+  priority          Int                 @default(0)
+  createdBy         String
+  assigneeId        String?
+  dueAt             DateTime?
+  feedback          String?
+  submissionSummary       String?
+  attachments             String?   // JSON: [{id,name,size,type,url,uploadedBy,uploadedAt}]
+  submissionAttachments   String?   // JSON: same structure
+  // JSON array of skillRole ids suggested as defaults when the assignee
+  // clicks "用 Agent 执行" on this task. Example: ["marketing/marketing-xiaohongshu-operator"].
+  // Nullable — null means no suggestion (assignee picks freely).
+  preferredSkillRoles     String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  links             WorkspaceTaskLink[]
+  agentTasks        Task[]
+  comments          WorkspaceTaskComment[]
+  @@index([workspaceId, businessStatus])
+  @@index([assigneeId, businessStatus])
+  @@index([createdBy])
+}
+
+model WorkspaceTaskLink {
+  id              String        @id @default(cuid())
+  workspaceTaskId String
+  workspaceTask   WorkspaceTask @relation(fields: [workspaceTaskId], references: [id], onDelete: Cascade)
+  agentTaskId     String
+  conversationId  String?
+  purpose         String        @default("draft")
+  submittedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  @@index([workspaceTaskId])
+  @@index([agentTaskId])
+}
+
+model WorkspaceTaskComment {
+  id              String        @id @default(cuid())
+  workspaceTaskId String
+  workspaceTask   WorkspaceTask @relation(fields: [workspaceTaskId], references: [id], onDelete: Cascade)
+  userId          String
+  content         String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  @@index([workspaceTaskId, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // task_assigned | task_submitted | task_revision | task_completed | invite_received
+  title     String
+  body      String?
+  linkUrl   String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  @@index([userId, read, createdAt])
+}
+
+// Outbound webhook subscriptions — Phase 3 of the Skills Integration Plan.
+// Each row is one URL the user wants to be notified at when an OB event
+// fires. Used as the OB → Zapier (and any other webhook receiver) bridge.
+// One user can have multiple endpoints filtering different events.
+model WebhookEndpoint {
+  id           String   @id @default(cuid())
+  userId       String
+  // Receiver type — determines payload format transformation.
+  // 'generic'  — raw JSON envelope (Zapier, webhook.site, custom HTTPS)
+  // 'feishu'   — 飞书/Lark group bot, posts as interactive markdown card
+  // 'dingtalk' — 钉钉 group bot, posts as markdown message
+  // 'wecom'    — 企业微信 group bot, posts as markdown message
+  // Adding a new kind = add a transformer in dispatcher.ts, no schema migration.
+  kind         String   @default("generic")
+  // HMAC-SHA256 signing secret. 64-char hex string generated at create time.
+  // Sent on every outbound POST as `X-OrangeBench-Signature: sha256=<hex>`
+  // header so receivers can verify the payload truly came from OB and wasn't
+  // tampered with. Only used for kind='generic' — Chinese platform bot URLs
+  // (飞书/钉钉/企微) carry their own auth in the URL path itself.
+  // Nullable so old rows from chunk 1/2 (pre-HMAC) keep working unsigned.
+  secret       String?
+  // Human-friendly name for the user — e.g. "团队飞书群", "Slack #team"
+  name         String
+  // The URL we POST to. Format depends on `kind`:
+  //  - generic:  Zapier "Webhooks by Zapier" trigger URL or any HTTPS endpoint
+  //  - feishu:   https://open.feishu.cn/open-apis/bot/v2/hook/<uuid>
+  //  - dingtalk: https://oapi.dingtalk.com/robot/send?access_token=<token>
+  //  - wecom:    https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=<key>
+  url          String
+  // JSON-encoded array of event type strings the user wants this endpoint
+  // notified about. Subset of:
+  //   task_assigned | task_submitted | task_revision | task_completed
+  //   workspace_invite_accepted | agent_task_completed
+  // null/empty array = subscribe to ALL events.
+  events       String?
+  // Soft-disable without deleting the row.
+  active       Boolean  @default(true)
+  // Auto-disable after N consecutive failures to protect us from runaway costs.
+  failureCount Int      @default(0)
+  lastFiredAt  DateTime?
+  lastError    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([userId, active])
+}
+
+// Audit trail for outbound webhook deliveries. Lets the user see "what got
+// delivered when, with what status code". Useful for debugging Zaps that
+// aren't firing the way the user expects.
+model WebhookLog {
+  id         String   @id @default(cuid())
+  endpointId String
+  // The event type that triggered this delivery. Same vocabulary as
+  // WebhookEndpoint.events.
+  event      String
+  // JSON payload we POST'd. Truncated to 4KB at write time to bound row size.
+  payload    String
+  statusCode Int?
+  // Truncated upstream error body if non-2xx. Truncated to 1KB.
+  errorMsg   String?
+  durationMs Int?
+  firedAt    DateTime @default(now())
+  @@index([endpointId, firedAt])
+}
+
+// Inbound webhook subscriptions — Phase 3 chunk 4 of Skills Integration Plan.
+// Lets external systems (Zapier, n8n, custom apps) POST into OrangeBench
+// to create tasks on behalf of the user. The opposite direction of
+// WebhookEndpoint (which fires OB → external).
+//
+// Each row represents one URL/secret pair the user can hand out to a
+// caller. The caller authenticates by sending the secret in the
+// X-OrangeBench-Inbound-Secret header (constant-time compared server-side).
+//
+// Action types — what the inbound POST should DO:
+//   'create_agent_task' — create a Task in /agent (default)
+//   future: 'create_workspace_task', 'add_comment', 'reschedule', etc.
+model WebhookInbound {
+  id          String   @id @default(cuid())
+  userId      String
+  // Human label, shown in the UI
+  name        String
+  // 32-byte secret. Caller passes it as X-OrangeBench-Inbound-Secret header.
+  secret      String
+  // What this endpoint does when it receives a POST. See action types above.
+  action      String   @default("create_agent_task")
+  // Soft-disable without deleting
+  active      Boolean  @default(true)
+  // Last successful invocation
+  lastFiredAt DateTime?
+  // Successful invocation count (for usage stats)
+  callCount   Int      @default(0)
+  // Failure count for "the secret was wrong" or "validation failed"
+  failureCount Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([userId, active])
+}
+
+// Audit log for inbound webhook calls — what came in, what we did with it.
+// Separate from WebhookLog (outbound) so the indexes + query patterns
+// don't interfere.
+model WebhookInboundLog {
+  id          String   @id @default(cuid())
+  inboundId   String
+  // 'success' | 'auth_failed' | 'validation_failed' | 'action_failed'
+  status      String
+  // Truncated request body for debugging (4KB)
+  payload     String?
+  // For success: the created task id
+  resourceId  String?
+  // For failure: human-readable reason (1KB)
+  errorMsg    String?
+  // Caller IP for abuse tracking
+  ipAddress   String?
+  receivedAt  DateTime @default(now())
+  @@index([inboundId, receivedAt])
+}
+
+// P4c2 — gstack browse credential vault.
+//
+// One row per (user, whitelisted site) pair. Stores the user's session
+// cookies for that site, encrypted at rest with AES-256-GCM via the
+// per-environment BROWSE_VAULT_KEY. The plaintext is NEVER logged and
+// NEVER returned from the API — only the browse runtime in-process
+// decrypts it at spawn-time, passes it to the gstack binary via a
+// tempfile (deleted after the subcommand finishes), and wipes the
+// plaintext from memory.
+//
+// Fields:
+// - siteId        matches BrowseSiteId in browse-whitelist.ts
+// - ciphertext    hex-encoded GCM output (iv || ciphertext || authTag)
+// - keyVersion    allows rotation: a bumped key re-encrypts on first use
+// - label         human-readable ("我的主号", "测试号") for UI disambiguation
+// - expiresAt     optional — some platforms auto-expire cookies; UI nags
+//                 before expiry so the user can re-login cleanly
+model BrowseCredential {
+  id          String    @id @default(cuid())
+  userId      String
+  siteId      String    // BrowseSiteId
+  label       String
+  ciphertext  String    // AES-256-GCM hex (iv || body || authTag)
+  keyVersion  Int       @default(1)
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  @@index([userId, siteId])
+}
+
+// Daily per-user cap tracker for browse tool calls. Written by the
+// browse runtime on every successful subcommand invocation. The router
+// pre-checks this before dispatch to reject over-quota early.
+model BrowseUsage {
+  id          String   @id @default(cuid())
+  userId      String
+  day         String   // YYYY-MM-DD in local time (matches billing boundary)
+  callCount   Int      @default(0)
+  updatedAt   DateTime @updatedAt
+  @@unique([userId, day])
+  @@index([userId])
+}
+
+// ─── Phase 5: MCP for end users ──────────────────────────────────────
+//
+// Users install MCP servers that extend the agent's toolset with
+// personal integrations (Notion, Google Drive, filesystem, custom
+// internal tools). The worker spawns these on demand during task
+// execution and tears them down when idle.
+//
+// Security model:
+// - configEncrypted uses MCP_VAULT_KEY (SEPARATE from BROWSE_VAULT_KEY)
+//   so compromise of one namespace doesn't expose the other
+// - Every tool call writes an McpUsageLog row for audit
+// - Per-user daily call cap via McpUsage (same pattern as BrowseUsage)
+// - Destructive actions (delete/send/pay) require inline chat
+//   confirmation handled by dispatcher, not just install consent
+
+model McpServer {
+  id              String    @id @default(cuid())
+  userId          String
+  // Human-readable label shown in the /account/ai-tools list
+  name            String
+  // Catalog kind: 'filesystem' | 'memory' | 'git' | 'sqlite' | 'custom' | ...
+  // MVP focuses on stdio-based catalog entries that don't need OAuth.
+  kind            String
+  // Transport: 'stdio' (MVP) | 'sse' (future) | 'http' (future)
+  transport       String    @default("stdio")
+  // stdio: the command to spawn (e.g. 'npx @modelcontextprotocol/server-filesystem')
+  command         String?
+  // Space-joined args (e.g. '-y @modelcontextprotocol/server-filesystem /tmp/mcp')
+  args            String?
+  // sse/http: the endpoint URL
+  endpoint        String?
+  // AES-256-GCM ciphertext of a JSON blob { env: {...}, apiKey?: ..., token?: ... }
+  // Encrypted with MCP_VAULT_KEY (separate from browse vault key).
+  configEncrypted String
+  // JSON array of granted scopes: ["read","write","admin"]
+  scopes          String    @default("[\"read\"]")
+  enabled         Boolean   @default(true)
+  lastUsedAt      DateTime?
+  // Cached JSON array of tool names exposed by the server, populated
+  // from the test connection flow. Not authoritative at runtime — the
+  // dispatcher re-queries listTools if stale.
+  cachedTools     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  @@index([userId, enabled])
+}
+
+// Append-only audit log. Every tool call the MCP runtime dispatches
+// writes exactly one row here. Plaintext input/output are truncated
+// to 4KB each before storage.
+model McpUsageLog {
+  id            String   @id @default(cuid())
+  userId        String
+  mcpServerId   String
+  toolName      String
+  input         String?  // JSON, max 4KB
+  output        String?  // JSON, max 4KB
+  statusCode    Int      // 0 = success, 1+ = error
+  errorMsg      String?  // human-readable, max 1KB
+  durationMs    Int
+  firedAt       DateTime @default(now())
+  @@index([userId, firedAt])
+  @@index([mcpServerId, firedAt])
+}
+
+// Per-user daily cap for MCP tool calls. Default 100/day (env:
+// MCP_DAILY_LIMIT). Separate from BrowseUsage and billing credits.
+model McpUsage {
+  id          String   @id @default(cuid())
+  userId      String
+  day         String   // YYYY-MM-DD local
+  callCount   Int      @default(0)
+  updatedAt   DateTime @updatedAt
+  @@unique([userId, day])
+  @@index([userId])
 }

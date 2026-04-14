@@ -1,17 +1,25 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUserIdFromRequest } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const userId = await getUserIdFromRequest(req);
+    const userFilter = userId ? { userId } : {};
+
+    // 唯一真实状态源：status 字段（废弃 businessStatus）
     const tasks = await prisma.task.findMany({
-      where: { businessStatus: 'submitted' },
+      where: {
+        ...userFilter,
+        status: 'completed',
+      },
       orderBy: { updatedAt: 'desc' },
       select: {
         id: true,
         title: true,
         input: true,
         result: true,
-        businessStatus: true,
+        status: true,
         assigneeId: true,
         createdAt: true,
         updatedAt: true,
@@ -24,7 +32,7 @@ export async function GET() {
       title: t.title,
       input: t.input,
       result: t.result ? safeParseJson(t.result) : null,
-      businessStatus: t.businessStatus,
+      status: t.status,
       assigneeId: t.assigneeId,
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),

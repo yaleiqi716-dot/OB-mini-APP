@@ -7,6 +7,7 @@ import { startScheduler } from '@/services/scheduler';
 import { startMediaJobPoller } from '@/services/media-job-poller';
 import { CreateTaskRequest } from '@/types/api';
 import { prisma } from '@/lib/prisma';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 import '@/services/workflows';
 
@@ -27,8 +28,20 @@ startMediaJobPoller(10_000);
 
 const lastSubmitByIp = new Map<string, number>();
 const RATE_LIMIT_MS = 2000;
+const RATE_LIMIT_MAX_ENTRIES = 10000;
+
+// Periodic cleanup to prevent unbounded memory growth
+function pruneRateLimitMap() {
+  if (lastSubmitByIp.size <= RATE_LIMIT_MAX_ENTRIES) return;
+  const cutoff = Date.now() - 60_000; // Remove entries older than 1 minute
+  for (const [ip, ts] of lastSubmitByIp) {
+    if (ts < cutoff) lastSubmitByIp.delete(ip);
+  }
+  // If still too large, clear entirely (safety valve)
+  if (lastSubmitByIp.size > RATE_LIMIT_MAX_ENTRIES) lastSubmitByIp.clear();
+}
 const ACTIVE_STATUSES = ['pending', 'queued', 'understanding', 'structuring', 'interacting', 'executing'];
-const MAX_ACTIVE_TASKS = 5;
+const MAX_ACTIVE_TASKS = 20; // Preview mode: higher limit per user
 
 function getClientIp(req: NextRequest): string {
   return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -45,6 +58,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '请求过于频繁，请稍后再试' }, { status: 429 });
     }
     lastSubmitByIp.set(ip, now);
+    pruneRateLimitMap();
 
     const body: CreateTaskRequest = await req.json();
     if (!body.input?.trim()) {
@@ -56,14 +70,36 @@ export async function POST(req: NextRequest) {
     if (body.parentTaskId) {
       const parentTask = await prisma.task.findUnique({
         where: { id: body.parentTaskId },
-        select: { input: true, title: true },
+        select: { input: true, title: true, result: true },
       });
       if (parentTask) {
-        finalInput = `【原始任务】${parentTask.title || ''}\n${parentTask.input}\n\n【当前指令】${finalInput}`;
+        // 拼接父任务的 input + result，让 AI 能基于上次结果继续
+        // result 在 DB 中存储为 JSON 字符串，需要先 parse 再取 .content
+        let parentResult: string | null = null;
+        if (parentTask.result) {
+          try {
+            const parsed = JSON.parse(parentTask.result as string);
+            if (typeof parsed.content === 'string') {
+              parentResult = parsed.content;
+            } else if (typeof parsed === 'string') {
+              parentResult = parsed;
+            } else {
+              parentResult = JSON.stringify(parsed);
+            }
+          } catch {
+            // 如果不是 JSON，直接使用原始字符串
+            parentResult = parentTask.result as string;
+          }
+        }
+        if (parentResult) {
+          finalInput = `【上一次任务】${parentTask.title || parentTask.input}\n\n【上一次结果】\n${parentResult}\n\n【当前指令】${finalInput}`;
+        } else {
+          finalInput = `【原始任务】${parentTask.title || ''}\n${parentTask.input}\n\n【当前指令】${finalInput}`;
+        }
       }
     }
 
-    const userId = req.headers.get('x-user-id') || req.cookies.get('ob-user-id')?.value;
+    const userId = req.headers.get('x-user-id') || await getUserIdFromRequest(req);
     if (!userId) {
       return NextResponse.json({ error: '未登录' }, { status: 401 });
     }
@@ -73,9 +109,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: creditCheck.reason }, { status: 403 });
     }
 
-    const activeTasks = await prisma.task.count({ where: { status: { in: ACTIVE_STATUSES } } });
-    if (activeTasks >= MAX_ACTIVE_TASKS) {
-      return NextResponse.json({ error: '系统繁忙，请稍后再试' }, { status: 429 });
+    // Per-user active task limit (not global)
+    const userActiveTasks = await prisma.task.count({ where: { userId, status: { in: ACTIVE_STATUSES } } });
+    if (userActiveTasks >= MAX_ACTIVE_TASKS) {
+      return NextResponse.json({ error: '你有太多任务正在运行，请等待完成后再提交' }, { status: 429 });
     }
 
     // Per-user concurrency
@@ -88,27 +125,103 @@ export async function POST(req: NextRequest) {
     const user = await getOrCreateUser(userId);
     const priority = PLAN_PRIORITY[user.plan] || 0;
 
-    // Create task with priority
+    // Create task — always assign to current user so it appears in /tasks/mine and dashboard stats
+    // 处理 conversationId：如果前端传了就用，否则自动创建新会话
+    let conversationId: string | null = body.conversationId || null;
+    let activeSkillRoleId: string | null = null;
+    if (!conversationId) {
+      // New conversation — if body.skillRoleId is provided, pin it to the conv.
+      // This is how the picker communicates "use this AI colleague for this chat".
+      const requestedRole =
+        typeof body.skillRoleId === 'string' && body.skillRoleId.trim()
+          ? body.skillRoleId.trim()
+          : null;
+      const conv = await prisma.conversation.create({
+        data: { userId, title: null, skillRoleId: requestedRole },
+      });
+      conversationId = conv.id;
+      activeSkillRoleId = conv.skillRoleId;
+    } else {
+      const conv = await prisma.conversation.findUnique({ where: { id: conversationId } });
+      if (!conv || conv.userId !== userId) {
+        return NextResponse.json({ error: '会话不存在' }, { status: 404 });
+      }
+      activeSkillRoleId = conv.skillRoleId;
+      // Mid-conversation role switch — if body.skillRoleId differs from
+      // stored, update the conversation. This lets users swap AI
+      // colleagues without starting a new chat.
+      if (
+        typeof body.skillRoleId === 'string' &&
+        body.skillRoleId.trim() &&
+        body.skillRoleId.trim() !== conv.skillRoleId
+      ) {
+        const nextRoleId = body.skillRoleId.trim();
+        await prisma.conversation.update({
+          where: { id: conv.id },
+          data: { skillRoleId: nextRoleId },
+        });
+        activeSkillRoleId = nextRoleId;
+      }
+    }
+
+    // If a role is active on this conversation, prepend its system prompt
+    // to the task input. This is how agency-agents personas become real
+    // runtime behavior. See src/lib/skills/ for the role library.
+    if (activeSkillRoleId) {
+      const { getRoleById } = await import('@/lib/skills/registry');
+      const role = await getRoleById(activeSkillRoleId);
+      if (role) {
+        // Prepend the persona as a system-like preamble. Keeping it inside
+        // the user input preserves OpenRouter routing behavior (no need to
+        // touch the chat completion schema). Budget guard: truncate long
+        // personas to ~1200 chars (~400-500 tokens) so they don't eat the
+        // entire context window when combined with the user's task.
+        const personaBody =
+          role.systemPrompt.length > 1200
+            ? role.systemPrompt.slice(0, 1200) + '\n...(已截断)'
+            : role.systemPrompt;
+        finalInput = `【AI 同事角色】${role.name}\n${personaBody}\n\n---\n\n【用户任务】${finalInput}`;
+      }
+    }
+
     const task = await createTask(finalInput, body.source || 'agent', {
       userId,
       estimatedCost: creditCheck.estimatedCost,
-      assigneeId: body.assigneeId || undefined,
+      assigneeId: body.assigneeId || userId,
+      attachments: body.attachments,
     });
 
     // Set priority + move to queued (worker polls DB by priority)
-    await prisma.task.update({ where: { id: task.id }, data: { priority } });
+    await prisma.task.update({ where: { id: task.id }, data: { priority, conversationId } });
+    // Update conversation updatedAt
+    await prisma.conversation.update({ where: { id: conversationId }, data: { updatedAt: new Date() } });
     await updateTaskStatus(task.id, 'queued');
     await emitLog(task.id, '任务已提交，排队中...');
 
-    return NextResponse.json({ taskId: task.id, type: task.type, status: 'queued' });
+    return NextResponse.json({ taskId: task.id, type: task.type, status: 'queued', conversationId });
   } catch (error) {
     console.error('[TASK_CREATE_ERROR]', error);
     return NextResponse.json({ error: '创建任务失败，请重试' }, { status: 500 });
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const userId = req.headers.get('x-user-id') || await getUserIdFromRequest(req);
+    if (userId) {
+      const tasks = await prisma.task.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        include: {
+          events: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
+      });
+      return NextResponse.json(tasks.map(formatTask));
+    }
     const tasks = await listTasks(50);
     return NextResponse.json(tasks.map(formatTask));
   } catch (error) {
