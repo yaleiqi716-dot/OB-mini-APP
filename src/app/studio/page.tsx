@@ -16,20 +16,32 @@ const MODE_OPTIONS: { value: StudioMode; label: string }[] = [
   { value: 'templates', label: t.studio.modes.templates },
 ];
 
+const MODE_DESCRIPTIONS: Record<StudioMode, string> = {
+  create: t.studio.modeDescriptions.create,
+  canvas: t.studio.modeDescriptions.canvas,
+  edit: t.studio.modeDescriptions.edit,
+  motion: t.studio.modeDescriptions.motion,
+  templates: t.studio.modeDescriptions.templates,
+};
+
 function StudioMain({ mode }: { mode: StudioMode }) {
   if (mode === 'create') {
     return (
-      <div className="ob-studio-main-grid">
-        <Panel title="创作输入" description="输入需求并触发生成任务">
-          <textarea className="ob-studio-textarea" placeholder="输入你的创作目标、风格要求、输出尺寸与场景..." />
+      <div className="ob-studio-workbench-grid">
+        <Panel title={t.studio.create.inputTitle} description={t.studio.create.inputDesc}>
+          <textarea className="ob-studio-textarea" placeholder={t.studio.create.inputPlaceholder} />
           <div className="ob-studio-actions-row">
-            <ActionChip>开始生成</ActionChip>
+            <ActionChip>{t.studio.create.generateBtn}</ActionChip>
+            <ActionChip>{t.studio.create.refineBtn}</ActionChip>
             <ActionChip>{t.common.reuseLastPrompt}</ActionChip>
           </div>
         </Panel>
-        <Panel title="当前任务状态" description={t.common.workspaceStatus}>
-          <StatusPill>{t.common.ready}</StatusPill>
-          <p className="ob-panel-hint">可在创作台开始生成，后续可接入真实生图 / 生视频执行流。</p>
+        <Panel title={t.studio.create.resultTitle} description={t.studio.create.resultDesc}>
+          <StatusPill>{t.studio.create.progressLabel}: {t.common.ready}</StatusPill>
+          <div className="ob-studio-result-card">
+            <div className="ob-studio-result-preview">{t.studio.create.resultPlaceholder}</div>
+            <p className="ob-panel-hint">{t.studio.create.statusHint}</p>
+          </div>
         </Panel>
       </div>
     );
@@ -37,16 +49,18 @@ function StudioMain({ mode }: { mode: StudioMode }) {
 
   if (mode === 'canvas') {
     return (
-      <div className="ob-studio-main-grid">
-        <Panel title="画布区" description="单页画布编辑">
-          <div className="ob-studio-canvas">画布视图挂载位</div>
+      <div className="ob-studio-workbench-grid">
+        <Panel title={t.studio.canvas.stageTitle} description={t.studio.canvas.stageDesc}>
+          <div className="ob-studio-canvas">{t.studio.canvas.canvasPlaceholder}</div>
         </Panel>
-        <Panel title="画布工具" description="图层 / 对齐 / 吸附">
+        <Panel title={t.studio.canvas.toolsTitle} description={t.studio.canvas.toolsDesc}>
           <div className="ob-chip-row">
-            <ActionChip>添加文字</ActionChip>
-            <ActionChip>添加图层</ActionChip>
-            <ActionChip>对齐参考线</ActionChip>
+            <ActionChip>{t.studio.canvas.addText}</ActionChip>
+            <ActionChip>{t.studio.canvas.addLayer}</ActionChip>
+            <ActionChip>{t.studio.canvas.alignGuide}</ActionChip>
+            <ActionChip>{t.studio.canvas.snapToggle}</ActionChip>
           </div>
+          <p className="ob-panel-hint">{t.studio.canvas.layersHint}</p>
         </Panel>
       </div>
     );
@@ -54,16 +68,17 @@ function StudioMain({ mode }: { mode: StudioMode }) {
 
   if (mode === 'edit') {
     return (
-      <div className="ob-studio-main-grid">
-        <Panel title="素材预览" description="当前焦点">
-          <div className="ob-studio-canvas">素材预览区</div>
+      <div className="ob-studio-workbench-grid">
+        <Panel title={t.studio.edit.previewTitle} description={t.studio.edit.previewDesc}>
+          <div className="ob-studio-canvas">{t.studio.edit.previewPlaceholder}</div>
         </Panel>
-        <Panel title="编辑面板" description="裁剪 / 调色 / 文案">
+        <Panel title={t.studio.edit.controlsTitle} description={t.studio.edit.controlsDesc}>
           <div className="ob-chip-row">
-            <ActionChip>裁剪比例</ActionChip>
-            <ActionChip>颜色校正</ActionChip>
-            <ActionChip>文案替换</ActionChip>
+            <ActionChip>{t.studio.edit.cropRatio}</ActionChip>
+            <ActionChip>{t.studio.edit.colorTune}</ActionChip>
+            <ActionChip>{t.studio.edit.copyReplace}</ActionChip>
           </div>
+          <p className="ob-panel-hint">{t.studio.edit.compareHint}</p>
         </Panel>
       </div>
     );
@@ -71,26 +86,30 @@ function StudioMain({ mode }: { mode: StudioMode }) {
 
   if (mode === 'motion') {
     return (
-      <div className="ob-studio-main-grid">
-        <Panel title="源素材与预览" description="动效时间轴">
-          <div className="ob-studio-canvas">动效预览窗口</div>
+      <div className="ob-studio-workbench-grid">
+        <Panel title={t.studio.motion.sourceTitle} description={t.studio.motion.sourceDesc}>
+          <div className="ob-studio-canvas">{t.studio.motion.previewPlaceholder}</div>
         </Panel>
-        <Panel title="动效参数" description="速度 / 过渡 / 强度">
+        <Panel title={t.studio.motion.paramsTitle} description={t.studio.motion.paramsDesc}>
           <div className="ob-chip-row">
-            <ActionChip>基础转场</ActionChip>
-            <ActionChip>关键帧速度</ActionChip>
-            <ActionChip>循环设置</ActionChip>
+            <ActionChip>{t.studio.motion.transition}</ActionChip>
+            <ActionChip>{t.studio.motion.keyframeSpeed}</ActionChip>
+            <ActionChip>{t.studio.motion.loopMode}</ActionChip>
           </div>
+          <p className="ob-panel-hint">{t.studio.motion.timelineHint}</p>
         </Panel>
       </div>
     );
   }
 
   return (
-    <Panel title="模板库" description="官方模板与团队模板">
+    <Panel title={t.studio.templatesMode.libraryTitle} description={t.studio.templatesMode.libraryDesc}>
       <div className="ob-template-grid">
-        {[1, 2, 3, 4, 5, 6].map((n) => (
-          <button key={n} className="ob-template-card">模板 #{n}</button>
+        {[1, 2, 3, 4, 5, 6].map((n, i) => (
+          <button key={n} className="ob-template-card">
+            <strong>{i < 3 ? t.studio.templatesMode.officialTemplate : t.studio.templatesMode.teamTemplate} #{n}</strong>
+            <span>{t.studio.templatesMode.applyTemplate}</span>
+          </button>
         ))}
       </div>
     </Panel>
@@ -105,44 +124,58 @@ export default function StudioPage() {
   return (
     <ProductShell
       hero={
-        <div>
+        <div className="ob-studio-hero">
+          <p className="ob-studio-hero-kicker">{t.studio.heroKicker}</p>
           <h1>{t.studio.title}</h1>
-          <p>{t.common.singlePageMode} · {modeLabel} · {t.common.readyInStudio}</p>
+          <p>{t.common.singlePageMode} · {modeLabel}</p>
+          <p className="ob-studio-hero-sub">{MODE_DESCRIPTIONS[mode]} · {t.studio.heroHint}</p>
         </div>
       }
       rightRail={
-        <div className="ob-grid-gap">
-          <Panel title={t.studio.panels.style} description={t.common.focusAsset}>
+        <div className="ob-grid-gap ob-studio-right-rail">
+          <Panel title={t.studio.panels.style} description={t.studio.rightRail.styleDesc}>
             <StatusPill>{t.common.workspaceStatus}: {t.common.ready}</StatusPill>
             <div className="ob-chip-row">
-              <ActionChip>品牌风格</ActionChip>
-              <ActionChip>视觉风格</ActionChip>
+              <ActionChip>{t.studio.rightRail.brandStyle}</ActionChip>
+              <ActionChip>{t.studio.rightRail.visualStyle}</ActionChip>
+              <ActionChip>{t.studio.rightRail.tonePreset}</ActionChip>
             </div>
           </Panel>
-          <Panel title={t.studio.panels.advanced} description="生成参数面板">
+          <Panel title={t.studio.panels.advanced} description={t.studio.rightRail.advancedDesc}>
             <div className="ob-chip-row">
-              <ActionChip>尺寸与比例</ActionChip>
-              <ActionChip>质量与速度</ActionChip>
-              <ActionChip>随机种子</ActionChip>
+              <ActionChip>{t.studio.rightRail.sizeRatio}</ActionChip>
+              <ActionChip>{t.studio.rightRail.qualitySpeed}</ActionChip>
+              <ActionChip>{t.studio.rightRail.randomSeed}</ActionChip>
             </div>
           </Panel>
-          <Panel title={t.studio.panels.context} description={t.common.dropRefImages}>
-            <EmptyState title="暂无参考素材" description={t.common.dropRefImages} />
+          <Panel title={t.studio.panels.context} description={t.studio.rightRail.contextDesc}>
+            <EmptyState title={t.studio.rightRail.emptyRefs} description={t.common.dropRefImages} />
           </Panel>
-          <Panel title={t.studio.panels.actions} description="任务操作快捷入口">
+          <Panel title={t.studio.panels.actions} description={t.studio.rightRail.actionsDesc}>
             <div className="ob-chip-row">
               <ActionChip>{t.common.openQueue}</ActionChip>
               <ActionChip>{t.common.saveAsTemplate}</ActionChip>
+              <ActionChip>{t.studio.rightRail.publishDraft}</ActionChip>
             </div>
           </Panel>
         </div>
       }
     >
-      <div className="ob-grid-gap">
-        <SegmentControl value={mode} onChange={(value) => setMode(value as StudioMode)} options={MODE_OPTIONS} />
+      <div className="ob-grid-gap ob-studio-page-stack">
+        <div className="ob-studio-mode-switch">
+          <SegmentControl value={mode} onChange={(value) => setMode(value as StudioMode)} options={MODE_OPTIONS} />
+        </div>
         <StudioMain mode={mode} />
-        <Panel title={t.studio.panels.drawer} description={`${t.studio.panels.recent} / ${t.studio.modes.templates} / ${t.studio.panels.inspiration} / 队列`}>
-          <div className="ob-bottom-drawer">{t.studio.panels.recent} · {t.studio.modes.templates} · {t.studio.panels.inspiration} · 队列</div>
+        <Panel title={t.studio.panels.drawer} description={t.studio.drawerDesc}>
+          <div className="ob-bottom-drawer ob-studio-bottom-drawer">
+            <div className="ob-chip-row">
+              <ActionChip>{t.studio.panels.recent}</ActionChip>
+              <ActionChip>{t.studio.modes.templates}</ActionChip>
+              <ActionChip>{t.studio.panels.inspiration}</ActionChip>
+              <ActionChip>{t.studio.queueLabel}</ActionChip>
+            </div>
+            <p className="ob-panel-hint">{t.studio.drawerHint}</p>
+          </div>
         </Panel>
       </div>
     </ProductShell>
