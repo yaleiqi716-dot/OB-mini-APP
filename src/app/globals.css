@@ -949,3 +949,9 @@ header{background:rgba(10,10,8,0.88) !important;backdrop-filter:blur(12px) satur
 .ob-agent-nav-dot{color:var(--ob-text-dim);margin:0 6px;font-size:12px}
 .ob-agent-nav-link{font-size:12px;font-weight:500;color:var(--ob-text-muted);text-decoration:none;padding:6px 10px;border-radius:6px;transition:color .15s;font-family:var(--ob-font-body);display:inline-flex;align-items:center;gap:6px}
 .ob-agent-nav-link:hover{color:var(--ob-orange)}
+.ob-page-hero--product h1 { margin: 0; font-size: 28px; }
+.ob-page-hero--product p { margin: 6px 0 0; color: var(--ob-text-muted); }
+.ob-ws-toolbar { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.ob-main-nav-item { display: inline-flex; align-items: center; gap: 6px; }
+.ob-nav-legacy-tag { display: inline-flex; align-items: center; padding: 1px 5px; border-radius: 999px; border: 1px solid var(--ob-border); font-size: 10px; line-height: 1; color: var(--ob-text-dim); }
+.ob-main-nav-item.is-legacy { opacity: .88; }

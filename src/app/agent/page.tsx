@@ -130,7 +130,7 @@ function LiveStatusCycle() {
   return (
     <div className="ob-live-status">
       <span className="ob-live-dot" />
-      <span>READY</span>
+      <span>{t.common.ready}</span>
       <span style={{ width: 1, height: 10, background: 'var(--ob-border-strong)' }} />
       <span>{STATUS_WORDS[idx]}</span>
     </div>
