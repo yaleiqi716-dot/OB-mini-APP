@@ -50,8 +50,6 @@ export function AppHeader() {
   const pathname = usePathname();
 
   function isNavActive(href: string): boolean {
-    if (href === '/agent') return pathname === '/agent';
-    if (href === '/workspace') return pathname.startsWith('/workspace');
     return pathname === href || pathname.startsWith(href + '/');
   }
 
