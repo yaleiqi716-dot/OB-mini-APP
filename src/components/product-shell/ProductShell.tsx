@@ -23,7 +23,7 @@ export function ProductShell({
       <div className="ob-shell-main">
         {sidebar ? <aside className="ob-primary-sidebar">{sidebar}</aside> : null}
         <main className="ob-shell-content">
-          {hero ? <section className="ob-page-hero">{hero}</section> : null}
+          {hero ? <section className="ob-page-hero ob-page-hero--product">{hero}</section> : null}
           <section className="ob-shell-body">{children}</section>
         </main>
         {rightRail ? <aside className="ob-right-rail">{rightRail}</aside> : null}

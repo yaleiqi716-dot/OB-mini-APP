@@ -19,6 +19,12 @@ export interface Messages {
     readyInStudio: string;
     dropRefImages: string;
     ready: string;
+    currentStatus: string;
+    currentFocus: string;
+    taskQueue: string;
+    duration: string;
+    quotaUsage: string;
+    usageSummary: string;
   };
   agent: {
     title: string;
@@ -146,8 +152,23 @@ export interface Messages {
       templateLibrary: string;
     };
   };
+  workspace: {
+    title: string;
+    subtitle: string;
+    infoPanel: string;
+    collaborationRail: string;
+    collaborationHint: string;
+    boardTitle: string;
+    boardSubtitle: string;
+    searchPlaceholder: string;
+    emptyWorkspaceTitle: string;
+    emptyWorkspaceDescription: string;
+    emptyTaskTitle: string;
+    emptyTaskDescription: string;
+  };
   cloudBrowser: {
     title: string;
+    subtitle: string;
     region: string;
     states: {
       ready: string;
@@ -165,6 +186,27 @@ export interface Messages {
       deviceView: string;
       statusUsage: string;
       taskMount: string;
+      sessionInfo: string;
+    };
+    controls: {
+      create: string;
+      reconnect: string;
+      end: string;
+    };
+    labels: {
+      lobby: string;
+      session: string;
+      region: string;
+      device: string;
+      returnLobby: string;
+      enterSession: string;
+      viewportLobby: string;
+      viewportSession: string;
+      accessType: string;
+      extension: string;
+      routeDriven: string;
+      mockState: string;
+      routeAndMock: string;
     };
   };
 }

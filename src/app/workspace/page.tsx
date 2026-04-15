@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { getMessages } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/Spinner';
 import { ProductShell, Panel, SegmentControl, StatusPill, EmptyState } from '@/components/product-shell/ProductShell';
 
@@ -28,6 +29,8 @@ interface WorkspaceInfo {
   memberCount: number;
   taskCount: number;
 }
+
+const t = getMessages('zh-CN');
 
 const STATUS_GROUPS = [
   { key: 'all', label: '全部', statuses: [] as string[] },
@@ -81,10 +84,10 @@ export default function WorkspacePage() {
   const filtered = useMemo(() => {
     let result = tasks;
     const group = STATUS_GROUPS.find(g => g.key === filter);
-    if (group && group.statuses.length) result = result.filter(t => group.statuses.includes(t.businessStatus));
+    if (group && group.statuses.length) result = result.filter(task => group.statuses.includes(task.businessStatus));
     if (search.trim()) {
       const q = search.toLowerCase();
-      result = result.filter(t => t.title.toLowerCase().includes(q));
+      result = result.filter(task => task.title.toLowerCase().includes(q));
     }
     return result;
   }, [tasks, filter, search]);
@@ -95,9 +98,9 @@ export default function WorkspacePage() {
 
   return (
     <ProductShell
-      hero={<div><h1>团队空间</h1><p>保留任务与协作真实数据流 · 多列工作台结构</p></div>}
+      hero={<div><h1>{t.workspace.title}</h1><p>{t.workspace.subtitle}</p></div>}
       sidebar={
-        <Panel title="空间信息" description={ws?.name || '未命名工作区'}>
+        <Panel title={t.workspace.infoPanel} description={ws?.name || '未命名工作区'}>
           <p style={{ margin: 0, color: 'var(--ob-text-muted)' }}>{ws?.memberCount || 0} 位成员</p>
           <p style={{ margin: 0, color: 'var(--ob-text-muted)' }}>{ws?.taskCount || tasks.length} 个任务</p>
           <a href="/workspace/members" className="ob-mini-link">成员管理</a>
@@ -105,22 +108,22 @@ export default function WorkspacePage() {
         </Panel>
       }
       rightRail={
-        <Panel title="协作侧栏" description="角色扩展预留（supervisor / staff）">
-          <StatusPill>当前状态: 在线协作</StatusPill>
+        <Panel title={t.workspace.collaborationRail} description={t.workspace.collaborationHint}>
+          <StatusPill>{`${t.common.currentStatus}：在线协作`}</StatusPill>
           <a href="/workspace/tasks/new" className="ob-mini-link">+ 新建任务</a>
         </Panel>
       }
     >
-      <div style={{ display: 'grid', gap: 12 }}>
-        <Panel title="工作台" description="任务组织 / 进度 / 团队协同">
-          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-            <input className="ob-input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索任务" />
+      <div className="ob-grid-gap">
+        <Panel title={t.workspace.boardTitle} description={t.workspace.boardSubtitle}>
+          <div className="ob-ws-toolbar">
+            <input className="ob-input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.workspace.searchPlaceholder} />
             <SegmentControl value={filter} onChange={setFilter} options={STATUS_GROUPS.map(({ key, label }) => ({ value: key, label }))} />
           </div>
           {!ws ? (
-            <EmptyState title="还没有工作区" description="创建工作区开始团队协作" />
+            <EmptyState title={t.workspace.emptyWorkspaceTitle} description={t.workspace.emptyWorkspaceDescription} />
           ) : filtered.length === 0 ? (
-            <EmptyState title="没有匹配任务" description="可以从 AI协作 发起任务并回流到团队空间" />
+            <EmptyState title={t.workspace.emptyTaskTitle} description={t.workspace.emptyTaskDescription} />
           ) : (
             <div className="ob-ws-grid">
               {filtered.map((task) => (
