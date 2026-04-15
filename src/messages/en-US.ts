@@ -26,6 +26,8 @@ export const enUS: Messages = {
     title: 'AI Collaboration',
     subtitle: 'Primary entry · task execution · streaming collaboration',
     launcherTitle: 'Tell me the task, push it to done',
+    launcherTitleLead: 'Tell me the task',
+    launcherTitleAccent: 'push it to done',
     launcherSubtitle: 'Understand · decompose · execute · collaborate · deliver',
     taskStatus: 'Task status',
     quickActions: 'Quick actions',
@@ -33,6 +35,18 @@ export const enUS: Messages = {
     jumpLabel: 'Or go to',
     typing: 'Processing...',
     launching: 'Launching task...',
+    quickNavDesc: {
+      tasks: 'View execution progress',
+      workspace: 'Assign tasks · manage members',
+      account: 'Credits · billing · settings',
+    },
+    statusWords: {
+      understand: 'Understanding task',
+      breakdown: 'Breaking down requirements',
+      plan: 'Planning approach',
+      generate: 'Generating output',
+      deliver: 'Preparing delivery',
+    },
   },
   studio: {
     title: 'Studio',

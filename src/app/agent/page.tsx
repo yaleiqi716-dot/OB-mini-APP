@@ -97,12 +97,18 @@ const QUICK_ACTIONS = [
 // Secondary: navigation-only shortcuts. Small, clearly "go somewhere"
 // styled, not mixed with the action cards.
 const QUICK_NAV = [
-  { label: '我的任务', desc: '查看所有执行进度', href: '/tasks', icon: 'activity' },
-  { label: '团队工作区', desc: '分配任务 · 管理成员', href: '/workspace', icon: 'team' },
-  { label: '账户 & 额度', desc: '积分 · 充值 · 设置', href: '/account', icon: 'users' },
+  { label: '我的任务', desc: t.agent.quickNavDesc.tasks, href: '/tasks', icon: 'activity' },
+  { label: '团队工作区', desc: t.agent.quickNavDesc.workspace, href: '/workspace', icon: 'team' },
+  { label: '账户 & 额度', desc: t.agent.quickNavDesc.account, href: '/account', icon: 'users' },
 ];
 
-const STATUS_WORDS = ['理解任务中', '拆解需求中', '组织方案中', '生成内容中', '整理交付中'];
+const STATUS_WORDS = [
+  t.agent.statusWords.understand,
+  t.agent.statusWords.breakdown,
+  t.agent.statusWords.plan,
+  t.agent.statusWords.generate,
+  t.agent.statusWords.deliver,
+];
 
 function ActionIcon({ name }: { name: string }) {
   const s = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
@@ -875,11 +881,11 @@ function AgentPageInner() {
             tasks.length > 0 ? (
             <>
               {/* Scrollable conversation — with chat atmosphere */}
-              <div ref={scrollRef} className="ob-scroll agent-scroll custom-scrollbar ob-chat-atmosphere" key={currentConversationId} style={{ position: 'relative' }}>
+              <div ref={scrollRef} className="ob-scroll agent-scroll custom-scrollbar ob-chat-atmosphere ob-agent-exec-scroll" key={currentConversationId} style={{ position: 'relative' }}>
                 {/* Exec overlays — left vertical lines + right dot grid */}
                 <div className="ob-exec-vlines" />
                 <div className="ob-dotgrid ob-dotgrid--exec" style={{ bottom: 0 }} />
-                <div className="ob-messages agent-content-wrap" style={{ position: 'relative', zIndex: 2 }}>
+                <div className="ob-messages agent-content-wrap ob-agent-exec-stage" style={{ position: 'relative', zIndex: 2 }}>
                   {tasks.map((task) => (
                     <div key={task.id}>
                       {/* User message — orange bubble */}
@@ -916,7 +922,7 @@ function AgentPageInner() {
               </div>
 
               {/* Fixed bottom input */}
-              <div className="ob-input-area agent-input-area">
+              <div className="ob-input-area agent-input-area ob-agent-input-dock">
                 <AgentInput
                   onSubmit={(input, attachments) => {
                     const ci = activeTask?.currentInteraction;
@@ -959,7 +965,7 @@ function AgentPageInner() {
             )
           ) : (
             /* ── Welcome: Task Launcher ── */
-            <div className="ob-welcome agent-welcome ob-agent-welcome">
+            <div className="ob-welcome agent-welcome ob-agent-welcome ob-agent-welcome-stage">
               {/* Atmosphere layer */}
               <div className="ob-hero-atmosphere" />
               {/* Full-page dot grid — separate div so it covers entire area */}
@@ -983,7 +989,7 @@ function AgentPageInner() {
 
                 {/* Hero title */}
                 <h1 className="ob-hero-title ob-agent-hero-title">
-                  {t.agent.launcherTitle.split('，')[0]}，<span className="ob-hero-accent">{t.agent.launcherTitle.split('，')[1] || '推进到完成'}</span>
+                  {t.agent.launcherTitleLead}，<span className="ob-hero-accent">{t.agent.launcherTitleAccent}</span>
                 </h1>
                 {/* Subtitle — token-driven editorial mono kicker */}
                 <p className="ob-agent-launcher-subtitle">{t.agent.launcherSubtitle}</p>
@@ -1036,7 +1042,7 @@ function AgentPageInner() {
                     the primary action cards. Users who know what they
                     want can click through; users scanning the page
                     understand at a glance these are not AI prompts. */}
-                <div className="ob-agent-nav-row">
+                <div className="ob-agent-nav-row ob-agent-quick-nav">
                   <span className="ob-agent-nav-label">{t.agent.jumpLabel}</span>
                   {QUICK_NAV.map((n, i) => (
                     <span key={n.href} className="ob-agent-nav-item-wrap">
