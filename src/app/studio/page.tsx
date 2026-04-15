@@ -7,6 +7,15 @@ import { ProductShell, Panel, SegmentControl, ActionChip, EmptyState, StatusPill
 const t = getMessages('zh-CN');
 
 type StudioMode = 'create' | 'canvas' | 'edit' | 'motion' | 'templates';
+type CreateFlowStatus = 'pending' | 'generating' | 'success' | 'empty' | 'error';
+
+interface StudioTaskRecord {
+  id: string;
+  prompt: string;
+  status: CreateFlowStatus;
+  results: string[];
+  message: string;
+}
 
 const MODE_OPTIONS: { value: StudioMode; label: string }[] = [
   { value: 'create', label: t.studio.modes.create },
@@ -25,23 +34,164 @@ const MODE_DESCRIPTIONS: Record<StudioMode, string> = {
 };
 
 function StudioMain({ mode }: { mode: StudioMode }) {
+  const [prompt, setPrompt] = useState('');
+  const [tasks, setTasks] = useState<StudioTaskRecord[]>([]);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+
+  const activeTask = tasks.find((task) => task.id === activeTaskId) || null;
+  const statusText = activeTask ? t.studio.create.states[activeTask.status] : t.studio.create.states.pending;
+  const statusHint = activeTask?.message || t.studio.create.mockHint;
+
+  function updateTask(taskId: string, patch: Partial<StudioTaskRecord>) {
+    setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, ...patch } : task)));
+  }
+
+  function runGeneration(nextPrompt: string, existingTaskId?: string) {
+    const normalized = nextPrompt.trim().toLowerCase();
+    const taskId = existingTaskId || `studio-task-${Date.now()}`;
+    const isRetry = !!existingTaskId;
+    const baseTask: StudioTaskRecord = {
+      id: taskId,
+      prompt: nextPrompt,
+      status: 'pending',
+      results: [],
+      message: t.studio.create.flowQueued,
+    };
+
+    setPrompt(nextPrompt);
+    setActiveTaskId(taskId);
+    setTasks((prev) => {
+      if (isRetry) {
+        return prev.map((task) => (task.id === taskId ? baseTask : task));
+      }
+      return [baseTask, ...prev].slice(0, 8);
+    });
+
+    window.setTimeout(() => {
+      updateTask(taskId, { status: 'generating', message: t.studio.create.flowRunning });
+    }, 300);
+
+    window.setTimeout(() => {
+      if (!normalized) {
+        updateTask(taskId, {
+          status: 'error',
+          results: [],
+          message: t.studio.create.flowNeedInput,
+        });
+        return;
+      }
+
+      if (normalized.includes('空')) {
+        updateTask(taskId, {
+          status: 'empty',
+          results: [],
+          message: t.studio.create.flowNoResult,
+        });
+        return;
+      }
+
+      if (normalized.includes('失败') || normalized.includes('error')) {
+        updateTask(taskId, {
+          status: 'error',
+          results: [],
+          message: t.studio.create.flowFailed,
+        });
+        return;
+      }
+
+      updateTask(taskId, {
+        status: 'success',
+        results: [
+          `方案 A：强调「${nextPrompt.slice(0, 18)}」的主视觉版本`,
+          '方案 B：强调信息层级与品牌识别的一致版本',
+        ],
+        message: t.studio.create.flowCompleted,
+      });
+    }, 1400);
+  }
+
+  function handlePrimaryGenerate() {
+    runGeneration(prompt);
+  }
+
+  function handleReusePrompt() {
+    const reused = activeTask?.prompt || prompt;
+    setPrompt(reused);
+    runGeneration(reused);
+  }
+
+  function handleRetryCurrentTask() {
+    if (activeTask) {
+      runGeneration(activeTask.prompt, activeTask.id);
+      return;
+    }
+    runGeneration(prompt);
+  }
+
   if (mode === 'create') {
     return (
       <div className="ob-studio-workbench-grid">
         <Panel title={t.studio.create.inputTitle} description={t.studio.create.inputDesc}>
-          <textarea className="ob-studio-textarea" placeholder={t.studio.create.inputPlaceholder} />
+          <textarea
+            className="ob-studio-textarea"
+            placeholder={t.studio.create.inputPlaceholder}
+            value={prompt}
+            onChange={(event) => setPrompt(event.target.value)}
+          />
           <div className="ob-studio-actions-row">
-            <ActionChip>{t.studio.create.generateBtn}</ActionChip>
-            <ActionChip>{t.studio.create.refineBtn}</ActionChip>
-            <ActionChip>{t.common.reuseLastPrompt}</ActionChip>
+            <ActionChip onClick={handlePrimaryGenerate}>{t.studio.create.primaryAction}</ActionChip>
+            <ActionChip onClick={handleReusePrompt}>{t.studio.create.secondaryAction}</ActionChip>
           </div>
         </Panel>
         <Panel title={t.studio.create.resultTitle} description={t.studio.create.resultDesc}>
-          <StatusPill>{t.studio.create.progressLabel}: {t.common.ready}</StatusPill>
-          <div className="ob-studio-result-card">
-            <div className="ob-studio-result-preview">{t.studio.create.resultPlaceholder}</div>
-            <p className="ob-panel-hint">{t.studio.create.statusHint}</p>
+          <StatusPill>{t.studio.create.statusLabel}: {statusText}</StatusPill>
+          <p className="ob-panel-hint">{statusHint}</p>
+          {activeTask ? <p className="ob-panel-hint">{t.studio.create.latestTask}: {activeTask.id}</p> : null}
+          <div className="ob-control-buttons">
+            <button className="ob-outline-btn" onClick={handleRetryCurrentTask}>{t.studio.create.retry}</button>
+            <button className="ob-outline-btn" onClick={handleReusePrompt}>{t.studio.create.regenerate}</button>
           </div>
+        </Panel>
+        <Panel title={t.studio.create.resultTitle} description={t.studio.create.resultDescription}>
+          {!activeTask ? (
+            <EmptyState title={t.studio.create.emptyTitle} description={t.studio.create.noTasks} />
+          ) : activeTask.status === 'pending' || activeTask.status === 'generating' ? (
+            <div className="ob-studio-result-placeholder">{t.studio.create.loading}</div>
+          ) : activeTask.status === 'success' && activeTask.results.length > 0 ? (
+            <div className="ob-studio-result-list">
+              {activeTask.results.map((item) => (
+                <article key={item} className="ob-studio-result-card">
+                  <strong>{t.studio.create.resultItemTitle}</strong>
+                  <p>{item}</p>
+                </article>
+              ))}
+            </div>
+          ) : activeTask.status === 'error' ? (
+            <EmptyState title={t.studio.create.states.error} description={t.studio.create.failedDescription} />
+          ) : activeTask.status === 'empty' ? (
+            <EmptyState title={t.studio.create.emptyTitle} description={t.studio.create.emptyDescription} />
+          ) : (
+            <EmptyState title={t.studio.create.emptyTitle} description={t.studio.create.resultDescription} />
+          )}
+        </Panel>
+        <Panel title={t.studio.create.recentTasks} description={t.studio.create.recentDescription}>
+          {tasks.length === 0 ? (
+            <EmptyState title={t.studio.create.recentTasks} description={t.studio.create.noTasks} />
+          ) : (
+            <div className="ob-studio-task-list">
+              {tasks.map((task) => (
+                <button
+                  key={task.id}
+                  className={`ob-studio-task-item ${activeTaskId === task.id ? 'is-active' : ''}`}
+                  onClick={() => setActiveTaskId(task.id)}
+                >
+                  <strong>{task.id}</strong>
+                  <span>{t.studio.create.states[task.status]}</span>
+                  <p>{task.prompt}</p>
+                </button>
+              ))}
+            </div>
+          )}
         </Panel>
       </div>
     );
