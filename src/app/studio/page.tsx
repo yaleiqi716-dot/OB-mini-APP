@@ -8,13 +8,25 @@ const t = getMessages('zh-CN');
 
 type StudioMode = 'create' | 'canvas' | 'edit' | 'motion' | 'templates';
 type CreateFlowStatus = 'pending' | 'generating' | 'success' | 'empty' | 'error';
+type CreateResultType = 'text' | 'image' | 'video' | 'unknown';
+
+interface StudioTaskResult {
+  id: string;
+  type: CreateResultType;
+  title: string;
+  content?: string;
+  previewUrl?: string;
+}
 
 interface StudioTaskRecord {
   id: string;
   prompt: string;
   status: CreateFlowStatus;
-  results: string[];
+  resultType: CreateResultType;
+  results: StudioTaskResult[];
   message: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const MODE_OPTIONS: { value: StudioMode; label: string }[] = [
@@ -43,19 +55,82 @@ function StudioMain({ mode }: { mode: StudioMode }) {
   const statusHint = activeTask?.message || t.studio.create.mockHint;
 
   function updateTask(taskId: string, patch: Partial<StudioTaskRecord>) {
-    setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, ...patch } : task)));
+    setTasks((prev) =>
+      prev.map((task) => (task.id === taskId ? { ...task, ...patch, updatedAt: new Date().toISOString() } : task)),
+    );
+  }
+
+  function pickResultType(normalizedPrompt: string): CreateResultType {
+    if (normalizedPrompt.includes('图') || normalizedPrompt.includes('image')) return 'image';
+    if (normalizedPrompt.includes('视频') || normalizedPrompt.includes('video')) return 'video';
+    if (normalizedPrompt.includes('文案') || normalizedPrompt.includes('text')) return 'text';
+    return 'unknown';
+  }
+
+  function buildMockResults(resultType: CreateResultType, nextPrompt: string): StudioTaskResult[] {
+    if (resultType === 'image') {
+      return [
+        {
+          id: `res-${Date.now()}-img`,
+          type: 'image',
+          title: '主视觉图方案',
+          previewUrl: `mock://image/${encodeURIComponent(nextPrompt.slice(0, 10))}`,
+          content: '图像结果占位：后续接真实图片 URL 回写。',
+        },
+      ];
+    }
+    if (resultType === 'video') {
+      return [
+        {
+          id: `res-${Date.now()}-vid`,
+          type: 'video',
+          title: '短视频片段方案',
+          previewUrl: `mock://video/${encodeURIComponent(nextPrompt.slice(0, 10))}`,
+          content: '视频结果占位：后续接真实视频 URL 与时长信息。',
+        },
+      ];
+    }
+    if (resultType === 'text') {
+      return [
+        {
+          id: `res-${Date.now()}-txt-a`,
+          type: 'text',
+          title: '文本方案 A',
+          content: `围绕“${nextPrompt.slice(0, 20)}”输出简洁版本，强调核心卖点与行动号召。`,
+        },
+        {
+          id: `res-${Date.now()}-txt-b`,
+          type: 'text',
+          title: '文本方案 B',
+          content: '提供更正式语气版本，适用于官网公告或产品更新说明。',
+        },
+      ];
+    }
+    return [
+      {
+        id: `res-${Date.now()}-unknown`,
+        type: 'unknown',
+        title: '通用结果占位',
+        content: '结果已回写，但当前类型未明确，后续由后端合同统一定义。',
+      },
+    ];
   }
 
   function runGeneration(nextPrompt: string, existingTaskId?: string) {
     const normalized = nextPrompt.trim().toLowerCase();
+    const resultType = pickResultType(normalized);
+    const now = new Date().toISOString();
     const taskId = existingTaskId || `studio-task-${Date.now()}`;
     const isRetry = !!existingTaskId;
     const baseTask: StudioTaskRecord = {
       id: taskId,
       prompt: nextPrompt,
       status: 'pending',
+      resultType,
       results: [],
       message: t.studio.create.flowQueued,
+      createdAt: now,
+      updatedAt: now,
     };
 
     setPrompt(nextPrompt);
@@ -101,11 +176,16 @@ function StudioMain({ mode }: { mode: StudioMode }) {
 
       updateTask(taskId, {
         status: 'success',
-        results: [
-          `方案 A：强调「${nextPrompt.slice(0, 18)}」的主视觉版本`,
-          '方案 B：强调信息层级与品牌识别的一致版本',
-        ],
-        message: t.studio.create.flowCompleted,
+        resultType,
+        results: buildMockResults(resultType, nextPrompt),
+        message:
+          resultType === 'image'
+            ? t.studio.create.flowTypeImage
+            : resultType === 'video'
+              ? t.studio.create.flowTypeVideo
+              : resultType === 'text'
+                ? t.studio.create.flowTypeText
+                : t.studio.create.flowTypeUnknown,
       });
     }, 1400);
   }
@@ -146,11 +226,19 @@ function StudioMain({ mode }: { mode: StudioMode }) {
         <Panel title={t.studio.create.resultTitle} description={t.studio.create.resultDesc}>
           <StatusPill>{t.studio.create.statusLabel}: {statusText}</StatusPill>
           <p className="ob-panel-hint">{statusHint}</p>
-          {activeTask ? <p className="ob-panel-hint">{t.studio.create.latestTask}: {activeTask.id}</p> : null}
+          {activeTask ? (
+            <div className="ob-studio-task-meta">
+              <span>{t.studio.create.latestTask}: {activeTask.id}</span>
+              <span>{t.studio.create.resultTypeLabel}: {t.studio.create.resultTypes[activeTask.resultType]}</span>
+              <span>{t.studio.create.createdAtLabel}: {new Date(activeTask.createdAt).toLocaleTimeString('zh-CN')}</span>
+              <span>{t.studio.create.updatedAtLabel}: {new Date(activeTask.updatedAt).toLocaleTimeString('zh-CN')}</span>
+            </div>
+          ) : null}
           <div className="ob-control-buttons">
             <button className="ob-outline-btn" onClick={handleRetryCurrentTask}>{t.studio.create.retry}</button>
             <button className="ob-outline-btn" onClick={handleReusePrompt}>{t.studio.create.regenerate}</button>
           </div>
+          <p className="ob-panel-hint">{t.studio.create.contractHint}</p>
         </Panel>
         <Panel title={t.studio.create.resultTitle} description={t.studio.create.resultDescription}>
           {!activeTask ? (
@@ -160,9 +248,11 @@ function StudioMain({ mode }: { mode: StudioMode }) {
           ) : activeTask.status === 'success' && activeTask.results.length > 0 ? (
             <div className="ob-studio-result-list">
               {activeTask.results.map((item) => (
-                <article key={item} className="ob-studio-result-card">
+                <article key={item.id} className={`ob-studio-result-card ob-studio-result-card--${item.type}`}>
                   <strong>{t.studio.create.resultItemTitle}</strong>
-                  <p>{item}</p>
+                  <p>{item.title}</p>
+                  <p>{item.content}</p>
+                  {item.previewUrl ? <p className="ob-panel-hint">{item.previewUrl}</p> : null}
                 </article>
               ))}
             </div>
@@ -187,6 +277,7 @@ function StudioMain({ mode }: { mode: StudioMode }) {
                 >
                   <strong>{task.id}</strong>
                   <span>{t.studio.create.states[task.status]}</span>
+                  <span>{t.studio.create.resultTypes[task.resultType]}</span>
                   <p>{task.prompt}</p>
                 </button>
               ))}

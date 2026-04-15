@@ -81,6 +81,49 @@ export interface Messages {
       progressLabel: string;
       resultPlaceholder: string;
       statusHint: string;
+      primaryAction: string;
+      secondaryAction: string;
+      statusLabel: string;
+      latestTask: string;
+      recentTasks: string;
+      recentDescription: string;
+      contractHint: string;
+      resultDescription: string;
+      resultItemTitle: string;
+      resultTypeLabel: string;
+      createdAtLabel: string;
+      updatedAtLabel: string;
+      emptyTitle: string;
+      emptyDescription: string;
+      failedDescription: string;
+      noTasks: string;
+      retry: string;
+      regenerate: string;
+      mockHint: string;
+      loading: string;
+      flowQueued: string;
+      flowRunning: string;
+      flowNeedInput: string;
+      flowNoResult: string;
+      flowFailed: string;
+      flowCompleted: string;
+      flowTypeImage: string;
+      flowTypeVideo: string;
+      flowTypeText: string;
+      flowTypeUnknown: string;
+      states: {
+        pending: string;
+        generating: string;
+        success: string;
+        empty: string;
+        error: string;
+      };
+      resultTypes: {
+        text: string;
+        image: string;
+        video: string;
+        unknown: string;
+      };
     };
     canvas: {
       stageTitle: string;
@@ -146,38 +189,6 @@ export interface Messages {
       recent: string;
       inspiration: string;
       templateLibrary: string;
-    };
-    create: {
-      primaryAction: string;
-      secondaryAction: string;
-      statusLabel: string;
-      latestTask: string;
-      recentTasks: string;
-      recentDescription: string;
-      resultTitle: string;
-      resultDescription: string;
-      resultItemTitle: string;
-      emptyTitle: string;
-      emptyDescription: string;
-      failedDescription: string;
-      noTasks: string;
-      retry: string;
-      regenerate: string;
-      mockHint: string;
-      loading: string;
-      flowQueued: string;
-      flowRunning: string;
-      flowNeedInput: string;
-      flowNoResult: string;
-      flowFailed: string;
-      flowCompleted: string;
-      states: {
-        pending: string;
-        generating: string;
-        success: string;
-        empty: string;
-        error: string;
-      };
     };
   };
   workspace: {
