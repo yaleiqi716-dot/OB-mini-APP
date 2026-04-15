@@ -219,8 +219,8 @@ function StudioMain({ mode }: { mode: StudioMode }) {
             onChange={(event) => setPrompt(event.target.value)}
           />
           <div className="ob-studio-actions-row">
-            <ActionChip onClick={handlePrimaryGenerate}>{t.studio.create.primaryAction}</ActionChip>
-            <ActionChip onClick={handleReusePrompt}>{t.studio.create.secondaryAction}</ActionChip>
+            <button type="button" className="ob-action-chip" onClick={handlePrimaryGenerate}>{t.studio.create.primaryAction}</button>
+            <button type="button" className="ob-action-chip" onClick={handleReusePrompt}>{t.studio.create.secondaryAction}</button>
           </div>
         </Panel>
         <Panel title={t.studio.create.resultTitle} description={t.studio.create.resultDesc}>
