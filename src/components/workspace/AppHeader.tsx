@@ -18,9 +18,7 @@ const WS_NAV = [
 const ACCOUNT_NAV = [
   { href: '/account', label: '概览' },
   { href: '/profile', label: '个人资料' },
-  { href: '/billing', label: '订阅 & 账单' },
   { href: '/account/skills', label: '技能中心' },
-  { href: '/settings', label: '偏好设置' },
 ];
 
 interface NotifItem {
@@ -50,8 +48,6 @@ export function AppHeader() {
   const pathname = usePathname();
 
   function isNavActive(href: string): boolean {
-    if (href === '/agent') return pathname === '/agent';
-    if (href === '/workspace') return pathname.startsWith('/workspace');
     return pathname === href || pathname.startsWith(href + '/');
   }
 
@@ -134,16 +130,22 @@ export function AppHeader() {
           {MAIN_NAV.map(n => {
             const active = isNavActive(n.href);
             return (
-              <a key={n.href} href={n.href} style={{
-                fontSize: 13, textDecoration: 'none', padding: '7px 12px', borderRadius: 6,
-                fontWeight: active ? 600 : 500,
-                color: active ? '#fff' : 'rgba(245,245,240,0.50)',
-                background: 'transparent',
-                transition: 'color .12s cubic-bezier(.2,.7,.3,1)',
-                position: 'relative',
-                fontFamily: 'var(--ob-font-body)',
-              }}>
-                {n.label}
+              <a
+                key={n.href}
+                href={n.href}
+                className={`ob-main-nav-item${n.deprecated ? ' is-legacy' : ''}`}
+                style={{
+                  fontSize: 13, textDecoration: 'none', padding: '7px 12px', borderRadius: 6,
+                  fontWeight: active ? 600 : 500,
+                  color: active ? '#fff' : 'rgba(245,245,240,0.50)',
+                  background: 'transparent',
+                  transition: 'color .12s cubic-bezier(.2,.7,.3,1)',
+                  position: 'relative',
+                  fontFamily: 'var(--ob-font-body)',
+                }}
+              >
+                <span>{n.label}</span>
+                {n.deprecated ? <span className="ob-nav-legacy-tag">旧版</span> : null}
                 {active && (
                   <span style={{
                     position: 'absolute', bottom: -1, left: '50%', transform: 'translateX(-50%)',
