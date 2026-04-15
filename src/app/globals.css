@@ -907,15 +907,26 @@ header{background:rgba(10,10,8,0.88) !important;backdrop-filter:blur(12px) satur
 .ob-agent-mobile-add{padding:4px 8px;border-radius:8px;border:none;background:transparent;cursor:pointer;color:var(--text-secondary)}
 
 .ob-studio-main-grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:12px}
+.ob-studio-workbench-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px}
 .ob-studio-textarea{width:100%;min-height:140px;border:1px solid var(--ob-border);background:var(--ob-surface-hi);color:var(--ob-text);border-radius:10px;padding:10px;resize:vertical}
 .ob-studio-actions-row{display:flex;gap:8px;margin-top:10px}
 .ob-studio-canvas{min-height:260px;border:1px dashed var(--ob-border-strong);border-radius:12px;background:var(--ob-surface-hi);display:grid;place-items:center;color:var(--ob-text-muted)}
 .ob-template-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.ob-template-card{height:90px;border-radius:10px;border:1px solid var(--ob-border);background:var(--ob-surface-hi);color:var(--ob-text-muted);cursor:pointer}
+.ob-template-card{height:90px;border-radius:10px;border:1px solid var(--ob-border);background:var(--ob-surface-hi);color:var(--ob-text-muted);cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:10px 12px;gap:4px}
+.ob-template-card strong{font-size:12px;color:var(--ob-text)}
+.ob-template-card span{font-size:11px;color:var(--ob-text-muted)}
+.ob-studio-result-card{margin-top:10px;display:grid;gap:8px}
+.ob-studio-result-preview{min-height:126px;border:1px dashed var(--ob-border-strong);border-radius:10px;background:var(--ob-surface-hi);display:grid;place-items:center;color:var(--ob-text-dim);font-size:12px}
+.ob-studio-hero-kicker{font-family:var(--ob-font-mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ob-orange);margin:0 0 8px}
+.ob-studio-hero-sub{color:var(--ob-text-muted);font-size:12px;margin-top:6px}
+.ob-studio-mode-switch{padding:2px 0 4px}
+.ob-studio-page-stack{gap:14px}
+.ob-studio-bottom-drawer{display:grid;gap:10px}
+.ob-studio-right-rail .ob-panel{background:var(--ob-surface)}
 
 @media (max-width:1100px){
   .ob-agent-sidebar .ob-sidebar{display:none}
-  .ob-studio-main-grid{grid-template-columns:1fr}
+  .ob-studio-main-grid,.ob-studio-workbench-grid{grid-template-columns:1fr}
   .ob-browser-info-grid{grid-template-columns:1fr}
 }
 
