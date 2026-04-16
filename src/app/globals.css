@@ -903,7 +903,7 @@ header{background:rgba(10,10,8,0.88) !important;backdrop-filter:blur(12px) satur
    ═══════════════════════════════════════════════════════════════ */
 @keyframes agentGridIn{
   0%{opacity:0}
-  100%{opacity:0.06}
+  100%{opacity:0.6}
 }
 @keyframes agentGlowExpand{
   0%{transform:translate(-50%,-50%) scale(0);opacity:0}
