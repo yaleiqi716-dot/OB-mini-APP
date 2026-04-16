@@ -66,7 +66,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-CN">
+    <html lang="en">
       <head>
         {/*
           OrangeBench Design System v1.2 fonts — DESIGN.md is source of truth.
