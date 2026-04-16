@@ -130,7 +130,7 @@ export default function HeroModern() {
     subtle: "text-[#A8A29E]",
     border: "border-[#1F1F1D]",
     card: "bg-[#111110]",
-    accent: "bg-white/6",
+    accent: "bg-[#111110]",
     glow: "rgba(255,90,31,0.14)",
   };
 
@@ -247,7 +247,7 @@ export default function HeroModern() {
           <div className="space-y-8">
             <div className="flex flex-wrap items-center gap-4">
               <span
-                className={`inline-flex items-center gap-2 rounded-full border px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.4em] ${palette.border} ${palette.accent}`}
+                className={`inline-flex items-center gap-2 rounded-md border px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.4em] ${palette.border} ${palette.accent}`}
               >
                 AI-native workspace
               </span>
@@ -275,7 +275,7 @@ export default function HeroModern() {
                 <span>Enterprise ready</span>
               </div>
               <div
-                className={`flex divide-x divide-white/10 overflow-hidden rounded-full border text-xs uppercase tracking-[0.35em] ${palette.border}`}
+                className={`flex divide-x divide-white/10 overflow-hidden rounded-lg border text-xs uppercase tracking-[0.35em] ${palette.border}`}
               >
                 {metrics.map((metric) => (
                   <div key={metric.label} className="flex flex-col px-5 py-3">
@@ -313,7 +313,7 @@ export default function HeroModern() {
                 onClick={() => setMode("agents")}
                 className={`flex-1 rounded-lg border px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] transition ${
                   mode === "agents"
-                    ? "border-[#FF5A1F] bg-[#FF5A1F] text-white hover:bg-[#FF6B35]"
+                    ? "border-[#FF5A1F] bg-[#FF5A1F] text-[#F5F5F4] hover:bg-[#FF6B35]"
                     : `${palette.border} ${palette.accent}`
                 }`}
               >
@@ -324,7 +324,7 @@ export default function HeroModern() {
                 onClick={() => setMode("workflows")}
                 className={`flex-1 rounded-lg border px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] transition ${
                   mode === "workflows"
-                    ? "border-[#FF5A1F] bg-[#FF5A1F] text-white hover:bg-[#FF6B35]"
+                    ? "border-[#FF5A1F] bg-[#FF5A1F] text-[#F5F5F4] hover:bg-[#FF6B35]"
                     : `${palette.border} ${palette.accent}`
                 }`}
               >

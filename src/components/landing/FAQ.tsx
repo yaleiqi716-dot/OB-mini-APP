@@ -139,7 +139,7 @@ function FAQTabs({
           className={cn(
             "relative overflow-hidden whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors duration-500",
             selected === key
-              ? "border-[#FF5A1F] text-white"
+              ? "border-[#FF5A1F] text-[#F5F5F4]"
               : "border-[#1F1F1D] bg-transparent text-[#A8A29E] hover:text-[#F5F5F4]"
           )}
         >

@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X } from "lucide-react";
 import Link from "next/link";
 
 /* ──────────────────────────────────────────────────────────────
    NavHeader — adapted from 21st.dev (krittyz/nav-header)
    Original: animated cursor following hover across nav tabs.
    Customised: full navbar with logo, links, CTA buttons,
-   dark theme, sticky + backdrop-blur, scroll shadow.
+   dark theme, sticky + backdrop-blur, scroll shadow,
+   mobile drawer.
    ────────────────────────────────────────────────────────────── */
 
 const NAV_ITEMS = ["Features", "Pricing", "FAQ", "Docs"] as const;
@@ -21,6 +23,7 @@ function NavHeader() {
   });
 
   const [scrolled, setScrolled] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -28,52 +31,142 @@ function NavHeader() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Lock body scroll when drawer is open
+  useEffect(() => {
+    document.body.style.overflow = drawerOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [drawerOpen]);
+
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+
   return (
-    <header
-      className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        "border-b",
-        scrolled
-          ? "bg-[#0C0C0A]/80 backdrop-blur-xl border-[#1F1F1D] shadow-lg shadow-black/20"
-          : "bg-[#0C0C0A]/60 backdrop-blur-md border-transparent"
-      )}
-    >
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-        {/* Logo */}
-        <Link href="/" className="text-xl font-bold text-[#F5F5F4]">
-          OrangeBench
-        </Link>
-
-        {/* Center nav — animated cursor from 21st.dev */}
-        <ul
-          className="relative mx-auto hidden items-center rounded-lg border border-[#1F1F1D] bg-[#111110] p-1 md:flex"
-          onMouseLeave={() => setPosition((pv) => ({ ...pv, opacity: 0 }))}
-        >
-          {NAV_ITEMS.map((item) => (
-            <Tab key={item} setPosition={setPosition}>
-              {item}
-            </Tab>
-          ))}
-          <Cursor position={position} />
-        </ul>
-
-        {/* Right buttons */}
-        <div className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="hidden rounded-lg px-4 py-2 text-sm font-medium text-[#A8A29E] transition-colors duration-150 hover:text-[#F5F5F4] sm:inline-block"
-          >
-            Login
+    <>
+      <header
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+          "border-b",
+          scrolled
+            ? "bg-[#0C0C0A]/80 backdrop-blur-xl border-[#1F1F1D] shadow-lg shadow-black/20"
+            : "bg-[#0C0C0A]/60 backdrop-blur-md border-transparent"
+        )}
+      >
+        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+          {/* Logo */}
+          <Link href="/" className="text-xl font-bold text-[#F5F5F4]">
+            OrangeBench
           </Link>
-          <Link
-            href="/signup"
-            className="rounded-lg bg-[#FF5A1F] px-4 py-2 text-sm font-medium text-white transition-all duration-150 hover:bg-[#FF6B35]"
+
+          {/* Center nav — animated cursor (desktop only) */}
+          <ul
+            className="relative mx-auto hidden items-center rounded-lg border border-[#1F1F1D] bg-[#111110] p-1 md:flex"
+            onMouseLeave={() => setPosition((pv) => ({ ...pv, opacity: 0 }))}
           >
-            Get Started
-          </Link>
-        </div>
-      </nav>
-    </header>
+            {NAV_ITEMS.map((item) => (
+              <Tab key={item} setPosition={setPosition}>
+                {item}
+              </Tab>
+            ))}
+            <Cursor position={position} />
+          </ul>
+
+          {/* Right — desktop buttons + mobile hamburger */}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="hidden rounded-lg px-4 py-2 text-sm font-medium text-[#A8A29E] transition-colors duration-150 hover:text-[#F5F5F4] md:inline-block"
+            >
+              Login
+            </Link>
+            <Link
+              href="/signup"
+              className="hidden rounded-lg bg-[#FF5A1F] px-4 py-2 text-sm font-medium text-[#F5F5F4] transition-all duration-150 hover:bg-[#FF6B35] md:inline-block"
+            >
+              Get Started
+            </Link>
+            {/* Hamburger — mobile only */}
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-[#A8A29E] transition-colors duration-150 hover:text-[#F5F5F4] md:hidden"
+              aria-label="Open menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </div>
+        </nav>
+      </header>
+
+      {/* Mobile drawer */}
+      <AnimatePresence>
+        {drawerOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={closeDrawer}
+              className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+            />
+            {/* Drawer panel */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="fixed top-0 right-0 bottom-0 z-[70] flex w-72 flex-col border-l border-[#1F1F1D] bg-[#0C0C0A]"
+            >
+              {/* Drawer header */}
+              <div className="flex items-center justify-between px-6 py-4">
+                <span className="text-sm font-bold text-[#F5F5F4]">Menu</span>
+                <button
+                  type="button"
+                  onClick={closeDrawer}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-[#A8A29E] transition-colors duration-150 hover:text-[#F5F5F4]"
+                  aria-label="Close menu"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Drawer links */}
+              <div className="flex flex-1 flex-col gap-1 px-4">
+                {NAV_ITEMS.map((item) => (
+                  <Link
+                    key={item}
+                    href="#"
+                    onClick={closeDrawer}
+                    className="rounded-lg px-4 py-3 text-base font-medium text-[#A8A29E] transition-colors duration-150 hover:bg-[#111110] hover:text-[#F5F5F4]"
+                  >
+                    {item}
+                  </Link>
+                ))}
+
+                <div className="my-3 border-t border-[#1F1F1D]" />
+
+                <Link
+                  href="/login"
+                  onClick={closeDrawer}
+                  className="rounded-lg px-4 py-3 text-base font-medium text-[#A8A29E] transition-colors duration-150 hover:bg-[#111110] hover:text-[#F5F5F4]"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/signup"
+                  onClick={closeDrawer}
+                  className="mt-2 flex items-center justify-center rounded-lg bg-[#FF5A1F] px-4 py-3 text-base font-medium text-[#F5F5F4] transition-all duration-150 hover:bg-[#FF6B35]"
+                >
+                  Get Started
+                </Link>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 

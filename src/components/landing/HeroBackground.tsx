@@ -60,7 +60,7 @@ const TITLE_WORDS = ["Your", "AI", "Workspace,", "Unified."];
 
 export default function HeroBackground() {
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#0C0C0A]">
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#0C0C0A] pt-20 md:pt-24">
       {/* Animated SVG path layers */}
       <div className="absolute inset-0">
         <FloatingPaths position={1} />

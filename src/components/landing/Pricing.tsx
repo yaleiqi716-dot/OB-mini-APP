@@ -78,7 +78,7 @@ export default function Pricing() {
   };
 
   return (
-    <section className="bg-[#0C0C0A] px-6 py-24">
+    <section className="bg-[#0C0C0A] px-4 py-24 sm:px-6">
       <div className="mx-auto max-w-7xl">
       {/* Header */}
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
@@ -92,13 +92,13 @@ export default function Pricing() {
 
       {/* Billing toggle (from original) */}
       <div className="mt-8 flex justify-center">
-        <div className="inline-flex items-center rounded-full border border-[#1F1F1D] bg-[#111110] p-1">
+        <div className="inline-flex items-center rounded-lg border border-[#1F1F1D] bg-[#111110] p-1">
           <button
             type="button"
             onClick={() => setBillingCycle("monthly")}
-            className={`rounded-full px-5 py-1.5 text-sm font-medium transition-colors duration-150 ${
+            className={`rounded-md px-5 py-1.5 text-sm font-medium transition-colors duration-150 ${
               billingCycle === "monthly"
-                ? "bg-[#FF5A1F] text-white"
+                ? "bg-[#FF5A1F] text-[#F5F5F4]"
                 : "text-[#A8A29E] hover:text-[#F5F5F4]"
             }`}
           >
@@ -107,9 +107,9 @@ export default function Pricing() {
           <button
             type="button"
             onClick={() => setBillingCycle("annually")}
-            className={`rounded-full px-5 py-1.5 text-sm font-medium transition-colors duration-150 ${
+            className={`rounded-md px-5 py-1.5 text-sm font-medium transition-colors duration-150 ${
               billingCycle === "annually"
-                ? "bg-[#FF5A1F] text-white"
+                ? "bg-[#FF5A1F] text-[#F5F5F4]"
                 : "text-[#A8A29E] hover:text-[#F5F5F4]"
             }`}
           >
@@ -126,7 +126,7 @@ export default function Pricing() {
         {PLANS.map((plan) => (
           <div
             key={plan.name}
-            className={`flex w-80 flex-col rounded-xl border p-6 transition-colors duration-150 ${
+            className={`flex w-full max-w-[320px] flex-col rounded-xl border p-6 transition-colors duration-150 ${
               plan.popular
                 ? "border-[#FF5A1F] bg-[#111110] shadow-lg shadow-[#FF5A1F]/5"
                 : "border-[#1F1F1D] bg-[#111110]"
@@ -138,7 +138,7 @@ export default function Pricing() {
                 {plan.name}
               </span>
               {plan.popular && (
-                <span className="rounded-full bg-[#FF5A1F]/15 px-3 py-0.5 text-xs font-semibold text-[#FF5A1F]">
+                <span className="rounded-md bg-[#FF5A1F]/15 px-3 py-0.5 text-xs font-semibold text-[#FF5A1F]">
                   Most Popular
                 </span>
               )}
@@ -160,7 +160,7 @@ export default function Pricing() {
               href={plan.href}
               className={`mb-8 flex h-10 items-center justify-center rounded-lg text-sm font-semibold transition-all duration-150 ${
                 plan.popular
-                  ? "bg-[#FF5A1F] text-white hover:bg-[#FF6B35]"
+                  ? "bg-[#FF5A1F] text-[#F5F5F4] hover:bg-[#FF6B35]"
                   : "border border-[#1F1F1D] bg-transparent text-[#F5F5F4] hover:bg-[#111110]"
               }`}
             >
