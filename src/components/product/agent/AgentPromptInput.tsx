@@ -56,7 +56,7 @@ export function AgentPromptInput({
     <div className="w-full max-w-2xl">
       {/* AGENT badge — tab-style, fused to input top-left */}
       <div className="flex items-center">
-        <div className="flex items-center gap-2 rounded-t-lg border border-b-0 border-border-subtle bg-surface px-3 py-1.5 relative z-10 -mb-px">
+        <div className="flex items-center gap-2 rounded-t-lg border border-b-0 border-border-subtle bg-surface/80 backdrop-blur-xl px-3 py-1.5 relative z-10 -mb-px">
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
           <span className="text-[10px] font-semibold tracking-[0.15em] text-primary">AGENT</span>
           <span className="text-text-subtle text-xs">&middot;</span>
@@ -73,7 +73,7 @@ export function AgentPromptInput({
       {/* Input box — top-left corner square to fuse with badge */}
       <div
         className={cn(
-          "rounded-tr-xl rounded-bl-xl rounded-br-xl border bg-surface p-4 shadow-lg shadow-black/20",
+          "rounded-tr-xl rounded-bl-xl rounded-br-xl border bg-surface/80 backdrop-blur-xl p-4 shadow-lg shadow-black/20",
           "transition-all duration-base ease-smooth",
           "border-border-subtle focus-within:border-border-strong focus-within:ring-1 focus-within:ring-primary/20"
         )}
