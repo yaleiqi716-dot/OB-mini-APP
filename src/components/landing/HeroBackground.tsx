@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 /* ──────────────────────────────────────────────────────────────
@@ -57,9 +58,9 @@ function FloatingPaths({ position }: { position: number }) {
   );
 }
 
-const TITLE_WORDS = ["Your", "AI", "Workspace,", "Unified."];
-
 export default function HeroBackground() {
+  const t = useTranslations("hero");
+  const titleWords = t("title").split(/\s+/);
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#0C0C0A] pt-20 md:pt-24">
       {/* Animated SVG path layers */}
@@ -76,8 +77,8 @@ export default function HeroBackground() {
           transition={{ duration: 2 }}
         >
           {/* Title — letter-by-letter spring entrance (from original) */}
-          <h1 className="text-5xl font-bold tracking-tighter md:text-7xl">
-            {TITLE_WORDS.map((word, wordIndex) => (
+          <h1 className="text-5xl font-bold tracking-tight md:text-7xl">
+            {titleWords.map((word, wordIndex) => (
               <span
                 key={wordIndex}
                 className="mr-4 inline-block last:mr-0"
@@ -109,8 +110,7 @@ export default function HeroBackground() {
             transition={{ delay: 0.8, duration: 0.6 }}
             className="mx-auto mt-6 max-w-2xl text-lg text-[#A8A29E]"
           >
-            OrangeBench brings agents, tasks, and teams into one seamless
-            workflow.
+            {t("subtitle")}
           </motion.p>
 
           {/* CTA buttons */}
@@ -125,7 +125,7 @@ export default function HeroBackground() {
               href="/signup"
               className="group inline-flex items-center rounded-lg bg-[#FF5A1F] px-8 py-3 text-base font-semibold text-white transition-all duration-150 hover:bg-[#FF6B35] hover:shadow-lg hover:shadow-[#FF5A1F]/20"
             >
-              Start for Free
+              {t("cta_primary")}
               <ArrowRight size={18} className="ml-2 transition-transform duration-150 group-hover:translate-x-1" />
             </Link>
 
@@ -134,7 +134,7 @@ export default function HeroBackground() {
               href="#"
               className="inline-flex items-center rounded-lg border border-[#1F1F1D] bg-transparent px-8 py-3 text-base font-semibold text-[#F5F5F4] transition-all duration-150 hover:bg-[#111110]"
             >
-              Watch Demo
+              {t("cta_secondary")}
             </Link>
           </motion.div>
         </motion.div>

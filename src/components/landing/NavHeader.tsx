@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 /* ──────────────────────────────────────────────────────────────
@@ -13,14 +14,15 @@ import Link from "next/link";
    mobile drawer.
    ────────────────────────────────────────────────────────────── */
 
-const NAV_ITEMS = [
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "FAQ", href: "#faq" },
-  { label: "Docs", href: "#", title: "Coming soon" },
-] as const;
-
 function NavHeader() {
+  const t = useTranslations("nav");
+
+  const NAV_ITEMS = [
+    { label: t("features"), href: "#features" },
+    { label: t("pricing"), href: "#pricing" },
+    { label: t("faq"), href: "#faq" },
+    { label: t("docs"), href: "#", title: "Coming soon" },
+  ];
   const [position, setPosition] = useState({
     left: 0,
     width: 0,
@@ -82,13 +84,13 @@ function NavHeader() {
               href="/login"
               className="hidden rounded-lg px-4 py-2 text-sm font-medium text-[#A8A29E] transition-colors duration-150 hover:text-[#F5F5F4] md:inline-block"
             >
-              Login
+              {t("login")}
             </Link>
             <Link
               href="/signup"
               className="hidden rounded-lg bg-[#FF5A1F] px-4 py-2 text-sm font-medium text-[#F5F5F4] transition-all duration-150 hover:bg-[#FF6B35] md:inline-block"
             >
-              Get Started
+              {t("getStarted")}
             </Link>
             {/* Hamburger — mobile only */}
             <button
@@ -158,14 +160,14 @@ function NavHeader() {
                   onClick={closeDrawer}
                   className="rounded-lg px-4 py-3 text-base font-medium text-[#A8A29E] transition-colors duration-150 hover:bg-[#111110] hover:text-[#F5F5F4]"
                 >
-                  Login
+                  {t("login")}
                 </Link>
                 <Link
                   href="/signup"
                   onClick={closeDrawer}
                   className="mt-2 flex items-center justify-center rounded-lg bg-[#FF5A1F] px-4 py-3 text-base font-medium text-[#F5F5F4] transition-all duration-150 hover:bg-[#FF6B35]"
                 >
-                  Get Started
+                  {t("getStarted")}
                 </Link>
               </div>
             </motion.div>

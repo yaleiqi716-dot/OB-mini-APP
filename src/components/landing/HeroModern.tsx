@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 /* ──────────────────────────────────────────────────────────────
    HeroModern — adapted from 21st.dev (reapollo/hero-modern)
@@ -50,6 +51,7 @@ const DeckGlyph = () => {
 };
 
 export default function HeroModern() {
+  const t = useTranslations("heroModern");
   const [visible, setVisible] = useState(false);
   const [mode, setMode] = useState<"agents" | "workflows">("agents");
   const sectionRef = useRef<HTMLElement>(null);
@@ -89,58 +91,33 @@ export default function HeroModern() {
   };
 
   const metrics = [
-    { label: "Avg task time", value: "4m" },
-    { label: "Agents active", value: "12" },
-    { label: "Accuracy", value: "97%" },
+    { label: t("metricTime"), value: "4m" },
+    { label: t("metricAgents"), value: "12" },
+    { label: t("metricAccuracy"), value: "97%" },
   ];
 
   const modes = useMemo(
     () => ({
       agents: {
-        title: "AI Agent Hub",
-        description:
-          "Deploy specialised AI agents that handle research, writing, and analysis. Each agent works autonomously while keeping your team in the loop.",
-        items: [
-          "Multi-agent orchestration in parallel",
-          "Context-aware task delegation",
-          "Real-time progress visibility",
-        ],
+        title: t("agentsTitle"),
+        description: t("agentsDesc"),
+        items: t.raw("agentsItems") as string[],
       },
       workflows: {
-        title: "Unified Workflows",
-        description:
-          "Chain agents, approvals, and handoffs into repeatable pipelines. One workspace for ideation through delivery.",
-        items: [
-          "Drag-and-drop pipeline builder",
-          "Conditional branching and loops",
-          "Audit trail for every step",
-        ],
+        title: t("workflowsTitle"),
+        description: t("workflowsDesc"),
+        items: t.raw("workflowsItems") as string[],
       },
     }),
-    []
+    [t]
   );
 
   const activeMode = modes[mode];
 
   const protocols = [
-    {
-      name: "Task intake",
-      detail:
-        "Describe what you need in plain language. OrangeBench parses intent, selects the right agent, and kicks off execution.",
-      status: "Ready",
-    },
-    {
-      name: "Agent sync",
-      detail:
-        "Agents collaborate in a shared timeline. Review intermediate outputs, redirect focus, or approve results inline.",
-      status: "Live",
-    },
-    {
-      name: "Ship & iterate",
-      detail:
-        "Export deliverables, trigger downstream actions, and feed learnings back into the system for next time.",
-      status: "Armed",
-    },
+    { name: t("step1Title"), detail: t("step1Desc"), status: t("step1Status") },
+    { name: t("step2Title"), detail: t("step2Desc"), status: t("step2Status") },
+    { name: t("step3Title"), detail: t("step3Desc"), status: t("step3Status") },
   ];
 
   const setSpotlight = (event: React.MouseEvent<HTMLLIElement>) => {
@@ -203,17 +180,16 @@ export default function HeroModern() {
               <span
                 className={`inline-flex items-center gap-2 rounded-md border px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.4em] ${palette.border} ${palette.accent}`}
               >
-                AI-native workspace
+                {t("badge")}
               </span>
             </div>
 
             <div className="space-y-6">
               <h2 className="text-4xl font-bold tracking-tight md:text-5xl">
-                Built for teams that ship fast
+                {t("title")}
               </h2>
               <p className={`max-w-2xl text-base md:text-lg ${palette.subtle}`}>
-                Replace 5 tools with one AI-native workspace. OrangeBench
-                handles research, planning, and execution in a single timeline.
+                {t("subtitle")}
               </p>
             </div>
 
@@ -223,10 +199,10 @@ export default function HeroModern() {
               >
                 <span className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#FF5A1F] animate-pulse" />
-                  All systems go
+                  {t("statusReady")}
                 </span>
                 <span className="opacity-60">·</span>
-                <span>Enterprise ready</span>
+                <span>{t("statusEnterprise")}</span>
               </div>
               <div
                 className={`flex divide-x divide-white/10 overflow-hidden rounded-lg border text-xs uppercase tracking-[0.35em] ${palette.border}`}
@@ -251,7 +227,7 @@ export default function HeroModern() {
           >
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-3">
-                <p className="text-xs uppercase tracking-[0.35em]">Mode</p>
+                <p className="text-xs uppercase tracking-[0.35em]">{t("modeLabel")}</p>
                 <h3 className="text-xl font-semibold tracking-tight">
                   {activeMode.title}
                 </h3>
@@ -271,7 +247,7 @@ export default function HeroModern() {
                     : `${palette.border} ${palette.accent}`
                 }`}
               >
-                Agents
+                {t("modeAgents")}
               </button>
               <button
                 type="button"
@@ -282,7 +258,7 @@ export default function HeroModern() {
                     : `${palette.border} ${palette.accent}`
                 }`}
               >
-                Workflows
+                {t("modeWorkflows")}
               </button>
             </div>
             <ul className="space-y-2 text-sm">
@@ -307,22 +283,17 @@ export default function HeroModern() {
           >
             <div className="flex items-center justify-between">
               <h3 className="text-xs uppercase tracking-[0.35em]">
-                Capabilities
+                {t("capTitle")}
               </h3>
               <span className="text-xs uppercase tracking-[0.35em] opacity-60">
                 v1.0
               </span>
             </div>
             <p className={`text-sm leading-relaxed ${palette.subtle}`}>
-              One workspace where agents, humans, and data converge. No
-              tab-switching, no copy-pasting between tools.
+              {t("capDesc")}
             </p>
             <div className="grid gap-3">
-              {[
-                "Multi-agent parallel execution",
-                "Contextual memory across tasks",
-                "Team-wide shared timelines",
-              ].map((item) => (
+              {(t.raw("capItems") as string[]).map((item) => (
                 <div
                   key={item}
                   className={`relative overflow-hidden rounded-xl border px-4 py-3 text-xs uppercase tracking-[0.3em] transition duration-500 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(255,90,31,0.12)] ${palette.border}`}
@@ -363,7 +334,7 @@ export default function HeroModern() {
                   </svg>
                 </div>
                 <span className="text-sm font-medium text-[#A8A29E]">
-                  Product Screenshot
+                  {t("screenshot")}
                 </span>
               </div>
               {/* Decorative orbs (from original) */}
@@ -373,10 +344,10 @@ export default function HeroModern() {
             <figcaption
               className={`flex items-center justify-between px-6 py-5 text-xs uppercase tracking-[0.35em] ${palette.subtle}`}
             >
-              <span>OrangeBench workspace</span>
+              <span>{t("workspaceLabel")}</span>
               <span className="flex items-center gap-2">
                 <span className="h-1 w-8 bg-[#FF5A1F]" />
-                Unified timeline
+                {t("timelineLabel")}
               </span>
             </figcaption>
           </figure>
@@ -387,10 +358,10 @@ export default function HeroModern() {
           >
             <div className="flex items-center justify-between">
               <h3 className="text-xs uppercase tracking-[0.35em]">
-                How it works
+                {t("howTitle")}
               </h3>
               <span className="text-xs uppercase tracking-[0.35em] opacity-60">
-                3 steps
+                {t("howSteps")}
               </span>
             </div>
             <ul className="space-y-4">

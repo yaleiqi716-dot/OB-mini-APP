@@ -1,0 +1,129 @@
+{
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "docs": "Docs",
+    "login": "Login",
+    "getStarted": "Get Started"
+  },
+  "hero": {
+    "title": "Your AI Workspace, Unified.",
+    "subtitle": "OrangeBench brings agents, tasks, and teams into one seamless workflow.",
+    "cta_primary": "Start for Free",
+    "cta_secondary": "Watch Demo"
+  },
+  "heroModern": {
+    "badge": "AI-native workspace",
+    "title": "Built for teams that ship fast",
+    "subtitle": "Replace 5 tools with one AI-native workspace. OrangeBench handles research, planning, and execution in a single timeline.",
+    "statusReady": "All systems go",
+    "statusEnterprise": "Enterprise ready",
+    "metricTime": "Avg task time",
+    "metricAgents": "Agents active",
+    "metricAccuracy": "Accuracy",
+    "modeLabel": "Mode",
+    "modeAgents": "Agents",
+    "modeWorkflows": "Workflows",
+    "agentsTitle": "AI Agent Hub",
+    "agentsDesc": "Deploy specialised AI agents that handle research, writing, and analysis. Each agent works autonomously while keeping your team in the loop.",
+    "agentsItems": ["Multi-agent orchestration in parallel", "Context-aware task delegation", "Real-time progress visibility"],
+    "workflowsTitle": "Unified Workflows",
+    "workflowsDesc": "Chain agents, approvals, and handoffs into repeatable pipelines. One workspace for ideation through delivery.",
+    "workflowsItems": ["Drag-and-drop pipeline builder", "Conditional branching and loops", "Audit trail for every step"],
+    "capTitle": "Capabilities",
+    "capDesc": "One workspace where agents, humans, and data converge. No tab-switching, no copy-pasting between tools.",
+    "capItems": ["Multi-agent parallel execution", "Contextual memory across tasks", "Team-wide shared timelines"],
+    "screenshot": "Product Screenshot",
+    "workspaceLabel": "OrangeBench workspace",
+    "timelineLabel": "Unified timeline",
+    "howTitle": "How it works",
+    "howSteps": "3 steps",
+    "step1Title": "Task intake",
+    "step1Status": "Ready",
+    "step1Desc": "Describe what you need in plain language. OrangeBench parses intent, selects the right agent, and kicks off execution.",
+    "step2Title": "Agent sync",
+    "step2Status": "Live",
+    "step2Desc": "Agents collaborate in a shared timeline. Review intermediate outputs, redirect focus, or approve results inline.",
+    "step3Title": "Ship & iterate",
+    "step3Status": "Armed",
+    "step3Desc": "Export deliverables, trigger downstream actions, and feed learnings back into the system for next time."
+  },
+  "pricing": {
+    "title": "Simple pricing that scales with you",
+    "subtitle": "Start free, upgrade when you need to. No hidden fees.",
+    "monthly": "Monthly",
+    "annually": "Annually",
+    "perMonth": "/mo",
+    "perYear": "/yr",
+    "featuresLabel": "Features",
+    "free": {
+      "name": "Free",
+      "price": "0",
+      "description": "For individuals getting started.",
+      "cta": "Get Started",
+      "features": ["100 agent tasks/mo", "1 workspace", "Community support"]
+    },
+    "pro": {
+      "name": "Pro",
+      "price": "29",
+      "badge": "Most Popular",
+      "description": "For professionals who need more power.",
+      "cta": "Upgrade",
+      "features": ["Unlimited tasks", "5 workspaces", "Priority agents", "Email support"]
+    },
+    "team": {
+      "name": "Team",
+      "price": "99",
+      "description": "For teams that need full control.",
+      "cta": "Contact Sales",
+      "features": ["Everything in Pro", "Unlimited workspaces", "SSO", "Dedicated support"]
+    }
+  },
+  "faq": {
+    "kicker": "Got questions?",
+    "title": "Frequently asked questions",
+    "tabs": {
+      "general": "General",
+      "pricing": "Pricing",
+      "agents": "Agents",
+      "security": "Security"
+    },
+    "general": [
+      { "q": "What is OrangeBench?", "a": "OrangeBench is an AI-native workspace that combines agents, task management, and team collaboration." },
+      { "q": "Who is it for?", "a": "Small teams and indie builders who want to replace multiple tools with one unified workflow." },
+      { "q": "How is it different from Notion or Monday?", "a": "OrangeBench is built agent-first. AI executes tasks, not just stores them." }
+    ],
+    "pricing_tab": [
+      { "q": "Is there a free plan?", "a": "Yes, Free tier includes 100 agent tasks per month." },
+      { "q": "Can I cancel anytime?", "a": "Yes, monthly plans cancel anytime with no fees." },
+      { "q": "Do you offer annual discounts?", "a": "Annual plans get 20% off." }
+    ],
+    "agents_tab": [
+      { "q": "What can agents do?", "a": "Research, summarize, execute multi-step tasks, browse the web, and more." },
+      { "q": "How are agent tasks counted?", "a": "One task equals one agent execution from start to finish." },
+      { "q": "Can I bring my own API keys?", "a": "Yes, Pro and Team plans support BYOK." }
+    ],
+    "security_tab": [
+      { "q": "Where is my data stored?", "a": "Encrypted at rest in AWS, SOC 2 compliant infrastructure." },
+      { "q": "Do you train on my data?", "a": "No, your data is never used for model training." },
+      { "q": "Is there SSO?", "a": "Team plan includes SSO via Google, Microsoft, and Okta." }
+    ]
+  },
+  "footer": {
+    "tagline": "AI-native workspace for teams that ship.",
+    "product": "Product",
+    "legal": "Legal",
+    "social": "Social",
+    "features": "Features",
+    "pricing": "Pricing",
+    "docs": "Docs",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "copyright": "© 2026 OrangeBench. All rights reserved."
+  },
+  "metadata": {
+    "title": "OrangeBench — Your AI Workspace, Unified",
+    "description": "OrangeBench brings agents, tasks, and teams into one seamless workflow. Replace 5 tools with one AI-native workspace."
+  }
+}

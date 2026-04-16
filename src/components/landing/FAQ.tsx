@@ -3,218 +3,120 @@
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 /* ──────────────────────────────────────────────────────────────
    FAQ — adapted from 21st.dev (vaib215/faq-tabs)
-   Original: tabbed FAQ with animated tab fill, accordion items,
-   and framer-motion transitions.
-   Customised: dark theme, orange accent tabs, OrangeBench Q&A
-   across four categories.
    ────────────────────────────────────────────────────────────── */
 
-const CATEGORIES: Record<string, string> = {
-  general: "General",
-  pricing: "Pricing",
-  agents: "Agents",
-  security: "Security",
-};
-
-const FAQ_DATA: Record<string, { question: string; answer: string }[]> = {
-  general: [
-    {
-      question: "What is OrangeBench?",
-      answer:
-        "OrangeBench is an AI-native workspace that combines agents, task management, and team collaboration.",
-    },
-    {
-      question: "Who is it for?",
-      answer:
-        "Small teams and indie builders who want to replace multiple tools with one unified workflow.",
-    },
-    {
-      question: "How is it different from Notion or Monday?",
-      answer:
-        "OrangeBench is built agent-first. AI executes tasks, not just stores them.",
-    },
-  ],
-  pricing: [
-    {
-      question: "Is there a free plan?",
-      answer: "Yes, Free tier includes 100 agent tasks per month.",
-    },
-    {
-      question: "Can I cancel anytime?",
-      answer: "Yes, monthly plans cancel anytime with no fees.",
-    },
-    {
-      question: "Do you offer annual discounts?",
-      answer: "Annual plans get 20% off.",
-    },
-  ],
-  agents: [
-    {
-      question: "What can agents do?",
-      answer:
-        "Research, summarize, execute multi-step tasks, browse the web, and more.",
-    },
-    {
-      question: "How are agent tasks counted?",
-      answer:
-        "One task equals one agent execution from start to finish.",
-    },
-    {
-      question: "Can I bring my own API keys?",
-      answer: "Yes, Pro and Team plans support BYOK.",
-    },
-  ],
-  security: [
-    {
-      question: "Where is my data stored?",
-      answer:
-        "Encrypted at rest in AWS, SOC 2 compliant infrastructure.",
-    },
-    {
-      question: "Do you train on my data?",
-      answer: "No, your data is never used for model training.",
-    },
-    {
-      question: "Is there SSO?",
-      answer:
-        "Team plan includes SSO via Google, Microsoft, and Okta.",
-    },
-  ],
-};
-
-const FAQ_JSONLD = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: Object.values(FAQ_DATA)
-    .flat()
-    .map((item) => ({
-      "@type": "Question",
-      name: item.question,
-      acceptedAnswer: { "@type": "Answer", text: item.answer },
-    })),
-};
+const TAB_KEYS = ["general", "pricing_tab", "agents_tab", "security_tab"] as const;
+const TAB_I18N_KEYS = ["general", "pricing", "agents", "security"] as const;
 
 export default function FAQ() {
-  const categoryKeys = Object.keys(CATEGORIES);
-  const [selectedCategory, setSelectedCategory] = useState(categoryKeys[0]);
+  const t = useTranslations("faq");
+  const [selectedTab, setSelectedTab] = useState(0);
+
+  // Build FAQ data from translations
+  const tabs = TAB_KEYS.map((key, i) => ({
+    key,
+    label: t(`tabs.${TAB_I18N_KEYS[i]}`),
+    items: (t.raw(key) as { q: string; a: string }[]),
+  }));
+
+  // JSON-LD from all tabs
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: tabs.flatMap((tab) =>
+      tab.items.map((item) => ({
+        "@type": "Question",
+        name: item.q,
+        acceptedAnswer: { "@type": "Answer", text: item.a },
+      }))
+    ),
+  };
 
   return (
     <section id="faq" className="relative overflow-hidden bg-[#0C0C0A] px-6 py-24 text-[#F5F5F4]">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSONLD) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="mx-auto max-w-7xl">
-        <FAQHeader />
-        <FAQTabs
-          selected={selectedCategory}
-          setSelected={setSelectedCategory}
-        />
-        <FAQList selected={selectedCategory} />
-      </div>
-    </section>
-  );
-}
+        {/* Header */}
+        <div className="relative z-10 flex flex-col items-center justify-center">
+          <span className="mb-8 bg-gradient-to-r from-[#FF5A1F] to-[#FF5A1F]/60 bg-clip-text font-medium text-transparent">
+            {t("kicker")}
+          </span>
+          <h2 className="mb-8 text-center text-4xl font-bold md:text-5xl">
+            {t("title")}
+          </h2>
+          <span className="absolute -top-[350px] left-[50%] z-0 h-[500px] w-[600px] -translate-x-[50%] rounded-full bg-gradient-to-r from-[#FF5A1F]/10 to-[#FF5A1F]/5 blur-3xl" />
+        </div>
 
-/* ── Header (from original) ──────────────────────────────────── */
+        {/* Tabs */}
+        <div className="relative z-10 flex flex-wrap items-center justify-center gap-4">
+          {tabs.map((tab, i) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setSelectedTab(i)}
+              className={cn(
+                "relative overflow-hidden whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors duration-500",
+                selectedTab === i
+                  ? "border-[#FF5A1F] text-[#F5F5F4]"
+                  : "border-[#1F1F1D] bg-transparent text-[#A8A29E] hover:text-[#F5F5F4]"
+              )}
+            >
+              <span className="relative z-10">{tab.label}</span>
+              <AnimatePresence>
+                {selectedTab === i && (
+                  <motion.span
+                    initial={{ y: "100%" }}
+                    animate={{ y: "0%" }}
+                    exit={{ y: "100%" }}
+                    transition={{ duration: 0.5, ease: "backIn" }}
+                    className="absolute inset-0 z-0 bg-gradient-to-r from-[#FF5A1F] to-[#FF5A1F]/80"
+                  />
+                )}
+              </AnimatePresence>
+            </button>
+          ))}
+        </div>
 
-function FAQHeader() {
-  return (
-    <div className="relative z-10 flex flex-col items-center justify-center">
-      <span className="mb-8 bg-gradient-to-r from-[#FF5A1F] to-[#FF5A1F]/60 bg-clip-text font-medium text-transparent">
-        Got questions?
-      </span>
-      <h2 className="mb-8 text-center text-4xl font-bold md:text-5xl">
-        Frequently asked questions
-      </h2>
-      <span className="absolute -top-[350px] left-[50%] z-0 h-[500px] w-[600px] -translate-x-[50%] rounded-full bg-gradient-to-r from-[#FF5A1F]/10 to-[#FF5A1F]/5 blur-3xl" />
-    </div>
-  );
-}
-
-/* ── Tabs (from original) ────────────────────────────────────── */
-
-function FAQTabs({
-  selected,
-  setSelected,
-}: {
-  selected: string;
-  setSelected: (v: string) => void;
-}) {
-  return (
-    <div className="relative z-10 flex flex-wrap items-center justify-center gap-4">
-      {Object.entries(CATEGORIES).map(([key, label]) => (
-        <button
-          key={key}
-          type="button"
-          onClick={() => setSelected(key)}
-          className={cn(
-            "relative overflow-hidden whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors duration-500",
-            selected === key
-              ? "border-[#FF5A1F] text-[#F5F5F4]"
-              : "border-[#1F1F1D] bg-transparent text-[#A8A29E] hover:text-[#F5F5F4]"
-          )}
-        >
-          <span className="relative z-10">{label}</span>
-          <AnimatePresence>
-            {selected === key && (
-              <motion.span
-                initial={{ y: "100%" }}
-                animate={{ y: "0%" }}
-                exit={{ y: "100%" }}
-                transition={{ duration: 0.5, ease: "backIn" }}
-                className="absolute inset-0 z-0 bg-gradient-to-r from-[#FF5A1F] to-[#FF5A1F]/80"
-              />
-            )}
-          </AnimatePresence>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/* ── FAQ list (from original) ────────────────────────────────── */
-
-function FAQList({ selected }: { selected: string }) {
-  return (
-    <div className="mx-auto mt-12 max-w-3xl">
-      <AnimatePresence mode="wait">
-        {Object.entries(FAQ_DATA).map(([category, questions]) => {
-          if (selected !== category) return null;
-          return (
+        {/* FAQ list */}
+        <div className="mx-auto mt-12 max-w-3xl">
+          <AnimatePresence mode="wait">
             <motion.div
-              key={category}
+              key={tabs[selectedTab].key}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.5, ease: "backIn" }}
               className="space-y-4"
             >
-              {questions.map((faq, index) => (
-                <FAQItem key={index} {...faq} />
+              {tabs[selectedTab].items.map((faq, index) => (
+                <FAQItem key={index} question={faq.q} answer={faq.a} index={index} />
               ))}
             </motion.div>
-          );
-        })}
-      </AnimatePresence>
-    </div>
+          </AnimatePresence>
+        </div>
+      </div>
+    </section>
   );
 }
-
-/* ── Accordion item (from original) ──────────────────────────── */
 
 let faqCounter = 0;
 
 function FAQItem({
   question,
   answer,
+  index,
 }: {
   question: string;
   answer: string;
+  index: number;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [ids] = useState(() => {

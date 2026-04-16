@@ -1,0 +1,129 @@
+{
+  "nav": {
+    "features": "功能",
+    "pricing": "定价",
+    "faq": "常见问题",
+    "docs": "文档",
+    "login": "登录",
+    "getStarted": "开始使用"
+  },
+  "hero": {
+    "title": "重新定义你的 AI 工作台",
+    "subtitle": "OrangeBench 把 AI 智能体、任务和团队协作整合进一个无缝流程。",
+    "cta_primary": "免费开始",
+    "cta_secondary": "观看演示"
+  },
+  "heroModern": {
+    "badge": "AI 原生工作台",
+    "title": "为追求速度的团队打造",
+    "subtitle": "一个 AI 原生工作台，替代五个工具。OrangeBench 在同一时间线上处理调研、规划和执行。",
+    "statusReady": "系统就绪",
+    "statusEnterprise": "企业级",
+    "metricTime": "平均任务时间",
+    "metricAgents": "活跃智能体",
+    "metricAccuracy": "准确率",
+    "modeLabel": "模式",
+    "modeAgents": "智能体",
+    "modeWorkflows": "工作流",
+    "agentsTitle": "AI 智能体中心",
+    "agentsDesc": "部署专业 AI 智能体处理调研、写作和分析。每个智能体自主工作，同时保持团队同步。",
+    "agentsItems": ["多智能体并行调度", "上下文感知任务分配", "实时进度可视化"],
+    "workflowsTitle": "统一工作流",
+    "workflowsDesc": "将智能体、审批和交接串联成可重复的流水线。一个工作台搞定从构思到交付。",
+    "workflowsItems": ["拖拽式流水线编排", "条件分支与循环", "每一步可审计追溯"],
+    "capTitle": "核心能力",
+    "capDesc": "一个工作台，让智能体、人和数据汇聚。告别标签页切换，告别工具间复制粘贴。",
+    "capItems": ["多智能体并行执行", "跨任务上下文记忆", "团队共享时间线"],
+    "screenshot": "产品截图",
+    "workspaceLabel": "OrangeBench 工作台",
+    "timelineLabel": "统一时间线",
+    "howTitle": "使用流程",
+    "howSteps": "3 步搞定",
+    "step1Title": "提交任务",
+    "step1Status": "就绪",
+    "step1Desc": "用自然语言描述需求。OrangeBench 解析意图，选择合适的智能体，启动执行。",
+    "step2Title": "智能体协作",
+    "step2Status": "运行中",
+    "step2Desc": "智能体在共享时间线中协作。你可以查看中间结果，调整方向，或在线审批。",
+    "step3Title": "交付迭代",
+    "step3Status": "就绪",
+    "step3Desc": "导出交付物，触发下游操作，将经验反馈回系统，为下次任务做好准备。"
+  },
+  "pricing": {
+    "title": "简单透明的定价，随你扩展",
+    "subtitle": "免费开始，按需升级。没有隐藏费用。",
+    "monthly": "月付",
+    "annually": "年付",
+    "perMonth": "/月",
+    "perYear": "/年",
+    "featuresLabel": "包含功能",
+    "free": {
+      "name": "免费版",
+      "price": "0",
+      "description": "适合个人入门体验。",
+      "cta": "立即开始",
+      "features": ["每月 100 次智能体任务", "1 个工作区", "社区支持"]
+    },
+    "pro": {
+      "name": "专业版",
+      "price": "199",
+      "badge": "最受欢迎",
+      "description": "适合需要更多能力的专业用户。",
+      "cta": "立即升级",
+      "features": ["无限任务", "5 个工作区", "优先智能体", "邮件支持"]
+    },
+    "team": {
+      "name": "团队版",
+      "price": "699",
+      "description": "适合需要全面管控的团队。",
+      "cta": "联系销售",
+      "features": ["包含专业版全部功能", "无限工作区", "SSO 单点登录", "专属支持"]
+    }
+  },
+  "faq": {
+    "kicker": "有疑问？",
+    "title": "常见问题",
+    "tabs": {
+      "general": "综合",
+      "pricing": "价格",
+      "agents": "智能体",
+      "security": "安全"
+    },
+    "general": [
+      { "q": "OrangeBench 是什么？", "a": "OrangeBench 是一个 AI 原生工作台，整合了智能体、任务管理和团队协作。" },
+      { "q": "适合谁使用？", "a": "想用一个统一工作流替代多个工具的小团队和独立开发者。" },
+      { "q": "和 Notion 或 Monday 有什么不同？", "a": "OrangeBench 是 AI 优先设计的。智能体会真的执行任务，不只是记录任务。" }
+    ],
+    "pricing_tab": [
+      { "q": "有免费版吗？", "a": "有，免费版每月包含 100 次智能体任务。" },
+      { "q": "可以随时取消吗？", "a": "可以，月付方案随时取消，无任何手续费。" },
+      { "q": "有年付折扣吗？", "a": "年付方案享 8 折优惠。" }
+    ],
+    "agents_tab": [
+      { "q": "智能体能做什么？", "a": "调研、总结、执行多步任务、浏览网页，等等。" },
+      { "q": "智能体任务怎么计算？", "a": "一次任务 = 智能体从开始到完成的一次完整执行。" },
+      { "q": "可以接入自己的 API key 吗？", "a": "可以，专业版和团队版支持 BYOK。" }
+    ],
+    "security_tab": [
+      { "q": "我的数据存在哪里？", "a": "加密存储在阿里云，符合等保三级要求。" },
+      { "q": "会用我的数据训练模型吗？", "a": "不会，你的数据绝不用于模型训练。" },
+      { "q": "支持 SSO 吗？", "a": "团队版包含 SSO，支持飞书、钉钉、企业微信、Google。" }
+    ]
+  },
+  "footer": {
+    "tagline": "AI 原生工作台，为高效团队而生。",
+    "product": "产品",
+    "legal": "法律",
+    "social": "社交",
+    "features": "功能",
+    "pricing": "定价",
+    "docs": "文档",
+    "privacy": "隐私政策",
+    "terms": "服务条款",
+    "copyright": "© 2026 OrangeBench. 保留所有权利。"
+  },
+  "metadata": {
+    "title": "OrangeBench — 你的 AI 工作台，统一无缝",
+    "description": "OrangeBench 把 AI 智能体、任务和团队协作整合进一个无缝流程。用一个 AI 原生工作台替代五个工具。"
+  }
+}
