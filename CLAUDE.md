@@ -1,5 +1,7 @@
 # OrangeBench Frontend Rules
 
+> Day 2 开始重写 /agent，改动前必须确认 /agent-legacy 仍可用。
+
 ## Product Positioning
 - Desktop-first product, minimum supported width 1024px
 - 落地页：desktop-first, mobile 保持可读即可
