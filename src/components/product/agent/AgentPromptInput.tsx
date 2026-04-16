@@ -52,37 +52,30 @@ export function AgentPromptInput({
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); }
   }
 
-  const borderClass = focused ? "border-border-strong" : "border-border-subtle";
-
   return (
     <div className="w-full max-w-2xl">
-      {/* AGENT badge — fused to input top-left like a Chrome tab */}
-      <div
-        className={cn(
-          "inline-flex items-center gap-2 rounded-t-md border border-b-0 bg-surface px-3 py-1.5",
-          "relative z-10 -mb-px transition-colors duration-base",
-          borderClass
-        )}
-      >
+      {/* AGENT badge — independent floating sticker */}
+      <div className="inline-flex items-center gap-2 rounded-md border border-border-subtle bg-surface px-2.5 py-1 mb-2">
         <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
         <span className="text-[10px] font-semibold tracking-[0.15em] text-primary">AGENT</span>
-        <span className="text-text-subtle text-xs">&middot;</span>
-        <span className="text-xs text-text-muted">输入任务</span>
+        <span className="text-[10px] text-text-subtle">&middot;</span>
+        <span className="text-[10px] text-text-muted">输入任务</span>
         {mcpCount > 0 && (
           <>
-            <span className="text-text-subtle text-xs">&middot;</span>
-            <span className="text-xs text-text-muted">{mcpCount} 个技能</span>
+            <span className="text-[10px] text-text-subtle">&middot;</span>
+            <span className="text-[10px] text-text-muted">{mcpCount} 个技能</span>
           </>
         )}
       </div>
 
-      {/* Input box — rounded-tl-none fuses with badge */}
+      {/* Input box — independent complete rectangle */}
       <div
         className={cn(
-          "rounded-lg rounded-tl-none border bg-surface p-4 shadow-lg shadow-black/20",
+          "rounded-lg border bg-surface p-4 shadow-lg shadow-black/20",
           "transition-all duration-base ease-smooth",
-          borderClass,
-          focused && "ring-1 ring-primary/20"
+          focused
+            ? "border-border-strong ring-1 ring-primary/20"
+            : "border-border-subtle"
         )}
       >
         <textarea
