@@ -6,14 +6,25 @@ import { QuickActionCards } from "./QuickActionCards";
 
 export function AgentWelcomeScreen() {
   return (
-    <div className="flex min-h-full flex-1 flex-col items-center justify-center gap-10 px-6 bg-background">
-      {/* Title group */}
-      <div className="flex flex-col items-center gap-4 text-center">
-        <h1 className="text-[32px] font-semibold leading-[1.15] tracking-tight text-[#F5F5F4] text-center md:text-[40px]">
-          告诉我任务，<span className="text-primary">推进到完成</span>
+    <div className="flex min-h-full flex-1 flex-col items-center justify-center px-6 bg-background">
+      {/* Title group — replicated from /agent-legacy */}
+      <div className="flex flex-col items-center text-center">
+        <h1 className="ob-hero-title" style={{ marginBottom: 12 }}>
+          告诉我任务，<span className="ob-hero-accent">推进到完成</span>
         </h1>
-        <p className="text-[11px] font-medium uppercase tracking-[0.32em] text-text-muted text-center md:text-[13px]">
-          UNDERSTAND &middot; DECOMPOSE &middot; EXECUTE &middot; DELIVER &middot; COLLABORATE
+        <p
+          style={{
+            fontFamily: "var(--ob-font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: "var(--ob-text-muted)",
+            textAlign: "center",
+            marginBottom: 32,
+            maxWidth: 520,
+          }}
+        >
+          UNDERSTAND · DECOMPOSE · EXECUTE · DELIVER · COLLABORATE
         </p>
       </div>
 
@@ -21,7 +32,9 @@ export function AgentWelcomeScreen() {
       <AgentPromptInput />
 
       {/* Quick action cards */}
-      <QuickActionCards />
+      <div style={{ marginTop: 32 }}>
+        <QuickActionCards />
+      </div>
     </div>
   );
 }
