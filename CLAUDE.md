@@ -1,26 +1,33 @@
-# CLAUDE.md — OrangeBench project rules
+# OrangeBench Frontend Rules
 
-## Design System
+## Stack
+- Next.js 14 App Router + TypeScript
+- Tailwind CSS + shadcn/ui
+- tRPC (backend 已存在，不要改)
+- Framer Motion 用于动效
 
-**Always read `DESIGN.md` before making any visual or UI decisions.**
+## Brand Colors (必须用 CSS 变量，禁止硬编码)
+- Primary: #FF5A1F
+- Background: #0C0C0A
+- Surface: #111110
+- Border: #1F1F1D
+- Text Primary: #F5F5F4
+- Text Muted: #A8A29E
 
-All font choices, colors, spacing, border-radius, motion, and aesthetic direction are defined there. Do not deviate without explicit user approval. Do not introduce new hex values, new fonts, or new spacing units. If a design token you need is missing, propose adding it to `DESIGN.md` first, then use it.
+## Theme
+- Dark theme only
+- 所有组件默认深色
 
-When reviewing UI code:
-- Flag any hex value that is not in `DESIGN.md` color tables.
-- Flag any `font-family` that is not Cabinet Grotesk / Geist / Geist Mono / HarmonyOS Sans SC / Noto Sans SC.
-- Flag deprecated values: `#FF3D00`, `#FF6B00`, Tailwind `orange-500`, `orange-600`, `Inter`, `Roboto`, raw `#000`, raw `#FFF`.
-- Flag uniform bubbly border-radius (everything `rounded-2xl`) — use the radius scale.
+## File Structure
+- components/landing/  → 落地页组件
+- components/product/  → 产品内部组件
+- components/layout/   → 布局组件
+- components/ui/       → shadcn 基础组件
 
-When implementing new UI:
-- Orange `#FF5A1F` is a design primitive, not an accent. Use it boldly in display typography, not only on buttons.
-- One primary CTA per page. Secondary actions use surface-high background + border.
-- Warm off-white text `#F5F5F0` on warm near-black `#0B0B0C`. Not `#FFF` on `#000`.
-- Editorial asymmetry for marketing / login / invite. Strict 12-col grid for app interior.
-
-## Dev notes
-
-- Next.js 14.2 App Router, Tailwind, Prisma (SQLite dev / Postgres prod).
-- Env: requires `.env.local` with `DATABASE_URL`, `OPENROUTER_API_KEY`, `NEXT_PUBLIC_APP_URL`, Google OAuth creds, etc. See `README.md`.
-- Auth: new code must use `getUserIdFromRequest(req)` from `src/lib/auth.ts` — never read `ob-user-id` cookie directly.
-- Rate limiting: unauthenticated endpoints must use `src/lib/rate-limit.ts`.
+## Rules
+- 所有组件 TypeScript
+- 禁止 emoji
+- 圆角统一用 rounded-lg (8px)
+- 间距用 4 的倍数
+- 动效时长统一 150ms 或 300ms
+- 集成 21st.dev 组件时，保留原有业务逻辑不动
