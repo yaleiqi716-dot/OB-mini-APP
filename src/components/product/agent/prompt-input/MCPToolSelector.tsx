@@ -119,7 +119,7 @@ export function MCPToolSelector({
           "focus-ring flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs transition-colors duration-fast disabled:opacity-50 disabled:pointer-events-none",
           selectedCount > 0
             ? "border-primary/30 bg-accent-muted text-[#F5F5F4]"
-            : "border-border-subtle bg-surface-overlay text-text-subtle hover:text-[#F5F5F4]"
+            : "border-border-subtle bg-surface-overlay text-[#F5F5F4]"
         )}
       >
         <Plug2 size={14} />

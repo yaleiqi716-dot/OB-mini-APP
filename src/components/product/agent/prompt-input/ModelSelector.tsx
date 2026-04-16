@@ -33,7 +33,7 @@ export function ModelSelector({
         type="button"
         disabled={disabled}
         onClick={() => setOpen(!open)}
-        className="focus-ring flex h-8 items-center gap-1.5 rounded-md border border-border-subtle bg-surface-overlay px-2.5 text-xs text-text-subtle transition-colors duration-fast hover:text-[#F5F5F4] disabled:opacity-50 disabled:pointer-events-none"
+        className="focus-ring flex h-8 items-center gap-1.5 rounded-md border border-border-subtle bg-surface-overlay px-2.5 text-xs text-[#F5F5F4] transition-colors duration-fast disabled:opacity-50 disabled:pointer-events-none"
       >
         <span className="h-1.5 w-1.5 rounded-full bg-primary" />
         <span>{selected.name}</span>

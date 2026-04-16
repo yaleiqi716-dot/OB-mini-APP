@@ -55,7 +55,7 @@ export function AgentPromptInput({
   return (
     <div className="w-full max-w-2xl">
       {/* AGENT badge — independent floating sticker */}
-      <div className="inline-flex items-center gap-2 rounded-md border border-border-subtle bg-surface px-2.5 py-1 mb-2">
+      <div className="inline-flex items-center gap-2 py-1 mb-2 pl-4">
         <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
         <span className="text-[10px] font-semibold tracking-[0.15em] text-primary">AGENT</span>
         <span className="text-[10px] text-text-subtle">&middot;</span>

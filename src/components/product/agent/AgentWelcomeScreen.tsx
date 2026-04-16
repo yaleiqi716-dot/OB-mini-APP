@@ -32,7 +32,7 @@ export function AgentWelcomeScreen() {
       <AgentPromptInput />
 
       {/* Quick action cards */}
-      <div style={{ marginTop: 32 }}>
+      <div className="w-full max-w-2xl" style={{ marginTop: 32 }}>
         <QuickActionCards />
       </div>
     </div>
