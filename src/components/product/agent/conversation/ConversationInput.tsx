@@ -6,7 +6,7 @@ import { AgentPromptInput } from "../AgentPromptInput";
 export function ConversationInput({ conversationId }: { conversationId: string }) {
   return (
     <div className="shrink-0 border-t border-border px-6 py-4">
-      <AgentPromptInput />
+      <AgentPromptInput conversationId={conversationId} />
     </div>
   );
 }

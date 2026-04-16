@@ -2,8 +2,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, Loader2 } from "lucide-react";
+import { ArrowUp, Loader2, FileIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTaskSubmit } from "@/hooks/useTaskSubmit";
+import { useFileUpload } from "@/hooks/useFileUpload";
 import { AttachmentButton } from "./prompt-input/AttachmentButton";
 import { RoleSelector } from "./prompt-input/RoleSelector";
 import { ModelSelector } from "./prompt-input/ModelSelector";
@@ -15,17 +17,22 @@ function randomPlaceholder() {
 }
 
 export function AgentPromptInput({
-  isSubmitting = false,
+  conversationId,
 }: {
-  isSubmitting?: boolean;
+  conversationId?: string;
 }) {
   const [text, setText] = useState("");
   const [roleId, setRoleId] = useState<string | null>(null);
   const [modelId, setModelId] = useState("gpt-4o");
   const [mcpCount, setMcpCount] = useState(0);
+  const [files, setFiles] = useState<File[]>([]);
   const [placeholder] = useState(randomPlaceholder);
   const [focused, setFocused] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { submit, isSubmitting, error: submitError } = useTaskSubmit();
+  const { uploadFiles, uploading } = useFileUpload();
 
   const resize = useCallback(() => {
     const el = textareaRef.current;
@@ -37,14 +44,57 @@ export function AgentPromptInput({
   useEffect(() => resize(), [text, resize]);
   useEffect(() => { textareaRef.current?.focus(); }, []);
 
-  const disabled = isSubmitting;
-  const canSubmit = text.trim().length > 0 && !disabled;
+  useEffect(() => {
+    if (submitError) {
+      setToast(submitError);
+      const t = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [submitError]);
+
+  const busy = isSubmitting || uploading;
+  const canSubmit = (text.trim().length > 0 || files.length > 0) && !busy;
   const charCount = text.length;
 
-  function handleSubmit() {
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }
+
+  function addFiles(newFiles: File[]) {
+    const valid = newFiles.filter((f) => {
+      if (f.size > 10 * 1024 * 1024) {
+        showToast(`${f.name} 超出 10MB 限制`);
+        return false;
+      }
+      return true;
+    });
+    setFiles((prev) => [...prev, ...valid]);
+  }
+
+  function removeFile(idx: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  async function handleSubmit() {
     if (!canSubmit) return;
-    console.log("[submit]", { text: text.trim(), roleId, modelId, mcpCount });
+
+    let attachments: { id: string; name: string; size: number; type: string }[] | undefined;
+    if (files.length > 0) {
+      const { uploaded, errors } = await uploadFiles(files);
+      for (const err of errors) showToast(err);
+      if (uploaded.length > 0) attachments = uploaded;
+    }
+
+    await submit({
+      input: text.trim(),
+      skillRoleId: roleId || undefined,
+      attachments,
+      conversationId,
+    });
+
     setText("");
+    setFiles([]);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -54,7 +104,7 @@ export function AgentPromptInput({
 
   return (
     <div className="w-full max-w-2xl">
-      {/* AGENT badge — independent floating sticker */}
+      {/* AGENT badge */}
       <div className="inline-flex items-center gap-2 py-1 mb-2 pl-4">
         <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
         <span className="text-[10px] font-semibold tracking-[0.15em] text-primary">AGENT</span>
@@ -68,16 +118,37 @@ export function AgentPromptInput({
         )}
       </div>
 
-      {/* Input box — independent complete rectangle */}
+      {/* Input box */}
       <div
         className={cn(
           "rounded-lg border bg-surface p-4 shadow-lg shadow-black/20",
           "transition-all duration-base ease-smooth",
-          focused
-            ? "border-border-strong ring-1 ring-primary/20"
-            : "border-border-subtle"
+          focused ? "border-border-strong ring-1 ring-primary/20" : "border-border-subtle"
         )}
       >
+        {/* File chips */}
+        {files.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {files.map((f, i) => (
+              <div
+                key={`${f.name}-${i}`}
+                className="flex items-center gap-1.5 rounded-md bg-surface-overlay px-2 py-1 text-xs text-text-muted"
+              >
+                <FileIcon size={12} className="shrink-0" />
+                <span className="max-w-[160px] truncate">{f.name}</span>
+                <span className="text-text-subtle">{(f.size / 1024).toFixed(0)}KB</span>
+                {uploading ? (
+                  <Loader2 size={12} className="animate-spin text-text-subtle" />
+                ) : (
+                  <button onClick={() => removeFile(i)} className="text-text-subtle hover:text-[#F5F5F4] transition-colors">
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         <textarea
           ref={textareaRef}
           value={text}
@@ -86,7 +157,7 @@ export function AgentPromptInput({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           placeholder={placeholder}
-          disabled={disabled}
+          disabled={busy}
           rows={1}
           className="w-full resize-none bg-transparent text-base text-[#F5F5F4] placeholder:text-text-subtle outline-none disabled:opacity-50"
           style={{ minHeight: 72, maxHeight: 240 }}
@@ -96,10 +167,10 @@ export function AgentPromptInput({
 
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <AttachmentButton disabled={disabled} />
-            <RoleSelector value={roleId} onChange={setRoleId} disabled={disabled} />
-            <ModelSelector value={modelId} onChange={setModelId} disabled={disabled} />
-            <MCPToolSelector selectedCount={mcpCount} onSelectedCountChange={setMcpCount} disabled={disabled} />
+            <AttachmentButton disabled={busy} onFilesSelected={addFiles} />
+            <RoleSelector value={roleId} onChange={setRoleId} disabled={busy} />
+            <ModelSelector value={modelId} onChange={setModelId} disabled={busy} />
+            <MCPToolSelector selectedCount={mcpCount} onSelectedCountChange={setMcpCount} disabled={busy} />
           </div>
           <div className="flex items-center gap-2">
             {charCount > 0 && (
@@ -116,7 +187,7 @@ export function AgentPromptInput({
                   : "bg-surface-overlay text-text-subtle cursor-not-allowed"
               )}
             >
-              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <ArrowUp size={16} />}
+              {busy ? <Loader2 size={16} className="animate-spin" /> : <ArrowUp size={16} />}
             </button>
           </div>
         </div>
@@ -129,6 +200,13 @@ export function AgentPromptInput({
       )}>
         Enter 发送 &middot; Shift + Enter 换行
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-danger/90 px-4 py-2 text-sm text-[#F5F5F4] shadow-lg">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

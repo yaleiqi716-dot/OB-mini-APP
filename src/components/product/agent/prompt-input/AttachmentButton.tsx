@@ -4,7 +4,13 @@
 import { useRef } from "react";
 import { Paperclip } from "lucide-react";
 
-export function AttachmentButton({ disabled = false }: { disabled?: boolean }) {
+export function AttachmentButton({
+  disabled = false,
+  onFilesSelected,
+}: {
+  disabled?: boolean;
+  onFilesSelected?: (files: File[]) => void;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -25,7 +31,7 @@ export function AttachmentButton({ disabled = false }: { disabled?: boolean }) {
         className="hidden"
         onChange={(e) => {
           const files = Array.from(e.target.files || []);
-          if (files.length) console.log("[attach]", files.map((f) => f.name));
+          if (files.length && onFilesSelected) onFilesSelected(files);
           e.target.value = "";
         }}
       />
