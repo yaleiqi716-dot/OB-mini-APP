@@ -1,7 +1,7 @@
 // Part of OrangeBench product internal design system
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MOCK_MODELS } from "./mock-data";
@@ -9,19 +9,31 @@ import { MOCK_MODELS } from "./mock-data";
 export function ModelSelector({
   value,
   onChange,
+  disabled = false,
 }: {
   value: string;
   onChange: (id: string) => void;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const selected = MOCK_MODELS.find((m) => m.id === value) ?? MOCK_MODELS[0];
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   return (
     <div className="relative">
       <button
         type="button"
+        disabled={disabled}
         onClick={() => setOpen(!open)}
-        className="focus-ring flex h-8 items-center gap-1.5 rounded-md border border-border-subtle bg-surface-overlay px-2.5 text-xs text-text-subtle transition-colors duration-fast hover:text-[#F5F5F4]"
+        className="focus-ring flex h-8 items-center gap-1.5 rounded-md border border-border-subtle bg-surface-overlay px-2.5 text-xs text-text-subtle transition-colors duration-fast hover:text-[#F5F5F4] disabled:opacity-50 disabled:pointer-events-none"
       >
         <span className="h-1.5 w-1.5 rounded-full bg-primary" />
         <span>{selected.name}</span>
@@ -57,7 +69,7 @@ export function ModelSelector({
                     className={cn(
                       "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase",
                       model.tier === "free"
-                        ? "bg-surface-overlay text-text-muted"
+                        ? "bg-surface-overlay text-text-subtle"
                         : "bg-primary/15 text-primary"
                     )}
                   >

@@ -1,7 +1,7 @@
 // Part of OrangeBench product internal design system
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   ChevronDown, PenLine, BarChart3, Palette, ListChecks,
   Code2, Handshake, Users, Calculator, Search,
@@ -17,9 +17,11 @@ const ICONS: Record<string, React.ElementType> = {
 export function RoleSelector({
   value,
   onChange,
+  disabled = false,
 }: {
   value: string | null;
   onChange: (id: string | null) => void;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -35,17 +37,27 @@ export function RoleSelector({
       )
     : MOCK_ROLES;
 
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
     <div className="relative">
       <button
         type="button"
+        disabled={disabled}
         onClick={() => {
           setOpen(!open);
           setQuery("");
           setTimeout(() => searchRef.current?.focus(), 50);
         }}
         className={cn(
-          "focus-ring flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs transition-colors duration-fast",
+          "focus-ring flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs transition-colors duration-fast disabled:opacity-50 disabled:pointer-events-none",
           selected
             ? "border-primary/30 bg-accent-muted text-[#F5F5F4]"
             : "border-border-subtle bg-surface-overlay text-text-subtle hover:text-[#F5F5F4]"
@@ -70,7 +82,7 @@ export function RoleSelector({
                 className="h-8 w-full bg-transparent text-sm text-[#F5F5F4] placeholder:text-text-subtle outline-none"
               />
             </div>
-            <div className="max-h-64 overflow-y-auto product-scrollbar space-y-0.5">
+            <div className="max-h-[360px] overflow-y-auto product-scrollbar space-y-0.5">
               {filtered.map((role) => {
                 const Icon = ICONS[role.icon] || PenLine;
                 const isSelected = value === role.id;
@@ -100,7 +112,7 @@ export function RoleSelector({
                 );
               })}
               {filtered.length === 0 && (
-                <p className="py-4 text-center text-sm text-text-muted">没有找到匹配的 AI 同事</p>
+                <p className="py-4 text-center text-sm text-text-muted">没有找到相关 AI 同事</p>
               )}
             </div>
           </div>

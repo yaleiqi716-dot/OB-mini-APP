@@ -4,7 +4,7 @@
 import { useRef } from "react";
 import { Paperclip } from "lucide-react";
 
-export function AttachmentButton() {
+export function AttachmentButton({ disabled = false }: { disabled?: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -12,8 +12,9 @@ export function AttachmentButton() {
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
+        disabled={disabled}
         title="上传附件"
-        className="focus-ring flex h-8 w-8 items-center justify-center rounded-md text-text-muted transition-colors duration-fast hover:bg-surface-overlay hover:text-[#F5F5F4]"
+        className="focus-ring flex h-8 w-8 items-center justify-center rounded-md text-text-muted transition-colors duration-fast hover:bg-surface-overlay hover:text-[#F5F5F4] disabled:opacity-50 disabled:pointer-events-none"
       >
         <Paperclip size={16} />
       </button>
