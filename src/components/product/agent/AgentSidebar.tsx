@@ -9,14 +9,20 @@ import { SidebarNewChatButton } from "./SidebarNewChatButton";
 import { SidebarConversationList } from "./SidebarConversationList";
 import { SidebarUserMenu } from "./SidebarUserMenu";
 
-export function AgentSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+export function AgentSidebar({
+  collapsed,
+  onToggle,
+}: {
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
   const [activeConvId, setActiveConvId] = useState<string | null>("c1");
 
   return (
     <aside
       className={cn(
-        "relative flex h-full flex-col border-r border-border bg-surface transition-[width] duration-base ease-smooth",
+        "relative flex h-full flex-col border-r border-border bg-surface",
+        "transition-[width] duration-200 ease-smooth",
         collapsed ? "w-14" : "w-[260px]"
       )}
     >
@@ -27,7 +33,7 @@ export function AgentSidebar() {
       />
 
       {!collapsed && (
-        <div className="px-4 pb-1 pt-2 text-[10px] font-medium uppercase tracking-widest text-text-subtle">
+        <div className="px-3 pb-1 pt-4 text-[10px] font-medium uppercase tracking-widest text-text-subtle">
           最近对话
         </div>
       )}
@@ -42,8 +48,8 @@ export function AgentSidebar() {
 
       {/* Collapse toggle */}
       <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 bottom-16 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-surface text-text-muted shadow-sm transition-colors duration-fast hover:bg-surface-overlay hover:text-[#F5F5F4]"
+        onClick={onToggle}
+        className="focus-ring absolute -right-3 bottom-16 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-surface text-text-muted shadow-sm transition-colors duration-fast hover:bg-surface-overlay hover:text-[#F5F5F4]"
       >
         {collapsed ? <PanelLeftOpen size={12} /> : <PanelLeftClose size={12} />}
       </button>

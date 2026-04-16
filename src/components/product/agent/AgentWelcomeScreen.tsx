@@ -10,7 +10,7 @@ const CARDS = [
 
 export function AgentWelcomeScreen() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6 py-16">
+    <div className="flex flex-1 flex-col items-center px-6" style={{ paddingTop: "15vh" }}>
       <h1 className="mb-2 text-3xl font-semibold text-[#F5F5F4]">
         今天想做什么？
       </h1>
@@ -19,11 +19,11 @@ export function AgentWelcomeScreen() {
       </p>
 
       {/* Action cards */}
-      <div className="grid w-full max-w-lg grid-cols-2 gap-3">
+      <div className="grid w-full max-w-2xl grid-cols-2 gap-3">
         {CARDS.map((card) => (
           <button
             key={card.title}
-            className="flex flex-col items-start gap-2 rounded-xl border border-border bg-surface p-4 text-left transition-all duration-base hover:border-border-strong hover:bg-surface-raised"
+            className="focus-ring flex flex-col items-start gap-2 rounded-xl border border-border bg-surface p-4 text-left transition-all duration-base hover:border-border-strong hover:bg-surface-raised"
           >
             <card.icon size={20} className="text-primary" />
             <span className="text-sm font-medium text-[#F5F5F4]">{card.title}</span>
@@ -32,15 +32,15 @@ export function AgentWelcomeScreen() {
         ))}
       </div>
 
-      {/* Fake input */}
-      <div className="mt-8 flex w-full max-w-lg items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 transition-colors duration-fast focus-within:border-primary">
+      {/* Input placeholder */}
+      <div className="mt-8 mb-12 flex w-full max-w-3xl items-center gap-2 rounded-xl border border-border-subtle bg-surface px-3 py-3 transition-colors duration-fast focus-within:border-border-strong" style={{ minHeight: 56 }}>
         <input
           type="text"
           readOnly
           placeholder="描述你想完成的任务..."
           className="flex-1 bg-transparent text-sm text-[#F5F5F4] placeholder:text-text-subtle outline-none cursor-default"
         />
-        <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-[#F5F5F4] transition-colors duration-fast hover:bg-accent-hover">
+        <button className="focus-ring flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-[#F5F5F4] transition-colors duration-fast hover:bg-accent-hover">
           <Send size={14} />
         </button>
       </div>

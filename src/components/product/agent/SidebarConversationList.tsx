@@ -1,11 +1,11 @@
 // Part of OrangeBench product internal design system
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
 import { SidebarConversationItem } from "./SidebarConversationItem";
 import type { Conversation } from "./types";
 
-const mockConversations: Conversation[] = [
+const MOCK_CONVERSATIONS: Conversation[] = [
   { id: "c1", title: "写一份商业计划书", updatedAt: "刚刚", group: "今天" },
   { id: "c2", title: "生成一个产品介绍 PPT", updatedAt: "2 小时前", group: "今天" },
   { id: "c3", title: "分析市场竞品情况", updatedAt: "昨天", group: "昨天" },
@@ -15,7 +15,7 @@ const mockConversations: Conversation[] = [
   { id: "c7", title: "帮我写一段品牌介绍", updatedAt: "2 周前", group: "更早" },
 ];
 
-const GROUPS = ["今天", "昨天", "过去 7 天", "更早"];
+const GROUPS = ["今天", "昨天", "过去 7 天", "更早"] as const;
 
 export function SidebarConversationList({
   collapsed,
@@ -26,17 +26,21 @@ export function SidebarConversationList({
   activeId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const grouped = GROUPS.map((g) => ({
-    label: g,
-    items: mockConversations.filter((c) => c.group === g),
-  })).filter((g) => g.items.length > 0);
+  const grouped = useMemo(
+    () =>
+      GROUPS.map((g) => ({
+        label: g,
+        items: MOCK_CONVERSATIONS.filter((c) => c.group === g),
+      })).filter((g) => g.items.length > 0),
+    []
+  );
 
   return (
     <div className="flex-1 overflow-y-auto px-2 py-1 product-scrollbar">
       {grouped.map((group) => (
-        <div key={group.label} className="mb-2">
+        <div key={group.label} className="mb-1">
           {!collapsed && (
-            <div className="px-2.5 py-2 text-[10px] font-medium uppercase tracking-widest text-text-subtle">
+            <div className="px-2 pb-1 pt-4 text-[10px] font-medium uppercase tracking-widest text-text-subtle">
               {group.label}
             </div>
           )}

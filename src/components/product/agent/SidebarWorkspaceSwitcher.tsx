@@ -6,14 +6,14 @@ import { ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Workspace } from "./types";
 
-const mockWorkspaces: Workspace[] = [
+const MOCK_WORKSPACES: Workspace[] = [
   { id: "1", name: "OrangeBench", active: true },
   { id: "2", name: "个人项目", active: false },
 ];
 
 export function SidebarWorkspaceSwitcher({ collapsed }: { collapsed: boolean }) {
   const [open, setOpen] = useState(false);
-  const [workspaces, setWorkspaces] = useState(mockWorkspaces);
+  const [workspaces, setWorkspaces] = useState(MOCK_WORKSPACES);
   const active = workspaces.find((w) => w.active) ?? workspaces[0];
 
   function switchTo(id: string) {
@@ -24,11 +24,11 @@ export function SidebarWorkspaceSwitcher({ collapsed }: { collapsed: boolean }) 
   }
 
   return (
-    <div className="relative flex h-14 shrink-0 items-center border-b border-border px-3">
+    <div className="relative flex h-14 shrink-0 items-center border-b border-border px-2">
       <button
         onClick={() => setOpen(!open)}
         className={cn(
-          "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm font-medium text-[#F5F5F4] transition-colors duration-fast hover:bg-surface-overlay",
+          "focus-ring flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm font-medium text-[#F5F5F4] transition-colors duration-fast hover:bg-surface-overlay",
           collapsed && "justify-center px-0"
         )}
       >

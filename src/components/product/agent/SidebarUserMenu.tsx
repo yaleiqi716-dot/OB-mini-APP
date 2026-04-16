@@ -19,7 +19,7 @@ export function SidebarUserMenu({ collapsed }: { collapsed: boolean }) {
       <button
         onClick={() => setOpen(!open)}
         className={cn(
-          "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors duration-fast hover:bg-surface-overlay",
+          "focus-ring flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors duration-fast hover:bg-surface-overlay",
           collapsed && "justify-center px-0"
         )}
       >
