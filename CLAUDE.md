@@ -1,5 +1,10 @@
 # OrangeBench Frontend Rules
 
+## Product Positioning
+- Desktop-first product, minimum supported width 1024px
+- 落地页：desktop-first, mobile 保持可读即可
+- 产品内部页面：desktop-only, 小屏显示 DesktopGate 提示
+
 ## Stack
 - Next.js 14 App Router + TypeScript
 - Tailwind CSS + shadcn/ui
@@ -41,3 +46,5 @@
 - 间距用 4 的倍数
 - 动效时长统一 150ms 或 300ms
 - 集成 21st.dev 组件时，保留原有业务逻辑不动
+- 禁止 text-white / bg-white / text-black / bg-black，使用设计系统色
+  - 唯一例外：橙色背景上的 CTA 按钮可用 text-white 保证对比度

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[#1F1F1D] bg-[#0C0C0A] px-6 py-24">
+    <footer className="border-t border-[#1F1F1D] bg-[#0C0C0A] px-6 py-16">
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-8 md:flex-row md:items-start md:justify-between">
         {/* Brand */}
         <div className="flex flex-col items-center gap-2 md:items-start">
@@ -13,7 +13,7 @@ export default function Footer() {
         </div>
 
         {/* Links */}
-        <div className="flex flex-wrap gap-8 text-sm md:gap-12">
+        <div className="flex flex-wrap gap-8 text-sm">
           <div className="flex flex-col gap-2">
             <span className="mb-1 text-xs font-medium uppercase tracking-widest text-[#A8A29E]">
               Product
