@@ -10,8 +10,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
    placeholder image, as second landing section.
    ────────────────────────────────────────────────────────────── */
 
-const STYLE_ID = "hero3-animations";
-
 const DeckGlyph = () => {
   const stroke = "#FF5A1F";
   const fill = "rgba(255,90,31,0.08)";
@@ -55,50 +53,6 @@ export default function HeroModern() {
   const [visible, setVisible] = useState(false);
   const [mode, setMode] = useState<"agents" | "workflows">("agents");
   const sectionRef = useRef<HTMLElement>(null);
-
-  /* ── Inject keyframe animations ────────────────────────────── */
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    if (document.getElementById(STYLE_ID)) return;
-
-    const style = document.createElement("style");
-    style.id = STYLE_ID;
-    style.innerHTML = `
-      @keyframes hero3-intro {
-        0% { opacity: 0; transform: translate3d(0, 64px, 0) scale(0.98); filter: blur(12px); }
-        60% { filter: blur(0); }
-        100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
-      }
-      @keyframes hero3-card {
-        0% { opacity: 0; transform: translate3d(0, 32px, 0) scale(0.95); }
-        100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
-      }
-      @keyframes hero3-orbit {
-        0% { stroke-dashoffset: 0; transform: rotate(0deg); }
-        100% { stroke-dashoffset: -64; transform: rotate(360deg); }
-      }
-      @keyframes hero3-grid {
-        0%, 100% { transform: rotate(-2deg); opacity: 0.7; }
-        50% { transform: rotate(2deg); opacity: 1; }
-      }
-      @keyframes hero3-pulse {
-        0%, 100% { stroke-dasharray: 0 200; opacity: 0.2; }
-        45%, 60% { stroke-dasharray: 200 0; opacity: 1; }
-      }
-      @keyframes hero3-glow {
-        0%, 100% { opacity: 0.45; transform: translate3d(0,0,0); }
-        50% { opacity: 0.9; transform: translate3d(0,-8px,0); }
-      }
-      @keyframes hero3-drift {
-        0%, 100% { transform: translate3d(0,0,0) rotate(-3deg); }
-        50% { transform: translate3d(0,-12px,0) rotate(3deg); }
-      }
-    `;
-    document.head.appendChild(style);
-    return () => {
-      style.remove();
-    };
-  }, []);
 
   /* ── Intersection observer entrance ────────────────────────── */
   useEffect(() => {
@@ -202,7 +156,7 @@ export default function HeroModern() {
   };
 
   return (
-    <div className={`relative isolate w-full transition-colors duration-700 ${palette.surface}`}>
+    <div id="features" className={`relative isolate w-full transition-colors duration-700 ${palette.surface}`}>
       {/* Background layers */}
       <div
         className="pointer-events-none absolute inset-0 -z-30"

@@ -13,7 +13,12 @@ import Link from "next/link";
    mobile drawer.
    ────────────────────────────────────────────────────────────── */
 
-const NAV_ITEMS = ["Features", "Pricing", "FAQ", "Docs"] as const;
+const NAV_ITEMS = [
+  { label: "Features", href: "#features" },
+  { label: "Pricing", href: "#pricing" },
+  { label: "FAQ", href: "#faq" },
+  { label: "Docs", href: "#", title: "Coming soon" },
+] as const;
 
 function NavHeader() {
   const [position, setPosition] = useState({
@@ -64,8 +69,8 @@ function NavHeader() {
             onMouseLeave={() => setPosition((pv) => ({ ...pv, opacity: 0 }))}
           >
             {NAV_ITEMS.map((item) => (
-              <Tab key={item} setPosition={setPosition}>
-                {item}
+              <Tab key={item.label} href={item.href} title={"title" in item ? item.title : undefined} setPosition={setPosition}>
+                {item.label}
               </Tab>
             ))}
             <Cursor position={position} />
@@ -135,14 +140,15 @@ function NavHeader() {
               {/* Drawer links */}
               <div className="flex flex-1 flex-col gap-1 px-4">
                 {NAV_ITEMS.map((item) => (
-                  <Link
-                    key={item}
-                    href="#"
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    title={"title" in item ? item.title : undefined}
                     onClick={closeDrawer}
                     className="rounded-lg px-4 py-3 text-base font-medium text-[#A8A29E] transition-colors duration-150 hover:bg-[#111110] hover:text-[#F5F5F4]"
                   >
-                    {item}
-                  </Link>
+                    {item.label}
+                  </a>
                 ))}
 
                 <div className="my-3 border-t border-[#1F1F1D]" />
@@ -174,9 +180,13 @@ function NavHeader() {
 
 const Tab = ({
   children,
+  href,
+  title,
   setPosition,
 }: {
   children: React.ReactNode;
+  href: string;
+  title?: string;
   setPosition: React.Dispatch<
     React.SetStateAction<{ left: number; width: number; opacity: number }>
   >;
@@ -195,9 +205,11 @@ const Tab = ({
           left: ref.current.offsetLeft,
         });
       }}
-      className="relative z-10 cursor-pointer px-4 py-1.5 text-sm text-[#A8A29E] mix-blend-difference transition-colors duration-150"
+      className="relative z-10 cursor-pointer text-sm text-[#A8A29E] mix-blend-difference transition-colors duration-150"
     >
-      {children}
+      <a href={href} title={title} className="block px-4 py-1.5">
+        {children}
+      </a>
     </li>
   );
 };

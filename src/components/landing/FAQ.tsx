@@ -91,7 +91,7 @@ export default function FAQ() {
   const [selectedCategory, setSelectedCategory] = useState(categoryKeys[0]);
 
   return (
-    <section className="relative overflow-hidden bg-[#0C0C0A] px-6 py-24 text-[#F5F5F4]">
+    <section id="faq" className="relative overflow-hidden bg-[#0C0C0A] px-6 py-24 text-[#F5F5F4]">
       <div className="mx-auto max-w-7xl">
         <FAQHeader />
         <FAQTabs
@@ -191,6 +191,8 @@ function FAQList({ selected }: { selected: string }) {
 
 /* ── Accordion item (from original) ──────────────────────────── */
 
+let faqCounter = 0;
+
 function FAQItem({
   question,
   answer,
@@ -199,6 +201,10 @@ function FAQItem({
   answer: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [ids] = useState(() => {
+    const n = ++faqCounter;
+    return { trigger: `faq-trigger-${n}`, panel: `faq-panel-${n}` };
+  });
 
   return (
     <motion.div
@@ -211,8 +217,11 @@ function FAQItem({
       )}
     >
       <button
+        id={ids.trigger}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-controls={ids.panel}
         className="flex w-full items-center justify-between gap-4 p-4 text-left"
       >
         <span
@@ -239,6 +248,9 @@ function FAQItem({
         </motion.span>
       </button>
       <motion.div
+        id={ids.panel}
+        role="region"
+        aria-labelledby={ids.trigger}
         initial={false}
         animate={{
           height: isOpen ? "auto" : "0px",

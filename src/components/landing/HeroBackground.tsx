@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 /* ──────────────────────────────────────────────────────────────
@@ -125,9 +126,7 @@ export default function HeroBackground() {
               className="group inline-flex items-center rounded-lg bg-[#FF5A1F] px-8 py-3 text-base font-semibold text-white transition-all duration-150 hover:bg-[#FF6B35] hover:shadow-lg hover:shadow-[#FF5A1F]/20"
             >
               Start for Free
-              <span className="ml-2 transition-transform duration-150 group-hover:translate-x-1">
-                &rarr;
-              </span>
+              <ArrowRight size={18} className="ml-2 transition-transform duration-150 group-hover:translate-x-1" />
             </Link>
 
             {/* Secondary — Watch Demo */}

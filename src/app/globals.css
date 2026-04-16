@@ -133,7 +133,7 @@
   --sidebar-width:     220px;
 }
 
-html{color-scheme:dark}
+html{color-scheme:dark;scroll-behavior:smooth}
 *{box-sizing:border-box}
 
 body{
@@ -844,3 +844,36 @@ header{background:rgba(10,10,8,0.88) !important;backdrop-filter:blur(12px) satur
 
 /* ── Drawer slide-in ──────────────────────────────────── */
 @keyframes ob-drawer-in{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ═══════════════════════════════════════════════════════════════
+   HERO MODERN — keyframes (migrated from JS injection)
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes hero3-intro{
+  0%{opacity:0;transform:translate3d(0,64px,0) scale(0.98);filter:blur(12px)}
+  60%{filter:blur(0)}
+  100%{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}
+}
+@keyframes hero3-card{
+  0%{opacity:0;transform:translate3d(0,32px,0) scale(0.95)}
+  100%{opacity:1;transform:translate3d(0,0,0) scale(1)}
+}
+@keyframes hero3-orbit{
+  0%{stroke-dashoffset:0;transform:rotate(0deg)}
+  100%{stroke-dashoffset:-64;transform:rotate(360deg)}
+}
+@keyframes hero3-grid{
+  0%,100%{transform:rotate(-2deg);opacity:0.7}
+  50%{transform:rotate(2deg);opacity:1}
+}
+@keyframes hero3-pulse{
+  0%,100%{stroke-dasharray:0 200;opacity:0.2}
+  45%,60%{stroke-dasharray:200 0;opacity:1}
+}
+@keyframes hero3-glow{
+  0%,100%{opacity:0.45;transform:translate3d(0,0,0)}
+  50%{opacity:0.9;transform:translate3d(0,-8px,0)}
+}
+@keyframes hero3-drift{
+  0%,100%{transform:translate3d(0,0,0) rotate(-3deg)}
+  50%{transform:translate3d(0,-12px,0) rotate(3deg)}
+}

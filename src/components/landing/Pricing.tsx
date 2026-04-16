@@ -78,7 +78,7 @@ export default function Pricing() {
   };
 
   return (
-    <section className="bg-[#0C0C0A] px-4 py-24 sm:px-6">
+    <section id="pricing" className="bg-[#0C0C0A] px-4 py-24 sm:px-6">
       <div className="mx-auto max-w-7xl">
       {/* Header */}
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
