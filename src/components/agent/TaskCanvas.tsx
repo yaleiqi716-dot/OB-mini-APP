@@ -1015,6 +1015,7 @@ function ResultView({ result, taskId: rvTaskId }: { result: Record<string, unkno
           {imgList.map((url, i) => (
             <a key={i} href={url} target="_blank" rel="noopener noreferrer"
               className="block rounded-xl overflow-hidden border border-border hover:opacity-90 transition-opacity">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={url} alt={`生成图片 ${i + 1}`} className="w-full h-auto object-cover" loading="lazy" />
             </a>
           ))}

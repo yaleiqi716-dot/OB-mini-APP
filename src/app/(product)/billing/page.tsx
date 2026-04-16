@@ -135,6 +135,7 @@ function QRModal({
               <p style={{ fontSize: 24, fontWeight: 700, color: '#FF5A1F' }}>{amountLabel}</p>
             </div>
             <div style={{ padding: 8, borderRadius: 16, border: '2px solid rgba(245,245,240,0.08)', background: 'var(--ob-surface)' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrUrl)}`} alt="支付二维码" width={180} height={180} style={{ borderRadius: 8 }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'rgba(245,245,240,0.28)' }}>

@@ -42,7 +42,7 @@ import { promises as fs } from 'fs';
 import { randomBytes } from 'crypto';
 import path from 'path';
 import os from 'os';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line no-unused-vars
 const _osUnused = os; // kept for future cross-platform use
 import { prisma } from '@/lib/prisma';
 import {
