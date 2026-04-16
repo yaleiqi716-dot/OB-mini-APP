@@ -86,12 +86,28 @@ const FAQ_DATA: Record<string, { question: string; answer: string }[]> = {
   ],
 };
 
+const FAQ_JSONLD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: Object.values(FAQ_DATA)
+    .flat()
+    .map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+};
+
 export default function FAQ() {
   const categoryKeys = Object.keys(CATEGORIES);
   const [selectedCategory, setSelectedCategory] = useState(categoryKeys[0]);
 
   return (
     <section id="faq" className="relative overflow-hidden bg-[#0C0C0A] px-6 py-24 text-[#F5F5F4]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSONLD) }}
+      />
       <div className="mx-auto max-w-7xl">
         <FAQHeader />
         <FAQTabs
