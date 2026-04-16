@@ -75,7 +75,7 @@ export default function HeroBackground() {
           transition={{ duration: 2 }}
         >
           {/* Title — letter-by-letter spring entrance (from original) */}
-          <h1 className="text-5xl font-bold tracking-tighter sm:text-7xl md:text-8xl">
+          <h1 className="text-5xl font-bold tracking-tighter md:text-7xl">
             {TITLE_WORDS.map((word, wordIndex) => (
               <span
                 key={wordIndex}
@@ -122,7 +122,7 @@ export default function HeroBackground() {
             {/* Primary — Start for Free */}
             <Link
               href="/signup"
-              className="inline-flex items-center rounded-lg bg-[#FF5A1F] px-8 py-3 text-base font-semibold text-white transition-all duration-150 hover:bg-[#E84D15] hover:shadow-lg hover:shadow-[#FF5A1F]/20"
+              className="inline-flex items-center rounded-lg bg-[#FF5A1F] px-8 py-3 text-base font-semibold text-white transition-all duration-150 hover:bg-[#FF6B35] hover:shadow-lg hover:shadow-[#FF5A1F]/20"
             >
               Start for Free
               <span className="ml-2 transition-transform duration-150 group-hover:translate-x-1">
@@ -133,7 +133,7 @@ export default function HeroBackground() {
             {/* Secondary — Watch Demo */}
             <Link
               href="#"
-              className="inline-flex items-center rounded-lg border border-[#1F1F1D] bg-[#111110] px-8 py-3 text-base font-semibold text-[#F5F5F4] transition-all duration-150 hover:border-[#FF5A1F]/30 hover:bg-[#1A1A18]"
+              className="inline-flex items-center rounded-lg border border-[#1F1F1D] bg-transparent px-8 py-3 text-base font-semibold text-[#F5F5F4] transition-all duration-150 hover:bg-[#111110]"
             >
               Watch Demo
             </Link>

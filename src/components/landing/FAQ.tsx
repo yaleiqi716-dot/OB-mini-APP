@@ -91,13 +91,15 @@ export default function FAQ() {
   const [selectedCategory, setSelectedCategory] = useState(categoryKeys[0]);
 
   return (
-    <section className="relative overflow-hidden bg-[#0C0C0A] px-4 py-24 text-[#F5F5F4]">
-      <FAQHeader />
-      <FAQTabs
-        selected={selectedCategory}
-        setSelected={setSelectedCategory}
-      />
-      <FAQList selected={selectedCategory} />
+    <section className="relative overflow-hidden bg-[#0C0C0A] px-6 py-24 text-[#F5F5F4]">
+      <div className="mx-auto max-w-7xl">
+        <FAQHeader />
+        <FAQTabs
+          selected={selectedCategory}
+          setSelected={setSelectedCategory}
+        />
+        <FAQList selected={selectedCategory} />
+      </div>
     </section>
   );
 }
@@ -110,7 +112,7 @@ function FAQHeader() {
       <span className="mb-8 bg-gradient-to-r from-[#FF5A1F] to-[#FF5A1F]/60 bg-clip-text font-medium text-transparent">
         Got questions?
       </span>
-      <h2 className="mb-8 text-center text-4xl font-bold sm:text-5xl">
+      <h2 className="mb-8 text-center text-4xl font-bold md:text-5xl">
         Frequently asked questions
       </h2>
       <span className="absolute -top-[350px] left-[50%] z-0 h-[500px] w-[600px] -translate-x-[50%] rounded-full bg-gradient-to-r from-[#FF5A1F]/10 to-[#FF5A1F]/5 blur-3xl" />

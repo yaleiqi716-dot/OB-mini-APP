@@ -79,9 +79,10 @@ export default function Pricing() {
 
   return (
     <section className="bg-[#0C0C0A] px-6 py-24">
+      <div className="mx-auto max-w-7xl">
       {/* Header */}
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
-        <h2 className="text-4xl font-semibold tracking-tight text-[#F5F5F4] sm:text-5xl">
+        <h2 className="text-4xl font-bold tracking-tight text-[#F5F5F4] md:text-5xl">
           Simple pricing that scales with you
         </h2>
         <p className="text-base text-[#A8A29E]">
@@ -125,7 +126,7 @@ export default function Pricing() {
         {PLANS.map((plan) => (
           <div
             key={plan.name}
-            className={`flex w-80 flex-col rounded-2xl border p-6 transition-colors duration-150 ${
+            className={`flex w-80 flex-col rounded-xl border p-6 transition-colors duration-150 ${
               plan.popular
                 ? "border-[#FF5A1F] bg-[#111110] shadow-lg shadow-[#FF5A1F]/5"
                 : "border-[#1F1F1D] bg-[#111110]"
@@ -159,8 +160,8 @@ export default function Pricing() {
               href={plan.href}
               className={`mb-8 flex h-10 items-center justify-center rounded-lg text-sm font-semibold transition-all duration-150 ${
                 plan.popular
-                  ? "bg-[#FF5A1F] text-white hover:bg-[#E84D15]"
-                  : "border border-[#1F1F1D] bg-transparent text-[#F5F5F4] hover:border-[#FF5A1F]/30 hover:bg-[#1A1A18]"
+                  ? "bg-[#FF5A1F] text-white hover:bg-[#FF6B35]"
+                  : "border border-[#1F1F1D] bg-transparent text-[#F5F5F4] hover:bg-[#111110]"
               }`}
             >
               {plan.cta}
@@ -197,6 +198,7 @@ export default function Pricing() {
             </div>
           </div>
         ))}
+      </div>
       </div>
     </section>
   );

@@ -67,7 +67,7 @@ function NavHeader() {
           </Link>
           <Link
             href="/signup"
-            className="rounded-lg bg-[#FF5A1F] px-4 py-2 text-sm font-medium text-white transition-all duration-150 hover:bg-[#E84D15]"
+            className="rounded-lg bg-[#FF5A1F] px-4 py-2 text-sm font-medium text-white transition-all duration-150 hover:bg-[#FF6B35]"
           >
             Get Started
           </Link>

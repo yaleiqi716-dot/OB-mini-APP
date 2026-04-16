@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[#1F1F1D] bg-[#0C0C0A] px-6 py-12">
-      <div className="mx-auto flex max-w-5xl flex-col items-center gap-8 md:flex-row md:items-start md:justify-between">
+    <footer className="border-t border-[#1F1F1D] bg-[#0C0C0A] px-6 py-24">
+      <div className="mx-auto flex max-w-7xl flex-col items-center gap-8 md:flex-row md:items-start md:justify-between">
         {/* Brand */}
         <div className="flex flex-col items-center gap-2 md:items-start">
           <span className="text-lg font-bold text-[#F5F5F4]">OrangeBench</span>
@@ -13,7 +13,7 @@ export default function Footer() {
         </div>
 
         {/* Links */}
-        <div className="flex gap-12 text-sm">
+        <div className="flex flex-wrap gap-8 text-sm md:gap-12">
           <div className="flex flex-col gap-2">
             <span className="mb-1 text-xs font-medium uppercase tracking-widest text-[#A8A29E]">
               Product
@@ -40,7 +40,7 @@ export default function Footer() {
       </div>
 
       {/* Copyright */}
-      <div className="mx-auto mt-8 max-w-5xl border-t border-[#1F1F1D] pt-6 text-center text-xs text-[#A8A29E]">
+      <div className="mx-auto mt-8 max-w-7xl border-t border-[#1F1F1D] pt-6 text-center text-xs text-[#A8A29E]">
         &copy; {new Date().getFullYear()} OrangeBench. All rights reserved.
       </div>
     </footer>

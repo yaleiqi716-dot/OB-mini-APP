@@ -236,7 +236,7 @@ export default function HeroModern() {
 
       <section
         ref={sectionRef}
-        className={`relative flex w-full flex-col gap-16 px-6 py-24 transition-opacity duration-700 md:gap-20 md:px-10 lg:px-16 xl:px-24 ${
+        className={`relative mx-auto flex w-full max-w-7xl flex-col gap-16 px-6 py-24 transition-opacity duration-700 md:gap-20 ${
           visible
             ? "motion-safe:animate-[hero3-intro_1s_cubic-bezier(.22,.68,0,1)_forwards]"
             : "opacity-0"
@@ -254,7 +254,7 @@ export default function HeroModern() {
             </div>
 
             <div className="space-y-6">
-              <h2 className="text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl">
+              <h2 className="text-4xl font-bold tracking-tight md:text-5xl">
                 Built for teams that ship fast
               </h2>
               <p className={`max-w-2xl text-base md:text-lg ${palette.subtle}`}>
@@ -293,7 +293,7 @@ export default function HeroModern() {
 
           {/* ── Mode card ──────────────────────────────────── */}
           <div
-            className={`relative flex flex-col gap-6 rounded-3xl border p-8 transition ${palette.border} ${palette.card}`}
+            className={`relative flex flex-col gap-6 rounded-xl border p-8 transition ${palette.border} ${palette.card}`}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-3">
@@ -311,9 +311,9 @@ export default function HeroModern() {
               <button
                 type="button"
                 onClick={() => setMode("agents")}
-                className={`flex-1 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] transition ${
+                className={`flex-1 rounded-lg border px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] transition ${
                   mode === "agents"
-                    ? "border-[#FF5A1F] bg-[#FF5A1F] text-white"
+                    ? "border-[#FF5A1F] bg-[#FF5A1F] text-white hover:bg-[#FF6B35]"
                     : `${palette.border} ${palette.accent}`
                 }`}
               >
@@ -322,9 +322,9 @@ export default function HeroModern() {
               <button
                 type="button"
                 onClick={() => setMode("workflows")}
-                className={`flex-1 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] transition ${
+                className={`flex-1 rounded-lg border px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] transition ${
                   mode === "workflows"
-                    ? "border-[#FF5A1F] bg-[#FF5A1F] text-white"
+                    ? "border-[#FF5A1F] bg-[#FF5A1F] text-white hover:bg-[#FF6B35]"
                     : `${palette.border} ${palette.accent}`
                 }`}
               >
@@ -349,7 +349,7 @@ export default function HeroModern() {
         <div className="grid gap-10 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.2fr)_minmax(0,0.9fr)] xl:items-stretch">
           {/* Left card — capabilities */}
           <div
-            className={`order-2 flex flex-col gap-6 rounded-3xl border p-8 transition ${palette.border} ${palette.card} xl:order-1`}
+            className={`order-2 flex flex-col gap-6 rounded-xl border p-8 transition ${palette.border} ${palette.card} xl:order-1`}
           >
             <div className="flex items-center justify-between">
               <h3 className="text-xs uppercase tracking-[0.35em]">
@@ -371,7 +371,7 @@ export default function HeroModern() {
               ].map((item) => (
                 <div
                   key={item}
-                  className={`relative overflow-hidden rounded-2xl border px-4 py-3 text-xs uppercase tracking-[0.3em] transition duration-500 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(255,90,31,0.12)] ${palette.border}`}
+                  className={`relative overflow-hidden rounded-xl border px-4 py-3 text-xs uppercase tracking-[0.3em] transition duration-500 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(255,90,31,0.12)] ${palette.border}`}
                 >
                   <span>{item}</span>
                   <span
@@ -387,13 +387,13 @@ export default function HeroModern() {
 
           {/* Center — product screenshot placeholder */}
           <figure
-            className={`order-1 overflow-hidden rounded-[32px] border transition xl:order-2 ${palette.border}`}
+            className={`order-1 overflow-hidden rounded-xl border transition xl:order-2 ${palette.border}`}
             style={{ position: "relative" }}
           >
             <div className="relative w-full pb-[120%] sm:pb-[90%] lg:pb-[72%]">
               {/* Placeholder — swap with real screenshot later */}
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#111110]">
-                <div className="mb-4 h-16 w-16 rounded-2xl bg-[#FF5A1F]/10 flex items-center justify-center">
+                <div className="mb-4 h-16 w-16 rounded-xl bg-[#FF5A1F]/10 flex items-center justify-center">
                   <svg
                     className="h-8 w-8 text-[#FF5A1F]"
                     fill="none"
@@ -429,7 +429,7 @@ export default function HeroModern() {
 
           {/* Right card — launch protocols */}
           <aside
-            className={`order-3 flex flex-col gap-6 rounded-3xl border p-8 transition ${palette.border} ${palette.card}`}
+            className={`order-3 flex flex-col gap-6 rounded-xl border p-8 transition ${palette.border} ${palette.card}`}
           >
             <div className="flex items-center justify-between">
               <h3 className="text-xs uppercase tracking-[0.35em]">
@@ -445,7 +445,7 @@ export default function HeroModern() {
                   key={protocol.name}
                   onMouseMove={setSpotlight}
                   onMouseLeave={clearSpotlight}
-                  className={`group relative overflow-hidden rounded-2xl border px-5 py-4 transition duration-500 hover:-translate-y-0.5 ${palette.border}`}
+                  className={`group relative overflow-hidden rounded-xl border px-5 py-4 transition duration-500 hover:-translate-y-0.5 ${palette.border}`}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div
