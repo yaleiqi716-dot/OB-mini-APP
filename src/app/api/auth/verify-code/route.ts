@@ -18,31 +18,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '邮箱和验证码不能为空' }, { status: 400 })
     }
 
-    // 查找有效验证码
-    const record = await prisma.verificationCode.findFirst({
-      where: {
-        email,
-        code,
-        used: false,
-        expiresAt: { gt: new Date() },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+    // DEV ONLY: Do not ship to production
+    const isDevBypass = process.env.NODE_ENV === 'development' && code === '888888'
 
-    if (!record) {
-      return NextResponse.json({ error: '验证码无效或已过期' }, { status: 401 })
+    if (!isDevBypass) {
+      // 查找有效验证码
+      const record = await prisma.verificationCode.findFirst({
+        where: {
+          email,
+          code,
+          used: false,
+          expiresAt: { gt: new Date() },
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+
+      if (!record) {
+        return NextResponse.json({ error: '验证码无效或已过期' }, { status: 401 })
+      }
+
+      // 标记为已使用
+      await prisma.verificationCode.update({
+        where: { id: record.id },
+        data: { used: true },
+      })
     }
-
-    // 标记为已使用
-    await prisma.verificationCode.update({
-      where: { id: record.id },
-      data: { used: true },
-    })
 
     // 查找或创建用户
     let user = await prisma.user.findUnique({ where: { email } })
     if (!user) {
-      const config = getPlanConfig('free');
+      // DEV ONLY: new accounts get Pro plan for testing
+      const plan = isDevBypass ? 'pro' : 'free';
+      const config = getPlanConfig(plan);
       user = await prisma.user.create({
         data: {
           email,
@@ -51,11 +58,11 @@ export async function POST(req: NextRequest) {
           credits: 0,
           signupBonusCredits: SIGNUP_BONUS,
           dailyTrialCredits: config.dailyTrialCredits,
-          subscriptionCredits: 0,
+          subscriptionCredits: isDevBypass ? 10000 : 0,
           generalCredits: 0,
           rewardCredits: 0,
           dailyCreditsGrantedAt: today(),
-          plan: 'free',
+          plan,
           dailyTaskCount: 0,
           dailyResetDate: today(),
         },

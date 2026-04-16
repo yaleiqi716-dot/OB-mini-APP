@@ -479,6 +479,11 @@ function LoginPageInner() {
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               />
+              {process.env.NODE_ENV === 'development' && (
+                <p style={{ fontSize: 11, color: 'var(--ob-text-dim)', textAlign: 'center', margin: '0 0 8px' }}>
+                  开发环境：使用 888888 登录
+                </p>
+              )}
               <button
                 onClick={handleVerifyCode}
                 disabled={code.length !== 6 || loading}

@@ -37,6 +37,12 @@ export async function POST(req: NextRequest) {
       data: { email, code, expiresAt },
     })
 
+    // DEV ONLY: Do not ship to production
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DEV] 验证码已跳过发送，使用万能码 888888 登录 ${email}`)
+      return NextResponse.json({ ok: true, message: '验证码已发送（开发模式）' })
+    }
+
     const sent = await sendVerificationCode(email, code)
 
     if (!sent) {
