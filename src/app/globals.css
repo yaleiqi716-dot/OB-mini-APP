@@ -877,3 +877,23 @@ header{background:rgba(10,10,8,0.88) !important;backdrop-filter:blur(12px) satur
   0%,100%{transform:translate3d(0,0,0) rotate(-3deg)}
   50%{transform:translate3d(0,-12px,0) rotate(3deg)}
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   PRODUCT INTERNAL — component utilities
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* ── Scrollbar ──────────────────────────────────────────────── */
+  .product-scrollbar{scrollbar-width:thin;scrollbar-color:#2A2A27 transparent}
+  .product-scrollbar::-webkit-scrollbar{width:8px;height:8px}
+  .product-scrollbar::-webkit-scrollbar-track{background:transparent}
+  .product-scrollbar::-webkit-scrollbar-thumb{background:#2A2A27;border-radius:4px}
+  .product-scrollbar::-webkit-scrollbar-thumb:hover{background:#3A3A35}
+
+  /* ── Focus ring ─────────────────────────────────────────────── */
+  .focus-ring{@apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5A1F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0C0C0A]}
+
+  /* ── Interactive transition ─────────────────────────────────── */
+  .interactive{@apply transition-all duration-150;transition-timing-function:cubic-bezier(0.16,1,0.3,1)}
+}

@@ -1,14 +1,14 @@
 import type { Config } from 'tailwindcss';
 
-// OrangeBench Design System v1.2
-// Source of truth: DESIGN.md in repo root
+// OrangeBench Design System v2.0
+// Source of truth: CLAUDE.md in repo root
 const config: Config = {
   darkMode: 'class',
   content: ['./src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        // ─── v1.2 canonical tokens ─────────────────────────────
+        // ─── v1.2 canonical tokens (legacy, kept for compat) ───
         ob: {
           bg: '#141417',
           surface: '#1D1D20',
@@ -21,44 +21,63 @@ const config: Config = {
           orange: '#FF5A1F',
           'orange-hi': '#FF7340',
           'orange-lo': '#D9471A',
-          success: '#C9B89E',  // warm sand — NOT green
-          warning: '#D4A017',  // mustard
-          error: '#E4483D',    // rust red
-          info: '#9A9591',     // warm stone — NOT blue
+          success: '#C9B89E',
+          warning: '#D4A017',
+          error: '#E4483D',
+          info: '#9A9591',
         },
 
+        // ─── v2.0 design system tokens ─────────────────────────
+        primary: '#FF5A1F',
+        background: '#0C0C0A',
+        surface: {
+          DEFAULT: '#111110',
+          raised: '#1A1A18',
+          overlay: '#222220',
+          // Legacy aliases
+          primary: 'var(--ob-bg)',
+          secondary: 'var(--ob-surface)',
+          tertiary: 'var(--ob-surface-hi)',
+        },
+        border: {
+          DEFAULT: '#1F1F1D',
+          subtle: '#2A2A27',
+          strong: '#3A3A35',
+        },
+        'text-primary': '#F5F5F4',
+        'text-muted': '#A8A29E',
+        'text-subtle': '#6B6560',
+
+        // ─── Accent variants ───────────────────────────────────
+        'accent-hover': '#FF6B35',
+        'accent-muted': 'rgba(255,90,31,0.10)',
+
+        // ─── Semantic ──────────────────────────────────────────
+        success: '#34D399',
+        warning: '#FBBF24',
+        danger: '#F87171',
+        info: '#60A5FA',
+
         // ─── Legacy aliases (backward compat) ──────────────────
-        // `accent-*` now resolves to OrangeBench Orange #FF5A1F.
-        // Do NOT use this in new code — use `ob-orange` instead.
         accent: {
           DEFAULT: '#FF5A1F',
           hover: '#D9471A',
           light: '#FF7340',
           dim: '#D9471A',
         },
-        surface: {
-          primary: 'var(--ob-bg)',
-          secondary: 'var(--ob-surface)',
-          tertiary: 'var(--ob-surface-hi)',
-        },
         content: {
           primary: 'var(--ob-text)',
           secondary: 'var(--ob-text-muted)',
           tertiary: 'var(--ob-text-dim)',
         },
-        border: {
-          DEFAULT: 'var(--ob-border)',
-        },
       },
       fontFamily: {
-        // Display: Cabinet Grotesk (Fontshare), used for hero, wordmark, H1-H3
         display: [
           'Cabinet Grotesk',
           'General Sans',
           'system-ui',
           'sans-serif',
         ],
-        // Body: Geist (Google Fonts / Vercel), used for UI text
         sans: [
           'Geist',
           'HarmonyOS Sans SC',
@@ -68,7 +87,6 @@ const config: Config = {
           'PingFang SC',
           'sans-serif',
         ],
-        // Mono: Geist Mono, used for data tables, timestamps, code, tabular nums
         mono: [
           'Geist Mono',
           'SF Mono',
@@ -77,12 +95,24 @@ const config: Config = {
         ],
       },
       borderRadius: {
+        xs: '4px',
+        sm: '6px',
+        md: '8px',
+        lg: '12px',
+        xl: '16px',
+        // Legacy aliases
         'ob-input': '4px',
         'ob-btn': '8px',
         'ob-card': '12px',
         'ob-card-lg': '16px',
       },
+      transitionDuration: {
+        fast: '100ms',
+        base: '150ms',
+        slow: '300ms',
+      },
       transitionTimingFunction: {
+        smooth: 'cubic-bezier(0.16, 1, 0.3, 1)',
         'ob-out': 'cubic-bezier(.2,.7,.3,1)',
         'ob-in-out': 'cubic-bezier(.4,0,.2,1)',
       },
