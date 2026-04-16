@@ -1,16 +1,15 @@
 // Part of OrangeBench product internal design system
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { AgentSidebar } from "./AgentSidebar";
 import { AgentMainContent } from "./AgentMainContent";
 
 const SIDEBAR_KEY = "orangebench.agent.sidebar.collapsed";
 
-export function AgentAppShell() {
+export function AgentAppShell({ children }: { children?: ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Restore sidebar state from localStorage
   useEffect(() => {
     try {
       const stored = localStorage.getItem(SIDEBAR_KEY);
@@ -26,24 +25,13 @@ export function AgentAppShell() {
     });
   }, []);
 
-  // Keyboard shortcuts
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
-
-      if (e.key === "/") {
-        e.preventDefault();
-        toggleSidebar();
-      }
-      if (e.key === "k") {
-        e.preventDefault();
-        console.log("[shortcut] open command palette");
-      }
-      if (e.key === "n") {
-        e.preventDefault();
-        console.log("[shortcut] new chat");
-      }
+      if (e.key === "/") { e.preventDefault(); toggleSidebar(); }
+      if (e.key === "k") { e.preventDefault(); console.log("[shortcut] open command palette"); }
+      if (e.key === "n") { e.preventDefault(); console.log("[shortcut] new chat"); }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -52,7 +40,7 @@ export function AgentAppShell() {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background text-[#F5F5F4]">
       <AgentSidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
-      <AgentMainContent />
+      {children ?? <AgentMainContent />}
     </div>
   );
 }
